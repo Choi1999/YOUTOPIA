@@ -18,8 +18,8 @@
 
 - **00:** 사용자가 제품 방향을 승인했고 `00_PRODUCT_DIRECTION.md` 초안이 작성됨.
 - **01~03:** 사용자 승인 방향과 프론트 소스를 반영한 문서 초안이 작성됨. UX 세부와 기술 스택·권한은 검토 필요.
-- **04:** 00~99 순서, 산출물, 현재 상태를 정의하는 본 문서.
-- **05~99:** 현재 시점에서 코드·운영 기능이 실현됐다는 주장 없음. 이 실행대장 자체의 작성은 구현 검증이 아님.
+- **04:** 00~99 순서, 산출물, 현재 상태를 정의하는 본 문서(초안 작성 완료, 외부 검토 필요).
+- **05~09:** 단계별 상세 설계/게이트 문서의 **초안 작성**. **10~99:** 구현·검증이 완료됐다는 주장 없음. 실행대장 자체의 작성은 실서비스 동작 증거가 아님.
 
 ## 00~99 상세 작업
 
@@ -31,12 +31,12 @@
 | **01** | 데스크톱 YouTube 홈 사용자 여정 | 추천 영상 여러 개, hover 카드, 더보기→측면 분석 계약 | `UX_DOC_DRAFT` | `01_HOVER_SIDE_PANEL_UX.md` |
 | **02** | 고객/구독/운영 역할 분리 | 고객·고객 조직 관리자·플랫폼 운영·QA 권한 경계 | `POLICY_DOC_DRAFT` | `02_ROLES_AND_SUBSCRIPTION.md` |
 | **03** | 기존 P0-1 데모 보존·재배치 | YU-01~12 유지·고객/운영/QA 재사용표 및 변경 게이트 | `MIGRATION_DOC_DRAFT` | `03_MIGRATION_AND_GATES.md` |
-| **04** | 순차 실행대장 00~99 작성 | 100개 ID·의존 순서·산출물·검증 상태 표시 | `IN_PROGRESS` | `04_EXECUTION_00_99.md` |
-| **05** | 분석 모집단·데이터 가용성 기준 | 진짜 0/미확정·부분·stale·차단/표본 설명 | `NOT_STARTED` | `05_DATA_MEANING_AND_LIMITS.md` |
-| **06** | 핵심 고객 시나리오/실패 여정 | 일반 영상·채널 Hover, 더보기, 미제공·오류 흐름 | `NOT_STARTED` | `06_CUSTOMER_JOURNEY_CASES.md` |
-| **07** | 표면별 고객/관리/QA 메뉴 분리 | 공개/조직/플랫폼 관리자/개발 화면 권한표 | `NOT_STARTED` | `07_SURFACE_ACCESS_MATRIX.md` |
-| **08** | 우선 결정·리스크·정책 책임자 등록 | 요금·관측 허용·브라우저 API·보안 개방 판단 기록 | `NOT_STARTED` | `08_DECISION_AND_RISK_REGISTER.md` |
-| **09** | 제품 방향 검수·다음단계 인계 | P0 UX 수용 기준과 미결정 공백 목록 잠금 | `NOT_STARTED` | `09_PRODUCT_GATE_CHECKLIST.md` |
+| **04** | 순차 실행대장 00~99 작성 | 100개 ID·의존 순서·산출물·검증 상태 표시 | `DOC_DRAFT` | `04_EXECUTION_00_99.md` |
+| **05** | 분석 모집단·데이터 가용성 기준 | 진짜 0/미확정·부분·stale·차단/표본 설명 | `DOC_DRAFT` | `05_DATA_MEANING_AND_LIMITS.md` |
+| **06** | 핵심 고객 시나리오/실패 여정 | 일반 영상·채널 Hover, 더보기, 미제공·오류 흐름 | `DOC_DRAFT` | `06_CUSTOMER_JOURNEY_CASES.md` |
+| **07** | 표면별 고객/관리/QA 메뉴 분리 | 공개/조직/플랫폼 관리자/개발 화면 권한표 | `DOC_DRAFT` | `07_SURFACE_ACCESS_MATRIX.md` |
+| **08** | 우선 결정·리스크·정책 책임자 등록 | 요금·관측 허용·브라우저 API·보안 개방 판단 기록 | `DOC_DRAFT` | `08_DECISION_AND_RISK_REGISTER.md` |
+| **09** | 제품 방향 검수·다음단계 인계 | P0 UX 수용 기준과 미결정 공백 목록 잠금 | `DOC_DRAFT` | `09_PRODUCT_GATE_CHECKLIST.md` |
 
 ### 10~19 · Hover 카드·Side Panel 상세 UX
 
