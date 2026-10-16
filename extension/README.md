@@ -14,7 +14,7 @@
 
 ## 설치 — 코드를 별도 디렉터리로 받은 후
 
-1. 이 기능 브랜치 `feature/yutopia-chrome-hover-poc`의 전체 소스를 다운로드하거나 **별도 Git worktree**로 열어두세요. 현재 Codex가 사용하는 `frontend` 작업 브랜치는 변경하지 마세요.
+1. 현재 유지되는 **`frontend` 브랜치의 `extension/`** 디렉터리를 가져오거나 별도 Git worktree에 체크아웃하세요. 병합 후 삭제된 임시 기능 브랜치를 사용하지 마세요. 다른 Codex가 작업하는 로컬 브랜치는 변경하지 마세요.
 2. Chrome 주소창에 `chrome://extensions` 입력.
 3. 오른쪽 상단 **개발자 모드** 활성화.
 4. **압축해제된 확장 프로그램을 로드(Load unpacked)** 선택 후 이 `extension/` 폴더 선택.
