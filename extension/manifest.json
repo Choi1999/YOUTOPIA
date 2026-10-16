@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "YUTOPIA — YouTube 반응 분석 (로컬 DEMO)",
+  "version": "0.0.1",
+  "description": "YouTube 홈의 영상·채널 Hover와 Chrome Side Panel을 검증하기 위한 합성 데이터 전용 개발 빌드.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "sidePanel",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "YUTOPIA 분석 패널"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "js": [
+        "shared.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
