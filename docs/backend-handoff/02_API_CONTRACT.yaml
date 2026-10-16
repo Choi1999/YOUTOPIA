@@ -1,0 +1,2903 @@
+# YUTOPIA OpenAPI 3.1 candidate. YAML 1.2 JSON flow syntax. NO IMPLEMENTED ENDPOINTS.
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "YUTOPIA Frontend/Backend API Candidate",
+    "version": "0.1.0-draft",
+    "description": "DRAFT / REQUIRES_BACKEND_REVIEW / NO VALIDATED SERVER. Source commit: 344c1e2794c4f6144fa7506f65a17c392487c540. All paths are proposed interfaces only. OAuth, owner identity, policy, retention, deployment, auth method and schema semantics require agreement."
+  },
+  "x-yutopia-contract-status": "DRAFT_REQUIRES_BACKEND_REVIEW",
+  "x-yutopia-source-commit": "344c1e2794c4f6144fa7506f65a17c392487c540",
+  "x-yutopia-server-status": "NOT_IMPLEMENTED",
+  "x-yutopia-security-decision": "Authentication provider/scheme not selected. No OpenAPI securitySchemes assertion is made.",
+  "x-yutopia-observation-warning": "39/39 synthetic date slots is not YouTube source coverage, and conditional differences do not prove causality.",
+  "tags": [
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "YouTube"
+    },
+    {
+      "name": "Projects"
+    },
+    {
+      "name": "Collections"
+    },
+    {
+      "name": "Observations"
+    },
+    {
+      "name": "Analysis"
+    },
+    {
+      "name": "Comparability"
+    },
+    {
+      "name": "Evidence"
+    },
+    {
+      "name": "Review"
+    },
+    {
+      "name": "Reporting"
+    }
+  ],
+  "paths": {
+    "/v1/auth/session": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "getSession",
+        "summary": "Read session",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-01",
+          "DEC-02"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "login",
+        "summary": "Authenticate user (provider undecided)",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-01",
+          "DEC-02"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "logout",
+        "summary": "End session",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-01"
+        ],
+        "responses": {
+          "204": {
+            "description": "Empty successful response"
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/youtube-connections": {
+      "get": {
+        "tags": [
+          "YouTube"
+        ],
+        "operationId": "readYoutubeConnection",
+        "summary": "Optional owner consent state",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-02",
+          "SG-03"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YoutubeConnection"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/youtube-connections/authorization": {
+      "post": {
+        "tags": [
+          "YouTube"
+        ],
+        "operationId": "requestYoutubeAuthorization",
+        "summary": "Owner consent initiation - policy HOLD",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-02",
+          "SG-03"
+        ],
+        "responses": {
+          "202": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YoutubeConnection"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/YoutubeAuthorizationInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "listProjects",
+        "summary": "Caller-owned projects",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-01"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "createProject",
+        "summary": "Create project",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-01"
+        ],
+        "responses": {
+          "201": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/projectId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "getProject",
+        "summary": "Read project",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-01"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "patchProject",
+        "summary": "Update project with precondition",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-01"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectPatch"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/collections": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/projectId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Collections"
+        ],
+        "operationId": "listCollectionRuns",
+        "summary": "Run history",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-03",
+          "SG-04"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Collections"
+        ],
+        "operationId": "startCollectionRun",
+        "summary": "Start async collection",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-03",
+          "SG-04"
+        ],
+        "responses": {
+          "202": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/collections/{runId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/projectId"
+        },
+        {
+          "$ref": "#/components/parameters/runId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Collections"
+        ],
+        "operationId": "getCollectionRun",
+        "summary": "Collection polling",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-03",
+          "SG-04"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/collections/{runId}/retry": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/projectId"
+        },
+        {
+          "$ref": "#/components/parameters/runId"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Collections"
+        ],
+        "operationId": "retryCollectionRun",
+        "summary": "Retry asynchronously",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-03",
+          "SG-04"
+        ],
+        "responses": {
+          "202": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/overview": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/projectId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Observations"
+        ],
+        "operationId": "getProjectOverview",
+        "summary": "KPI and daily observations",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-03",
+          "SG-04"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/comments": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/projectId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Analysis"
+        ],
+        "operationId": "getCommentAnalysis",
+        "summary": "Classification, issue candidates",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-03",
+          "SG-05"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/trends": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/projectId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Comparability"
+        ],
+        "operationId": "getTrendComparison",
+        "summary": "Noncausal trend comparison",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-03",
+          "SG-05"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrendComparison"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/claims": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/projectId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Evidence"
+        ],
+        "operationId": "listClaimReviews",
+        "summary": "Claim review list",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-05"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/claims/{claimId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/projectId"
+        },
+        {
+          "$ref": "#/components/parameters/claimId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Evidence"
+        ],
+        "operationId": "getClaimReview",
+        "summary": "Evidence, lineage, HOLD",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-05"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimReview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/issues": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/projectId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Review"
+        ],
+        "operationId": "listIssueTasks",
+        "summary": "Kanban task list",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-01",
+          "SG-05"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/cursor"
+          },
+          {
+            "$ref": "#/components/parameters/limit"
+          }
+        ]
+      }
+    },
+    "/v1/projects/{projectId}/issues/{issueId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/projectId"
+        },
+        {
+          "$ref": "#/components/parameters/issueId"
+        }
+      ],
+      "patch": {
+        "tags": [
+          "Review"
+        ],
+        "operationId": "patchIssueTask",
+        "summary": "Authorized task transition",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-01",
+          "SG-05"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueTask"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssuePatch"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/reports/drafts": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/projectId"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Reporting"
+        ],
+        "operationId": "createReportDraft",
+        "summary": "Policy-gated draft only",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-05",
+          "SG-06"
+        ],
+        "responses": {
+          "202": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportDraft"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportDraftInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{projectId}/reports/{reportId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/projectId"
+        },
+        {
+          "$ref": "#/components/parameters/reportId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Reporting"
+        ],
+        "operationId": "getReportDraft",
+        "summary": "Read draft; no sharing",
+        "description": "DRAFT - proposed route only, no production implementation.",
+        "x-yutopia-status": "PROPOSED_NOT_IMPLEMENTED",
+        "x-yutopia-gates": [
+          "SG-05",
+          "SG-06"
+        ],
+        "responses": {
+          "200": {
+            "description": "Proposed response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportDraft"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "projectId": {
+        "name": "projectId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "description": ""
+        }
+      },
+      "runId": {
+        "name": "runId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "description": ""
+        }
+      },
+      "claimId": {
+        "name": "claimId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "description": ""
+        }
+      },
+      "issueId": {
+        "name": "issueId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "description": ""
+        }
+      },
+      "reportId": {
+        "name": "reportId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "description": ""
+        }
+      },
+      "cursor": {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "description": ""
+        }
+      },
+      "limit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "",
+          "maximum": 100
+        }
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "PROPOSED error body",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ErrorEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": ""
+              },
+              "message": {
+                "type": "string",
+                "description": ""
+              },
+              "retryable": {
+                "type": "boolean",
+                "description": ""
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "retryable"
+            ]
+          },
+          "requestId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": ""
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "LoginInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Email",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "description": "Provider still undecided"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "Session": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": ""
+          },
+          "actorId": {
+            "type": "string",
+            "description": ""
+          },
+          "organizationId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": ""
+          },
+          "role": {
+            "type": "string",
+            "description": ""
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "ISO 8601 timestamp",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "actorId",
+          "role",
+          "expiresAt"
+        ]
+      },
+      "YoutubeConnection": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Demo consent vocabulary",
+            "enum": [
+              "not-connected",
+              "review",
+              "approved",
+              "denied",
+              "cancelled",
+              "expired"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "description": "Public or channel-owner access",
+            "enum": [
+              "PUBLIC_OBSERVATION",
+              "CHANNEL_OWNER"
+            ]
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": ""
+            }
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": ""
+          }
+        },
+        "required": [
+          "status",
+          "mode",
+          "scopes"
+        ]
+      },
+      "YoutubeAuthorizationInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "type": "string",
+            "description": "Channel-owner only",
+            "enum": [
+              "CHANNEL_OWNER"
+            ]
+          },
+          "requestedScopes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Scope not approved"
+            }
+          }
+        },
+        "required": [
+          "mode",
+          "requestedScopes"
+        ]
+      },
+      "ProjectInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "projectName": {
+            "type": "string",
+            "description": ""
+          },
+          "game": {
+            "type": "string",
+            "description": ""
+          },
+          "eventName": {
+            "type": "string",
+            "description": ""
+          },
+          "eventDate": {
+            "type": "string",
+            "description": "ISO 8601 date",
+            "format": "date"
+          },
+          "observationStart": {
+            "type": "string",
+            "description": "ISO 8601 date",
+            "format": "date"
+          },
+          "observationEnd": {
+            "type": "string",
+            "description": "ISO 8601 date",
+            "format": "date"
+          },
+          "selectedVideoIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": ""
+            }
+          },
+          "analysisPurpose": {
+            "type": "string",
+            "description": ""
+          }
+        },
+        "required": [
+          "projectName",
+          "game",
+          "eventName",
+          "eventDate",
+          "observationStart",
+          "observationEnd",
+          "selectedVideoIds",
+          "analysisPurpose"
+        ]
+      },
+      "ProjectPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "projectName": {
+            "type": "string",
+            "description": ""
+          },
+          "analysisPurpose": {
+            "type": "string",
+            "description": ""
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "description": ""
+          }
+        },
+        "required": [
+          "expectedVersion"
+        ]
+      },
+      "Project": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Server-generated, not fixed demo id"
+          },
+          "ownerId": {
+            "type": "string",
+            "description": "Server-validated"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ProjectInput"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0,
+            "description": ""
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "ISO 8601 timestamp",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "ISO 8601 timestamp",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "ownerId",
+          "data",
+          "version",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CollectionCounts": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "raw": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Null is unavailable, not zero"
+          },
+          "eligible": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": ""
+          },
+          "excluded": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": ""
+          },
+          "classified": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Analysis phase separate"
+          },
+          "unclassifiedEligible": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": ""
+          }
+        },
+        "required": [
+          "raw",
+          "eligible",
+          "excluded"
+        ]
+      },
+      "CollectionRun": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": ""
+          },
+          "projectId": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": "Collection not analysis status",
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "PARTIAL",
+              "FAILED",
+              "SUCCEEDED"
+            ]
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 0,
+            "description": ""
+          },
+          "counts": {
+            "$ref": "#/components/schemas/CollectionCounts"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "ISO 8601 timestamp",
+            "format": "date-time"
+          },
+          "observedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": ""
+          },
+          "reasonCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": ""
+          },
+          "retryable": {
+            "type": "boolean",
+            "description": ""
+          },
+          "scopeVersion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": ""
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0,
+            "description": ""
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "status",
+          "attempt",
+          "counts",
+          "createdAt",
+          "retryable",
+          "version"
+        ]
+      },
+      "Coverage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expectedDays": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Date slots, not population coverage"
+          },
+          "observedDays": {
+            "type": "integer",
+            "minimum": 0,
+            "description": ""
+          },
+          "missingIntervals": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": ""
+            }
+          }
+        },
+        "required": [
+          "expectedDays",
+          "observedDays",
+          "missingIntervals"
+        ]
+      },
+      "Provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": ""
+          },
+          "sourceId": {
+            "type": "string",
+            "description": ""
+          },
+          "observedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": ""
+          },
+          "retrievedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": ""
+          },
+          "availability": {
+            "type": "string",
+            "description": ""
+          },
+          "rawOrDerived": {
+            "type": "string",
+            "description": ""
+          },
+          "policyState": {
+            "type": "string",
+            "description": ""
+          },
+          "lineage": {
+            "type": "string",
+            "description": ""
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          }
+        },
+        "required": [
+          "source",
+          "sourceId",
+          "availability",
+          "rawOrDerived",
+          "policyState",
+          "lineage",
+          "coverage"
+        ]
+      },
+      "Observation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "ISO 8601 date",
+            "format": "date"
+          },
+          "rawComments": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": ""
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance"
+          }
+        },
+        "required": [
+          "date",
+          "rawComments",
+          "provenance"
+        ]
+      },
+      "Dashboard": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "description": ""
+          },
+          "dataState": {
+            "type": "string",
+            "description": "UI axis",
+            "enum": [
+              "loading",
+              "empty",
+              "partial",
+              "failed",
+              "stale",
+              "unavailable",
+              "success"
+            ]
+          },
+          "counts": {
+            "$ref": "#/components/schemas/CollectionCounts"
+          },
+          "observations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Observation"
+            }
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Provenance"
+            }
+          }
+        },
+        "required": [
+          "projectId",
+          "dataState",
+          "counts",
+          "observations",
+          "sources"
+        ]
+      },
+      "SentimentBucket": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "positive/neutral/negative/unclassified"
+          },
+          "count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": ""
+          }
+        },
+        "required": [
+          "id",
+          "count"
+        ]
+      },
+      "IssueSignal": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": ""
+          },
+          "category": {
+            "type": "string",
+            "description": ""
+          },
+          "count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Multi-label assignments"
+          },
+          "state": {
+            "type": "string",
+            "description": "Demo classification",
+            "enum": [
+              "OBSERVED",
+              "HOLD",
+              "CANDIDATE"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "count",
+          "state"
+        ]
+      },
+      "CommentRef": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Source native ID, not SYN sample"
+          },
+          "videoId": {
+            "type": "string",
+            "description": ""
+          },
+          "text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Rights-dependent"
+          },
+          "issueIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": ""
+            }
+          },
+          "synthetic": {
+            "type": "boolean",
+            "description": ""
+          },
+          "availability": {
+            "type": "string",
+            "description": ""
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance"
+          }
+        },
+        "required": [
+          "id",
+          "videoId",
+          "issueIds",
+          "synthetic",
+          "availability",
+          "provenance"
+        ]
+      },
+      "CommentsPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "description": ""
+          },
+          "eligible": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": ""
+          },
+          "classified": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": ""
+          },
+          "unclassifiedEligible": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": ""
+          },
+          "sentiment": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SentimentBucket"
+            }
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueSignal"
+            }
+          },
+          "comments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommentRef"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": ""
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Provenance"
+            }
+          }
+        },
+        "required": [
+          "projectId",
+          "eligible",
+          "classified",
+          "unclassifiedEligible",
+          "sentiment",
+          "issues",
+          "comments",
+          "nextCursor",
+          "sources"
+        ]
+      },
+      "ComparisonWindow": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "start": {
+            "type": "string",
+            "description": "ISO 8601 date",
+            "format": "date"
+          },
+          "end": {
+            "type": "string",
+            "description": "ISO 8601 date",
+            "format": "date"
+          },
+          "days": {
+            "type": "integer",
+            "minimum": 0,
+            "description": ""
+          },
+          "rawComments": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": ""
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "days",
+          "rawComments"
+        ]
+      },
+      "ComparabilityFactor": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "PUBLICATION_DATES/VIDEO_COHORTS/COVERAGE/MEASUREMENT_CONSISTENCY"
+          },
+          "state": {
+            "type": "string",
+            "description": "Factor",
+            "enum": [
+              "PASS",
+              "WARN",
+              "FAIL"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "description": ""
+          }
+        },
+        "required": [
+          "code",
+          "state",
+          "reason"
+        ]
+      },
+      "TrendComparison": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "description": ""
+          },
+          "before": {
+            "$ref": "#/components/schemas/ComparisonWindow"
+          },
+          "after": {
+            "$ref": "#/components/schemas/ComparisonWindow"
+          },
+          "outsideComparison": {
+            "$ref": "#/components/schemas/ComparisonWindow"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          },
+          "comparability": {
+            "type": "string",
+            "description": "Never implies patch causality",
+            "enum": [
+              "COMPARABLE",
+              "CONDITIONAL",
+              "INCOMPARABLE"
+            ]
+          },
+          "factors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComparabilityFactor"
+            }
+          },
+          "verifiedIncreaseBlocked": {
+            "type": "boolean",
+            "description": ""
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Provenance"
+            }
+          }
+        },
+        "required": [
+          "projectId",
+          "before",
+          "after",
+          "outsideComparison",
+          "coverage",
+          "comparability",
+          "factors",
+          "verifiedIncreaseBlocked",
+          "sources"
+        ]
+      },
+      "EvidenceRef": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": ""
+          },
+          "issueId": {
+            "type": "string",
+            "description": ""
+          },
+          "sourceId": {
+            "type": "string",
+            "description": ""
+          },
+          "observedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": ""
+          },
+          "retrievedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": ""
+          },
+          "availability": {
+            "type": "string",
+            "description": "Evidence state",
+            "enum": [
+              "AVAILABLE",
+              "MISSING",
+              "DELETED",
+              "EXPIRED",
+              "STALE",
+              "ACCESS_DENIED",
+              "SYNTHETIC",
+              "BLOCKED"
+            ]
+          },
+          "lineage": {
+            "type": "string",
+            "description": ""
+          },
+          "coverage": {
+            "type": "string",
+            "description": ""
+          },
+          "policyState": {
+            "type": "string",
+            "description": ""
+          },
+          "synthetic": {
+            "type": "boolean",
+            "description": ""
+          }
+        },
+        "required": [
+          "id",
+          "issueId",
+          "sourceId",
+          "availability",
+          "lineage",
+          "policyState",
+          "synthetic"
+        ]
+      },
+      "ClaimReview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "issueId": {
+            "type": "string",
+            "description": ""
+          },
+          "statement": {
+            "type": "string",
+            "description": ""
+          },
+          "permittedConclusion": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": "No production VERIFIED state",
+            "enum": [
+              "OBSERVED_ONLY",
+              "HOLD",
+              "CONDITIONAL",
+              "BLOCKED"
+            ]
+          },
+          "reasonCodes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": ""
+            }
+          },
+          "uncertainty": {
+            "type": "string",
+            "description": ""
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvidenceRef"
+            }
+          },
+          "realWorldVerified": {
+            "type": "boolean",
+            "description": "Do not accept client value without server verification"
+          }
+        },
+        "required": [
+          "issueId",
+          "statement",
+          "permittedConclusion",
+          "status",
+          "reasonCodes",
+          "uncertainty",
+          "evidence",
+          "realWorldVerified"
+        ]
+      },
+      "IssueTask": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": ""
+          },
+          "projectId": {
+            "type": "string",
+            "description": ""
+          },
+          "claimState": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": "Task, not claim verification",
+            "enum": [
+              "WAITING",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "REJECTED"
+            ]
+          },
+          "assigneeId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Server-authenticated actor"
+          },
+          "reviewDecision": {
+            "type": "string",
+            "description": ""
+          },
+          "evidenceIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": ""
+            }
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0,
+            "description": ""
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "claimState",
+          "status",
+          "reviewDecision",
+          "evidenceIds",
+          "version"
+        ]
+      },
+      "IssuePatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "targetStatus": {
+            "type": "string",
+            "description": "Proposed target",
+            "enum": [
+              "WAITING",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "REJECTED"
+            ]
+          },
+          "assigneeId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": ""
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "description": ""
+          }
+        },
+        "required": [
+          "expectedVersion"
+        ]
+      },
+      "ReportDraftInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "description": ""
+          },
+          "purpose": {
+            "type": "string",
+            "description": ""
+          },
+          "evidenceBundleVersion": {
+            "type": "string",
+            "description": "Server-approved policy bundle; no raw prompt"
+          }
+        },
+        "required": [
+          "projectId",
+          "purpose",
+          "evidenceBundleVersion"
+        ]
+      },
+      "ReportDraft": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": ""
+          },
+          "projectId": {
+            "type": "string",
+            "description": ""
+          },
+          "state": {
+            "type": "string",
+            "description": ""
+          },
+          "formallyApproved": {
+            "type": "boolean",
+            "description": ""
+          },
+          "shareable": {
+            "type": "boolean",
+            "description": ""
+          },
+          "exportable": {
+            "type": "boolean",
+            "description": ""
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": ""
+                },
+                "title": {
+                  "type": "string",
+                  "description": ""
+                },
+                "body": {
+                  "type": "string",
+                  "description": ""
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "body"
+              ]
+            }
+          },
+          "observationCandidateIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": ""
+            }
+          },
+          "excludedConclusionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": ""
+            }
+          },
+          "disclosures": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": ""
+            }
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "state",
+          "formallyApproved",
+          "shareable",
+          "exportable",
+          "sections",
+          "observationCandidateIds",
+          "excludedConclusionIds",
+          "disclosures"
+        ]
+      },
+      "ProjectPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Project"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": ""
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "CollectionPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CollectionRun"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": ""
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "ClaimPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClaimReview"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": ""
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "IssuePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueTask"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": ""
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      }
+    }
+  }
+}
