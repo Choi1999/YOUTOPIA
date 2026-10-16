@@ -98,13 +98,29 @@ CANCELLED/DELETED/EXPIRED/QUOTA_LIMITED → 제품 정책과 별도 설계 필�
 | `COMPLETED` | `IN_PROGRESS` |
 | `REJECTED` | `WAITING` |
 
-- `IssuePermission = EDITOR|VIEWER|DENIED`; 상태 변경/담당자 변경은 EDITOR만 허용한다.
-- 실제 `IssueTransitionError`: `PERMISSION_DENIED`, `HOLD_PROMOTION_BLOCKED`, `INVALID_TRANSITION`.
-- PAY-002를 COMPLETED로 이동하면 `HOLD_PROMOTION_BLOCKED` (현재 데모의 보수적 정책). 이는 "검토 업무 완료"와 "주장 승인"이 혼재할 수 있는 **후속 의미 설계 이슈**이며, 서버에서는 task resolution과 claim verification을 별도 필드로 정의하는 안을 검토하되 현재 HOLD 보호를 제거하면 안 된다.
-- actor `DEMO_REVIEWER_UNAUTHENTICATED`, 고정 데모 시간의 Audit은 서버 감사가 아니다. 최신 Cycle 9 `ReviewWorkflowProvider`는 YU-11 상태를 YU-12에 공유하되 프로젝트 리셋/재진입 시 초기화한다.
+- **권한과 오류**
+  - **권한:** `EDITOR`, `VIEWER`, `DENIED`.
+  - **수정 허용:** 상태 변경과 담당자 변경은 `EDITOR`만 가능.
+  - **오류 코드:** `PERMISSION_DENIED`, `HOLD_PROMOTION_BLOCKED`, `INVALID_TRANSITION`.
 
-**BE_PROPOSED:** 클라이언트 role 문자열은 인증 증거가 아니다. 요청마다 서버가 세션·조직·프로젝트·담당 권한을 검증하고, 상태 버전/행위자/UTC 타임스탬프/이전·다음값/근거 스냅샷을 **원자적 감사 트랜잭션**으로 기록해야 한다.
+- **PAY-002의 현재 차단 규칙**
+  - `PAY-002 → COMPLETED` 요청은 `HOLD_PROMOTION_BLOCKED`.
+  - **이유:** 현재 데모의 보수적인 HOLD 보호 정책.
+  - **후속 설계 문제:** 업무 완료와 주장 검증이 혼동될 수 있음.
+  - **서버에서 검토할 것:** 업무 해결(task resolution)과 주장 검증(claim verification)의 상태를 별도 필드로 분리.
+  - **주의:** 분리 작업을 하더라도 기존 HOLD 차단을 임의로 해제하면 안 됨.
 
+- **감사 기록과 공유**
+  - **현재 actor:** `DEMO_REVIEWER_UNAUTHENTICATED` (실제 인증된 사람 아님).
+  - **기록 시각:** 고정 데모 시간이며 서버 감사 로그가 아님.
+  - **Cycle 9 공유 상태:** `ReviewWorkflowProvider`가 YU-11 상태를 YU-12에 전달.
+  - **초기화:** 프로젝트 리셋/새로고침·재진입에서는 상태가 초기화됨.
+
+**BE_PROPOSED — 앞으로 서버에서 해야 할 것**
+
+- 클라이언트의 역할(`EDITOR` 등) 문자열을 인증 증거로 믿지 않음.
+- 요청마다 세션·조직·프로젝트·담당 권한을 서버에서 확인.
+- 상태 버전·행위자·UTC 시각·이전/다음 값·근거 스냅샷을 **원자적 감사 트랜잭션**으로 기록.
 ## 6. FE_ACTUAL: Report Preview
 
 근거: `reportDemoModel.ts`.

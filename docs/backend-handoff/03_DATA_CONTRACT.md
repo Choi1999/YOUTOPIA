@@ -77,32 +77,86 @@
 - 비교 외: `2025-03-01~03-10` 및 `2025-04-08` 11일, **2,055 rawComments**.
 - `3,543 + 7,244 + 2,055 = 12,842`, `14+14+11=39`. 이 합계는 **동일 `DEMO_DAILY_OBSERVATIONS` 배열에서 파생**한다.
 - `DEMO_TREND_OBSERVATION.coverage`는 `expectedDays:39`, `observedDays:39`, `missingIntervals:[]`을 가진다. 이는 **fixture 일별 슬롯 완전성**일 뿐 플랫폼 수집 모집단 전체 커버리지가 아니다.
-- `ComparabilityInput`: `publicationDates`, `videoCohorts`, `coverage`, `measurementConsistency` 각 `PASS|WARN|FAIL`. 하나라도 FAIL이면 `INCOMPARABLE`, 아니고 WARN이면 `CONDITIONAL`, 전부 PASS면 `COMPARABLE`. 현재 게시일·코호트 WARN으로 `CONDITIONAL`.
+- **비교 가능성 입력: `ComparabilityInput`**
+  - **검사 항목:** `publicationDates`, `videoCohorts`, `coverage`, `measurementConsistency`.
+  - **각 항목 상태:** `PASS`, `WARN`, `FAIL`.
+  - **판정 규칙:** 하나라도 `FAIL` → `INCOMPARABLE`.
+  - **판정 규칙:** `FAIL`은 없고 `WARN`이 있으면 → `CONDITIONAL`.
+  - **판정 규칙:** 전부 `PASS`면 → `COMPARABLE`.
+  - **현재 데모:** 영상 게시일·코호트가 `WARN`이므로 `CONDITIONAL`.
 - 다른 코호트의 댓글 수 변화를 패치 인과, 전체 관심도, 시장 인기, 실제 이용자 수로 해석/승격하지 않는다. Figma 설명용 2,150/4,100과 코드 파생 3,543/7,244의 차이는 현재 **의도적 데모 콘텐츠 불일치**로 기록한다.
 
 **BE_PROPOSED:** `ObservationWindow`, `ComparisonWindow`, `ComparabilityFactor`에 비교 기준/코호트 ID/게시 시각/선정 규칙/동일 측정 단위를 포함한다. `Coverage`를 최소 `dateSlotCoverage`, `sourceResponseCoverage`, `eligiblePopulationCoverage`처럼 **계층별로 구별**할지 결정해야 한다.
 
 ## 5. FE_ACTUAL: 댓글·이슈·근거·업무
 
-- `SentimentId`: `positive | neutral | negative | unclassified`. `DemoRepresentativeComment` = `id, issueId, sentiment, text, videoId, observedAt`; 실제 ID가 `SYN-*`이므로 **합성 원문**이다.
-- `DemoIssueId`: `PERF-001 | PAY-002 | STAB-005 | BAL-003 | CONT-004`. `DemoIssue` = `id, category, count, state: OBSERVED|HOLD|CANDIDATE, summary, interpretation, evidencePath`.
-- `ClaimEvidence`: `id, issueId, sourceId, observedAt, retrievedAt, availability, lineage, coverage, policyState, synthetic`. `availability`는 `AVAILABLE|MISSING|DELETED|EXPIRED|STALE|ACCESS_DENIED|SYNTHETIC|BLOCKED`; `lineage`는 `SOURCE_OBSERVATION|DERIVED_METRIC|SIMULATED_EXCERPT`; `policyState`는 **데모** `DEMO_ONLY|HOLD`뿐이다.
-- `ClaimReview`: `issueId, title, statement, permittedConclusion, status, reasonCodes, uncertainty, evidence[], realWorldVerified`. 현재 `DEMO_CLAIM_REVIEWS`는 PERF-001·PAY-002·BAL-003만 별도 증거를 갖는다. **모든 칸반 이슈에 실제 증거가 완성된 것은 아니다.**
-- `ClaimReviewStatus`: `OBSERVED_ONLY|HOLD|CONDITIONAL|BLOCKED`; `ClaimReasonCode`: `SYNTHETIC_SOURCE|COHORT_MISMATCH|TECHNICAL_VALIDATION_REQUIRED|CAUSALITY_NOT_ESTABLISHED|MISSING_EVIDENCE|STALE_EVIDENCE|POLICY_BLOCKED`.
-- `DemoIssueRecord`: `id, title, summary, claimState, status, assignee, evidenceIds[], reviewDecision, audit[]`. `IssueStatus = WAITING|IN_PROGRESS|COMPLETED|REJECTED`; `IssuePermission = EDITOR|VIEWER|DENIED`; `reviewDecision = PENDING|SIMULATED_REVIEWED|REJECTED|HOLD`.
-- `IssueAuditEvent`: `id, issueId, timestamp, actor='DEMO_REVIEWER_UNAUTHENTICATED', action, detail`. **인증된 서버 이벤트가 아님.**
-- `ReviewWorkflowProvider`는 현행 프로젝트 변화 시 이슈 목록을 초기화하는 React 메모리 관리. `COMPLETED`(작업 종료)는 `realWorldVerified` 또는 정식 보고 승인과 동등하지 않다.
+- **대표 댓글과 감성 분류**
+  - **감성 ID:** `positive`, `neutral`, `negative`, `unclassified`.
+  - **댓글 타입:** `DemoRepresentativeComment`.
+  - **필드:** `id`, `issueId`, `sentiment`, `text`, `videoId`, `observedAt`.
+  - **주의:** `SYN-*` ID가 붙은 내용은 실제 원문이 아니라 **합성 댓글**.
 
+- **이슈(문제 후보)**
+  - **ID:** `PERF-001`, `PAY-002`, `STAB-005`, `BAL-003`, `CONT-004`.
+  - **타입:** `DemoIssue`.
+  - **필드:** `id`, `category`, `count`, `state`, `summary`, `interpretation`, `evidencePath`.
+  - **상태:** `OBSERVED`, `HOLD`, `CANDIDATE`.
+
+- **개별 근거: `ClaimEvidence`**
+  - **식별·시각:** `id`, `issueId`, `sourceId`, `observedAt`, `retrievedAt`.
+  - **출처·정책:** `availability`, `lineage`, `coverage`, `policyState`, `synthetic`.
+  - **가용성:** `AVAILABLE`, `MISSING`, `DELETED`, `EXPIRED`, `STALE`, `ACCESS_DENIED`, `SYNTHETIC`, `BLOCKED`.
+  - **계보 종류:** `SOURCE_OBSERVATION`, `DERIVED_METRIC`, `SIMULATED_EXCERPT`.
+  - **현재 데모의 정책 상태:** `DEMO_ONLY` 또는 `HOLD`.
+
+- **주장 검토: `ClaimReview`**
+  - **내용 필드:** `issueId`, `title`, `statement`, `permittedConclusion`, `uncertainty`.
+  - **판정 필드:** `status`, `reasonCodes`, `evidence[]`, `realWorldVerified`.
+  - **판정 상태:** `OBSERVED_ONLY`, `HOLD`, `CONDITIONAL`, `BLOCKED`.
+  - **사유 코드:** `SYNTHETIC_SOURCE`, `COHORT_MISMATCH`, `TECHNICAL_VALIDATION_REQUIRED`, `CAUSALITY_NOT_ESTABLISHED`, `MISSING_EVIDENCE`, `STALE_EVIDENCE`, `POLICY_BLOCKED`.
+  - **현재 범위:** `PERF-001`, `PAY-002`, `BAL-003`만 데모 근거 목록을 가짐. 모든 칸반 이슈의 실제 근거가 완성됐다는 뜻은 아님.
+
+- **칸반 업무: `DemoIssueRecord`**
+  - **필드:** `id`, `title`, `summary`, `claimState`, `status`, `assignee`, `evidenceIds[]`, `reviewDecision`, `audit[]`.
+  - **업무 상태:** `WAITING`, `IN_PROGRESS`, `COMPLETED`, `REJECTED`.
+  - **권한:** `EDITOR`, `VIEWER`, `DENIED`.
+  - **검토 결정:** `PENDING`, `SIMULATED_REVIEWED`, `REJECTED`, `HOLD`.
+
+- **감사 기록 및 화면 간 공유**
+  - **`IssueAuditEvent` 필드:** `id`, `issueId`, `timestamp`, `actor`, `action`, `detail`.
+  - **시뮬레이션 actor:** `DEMO_REVIEWER_UNAUTHENTICATED` (인증된 서버 감사 아님).
+  - **`ReviewWorkflowProvider`:** 프로젝트가 바뀌면 로컬 이슈 상태를 초기화.
+  - **중요:** 업무 `COMPLETED`는 `realWorldVerified` 또는 정식 보고 승인과 다름.
 ## 6. FE_ACTUAL: 근거 번들·보고 초안
 
-- `AllowedEvidenceBundle`: 고정 `id`/프로젝트 ID, `permission = LOCAL_MASKED_DEMO|DENIED`, `policyState = LOCAL_DEMO_ONLY|POLICY_BLOCKED`, source IDs, observation/comparison/coverage, comparability, totals, evidence[], 허용 관측 ID, 금지 결론 ID, 마스킹·파생 지표 고지.
-- `ReportEvidenceReference`: `evidenceId, issueId, sourceId, availability, lineage, synthetic, masked, includedInPrompt, realWorldVerified:false, reviewReason`.
-- `ReportDraft`: 고정 ID/제목/시각/`state:DEMO_DRAFT`, `formallyApproved:false`, `shareable:false`, `exportable:false`, sections[], observationCandidateIds[], excludedConclusionIds[], disclosures[].
-- `buildAllowedEvidenceBundle`은 합성 댓글 본문을 프롬프트에서 제외한다. 권한 `DENIED`면 `buildReportDraft`가 null이다. `PERF-001` 관측 후보만 표시하고 `PAY-002`는 결론에서 제외한다.
-- `SIMULATED_SUCCESS`는 **로컬 미리보기 성공 상태**이지 보고서의 공식 승인이나 외부 내보내기 성공이 아니다.
+- **허용 근거 묶음: `AllowedEvidenceBundle`**
+  - **식별 정보:** 고정 `id`, 프로젝트 ID, 소스 ID 목록.
+  - **권한·정책:** `permission = LOCAL_MASKED_DEMO | DENIED`, `policyState = LOCAL_DEMO_ONLY | POLICY_BLOCKED`.
+  - **관측 정보:** observation/comparison/coverage, comparability, totals.
+  - **검증 정보:** evidence[], 허용 관측 ID, 제외할 결론 ID.
+  - **표시:** 마스킹과 파생 지표에 관한 안내 문구.
 
-**BE_PROPOSED:** 실제 `AllowedEvidenceBundle`은 서버가 원문 사용권/권한/보존/마스킹/계보를 재평가하고 버전화해야 한다. `ReportDraft`의 정식 작성·승인·내보내기·공유는 **서로 다른 권한·감사 상태**로 설계해야 한다. 현재 고정 TypeScript literal IDs/false 필드를 운영 API가 그대로 보장한다고 주장하지 않는다.
+- **번들에 포함된 근거 참조: `ReportEvidenceReference`**
+  - **대상 필드:** `evidenceId`, `issueId`, `sourceId`.
+  - **상태 필드:** `availability`, `lineage`, `synthetic`, `masked`, `includedInPrompt`, `realWorldVerified:false`, `reviewReason`.
 
+- **보고서 초안: `ReportDraft`**
+  - **기본 정보:** 고정 ID, 제목, 작성 시각, `state: DEMO_DRAFT`.
+  - **내용:** `sections[]`, `observationCandidateIds[]`, `excludedConclusionIds[]`, `disclosures[]`.
+  - **금지 상태:** `formallyApproved:false`, `shareable:false`, `exportable:false`.
+
+- **로컬에서 적용되는 차단 규칙**
+  - `buildAllowedEvidenceBundle`: 합성 댓글의 본문을 프롬프트에서 제외.
+  - `permission = DENIED`: `buildReportDraft`가 `null` 반환.
+  - `PERF-001`: 관측 후보로만 표시.
+  - `PAY-002`: 확정 결론에서 제외.
+  - `SIMULATED_SUCCESS`: 로컬 미리보기 성공이며 공식 승인·외부 내보내기 성공이 아님.
+
+**BE_PROPOSED — 앞으로 서버에서 결정할 것**
+
+- 실제 근거 번들은 서버가 원문 사용권·권한·보관·마스킹·계보를 다시 평가하고 버전화해야 함.
+- 보고서 초안 작성·정식 승인·내보내기·공유는 서로 다른 권한·감사 상태로 설계해야 함.
+- 현재 고정 TypeScript ID나 `false` 값이 운영 API의 확정 형식이라고 가정하지 않음.
 ## 7. 제안 Lineage 및 실패 의미
 
 **후속 백엔드 추적 계약 후보:** `scope_contract_version → collection_run_id → request_id → raw_response_ref → normalization_version → normalized_observation_ref`. 이는 [공통 수집·Lineage 정본](https://app.notion.com/p/3be79b3cd8e6815cb8ebfb9f1bf95408)의 원칙이며, **현재 프론트 코드의 구현 필드 전체가 아니다**.

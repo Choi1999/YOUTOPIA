@@ -33,12 +33,31 @@
 
 ## 1. 책임 및 신뢰 경계
 
-- **브라우저는 비신뢰 실행환경:** `ProjectDemoProvider`, `YoutubeConsentProvider`, `ReviewWorkflowProvider`와 임의로 선택한 `EDITOR`/DEMO_REVIEWER 문자열은 실제 사용자 인증/권한 증명이 아니다. 모든 변경 API는 서버 측 사용자의 조직·프로젝트·행위 권한과 현재 정책을 재평가해야 한다.
-- **운영 비밀 저장 위치는 서버 전용:** Google access/refresh token, API key, 세션 비밀, LLM/MCP 자격, 서비스 계정 키를 브라우저 번들·localStorage·console·Git·오류 payload·분석 로그·보고서에 넣지 않는다.
-- **데모 데이터 격리:** `demo@youtopia.app / Youtopia123!`는 화면 회귀 테스트용 공개 예시 자격값이며 **운영 로그인 허용 불가**. `youtopia-login-email`은 레거시 이메일 기억 키로 세션/보안 증거가 아니다.
-- **적용 대상:** 서버 인증, 프로젝트 소유권, 수집권한, 원문/근거 보관, 파생 분석, 사람 승인, LLM/MCP, 다운로드/공유, 지표 출처/브랜딩, 감사.
-- **현재 근거:** `frontend/src/pages/auth/LoginPage.tsx`, `features/youtube-consent/YoutubeConsentProvider.tsx`, `features/project-demo/issueBoardModel.ts`, `reportDemoModel.ts`. 이 소스들은 서버 보안 기능을 구현하지 않는다.
+- **브라우저는 신뢰할 수 없는 실행환경**
+  - `ProjectDemoProvider`, `YoutubeConsentProvider`, `ReviewWorkflowProvider`는 로컬 데모 상태.
+  - 사용자가 선택한 `EDITOR` / DEMO_REVIEWER 문자열도 실제 인증 정보가 아님.
+  - **서버 필수 동작:** 모든 변경 요청에서 조직·프로젝트·작업 권한과 현재 정책을 다시 검사.
 
+- **운영 비밀은 서버에서만 취급**
+  - **예시:** Google access/refresh token, API key, 세션 비밀, LLM/MCP 자격, 서비스 계정 키.
+  - **금지 위치:** 브라우저 번들, localStorage, console, Git, 오류 payload, 분석 로그, 보고서.
+
+- **데모 계정과 운영 계정을 분리**
+  - **데모 계정:** `demo@youtopia.app / Youtopia123!`은 공개 회귀 테스트용 예시.
+  - **금지:** 이 계정으로 운영 로그인 허용.
+  - **저장 키:** `youtopia-login-email`은 이메일 기억용이며 실제 세션·인증 증거가 아님.
+
+- **이 보안 계약의 적용 대상**
+  - 인증 및 프로젝트 소유권.
+  - 데이터 수집권, 원문·근거 보관, 파생 분석.
+  - 사람 승인과 감사.
+  - LLM/MCP, 보고서 다운로드·공유, 출처·브랜딩.
+
+- **실제 코드에서 참고할 부분**
+  - `frontend/src/pages/auth/LoginPage.tsx`
+  - `frontend/src/features/youtube-consent/YoutubeConsentProvider.tsx`
+  - `frontend/src/features/project-demo/issueBoardModel.ts`, `reportDemoModel.ts`
+  - **주의:** 위 코드는 서버 보안을 구현하지 않음.
 ## 2. 운영 인증·세션·조직 RBAC (BE_PROPOSED)
 
 1. 인증 제공자, OAuth 2.0/OIDC 여부, 세션 cookie와 CSRF 전략 또는 토큰 선택을 **DEC-02**에서 합의한다. OpenAPI 초안은 특정 인증 수단을 채택한 것처럼 표시하지 않는다.
@@ -49,14 +68,36 @@
 
 ## 3. YouTube 권한과 플랫폼 사용권
 
-- **공개 데이터 조회 vs 채널 소유자 권한을 분리.** 공개 영상 관측만으로 충분한지 확인하기 전 사용자별 OAuth를 필수로 만들지 않는다. 소유자 전용 접근을 사용할 때에만 API scope·동의 목적·토큰 수명·회수를 법무/정책 담당자와 확정.
-- `not-connected/review/approved/denied/cancelled/expired`는 FE **시뮬레이션 상태**. 실제 Callback의 `state`·nonce/CSRF·scope/issuer/audience·토큰 만료를 검증했다는 증거는 아니다. Scope mismatch는 아직 T04 부분 공백이다.
-- YouTube API Terms/Developer Policies, Branding Guidelines, 데이터 보존·갱신/삭제와 사용자 요청 삭제에 대한 **현행 검토 증거**가 없다. G01-E 정책 검토 문서를 근거로 `POLICY_HOLD`를 유지하고, 운영 수집/파생·재제공을 활성화하기 전에 담당자·정책 버전·승인 범위·재검토 기한을 기록한다.
-- Steam/YouTube 등 **서로 다른 소스의 수치 합산·교차 소스 점수/순위**는 별도 승인 전 금지. 공식 API가 직접 제공하지 않은 파생값은 제품 계산 결과와 원천을 분리 표기.
-- 인용/브랜딩 사용권·원문 삭제·수정·비공개 상태를 주기적으로 재검증. 접속 가능성이 적법한 보존/재전송 허용을 의미하지 않는다.
+- **공개 데이터 조회와 채널 소유자 권한은 별개**
+  - 공개 영상 관측만으로 충분한지 먼저 확인.
+  - 확인 전에는 사용자에게 Google OAuth를 필수로 요구하지 않음.
+  - 소유자 전용 데이터에 접근할 경우 최소 API scope·동의 목적·토큰 수명·회수를 정책 담당자와 결정.
 
-정책 참조: [G01-E YouTube Audit Gap](https://app.notion.com/p/3e379b3cd8e6816095c1d89599a3e0e7), [YUTOPIA 기준선](https://app.notion.com/p/3f979b3cd8e6813cb5ddef402778c7c6). **이 문서가 법적 검증을 대행하거나 승인할 수는 없다.**
+- **현재 프론트엔드의 권한 상태는 시뮬레이션**
+  - 상태: `not-connected`, `review`, `approved`, `denied`, `cancelled`, `expired`.
+  - 실제 OAuth Callback의 `state`, nonce/CSRF, scope/issuer/audience, 토큰 만료를 검증한 증거가 아님.
+  - **남은 테스트:** Scope mismatch는 T04의 부분 공백.
 
+- **YouTube 플랫폼 정책은 아직 승인되지 않음**
+  - **검토 대상:** YouTube API Terms/Developer Policies, Branding Guidelines.
+  - **데이터 관리:** 보관, 갱신·삭제, 이용자의 삭제 요청 반영.
+  - **현재 증거:** 현행 정책 검토 완료 증거 없음.
+  - **현재 처리:** G01-E에 따라 `POLICY_HOLD` 유지.
+  - **활성화 전 기록:** 담당자, 정책 버전, 승인 범위, 재검토 기한.
+
+- **출처별 지표를 섞지 않음**
+  - Steam과 YouTube 수치를 승인 없이 합산하거나 통합 점수·순위를 만들지 않음.
+  - API가 직접 제공한 값과 YUTOPIA의 파생 계산을 분리해 표기.
+
+- **보관·인용·브랜딩 제한**
+  - 원문 수정·삭제·비공개 및 인용·브랜딩 사용권을 주기적으로 확인.
+  - 조회 가능하다는 사실만으로 보존·재전송이 허용된 것은 아님.
+
+**정책 참조**
+
+- [G01-E YouTube Audit Gap](https://app.notion.com/p/3e379b3cd8e6816095c1d89599a3e0e7)
+- [YUTOPIA 기준선](https://app.notion.com/p/3f979b3cd8e6813cb5ddef402778c7c6)
+- **주의:** 이 문서는 법적 검토를 대행하거나 승인하지 않음.
 ## 4. 수집·원본·Lineage·데이터 최소화
 
 - 동결 Scope → collection run → 외부 request → raw response reference → normalization → normalized observation의 계보를, 실제 저장이 허용되는 범위에서만 재현 가능하게 보존한다. 비밀값은 Raw/감사 로그에 포함하지 않는다.
