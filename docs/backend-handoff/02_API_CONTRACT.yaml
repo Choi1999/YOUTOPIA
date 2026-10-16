@@ -1,4 +1,10 @@
 # YUTOPIA OpenAPI 3.1 candidate. YAML 1.2 JSON flow syntax. NO IMPLEMENTED ENDPOINTS.
+# BEGINNER TIP / 초급 담당자 안내:
+# 1) 먼저 00_START_HERE.md 를 읽으세요. 제품 목표·기본 용어를 설명합니다.
+# 2) 02_API_EXPLAINED.md 를 읽으세요. POST/GET, 요청/응답 JSON, null과 0의 차이를 예로 풉니다.
+# 3) 이 파일은 기계 판독용 제안 API 계약입니다. 실제 서버 경로는 하나도 구현·승인되지 않았습니다.
+# 4) 07_BEGINNER_IMPLEMENTATION_GUIDE.md 에 한국어 주석을 단 교육용 Python 예시가 있습니다.
+# 코멘트(이 줄)는 YAML 규격상 허용됩니다. 아래 중괄호 문서는 YAML 1.2 JSON-flow 형식입니다.
 {
   "openapi": "3.1.0",
   "info": {
