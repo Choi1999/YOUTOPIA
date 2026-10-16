@@ -14,6 +14,11 @@
 - **하지 말아야 할 일:** `nexus-season-2`, 댓글 `12,842`건, `DEMO_REVIEWER`를 운영 데이터로 고정하거나 미승인 YouTube/AI 연동을 시작하는 것.
 
 
+**프론트엔드의 12화면을 직접 점검하려면**
+
+- [데모 사용 가이드 — 실행부터 YU-12까지](../frontend-demo/01_USER_GUIDE.md)
+- [직접 체크할 항목 119개 — 정상/오류/권한/접근성](../frontend-demo/02_MANUAL_QA_CHECKLIST.md)
+
 ## 1. 읽기 순서 및 기준점
 
 1. [YUTOPIA 구현 기준선 v1](https://app.notion.com/p/3f979b3cd8e6813cb5ddef402778c7c6) — 제품 범위와 정책 게이트. **2026-10-14 상태 표기는 최신 코드보다 오래됨**.
