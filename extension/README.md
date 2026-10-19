@@ -46,13 +46,13 @@
 - 짧은 시간에 발생한 DOM 변화를 120ms로 묶고, added/removed/updated 구독 알림을 제공합니다. dispose()는 observer·타이머·이벤트·이전 DOM 참조를 해제합니다.
 - **Node 재실행:** `node --test extension/tests/content-discovery.test.cjs extension/tests/content-spa-observer.test.cjs` (기존 9건+신규 16건).
 - **선택 Chromium SPA Fixture:** `python extension/tests/chromium-spa-fixture.py` (Playwright 필요; 제출 시 미실행).
-- **검증 사실:** [22번 QA 기록](tests/QA_22_EVIDENCE.md)의 격리 V8 모의 테스트 25/25 PASS. **Node CLI 신규 실행/사용자 Windows Chrome 검증 완료가 아닙니다.**
+- **검증 사실(2026-10-20 독립 재실행):** Node.js 22의 공식 테스트 러너 **25/25 PASS**, 저장소의 Chromium 오프라인 SPA Fixture **PASS**. [22번 QA 기록](tests/QA_22_EVIDENCE.md)에 Blob SHA 및 실행 범위를 기록했습니다. **Windows Chrome 실사이트·확장 Service Worker 검증은 여전히 미완료입니다.**
 - PR #8 21번 코드를 선행 기초로 사용하며, 22번은 별도 stacked Draft PR로 검토합니다.
 
 ## 현재 단계
 
 - **20:** Chrome MV3 기본 뼈대 및 문서.
 - **21:** 홈/검색 영상 후보 탐지 코드·Node Fixture 9/9 PASS·오프라인 Chromium DOM Fixture PASS. **실제 Chrome 확장/YouTube 검증은 미완료**.
-- **22:** SPA 자동 재탐지·DOM 정리 코드 작성, 격리 V8 Fixture 검증. **실제 Chrome/YouTube 테스트 대기**.
+- **22:** SPA 자동 재탐지·DOM 정리 코드 작성, Node CLI 25/25 및 오프라인 Chromium DOM Fixture PASS. **실제 Chrome/YouTube 확장 통합 테스트 대기**.
 - **23~29:** 영상/채널 식별·Hover·카드·패널·실브라우저 E2E 순차 구현 예정.
 - **실제 YouTube API/외부 AI/구독 결제:** 구현하지 않음.
