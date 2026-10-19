@@ -44,7 +44,7 @@
   ].join(", ");
 
   const NAVIGATION_EVENTS = ["yt-navigate-finish", "yt-page-data-updated"];
-  const MUTATION_ATTRIBUTES = ["href", "hidden", "aria-hidden", "is-promoted"];
+  const MUTATION_ATTRIBUTES = ["href", "hidden", "aria-hidden", "is-promoted", "data-ad-slot"];
   const SCAN_DEBOUNCE_MS = 120;
 
   const seenLinks = new WeakSet();
@@ -264,6 +264,7 @@
     scope.document?.removeEventListener?.("DOMContentLoaded", start);
     for (const eventName of NAVIGATION_EVENTS) {
       scope.document?.removeEventListener?.(eventName, handleNavigation);
+      scope.removeEventListener?.(eventName, handleNavigation);
     }
     scope.removeEventListener?.("popstate", handleNavigation);
     liveCandidates.clear();
@@ -299,6 +300,7 @@
     }
     for (const eventName of NAVIGATION_EVENTS) {
       scope.document?.addEventListener?.(eventName, handleNavigation);
+      scope.addEventListener?.(eventName, handleNavigation);
     }
     scope.addEventListener?.("popstate", handleNavigation);
   }
