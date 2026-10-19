@@ -266,3 +266,37 @@ test("MutationObserver 부재 환경: 기본 스캔과 명시적 scan 사용 가
   fixture.doc.cards.push(card([link("/watch?v=second")]));
   assert.equal(fixture.api().scan().candidates,2);
 });
+
+
+test("중첩 컨테이너에 들어온 영상 카드도 변경 관측", () => {
+  const fixture=sandbox({cards:[]});fixture.execute();
+  const nested=card([link("/watch?v=inContainer")]);
+  const wrapper=irrelevantNode();
+  wrapper.querySelector=()=>nested;
+  fixture.doc.cards=[nested];
+  fixture.emit([mutation([wrapper])]);fixture.flush();
+  assert.equal(fixture.api().getSnapshot().candidates,1);
+});
+
+test("window에서 전달된 YouTube navigation 이벤트와 리스너 해제", () => {
+  const fixture=sandbox({cards:[card([link("/watch?v=home")])]});fixture.execute();
+  assert.equal(fixture.windowEvents.count("yt-navigate-finish"),1);
+  fixture.setPath("/shorts/abc");
+  fixture.windowEvents.fire("yt-navigate-finish");
+  fixture.flush();
+  assert.equal(fixture.api().getSnapshot().route,"UNSUPPORTED");
+  assert.equal(fixture.api().getSnapshot().candidates,0);
+  fixture.api().dispose();
+  assert.equal(fixture.windowEvents.count("yt-navigate-finish"),0);
+});
+
+test("광고 속성(data-ad-slot)이 추가되면 후보를 갱신", () => {
+  const options={ad:false},video=card([link("/watch?v=organic")],options);
+  const fixture=sandbox({cards:[video]});fixture.execute();
+  assert.equal(fixture.api().getSnapshot().candidates,1);
+  assert.ok(fixture.observers[0].options.attributeFilter.includes("data-ad-slot"));
+  options.ad=true;
+  fixture.emit([attrs(video,"data-ad-slot")]);
+  fixture.flush();
+  assert.equal(fixture.api().getSnapshot().candidates,0);
+});
