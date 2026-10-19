@@ -31,18 +31,28 @@
 - `javascript:` URL·`eval`·페이지 컨텍스트로 고객 정보를 주입하는 코드는 금지합니다.
 - 테스트 결과는 [00~99 실행대장](../docs/product-v0.2/04_EXECUTION_00_99.md)에서 해당 단계별 증거로 연결하세요(기능 브랜치에는 제품 문서가 포함되지 않을 수 있음).
 
-## 21번 요소 탐지 검증 (실제 카드 표시 전)
+## 21·22번 영상 후보 탐지 (실제 카드 표시 전)
 
 - YouTube 홈(/)·검색(/results)의 일반 영상 썸네일 렌더러를 DOM에서 읽기 전용으로 탐지합니다.
 - 광고·Shorts·외부 도메인·빈 영상 링크를 제외하고, 중복 콘텐츠 스크립트 주입을 방지합니다.
-- 화면에 카드를 추가하거나 실제 YouTube 댓글·메타데이터를 수집하지 않습니다. SPA 자동 재탐지(22), 정확한 videoId 검증(23), Hover 표시(25~26)는 아직 구현하지 않았습니다.
+- 화면에 카드를 추가하거나 실제 YouTube 댓글·메타데이터를 수집하지 않습니다. **22번 SPA/무한 스크롤 자동 재탐지와 DOM 참조 해제는 코드로 구현**, 정확한 videoId 검증(23)·Hover 표시(25~26)는 아직 구현하지 않았습니다.
 - **기본 테스트:** 저장소 루트에서 `node --test extension/tests/content-discovery.test.cjs` 실행(별도 npm 의존성 없음).
 - **선택 Chromium DOM Fixture:** `python extension/tests/chromium-dom-fixture.py` (Python Playwright와 Chromium 필요, 실제 확장 E2E 아님).
 - **검증·미완료 Gate:** [20·21 테스트 기록](tests/QA_20_21_EVIDENCE.md).
+
+## 22번 SPA·무한 스크롤 자동 갱신
+
+- MutationObserver가 새 영상 카드·카드 제거·href/숨김/광고 속성 변화를 관측하고, YouTube SPA 이동 이벤트와 popstate를 처리합니다.
+- 짧은 시간에 발생한 DOM 변화를 120ms로 묶고, added/removed/updated 구독 알림을 제공합니다. dispose()는 observer·타이머·이벤트·이전 DOM 참조를 해제합니다.
+- **Node 재실행:** `node --test extension/tests/content-discovery.test.cjs extension/tests/content-spa-observer.test.cjs` (기존 9건+신규 16건).
+- **선택 Chromium SPA Fixture:** `python extension/tests/chromium-spa-fixture.py` (Playwright 필요; 제출 시 미실행).
+- **검증 사실:** [22번 QA 기록](tests/QA_22_EVIDENCE.md)의 격리 V8 모의 테스트 25/25 PASS. **Node CLI 신규 실행/사용자 Windows Chrome 검증 완료가 아닙니다.**
+- PR #8 21번 코드를 선행 기초로 사용하며, 22번은 별도 stacked Draft PR로 검토합니다.
 
 ## 현재 단계
 
 - **20:** Chrome MV3 기본 뼈대 및 문서.
 - **21:** 홈/검색 영상 후보 탐지 코드·Node Fixture 9/9 PASS·오프라인 Chromium DOM Fixture PASS. **실제 Chrome 확장/YouTube 검증은 미완료**.
-- **22~29:** SPA 재탐지·영상/채널 식별·Hover·카드·패널·실브라우저 E2E 순차 구현 예정.
+- **22:** SPA 자동 재탐지·DOM 정리 코드 작성, 격리 V8 Fixture 검증. **실제 Chrome/YouTube 테스트 대기**.
+- **23~29:** 영상/채널 식별·Hover·카드·패널·실브라우저 E2E 순차 구현 예정.
 - **실제 YouTube API/외부 AI/구독 결제:** 구현하지 않음.
