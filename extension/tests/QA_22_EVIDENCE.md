@@ -1,6 +1,6 @@
 # YUTOPIA 22번 — SPA 자동 재탐지 검증 기록
 
-> **기준일: 2026-10-20 / CODE_READY / ISOLATED_V8_FIXTURE_25_OF_25_PASS / WINDOWS_CHROME_NOT_VERIFIED**
+> **기준일: 2026-10-20 / CODE_READY / NODE_CLI_25_OF_25_PASS / CHROMIUM_OFFLINE_SPA_PASS / WINDOWS_CHROME_NOT_VERIFIED**
 >
 > 이 파일은 **22번 구현과 모의 테스트의 근거**이며 실제 Windows Chrome·YouTube 라이브 페이지 검증 또는 출시 승인이 아닙니다.
 
@@ -21,13 +21,28 @@
 | content.js, 기존 21번 테스트, 신규 22번 테스트 JS 구문 파싱 | PASS | 격리된 V8 JavaScript 실행 환경의 Function 파서 |
 | 기존 21번 테스트 9개 | 9/9 PASS | GitHub에서 원문을 읽은 후 격리 V8에서 모의 node:vm / URL 객체로 실행 |
 | 22번 SPA/MutationObserver 모의 테스트 16개 | 16/16 PASS | 동일 격리 V8의 가상 Document·Observer·타이머·URL |
-| 합계 | **25/25 PASS** | **Node.js CLI에서 실행한 결과는 아님** |
-| 실제 node --test를 통한 저장소 환경 재실행 | NOT RUN | 재현 가능한 소스/명령은 포함 |
-| 신규 Playwright Chromium SPA Fixture | NOT RUN | chromium-spa-fixture.py에 브라우저 DOM 시나리오 추가 |
+| 합계 | **25/25 PASS** | 최초 격리 V8 통과, 2026-10-20 Node.js CLI에서도 독립 재실행 25/25 PASS |
+| 실제 Node.js 22.16.0 node --test 재실행 | **25/25 PASS (2026-10-20)** | GitHub Blob SHA 일치 파일 복원 후 정식 Node CLI 실행; Linux 환경 |
+| 저장소의 chromium-spa-fixture.py 실제 실행 | **PASS (2026-10-20)** | Linux Chromium 144.0.7559.96, 오프라인 DOM·SPA·Observer; Chrome 확장 설치 증거 아님 |
 | 사용자 Windows Chrome 확장 실제 로드·Service Worker | NOT VERIFIED | 연결된 브라우저 컨텍스트에 접근하지 못해 증거 없음 |
 | 실제 YouTube 홈/검색 SPA·무한 스크롤 | NOT VERIFIED | 현재 YouTube DOM 구조와 컨텍스트 확인 필요 |
 
 **모의 테스트에서 수행한 22번 검증:** 단일 MutationObserver, 신규 카드 감지, 60회 변화 단일 검사, 관련 없는 DOM 무시, 삭제 시 참조 해제, 동일 앵커 주소 변경, Home→Watch→Search, 빈 href→정상, 광고/Shorts 제외, DOMContentLoaded 재주입 방지, dispose 이후 재시작, 구독자 예외 격리, Observer 부재 fallback, 중첩 컨테이너 추가, window 내비게이션 이벤트, 광고 속성 변화.
+
+## 2.1 2026-10-20 독립 재검증 상세
+
+- **실행 환경:** 별도 Linux 컨테이너 / Node.js 22.16.0 / Debian Chromium 144.0.7559.96 / Python Playwright.
+- **정확한 원본 검증:** GitHub 브랜치 `feature/yutopia-22-spa-observer`의 파일과 로컬 실행 파일의 Git Blob SHA를 대조함.
+  - `extension/content.js`: `a6fd29b13135b5cca2e8c01e4dc20442e9689b3f`
+  - `extension/tests/content-discovery.test.cjs`: `36c7df170314abb240b1c0f70e4184bb032e4619`
+  - `extension/tests/content-spa-observer.test.cjs`: `dd246e7c62ece91227d57b777a5b86c5b87406af`
+  - `extension/tests/chromium-spa-fixture.py`: `a7f2efc03aefce1d95d0ee3ada3745ce1b3ecf0d`
+  - `manifest.json`, `background.js`, `shared.js`, `sidepanel.html/css/js`: 모두 GitHub Blob SHA 일치 확인.
+- **실행 결과:** `node --check`(4개 JS 구문) PASS; `node --test extension/tests/content-discovery.test.cjs extension/tests/content-spa-observer.test.cjs` **25/25 PASS, 실패 0건**.
+- **실행 결과:** `CHROMIUM_BIN=/usr/bin/chromium python extension/tests/chromium-spa-fixture.py` → **CHROMIUM_SPA_FIXTURE_PASS**. 실제 DOM에서 HOME→SEARCH·후보 수·SPA 이벤트·중복 삽입·Observer 정리 검증.
+- **실제 확장 기동 시험:** Linux Chromium에 MV3 확장 로드를 시도했지만 Service Worker 등록은 확인되지 않았고 `https://www.youtube.com/` 탐색 시 `net::ERR_BLOCKED_BY_ADMINISTRATOR`가 발생함. 이는 실행 환경 차단이므로 **확장 실패나 PASS로 단정할 수 없음**.
+- **사용자 Windows Chrome:** 연결 브라우저 조회가 컨텍스트 오류로 실패함. Windows Chrome에서 실제 확장 로드·실사이트 탐지/전환 검증은 **NOT VERIFIED**.
+- **판정:** 오프라인 코드·Fixture 검증은 통과했으나, 20·21·22의 실브라우저 게이트는 열리지 않았으므로 PR #8/#9는 Draft·미병합을 유지한다.
 
 ## 3. 재실행 명령 (검증 전에는 PASS 주장 금지)
 
@@ -71,7 +86,7 @@ globalThis.YUTOPIA_VIDEO_DISCOVERY?.getRuntimeStatus()
 
 ## 5. 판정 및 PR 경계
 
-- 22 구현: **READY_FOR_REVIEW / ISOLATED_FIXTURE_TESTED**.
+- 22 구현: **READY_FOR_REVIEW / NODE_CLI_25_OF_25_PASS / CHROMIUM_OFFLINE_FIXTURE_PASS / WINDOWS_CHROME_GATE_PENDING**.
 - 전체 22 단계 승인: **PENDING**, 실제 Chrome/YouTube 검증 전 VERIFIED 금지.
 - PR #8(21번)는 frontend 대상 Draft 그대로 유지.
 - 22번은 PR #8의 헤드 브랜치를 기준으로 **별도 stacked Draft PR**에 제출. PR #8 검증·병합이 선행되어야 frontend 병합을 판단할 수 있다.
