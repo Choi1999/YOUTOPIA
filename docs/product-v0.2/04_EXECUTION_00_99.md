@@ -9,7 +9,7 @@
 - **번호:** `00`부터 `99`까지 한 번씩 등장. 새 요구는 해당 단계 하위 기록으로 넣거나 별도 변경 기록.
 - **상태:** `NOT_STARTED` / `IN_PROGRESS` / `DOC_DRAFT` / `READY_FOR_REVIEW` / `VERIFIED` / `BLOCKED_EXTERNAL_GATE`. 정책 방향 승인과 코드 검증은 다른 의미.
 - **증거:** 파일 경로·commit SHA·실행한 테스트 명령과 결과를 남기지 않은 작업은 `VERIFIED`로 표시하지 않음.
-- **기준:** 현재 P0-1 `344c1e2794c4f6144fa7506f65a17c392487c540`, 고객은 YouTube 홈의 여러 썸네일 hover.
+- **기준:** 현재 frontend 브랜치 `0a255f224e4213c577651fcc34b2b68c6532a069` 기준 문서·확장 초기 구조를 확인. 과거 P0-1 `344c1e2794c4f6144fa7506f65a17c392487c540`은 레거시 이력이며, 고객 시작점은 YouTube 홈의 여러 썸네일 Hover.
 - **안전:** 이전 Codex 개발·브랜치·Figma/Notion을 임의 덮어쓰지 않음. 새 코드 작업은 독립 feature PR.
 - **외부:** 결제 실행, 실제 YouTube 수집/파생 감성, Chrome Web Store 공개, 배포/병합은 별도 정책·권한/담당 승인.
 - **진행:** 각 단계 완료 후 다음 번호로 진행. 이후 대화·작업 세션에서 이 대장을 기준으로 이어가기.
@@ -19,7 +19,7 @@
 - **00:** 사용자가 제품 방향을 승인했고 `00_PRODUCT_DIRECTION.md` 초안이 작성됨.
 - **01~03:** 사용자 승인 방향과 프론트 소스를 반영한 문서 초안이 작성됨. UX 세부와 기술 스택·권한은 검토 필요.
 - **04:** 00~99 순서, 산출물, 현재 상태를 정의하는 본 문서(초안 작성 완료, 외부 검토 필요).
-- **05~09:** 제품 정의 세부/게이트 **문서 초안 작성**. **10~19:** YouTube 홈, Hover·Side Panel의 **UX 문서 초안 작성**, 시각·실브라우저 미검증. **20~99:** 아직 구현·검증 완료 아님. 실행대장 자체의 작성은 실서비스 동작 증거가 아님.
+- **05~09:** 제품 정의 세부/게이트 **문서 초안 작성**. **10~19:** YouTube 홈, Hover·Side Panel의 **UX 문서 초안 작성**, 시각·실브라우저 미검증. **20:** MV3 최소 스켈레톤이 PR #6으로 frontend에 병합됨(Chrome 동작 미검증). **21~99:** 나머지 후속 기능 구현·검증 완료 증거 없음. 실행대장 자체의 작성은 실서비스 동작 증거가 아님.
 
 ## 00~99 상세 작업
 
@@ -57,7 +57,7 @@
 
 | ID | 수행 작업 | 해당 작업의 완료 기준 | 상태 | 주요 산출물 |
 |---|---|---|---|---|
-| **20** | Chrome MV3 확장 격리 스켈레톤 | 별도 기능 브랜치, 최소 권한·실제 API 없음 | `NOT_STARTED` | `extension/ manifest` |
+| **20** | Chrome MV3 확장 격리 스켈레톤 | 최소 권한·실제 API 없음·브라우저 검증 별도 | `IN_PROGRESS / SKELETON_MERGED / CHROME_NOT_TESTED` | `extension/`(manifest/background/content/sidepanel), [PR #6](https://github.com/Choi1999/YOUTOPIA/pull/6) |
 | **21** | YouTube 콘텐츠 스크립트 삽입 | 홈/검색에서 요소 감지·중복 설치 방지 | `NOT_STARTED` | `content script` |
 | **22** | 동적 화면 변경 관측 | YouTube SPA/무한 스크롤에서 안전한 해제·재바인딩 | `NOT_STARTED` | `DOM observer` |
 | **23** | 영상 대상 식별 | 확실한 videoId 추출 및 잘못된 링크 거부 | `NOT_STARTED` | `target resolver tests` |
@@ -188,6 +188,8 @@
 **작업이 완료되는 순간:** `VERIFIED`로 표시하려면 작성물·검증 로그/스크린샷·적용 commit을 남긴다. 정책 승인 여부는 문서 편집이나 테스트를 통과했다고 자동 변경되지 않는다.
 
 ## 변경 기록
+
+- **Figma 승인·역할별 연계 기록:** [FIGMA_ROLE_UI_APPROVED_HANDOFF_20261016.md](./FIGMA_ROLE_UI_APPROVED_HANDOFF_20261016.md). Figma 80~83번 9개 정적 화면 승인, 13번 공통 고지 컴포넌트 3변형·9인스턴스 연결. 실행/서버/정책 PASS가 아님.
 
 | 날짜 | 변경 | 영향 |
 |---|---|---|

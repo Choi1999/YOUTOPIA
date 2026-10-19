@@ -1,6 +1,6 @@
 # 09 — 고객 중심 제품 정의 00~09 검수 게이트
 
-> **DOCUMENT_REVIEW_READY / UX_DETAILS_NOT_APPROVED / CODE_NOT_IMPLEMENTED**
+> **DOCUMENT_REVIEW_READY / FIGMA_VISUAL_APPROVED / CHROME_NOT_TESTED / EXTERNAL_GATES_UNRESOLVED**
 >
 > **목적:** 10~19 Hover·Side Panel 디자인을 시작하기 전에 ‘누구에게 무엇을 보여줄지’가 일관된지 확인한다. 문서 초안을 완성한 것과 실제 Chrome UI 동작/데이터 사용권 승인은 구별한다.
 
@@ -47,13 +47,15 @@
 |---|---|---|
 | **PG-01 방향 정렬** | 제품·사용자·핵심 Hover→Side Panel 명확 | **PASS — 사용자 승인 방향** |
 | **PG-02 문서 준비** | 00~09 문서 10개 모두 작성·연결·검수 | **READY_FOR_REVIEW — 문서·링크 검사 완료, 사람 검토 전** |
-| **PG-03 시각 디자인** | 10~19 상세 UX/접근성/오류 상태 검수 | **NOT_STARTED** |
-| **PG-04 확장 구현** | Chrome MV3 local mock/Side Panel 실제 시연 | **NOT_IMPLEMENTED** |
+| **PG-03 시각 디자인** | 10~19 상세 UX/접근성/오류 상태 검수 | **FIGMA_VISUAL_APPROVED / CHROME_A11Y_UNTESTED** — 2026-10-16 정적 시안 사용자 승인, 브라우저/키보드/접근성 검증 별도 |
+| **PG-04 확장 구현** | Chrome MV3 local mock/Side Panel 실제 시연 | **MV3_SKELETON_MERGED / CHROME_NOT_TESTED** — PR #6 / extension/ 존재, Hover·패널 작동 PASS 미확인 |
 | **PG-05 실제 분석 데이터** | YouTube 파생지표·원문/보존·API 권한 근거 | **BLOCKED_EXTERNAL_GATE** |
 | **PG-06 구독/결제** | 구체 요금제·청구·취소 정책 | **UNRESOLVED** |
 | **PG-07 공개 출시** | 정책·안전·스토어·운영 승인 | **NOT_APPROVED** |
 
 **설계 진행 원칙:** PG-01이 통과했으므로 **10~19의 mock UX 설계**는 진행 가능하다. PG-05~07 미승인 상태를 핑계로 디자인 검증까지 불필요하게 홀드할 필요는 없지만, 실제 외부 데이터/결제/출시를 앞질러서는 안 된다.
+
+2026-10-16 Figma 정적 UI 승인 범위와 80~83 역할별 화면·98 Chrome UX·13 공통 컴포넌트 매핑은 [Figma 인계 문서](./FIGMA_ROLE_UI_APPROVED_HANDOFF_20261016.md)를 따른다. 디자인 승인은 정책·실데이터·결제 승인을 대체하지 않는다.
 
 ## 5. 단계 09 완료 후 이어질 정확한 순서
 
