@@ -396,6 +396,15 @@ test("포커스가 같은 카드 내부로 이동하면 overlayFocusOut 미전�
   assert.equal(f.overlayCalls.focusLeaves,0);
 });
 
+test("Strict Hover의 정적 카드가 다른 썸네일 포인터를 가로채지 않음",()=>{
+  const f=makeFixture(),a=f.anchor();
+  f.emit(videoState(VIDEO_A,1,a));
+  assert.equal(f.host().style.pointerEvents,"none");
+  assert.match(cardSource,/\.card \{ pointer-events: none;/);
+  assert.equal(f.findClass("close").disabled,true);
+  assert.equal(f.findClass("more").disabled,true);
+});
+
 test("우측 팝업이 다른 썸네일을 크게 가리면 아래로 배치",()=>{
   const f=makeFixture();
   const target=f.anchor({left:50,top:80,right:200,bottom:160,width:150,height:80});
@@ -431,7 +440,7 @@ test("브라우저처럼 높은 카드가 B 썸네일을 가리면 높이 제한
   assert.ok(parseFloat(subtree.style.maxHeight)<=473);
 });
 
-test("모든 안전 위치가 막히면 YouTube 클릭을 가로채지 않고 카드를 취소",()=>{
+test("안전한 배치가 없어도 유효한 Hover 카드는 click-through fallback으로 유지",()=>{
   const f=makeFixture({vw:720,vh:400,cardHeight:350});
   const target=f.anchor({left:230,top:150,right:430,bottom:240,width:200,height:90});
   const left=f.anchor({left:0,top:0,right:230,bottom:400,width:230,height:400});
@@ -439,8 +448,11 @@ test("모든 안전 위치가 막히면 YouTube 클릭을 가로채지 않고 �
   const below=f.anchor({left:300,top:260,right:490,bottom:390,width:190,height:130});
   f.doc.querySelectorAll=()=>[target,left,right,below];
   f.emit(videoState(VIDEO_A,1,target));
-  assert.ok(f.host()===null,"No safe layout should create no intercepting card");
-  assert.equal(f.dismissReason,"NO_SAFE_HOVER_PLACEMENT");
+  assert.ok(f.host()!==null);
+  assert.equal(f.host().dataset.layout,"viewport-fallback");
+  assert.equal(f.host().style.visibility,"visible");
+  assert.equal(f.host().style.pointerEvents,"none");
+  assert.equal(f.dismissReason,null);
 });
 
 test("앵커 우측 여백이 충분하면 카드가 오른쪽에 위치",()=>{
