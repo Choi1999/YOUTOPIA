@@ -1,10 +1,21 @@
 # 12 — Hover 열림·유지·닫힘·경합 방지 상태 계약
 
-> **INTERACTION_DRAFT / YU26_MOCK_CARD_IMPLEMENTED / BENCHMARK_P0_CODE_READY / LIVE_CHROME_QA_PENDING**
+> **STRICT_THUMBNAIL_CODE_READY / YU26_MOCK_CARD_READ_ONLY / LIVE_CHROME_QA_PENDING**
 >
 > **목적:** 사용자가 데스크톱 YouTube 홈에서 여러 영상 사이를 빠르게 움직여도 팝업이 과도하게 열리거나 깜빡이지 않도록 하고, 항상 **마지막으로 명확히 선택된 영상**의 내용만 보여주게 합니다.
 
 [10 기준 화면](./10_YOUTUBE_HOME_HOVER_LAYOUT.md) · [11 카드 정보](./11_HOVER_CARD_INFORMATION.md) · [17 더보기 대상 고정(예정)](./04_EXECUTION_00_99.md)
+
+## 현재 최우선 동작 계약 — Strict Thumbnail Hover (2026-10-20)
+
+사용자가 실제 Chrome에서 계속 발생하는 누락/지연 때문에 요구를 명확히 확정했다. 아래 1~4.3절의 160ms·200ms 유예/카드에 포인터 이동 시 유지하는 설명은 **이전 프로토타입의 역사적 설계**이며 최신 동작 계약이 아니다.
+
+- 썸네일 안: **즉시 READY + 카드 표시**(정확한 ID 확인), 썸네일 밖: **즉시 IDLE + 카드 제거**. 의도적인 시간 지연/유예 0ms.
+- 동일 영상 A를 반복 진입하거나 A→B→A를 빠르게 바꿔도 매번 해당 대상만 표시한다. 종료 타이머, 과거 suppressedAnchor, 카드 overlay focus는 Hover를 유지하지 않는다.
+- 마우스가 카드로 이동하면 이미 썸네일에서 벗어났으므로 카드가 닫힌다. 현재 버튼은 disabled이고 카드/Host는 클릭을 가로채지 않는 정적 click-through UI다. 자세히 보기 클릭은 27~28번에서 독립 진입 지점 설계.
+- 동영상 ID를 검증할 수 없거나 광고·Shorts·지원하지 않는 페이지는 표시하지 않는다. 카드의 위치 계산 실패는 카드의 활성 상태를 종료하지 않는다.
+- DOM 리렌더 시 같은 VIDEO/CHANNEL ID의 hovered 새 anchor이면 기존 READY/requestId를 유지하고, 다른 ID면 대상 전환. Content Discovery는 제목보다 물리적 썸네일 링크를 우선한다.
+- **최신 상태:** PR #13 Draft·미병합. V8 모의 184/184 PASS, Native Windows Node·Chromium 및 실 YouTube Chrome 최신 검증은 아직 없다. 증거: 26번 QA 문서.
 
 ## 1. 상태 이름 (구현 시 바뀔 수 있음)
 
@@ -89,13 +100,13 @@ IDLE
 - Presence Reducer(hover-presence-reducer.js): 썸네일·카드의 pointer/focus occupancy 4개를 불변 상태로 변경. Hover Controller가 선택 ID·160ms 진입/200ms 종료 유예·requestId·Phase를 유일하게 소유한다.
 - 동일 VIDEO/CHANNEL ID의 hovered 새 SPA 앵커 교체는 기존 READY 및 requestId를 보존하면서 anchor만 교체한다. 다른 ID 또는 Hover/Focus 미확인 새 앵커는 정리/재식별한다.
 - safeTransitPoint 순수 경로 기하 함수는 구현했지만 실제 종료 타이머 연장에는 연결하지 않았다. FloatingDelayGroup 연속 Hover 가속 또한 P1 실브라우저 검수 후 판단한다.
-- 현재 기존 DOM·Resolver 78건 + Controller 63건 + Card UI 35건 + Tracker/Reducer 28건 = **V8 모의 204/204 PASS**. 최신 Native Node/Chromium/실 YouTube Chrome 검증은 대기 중.
+- 이전 벤치마킹 버전은 204건의 모의 검증을 거쳤으며, **현재 Strict Hover는 컨트롤러 41/카드 36/탐지 10건 등을 포함해 184/184 PASS**이다. 최신 Native Node/Chromium/실 YouTube Chrome 검증은 대기 중.
 - 근거: [벤치마킹 적용 상세](./HOVER_INTERACTION_BENCHMARK_20261020.md).
 
 ## 5. 수용 테스트
 
 - [ ] 영상 A 위에서 100ms만 머문 경우 카드가 무분별하게 나타나지 않음.
-- [ ] A를 160ms 안팎으로 Hover하면 A 카드가 표시되는지 검증(실측 렌더링 지연은 별도).
+- [ ] A 썸네일에 포인터 진입 즉시 카드 표시, 이탈 즉시 제거(기다림 타이머 없음).
 - [ ] A 카드 위로 포인터를 옮기고 **더보기**를 누를 수 있음.
 - [ ] A→B→C를 빠르게 움직이면 A/B 응답이 C를 덮어쓰지 않음.
 - [ ] 화면의 A 요소가 무한 스크롤로 제거되면 카드/리스너 정리.
