@@ -39,13 +39,13 @@
     if (Array.isArray(path)) {
       for (const item of path.slice(0, MAX_PATH_DEPTH)) {
         const binding = bindings.get(item);
-        if (binding) return binding;
+        if (binding && binding.element?.isConnected !== false) return binding;
       }
     }
     let item = event.target;
     for (let i = 0; item && i < MAX_PATH_DEPTH; i += 1) {
       const binding = bindings.get(item);
-      if (binding) return binding;
+      if (binding && binding.element?.isConnected !== false) return binding;
       item = item.parentElement || item.parentNode || item.host || null;
     }
     return null;
