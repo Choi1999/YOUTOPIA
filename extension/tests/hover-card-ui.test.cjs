@@ -91,10 +91,13 @@ class FakeNode {
   getBoundingClientRect() {
     if(this.id==="yutopia-extension-hover-card"){
       const width=parseFloat(this.style.width)||344;
-      return {width,height:260,left:parseFloat(this.style.left)||0,
+      const surface=this.shadowRoot?.childNodes?.find(n=>n.attributes?.has("data-yutopia-card-surface"));
+      const limit=parseFloat(surface?.childNodes?.[0]?.style?.maxHeight);
+      const height=Math.min(this.syntheticCardHeight||260,Number.isFinite(limit)?limit:Infinity);
+      return {width,height,left:parseFloat(this.style.left)||0,
         top:parseFloat(this.style.top)||0,
         right:(parseFloat(this.style.left)||0)+width,
-        bottom:(parseFloat(this.style.top)||0)+260};
+        bottom:(parseFloat(this.style.top)||0)+height};
     }
     return {...this.rect};
   }
@@ -131,14 +134,18 @@ function unresolvedState(requestId=1,anchor=null) {
   return {phase:"UNRESOLVED",requestId,targetType:"CHANNEL",targetId:null,
     identityStatus:"HANDLE_UNRESOLVED",anchor,target:null};
 }
-function makeFixture({vw=1200,vh=800,dark=false}={}) {
+function makeFixture({vw=1200,vh=800,dark=false,cardHeight=260}={}) {
   const doc=new FakeNode("document");
   doc._root=true;
   doc.body=new FakeNode("body",doc);
   doc.documentElement=new FakeNode("html",doc);
   if(dark)doc.documentElement.setAttribute("dark","");
   doc.childNodes.push(doc.body,doc.documentElement);
-  doc.createElement=tag=>new FakeNode(tag);
+  doc.createElement=tag=> {
+    const node=new FakeNode(tag);
+    node.syntheticCardHeight=cardHeight;
+    return node;
+  };
   doc.createTextNode=text=>new FakeNode("#text");
   const docCreateTextNode=doc.createTextNode;
   doc.createTextNode=s=>{const n=docCreateTextNode();n.textContent=s;return n;};
@@ -386,6 +393,41 @@ test("우측 팝업이 다른 썸네일을 크게 가리면 아래로 배치",()
   assert.equal(parseFloat(f.host().style.top),172);
   assert.equal(parseFloat(f.host().style.left),50);
   assert.ok(f.api.getRuntimeStatus().visible);
+});
+
+test("브라우저처럼 높은 카드가 B 썸네일을 가리면 높이 제한 후 아래로 이동",()=>{
+  const f=makeFixture({vw:1000,vh:740,cardHeight:540});
+  const target=f.anchor({left:22,top:137,right:212,bottom:247,width:190,height:110});
+  const neighbor=f.anchor({left:262,top:137,right:452,bottom:247,width:190,height:110});
+  f.doc.querySelectorAll=()=>[target,neighbor];
+  f.emit(videoState(VIDEO_A,1,target));
+  const host=f.host();
+  assert.ok(host);
+  assert.equal(parseFloat(host.style.top),259);
+  assert.equal(parseFloat(host.style.left),22);
+  assert.equal(host.style.pointerEvents,"none");
+  const subtree=f.surface().childNodes[0];
+  assert.ok(parseFloat(subtree.style.maxHeight)<=473);
+  assert.equal(host.getBoundingClientRect().bottom<=732,true);
+  const hoverCenterX=(neighbor.rect.left+neighbor.rect.right)/2;
+  const hoverCenterY=(neighbor.rect.top+neighbor.rect.bottom)/2;
+  const rect=host.getBoundingClientRect();
+  assert.equal(hoverCenterX>rect.left && hoverCenterX<rect.right &&
+    hoverCenterY>rect.top && hoverCenterY<rect.bottom,false);
+  f.findClass("more").fire("click");
+  assert.equal(parseFloat(host.style.top),259);
+  assert.ok(parseFloat(subtree.style.maxHeight)<=473);
+});
+
+test("모든 안전 위치가 막히면 YouTube 클릭을 가로채지 않고 카드를 취소",()=>{
+  const f=makeFixture({vw:720,vh:400,cardHeight:350});
+  const target=f.anchor({left:230,top:150,right:430,bottom:240,width:200,height:90});
+  const left=f.anchor({left:0,top:0,right:230,bottom:400,width:230,height:400});
+  const right=f.anchor({left:430,top:0,right:720,bottom:400,width:290,height:400});
+  f.doc.querySelectorAll=()=>[target,left,right];
+  f.emit(videoState(VIDEO_A,1,target));
+  assert.equal(f.host(),null);
+  assert.equal(f.dismissReason,"NO_SAFE_HOVER_PLACEMENT");
 });
 
 test("앵커 우측 여백이 충분하면 카드가 오른쪽에 위치",()=>{
