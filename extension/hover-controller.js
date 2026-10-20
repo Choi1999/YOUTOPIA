@@ -38,6 +38,7 @@
   let enterTimer = null;
   let exitTimer = null;
   let generation = 0;
+  let exitGeneration = 0;
   let requestId = 0;
   let lastReadyPhase = null;
   let disposed = false;
@@ -84,6 +85,8 @@
   }
 
   function clearExitTimer() {
+    // 이미 큐에 들어간 오래된 이탈 콜백도 무효화한다.
+    exitGeneration += 1;
     if (exitTimer !== null) scope.clearTimeout?.(exitTimer);
     exitTimer = null;
   }
@@ -159,9 +162,12 @@
     }
     publish("LEAVE_PENDING", reason);
     const token = generation;
+    const exitToken = ++exitGeneration;
     const anchor = selected;
     exitTimer = scope.setTimeout(() => {
-      if (disposed || token !== generation || selected !== anchor) return;
+      if (
+        disposed || token !== generation || exitToken !== exitGeneration || selected !== anchor
+      ) return;
       exitTimer = null;
       if (!pointerInside && !focusInside && !overlayPointerInside && !overlayFocusInside) {
         clearActive("GRACE_EXPIRED");
