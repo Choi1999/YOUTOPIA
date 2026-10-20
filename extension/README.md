@@ -86,8 +86,8 @@
 - 앵커 기준 우측/좌측 자동 배치, 좁은 창·세로 화면 클램프, 다크 테마, 카드로 마우스·키보드 이동, 닫기/Escape, SPA·스크롤 이후 대상 정리를 지원합니다.
 - **더보기 버튼은 현재 연결 예정 안내만 표시합니다.** Side Panel 대상 전달, 캐시/서비스 워커 메시지, 실제 감성 데이터는 27·28번 이후 별도 작업입니다.
 - Manifest 스크립트 순서: shared.js → target-resolver.js → channel-target-resolver.js → content.js → hover-controller.js → hover-card-model.js → hover-card.js.
-- 신규 테스트: `node --test extension/tests/hover-card-ui.test.cjs` (31건). 전체 6개 테스트 파일은 [26번 QA 기록](tests/QA_26_EVIDENCE.md)의 명시 명령을 사용하세요(149건).
-- 선택 오프라인 Chromium: `python extension/tests/chromium-hover-card-fixture.py` (실행 미확인). **현재 격리 V8 149/149 PASS이며 Native Node CLI·Windows Chrome 26번 QA는 아직 미수행**.
+- 신규 테스트: `node --test extension/tests/hover-card-ui.test.cjs` (32건). 전체 6개 테스트 파일은 [26번 QA 기록](tests/QA_26_EVIDENCE.md)의 명시 명령을 사용하세요(150건).
+- 선택 오프라인 Chromium: `python extension/tests/chromium-hover-card-fixture.py` (실행 미확인). **현재 격리 V8 150/150 PASS이며 Native Node CLI·Windows Chrome 26번 QA는 아직 미수행**.
 
 ## 현재 단계
 
@@ -97,6 +97,6 @@
 - **23:** 엄격 VIDEO target Resolver frontend 병합, 사용자 보고 기준 Node 46/46·Windows 검증 통과 및 동일 테스트 SHA 확인.
 - **24:** 채널 ID와 @handle 분리 코드 frontend 병합. 사용자 검증 PASS·테스트 SHA 일치 보고(독립 로그 미제출).
 - **25:** Hover 상태 제어 frontend 병합; V8 118/118 PASS 및 사용자 Windows 검증 PASS·테스트 SHA/Clean Worktree 보고.
-- **26:** 실제 Shadow DOM Hover 카드 UI·고정 합성 데이터 모델 구현, V8 모의 전체 149/149 PASS, 신규 Node CLI·Windows Chrome 시각 검증 미완료.
+- **26:** 실제 Shadow DOM Hover 카드 UI·고정 합성 데이터 모델 구현, V8 모의 전체 150/150 PASS, 신규 Node CLI·Windows Chrome 시각 검증 미완료.
 - **27~29:** 확장 메시지·Side Panel 분석 대상 고정·실사이트 최종 통합 E2E 미구현.
 - **실제 YouTube API/외부 AI/구독 결제:** 구현하지 않음.
