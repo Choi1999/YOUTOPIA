@@ -476,3 +476,18 @@ test("YouTube 링크에 원래 달린 이벤트를 막지 않고 DOM href도 수
   assert.equal(a.href,"/watch?v="+VIDEO_A);
   assert.equal(a.count("click"),1);
 });
+
+
+test("취소된 이전 이탈 유예 콜백이 새 유예 시간을 단축하지 못함",()=>{
+  const a=anchor("video"),f=fixture({videos:[video(a)]});
+  a.fire("pointerenter");f.advance(400);
+  a.fire("pointerleave");
+  const stale=[...f.timers.values()][0].fn;
+  f.advance(60);
+  a.fire("pointerenter");
+  a.fire("pointerleave");
+  stale(); // clearTimeout 직전 큐에 남아 있던 오래된 콜백을 흉내 낸다.
+  assert.equal(f.api().getSnapshot().phase,"LEAVE_PENDING");
+  f.advance(199);assert.equal(f.api().getSnapshot().phase,"LEAVE_PENDING");
+  f.advance(1);assert.equal(f.api().getSnapshot().phase,"IDLE");
+});
