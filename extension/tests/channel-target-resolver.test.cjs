@@ -346,3 +346,16 @@ test("채널 Resolver의 재주입은 기존 API를 유지",()=>{
   vm.runInContext(channelSource,ctx);
   assert.equal(ctx.YUTOPIA_CHANNEL_TARGET_RESOLVER,one);
 });
+
+
+test("dot-segment 및 인코딩된 경로 우회는 URL 정규화 전 거부",()=>{
+  const r=resolver();
+  for(const url of [
+    "/channel/../@creator",
+    "/./@creator",
+    "/@creator/../channel/"+A,
+    "/@creator/%2e%2e/channel/"+A,
+    "/channel/%2e/"+A,
+    "/channel/"+A+"//videos",
+  ]) assert.equal(r.resolveFromHref(url),null,url);
+});
