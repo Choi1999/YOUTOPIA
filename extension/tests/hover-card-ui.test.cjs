@@ -431,11 +431,13 @@ test("포커스가 같은 카드 내부로 이동하면 overlayFocusOut 미전�
   assert.equal(f.overlayCalls.focusLeaves,0);
 });
 
-test("Strict Hover의 정적 카드가 다른 썸네일 포인터를 가로채지 않음",()=>{
+test("Shadow Card만 pointer 이벤트를 받으며 뒤쪽 썸네일은 차단",()=>{
   const f=makeFixture(),a=f.anchor();
   f.emit(videoState(VIDEO_A,1,a));
   assert.equal(f.host().style.pointerEvents,"none");
-  assert.match(cardSource,/\.card \{ pointer-events: none;/);
+  assert.equal(f.surface().style.pointerEvents,"none");
+  assert.match(cardSource,/\.card \{ pointer-events: auto;/);
+  assert.equal(f.cardRegion?.card,f.findClass("card"));
   assert.equal(f.findClass("close").disabled,true);
   assert.equal(f.findClass("more").disabled,true);
 });
