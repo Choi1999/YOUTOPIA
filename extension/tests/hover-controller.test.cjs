@@ -52,6 +52,8 @@ function channel(a,{id=CHANNEL,handle=false,invalid=false}={}){return{
 function fixture({videos=[],channels=[],available=true}={}){
   const doc=Object.assign(emitter(),{hidden:false,elementFromPoint:()=>null});
   const win=emitter(),videoListeners=new Set(),channelListeners=new Set();
+  const timers=new Map();
+  let clock=0, nextTimerId=0;
   const discovery={
     subscribe(fn){videoListeners.add(fn);fn({added:videos,updated:[],removed:[]});return()=>videoListeners.delete(fn);},
     subscribeChannels(fn){channelListeners.add(fn);fn({added:channels,updated:[],removed:[]});return()=>channelListeners.delete(fn);},
@@ -60,6 +62,12 @@ function fixture({videos=[],channels=[],available=true}={}){
     document:doc,
     addEventListener:win.addEventListener,
     removeEventListener:win.removeEventListener,
+    setTimeout(fn,ms) {
+      const id=++nextTimerId;
+      timers.set(id,{fn,at:clock+ms});
+      return id;
+    },
+    clearTimeout(id){timers.delete(id);},
     YUTOPIA_VIDEO_DISCOVERY:available?discovery:undefined,
     YUTOPIA_CHANNEL_TARGET_RESOLVER:{toIdentifiedTarget(identity){
       if(identity?.identityType!=="CHANNEL_ID"||identity.resolutionStatus!=="ID_FORMAT_VALID")return null;
@@ -67,9 +75,22 @@ function fixture({videos=[],channels=[],available=true}={}){
     }},
   });
   function run(){vm.runInContext(source,ctx);}
+  function advance(ms){
+    const end=clock+ms;
+    for(let i=0;i<500;i++){
+      const next=[...timers.entries()].filter(([,t])=>t.at<=end)
+        .sort((a,b)=>a[1].at-b[1].at||a[0]-b[0])[0];
+      if(!next)break;
+      clock=next[1].at;
+      timers.delete(next[0]);
+      next[1].fn();
+      if(i===499)throw Error("infinite timer loop");
+    }
+    clock=end;
+  }
   run();
   return {
-    ctx,doc,win,run,api:()=>ctx.YUTOPIA_HOVER_CONTROLLER,
+    ctx,doc,win,run,advance,timers,api:()=>ctx.YUTOPIA_HOVER_CONTROLLER,
     videoChanges(change){for(const fn of [...videoListeners])fn(change);},
     channelChanges(change){for(const fn of [...channelListeners])fn(change);},
     videoSubs:()=>videoListeners.size,
@@ -102,7 +123,9 @@ test("Manifest는 tracker/reducer 없이 controller를 직접 로드",()=>{
 
 test("문서 위임 리스너만 사용하고 0ms·0ms 계약",()=>{
   const a=anchor(),f=fixture({videos:[video(a)]}),status=f.api().getRuntimeStatus();
-  assert.equal(status.strategy,"DELEGATED_STRICT_THUMBNAIL");
+  assert.equal(status.strategy,"DELEGATED_INTERACTIVE_CARD");
+  assert.equal(status.cardTransitGraceMs,160);
+  assert.equal(status.cardTransitScheduled,false);
   assert.equal(status.activationDelayMs,0);assert.equal(status.leaveGraceMs,0);
   assert.equal(status.perAnchorListeners,0);assert.equal(status.delegatedPointerListeners,3);
   assert.equal(f.doc.count("pointerover"),1);assert.equal(f.doc.count("pointermove"),1);assert.equal(f.doc.count("pointerout"),1);
@@ -261,7 +284,9 @@ test("dispose는 위임 이벤트와 discovery 구독을 정리",()=>{
 
 test("discovery가 없으면 controller를 초기화하지 않음",()=>{assert.equal(fixture({available:false}).api(),undefined);});
 
-test("controller는 timer·network·DOM mutation을 사용하지 않음",()=>{
-  assert.doesNotMatch(source,/\bsetTimeout\s*\(/);assert.doesNotMatch(source,/\bfetch\s*\(/);
-  assert.doesNotMatch(source,/\.innerHTML\s*=/);assert.doesNotMatch(source,/\.preventDefault\s*\(/);
+test("controller는 일반 Hover 타이머 없이 카드 이동에만 제한된 유예 사용",()=>{
+  assert.match(source,/CARD_TRANSIT_MS = 160/);
+  assert.doesNotMatch(source,/\bfetch\s*\(/);
+  assert.doesNotMatch(source,/\.innerHTML\s*=/);
+  assert.doesNotMatch(source,/\.preventDefault\s*\(/);
 });
