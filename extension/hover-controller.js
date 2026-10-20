@@ -24,6 +24,13 @@
   const subscribers = new Set();
   const unsubscribeSources = [];
   const MAX_PATH_DEPTH = 30;
+  const CARD_TRANSIT_MS = 160;
+  const MAX_TRANSIT_GAP = 64;
+  let cardHost = null;
+  let cardElement = null;
+  let cardPointerInside = false;
+  let transitTimer = null;
+  let transitGeneration = 0;
   let active = null;
   let activeMode = null;
   let sequence = 0;
@@ -69,7 +76,15 @@
     }
   }
 
+  function stopTransit() {
+    transitGeneration += 1;
+    if (transitTimer !== null) scope.clearTimeout?.(transitTimer);
+    transitTimer = null;
+  }
+
   function clear(reason, phase = "IDLE") {
+    stopTransit();
+    cardPointerInside = false;
     if (!active && snapshot.phase === phase) {
       lastReason = reason;
       return;
@@ -81,6 +96,8 @@
 
   function activate(binding, mode, reason, preserveRequestId = false) {
     if (disposed || !valid(binding)) return;
+    stopTransit();
+    cardPointerInside = false;
     const phase = binding.target ? "READY" : "UNRESOLVED";
     if (active === binding && snapshot.phase === phase) {
       activeMode = mode;
@@ -354,9 +371,13 @@
       phase: snapshot.phase,
       lastReason,
       requestId: sequence,
-      strategy: "DELEGATED_STRICT_THUMBNAIL",
+      strategy: "DELEGATED_INTERACTIVE_CARD",
       activationDelayMs: 0,
       leaveGraceMs: 0,
+      cardTransitGraceMs: CARD_TRANSIT_MS,
+      cardTransitScheduled: transitTimer !== null,
+      cardPointerInside,
+      cardRegionAttached: Boolean(cardHost && cardElement),
       selectedMode: activeMode,
       activeTargetKey: stableTargetKey(active),
       pointerInside: activeMode === "POINTER",
@@ -386,6 +407,8 @@
     if (disposed) return;
     clear("DISPOSED");
     disposed = true;
+    cardHost = null;
+    cardElement = null;
     for (const off of unsubscribeSources) off();
     unsubscribeSources.length = 0;
     bindings.clear();
@@ -408,6 +431,7 @@
     getSnapshot: () => ({...snapshot}),
     getRuntimeStatus,
     isCurrentRequest,
+    setCardRegion,
     dismiss,
     dispose,
   });
