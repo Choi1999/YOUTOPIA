@@ -407,6 +407,10 @@
       requestId,
       boundVideoAnchors: list.filter(entry => entry.kind === "VIDEO").length,
       boundChannelAnchors: list.filter(entry => entry.kind === "CHANNEL").length,
+      hoveredBoundAnchors: list.filter(entry => {
+        try { return Boolean(entry.element.matches?.(":hover")); }
+        catch (_error) { return false; }
+      }).length,
       enterScheduled: enterTimer !== null,
       leaveScheduled: exitTimer !== null,
       stateSubscribers: stateSubscribers.size,
