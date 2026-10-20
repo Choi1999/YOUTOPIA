@@ -275,6 +275,18 @@ test("영상 A→B 선택 변경 시 이전 ID·카드가 재사용되지 않음
   assert.equal(f.doc.body.childNodes.filter(x=>x.id==="yutopia-extension-hover-card").length,1);
 });
 
+test("카드가 없어도 마지막 NO_SAFE_HOVER_PLACEMENT 진단 이유를 보존",()=>{
+  const f=makeFixture(),a=f.anchor();
+  f.emit(videoState(VIDEO_A,1,a));
+  f.emit({...videoState(VIDEO_A,1,a),
+    phase:"DISMISSED",reason:"NO_SAFE_HOVER_PLACEMENT",
+    targetId:null,target:null,anchor:null});
+  const result=f.api.getRuntimeStatus();
+  assert.equal(result.hostCount,0);
+  assert.equal(result.lastHoverPhase,"DISMISSED");
+  assert.equal(result.lastHoverReason,"NO_SAFE_HOVER_PLACEMENT");
+});
+
 test("READY A 이후 HOVER_PENDING B가 오면 A의 카드 즉시 제거",()=>{
   const f=makeFixture(),a=f.anchor();
   f.emit(videoState(VIDEO_A,1,a));
