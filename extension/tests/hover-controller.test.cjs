@@ -280,6 +280,17 @@ test("카드 안 닫기 버튼을 누른 뒤 같은 영상으로 돌아오면 �
   f.advance(160);assert.equal(f.api().getSnapshot().phase,"READY");
 });
 
+test("카드에 포인터가 들어온 뒤 anchor leave 누락이 있어도 닫기 후 재진입 가능",()=>{
+  const a=anchor("A"),f=fixture({videos:[video(a)]});
+  a.fire("pointerenter");f.advance(160);
+  f.api().overlayPointerEnter(); // 실제 컨트롤러 내부의 pointerInside가 아직 true
+  f.api().dismiss("CARD_CLOSE");
+  assert.equal(f.api().getRuntimeStatus().suppressedAnchorActive,false);
+  f.doc.fire("pointermove",{target:a,pointerType:"mouse"});
+  f.advance(160);
+  assert.equal(f.api().getSnapshot().phase,"READY");
+});
+
 test("명시적 닫기 후 anchor pointerleave가 누락돼도 문서 pointerout으로 해제",()=>{
   const a=anchor("A"),f=fixture({videos:[video(a)]});
   a.fire("pointerenter");f.advance(160);f.api().dismiss("CARD_CLOSE");
