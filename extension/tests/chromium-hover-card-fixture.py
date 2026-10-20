@@ -193,8 +193,11 @@ with sync_playwright() as pw:
             """previous => {
                 const controller = window.__fixtureScope.YUTOPIA_HOVER_CONTROLLER;
                 const state = controller.getSnapshot();
-                return state.requestId > previous && state.phase === 'READY' &&
+                // Reusing a logical target is allowed to retain requestId
+                // when the hovered DOM anchor is replaced during SPA render.
+                return state.requestId >= previous && state.phase === 'READY' &&
                     state.targetId === 'Ab0_-123xyZ' &&
+                    state.anchor?.isConnected &&
                     window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().visible;
             }""",
             arg=before_request,
