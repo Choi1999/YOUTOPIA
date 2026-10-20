@@ -162,12 +162,12 @@ test("초기 VIDEO·CHANNEL 후보 리스너를 별도로 1회 등록",()=>{
   assert.equal(b.count("focusin"),1);
 });
 
-test("Hover 399ms는 HOVER_PENDING, 400ms 이후 READY",()=>{
+test("Hover 159ms는 HOVER_PENDING, 160ms 이후 READY",()=>{
   const a=anchor("/watch?v="+VIDEO_A),f=fixture({videos:[video(a)]});
   a.fire("pointerenter");
   assert.equal(f.api().getSnapshot().phase,"HOVER_PENDING");
   assert.equal(f.api().getRuntimeStatus().enterScheduled,true);
-  f.advance(399);assert.equal(f.api().getSnapshot().phase,"HOVER_PENDING");
+  f.advance(159);assert.equal(f.api().getSnapshot().phase,"HOVER_PENDING");
   f.advance(1);assert.equal(f.api().getSnapshot().phase,"READY");
   assert.equal(f.api().getSnapshot().targetId,VIDEO_A);
 });
@@ -179,6 +179,66 @@ test("100ms만 머물고 떠나면 READY로 전이하지 않음",()=>{
   f.advance(600);
   assert.equal(f.api().getSnapshot().phase,"IDLE");
   assert.equal(f.timers.size,0);
+});
+
+test("Pointermove만 전달된 늦게 바인딩된 영상도 160ms 대기 후 활성화",()=>{
+  const a=anchor("/watch?v="+VIDEO_A),f=fixture({videos:[video(a)]});
+  f.doc.fire("pointermove",{target:a,pointerType:"mouse"});
+  assert.equal(f.api().getSnapshot().phase,"HOVER_PENDING");
+  assert.equal(f.api().getSnapshot().reason,"POINTER_MOVE_RECOVERY");
+  assert.equal(f.api().getRuntimeStatus().activationDelayMs,160);
+  assert.equal(f.api().getRuntimeStatus().pointerRecoveries,1);
+  f.advance(160);
+  assert.equal(f.api().getSnapshot().phase,"READY");
+  assert.equal(f.api().getSnapshot().targetId,VIDEO_A);
+});
+
+test("실제 자식 이미지의 composedPath로 원래 앵커를 복구",()=>{
+  const a=anchor("video"),child={parentElement:a},f=fixture({videos:[video(a)]});
+  f.doc.fire("pointermove",{target:child,pointerType:"mouse",
+    composedPath:()=>[child,a,f.doc]});
+  assert.equal(f.api().getSnapshot().reason,"POINTER_MOVE_RECOVERY");
+  f.advance(160);
+  assert.equal(f.api().getSnapshot().targetId,VIDEO_A);
+});
+
+test("SPA가 포인터 아래 새로운 링크를 바인딩하면 :hover를 통해 자동 복구",()=>{
+  const a=anchor("video");
+  a.matches=selector=>selector===":hover";
+  const f=fixture();
+  f.videoChanges({added:[video(a)],removed:[],updated:[]});
+  assert.equal(f.api().getSnapshot().phase,"HOVER_PENDING");
+  assert.equal(f.api().getSnapshot().reason,"DOM_HOVER_RECOVERY");
+  f.advance(160);
+  assert.equal(f.api().getSnapshot().targetId,VIDEO_A);
+});
+
+test("터치 Pointermove나 후보가 없는 영역에서는 Hover가 자동으로 시작되지 않음",()=>{
+  const a=anchor("video"),f=fixture({videos:[video(a)]});
+  f.doc.fire("pointermove",{target:a,pointerType:"touch"});
+  f.doc.fire("pointermove",{target:{},pointerType:"mouse"});
+  assert.equal(f.api().getSnapshot().phase,"IDLE");
+  assert.equal(f.api().getRuntimeStatus().pointerRecoveries,0);
+});
+
+test("닫기 후 동일 썸네일에서 움직여도 자동 재오픈하지 않고 재진입은 허용",()=>{
+  const a=anchor("video"),f=fixture({videos:[video(a)]});
+  a.fire("pointerenter");f.advance(160);
+  f.api().dismiss("CARD_CLOSE");
+  f.doc.fire("pointermove",{target:a,pointerType:"mouse"});
+  assert.equal(f.api().getSnapshot().phase,"DISMISSED");
+  f.doc.fire("pointermove",{target:{},pointerType:"mouse"});
+  a.fire("pointerenter");
+  assert.equal(f.api().getSnapshot().phase,"HOVER_PENDING");
+  f.advance(160);
+  assert.equal(f.api().getSnapshot().phase,"READY");
+});
+
+test("진입 전에 이탈한 원인은 IDLE 상태에서도 진단 가능",()=>{
+  const a=anchor("video"),f=fixture({videos:[video(a)]});
+  a.fire("pointerenter");f.advance(50);a.fire("pointerleave");
+  assert.equal(f.api().getSnapshot().phase,"IDLE");
+  assert.equal(f.api().getRuntimeStatus().lastReason,"LEFT_BEFORE_DELAY");
 });
 
 test("빠른 A→B→C 진입 시 마지막 C만 READY",()=>{
@@ -444,6 +504,7 @@ test("dispose는 중복 호출해도 안전하고 이벤트 소비자를 해제"
   assert.equal(ctl.getRuntimeStatus().disposed,true);
   assert.equal(ctl.getRuntimeStatus().boundVideoAnchors,0);
   assert.equal(f.doc.count("keydown"),0);
+  assert.equal(f.doc.count("pointermove"),0);
   assert.equal(f.win.count("pagehide"),0);
 });
 
