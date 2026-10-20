@@ -35,7 +35,7 @@
 
 - YouTube 홈(/)·검색(/results)의 일반 영상 썸네일 렌더러를 DOM에서 읽기 전용으로 탐지합니다.
 - 광고·Shorts·외부 도메인·빈 영상 링크를 제외하고, 중복 콘텐츠 스크립트 주입을 방지합니다.
-- 화면에 카드를 추가하거나 실제 YouTube 댓글·메타데이터를 수집하지 않습니다. **21~24번 영상·채널 식별과 SPA 탐지 코드는 frontend에 병합**됐습니다. 25번 Hover 상태 제어는 별도 검증 브랜치에서 개발 중이며 **26번 실제 Hover 카드 렌더링은 아직 구현하지 않았습니다**.
+- 화면에 카드를 추가하거나 실제 YouTube 댓글·메타데이터를 수집하지 않습니다. **21~25번 영상·채널 식별과 Hover 상태 제어는 frontend에 병합**됐습니다. 26번은 **Shadow DOM 합성 미리보기 카드 개발 브랜치**이며 Windows Chrome 시각 검증 전입니다.
 - **기본 테스트:** 저장소 루트에서 `node --test extension/tests/content-discovery.test.cjs` 실행(별도 npm 의존성 없음).
 - **선택 Chromium DOM Fixture:** `python extension/tests/chromium-dom-fixture.py` (Python Playwright와 Chromium 필요, 실제 확장 E2E 아님).
 - **검증·미완료 Gate:** [20·21 테스트 기록](tests/QA_20_21_EVIDENCE.md).
@@ -67,17 +67,27 @@
 - 선택 Chromium DOM: `python extension/tests/chromium-channel-fixture.py` (신규 실행 미확인).
 - 현재 **격리 V8 모의 테스트 78/78 PASS**이며, Windows 검증은 사용자가 통과했다고 보고하고 테스트 SHA가 PR #11과 일치함을 확인했습니다. 원본 콘솔 출력·미커밋 작업 트리 상태는 제출되지 않았습니다. [24번 QA 기록](tests/QA_24_EVIDENCE.md)을 참고하세요.
 
-## 25번 Hover 상태 제어 (실제 Card DOM 구현 전)
+## 25번 Hover 상태 제어 (frontend 병합 완료)
 
 - Manifest에 hover-controller.js를 content.js **다음**에 로드하도록 추가했습니다.
 - 기존 VIDEO/CHANNEL 탐지 스트림을 사용합니다. 단일 활성 Hover를 보장하며 400ms 진입 지연과 200ms 이탈 유예를 적용합니다. 두 시간은 승인된 UX 문서의 테스트용 후보값입니다.
 - A→B→C 빠른 이동과 DOM 요소 교체 시 이전 타이머 및 requestId를 무효화합니다. READY는 실제 카드가 화면에 표시된 것이 아니라 26번 UI가 표시할 수 있는 준비 상태입니다.
 - 영상/채널 ID가 검증되지 않으면 상세 대상을 제공하지 않습니다. @handle만 확인된 경우 UNRESOLVED/targetId:null로 유지합니다.
-- overlayPointerEnter/Leave 및 overlayFocusIn/Out 함수를 제공하지만 26번에서 구현할 Overlay 또는 Hover 카드 DOM은 아직 생성하지 않습니다.
+- overlayPointerEnter/Leave 및 overlayFocusIn/Out을 제공하며, 26번 개발 브랜치의 Shadow DOM 카드가 이 API를 이용해 포인터/키보드 이동 중 상태를 유지합니다.
 - 키보드 focusin/out, Escape·탭 숨김, 링크 삭제·SPA 이동, dispose(), 중복 주입을 처리하며 YouTube 클릭·재생을 차단하지 않습니다.
 - 신규 테스트: node --test extension/tests/hover-controller.test.cjs (40건). 전체 회귀: [25번 QA 기록](tests/QA_25_EVIDENCE.md)에 명시된 다섯 테스트 파일을 Node.js --test에 명시적으로 전달(118건).
 - 선택 오프라인 Chromium Fixture: python extension/tests/chromium-hover-fixture.py (작성만 완료, 실행 미확인). [25번 QA 기록](tests/QA_25_EVIDENCE.md).
-- **격리 V8 모의 118/118 PASS**. Native Node CLI 및 Windows Chrome 25번 실환경 검증은 아직 미실행입니다.
+- **25번 격리 V8 모의 118/118 PASS**, Windows 수동 QA 통과 및 테스트 SHA·Clean Worktree는 사용자 보고로 확인했습니다(원본 Node/Chrome 실행 로그는 별도 미제출). [PR #12](https://github.com/Choi1999/YOUTOPIA/pull/12)는 frontend에 병합됐습니다.
+
+## 26번 실제 Hover 카드 UI (합성 데이터 전용 · Chrome 검수 전)
+
+- 25번 Hover의 READY 상태에서만 정규 VIDEO/CHANNEL ID를 사용해 **단일 Shadow DOM 카드**를 실제로 화면에 표시합니다. `@handle`만 있는 경우 채널 ID 미확정 안내만 제공하며 감성 차트·더보기는 표시하지 않습니다.
+- 가상 감성 막대(긍정/중립/부정), 가상 표본과 기간, 2개 가상 논점, 짧은 브리핑과 명확한 **DEMO · STATIC FIXTURE · 실제 분석 아님** 안내를 제공합니다. 실제 YouTube 제목, 댓글, 사용자 데이터나 API는 읽지 않습니다.
+- 앵커 기준 우측/좌측 자동 배치, 좁은 창·세로 화면 클램프, 다크 테마, 카드로 마우스·키보드 이동, 닫기/Escape, SPA·스크롤 이후 대상 정리를 지원합니다.
+- **더보기 버튼은 현재 연결 예정 안내만 표시합니다.** Side Panel 대상 전달, 캐시/서비스 워커 메시지, 실제 감성 데이터는 27·28번 이후 별도 작업입니다.
+- Manifest 스크립트 순서: shared.js → target-resolver.js → channel-target-resolver.js → content.js → hover-controller.js → hover-card-model.js → hover-card.js.
+- 신규 테스트: `node --test extension/tests/hover-card-ui.test.cjs` (31건). 전체 6개 테스트 파일은 [26번 QA 기록](tests/QA_26_EVIDENCE.md)의 명시 명령을 사용하세요(149건).
+- 선택 오프라인 Chromium: `python extension/tests/chromium-hover-card-fixture.py` (실행 미확인). **현재 격리 V8 149/149 PASS이며 Native Node CLI·Windows Chrome 26번 QA는 아직 미수행**.
 
 ## 현재 단계
 
@@ -86,6 +96,7 @@
 - **22:** SPA/무한 스크롤 변경 감지 코드 병합. Node CLI 25/25, Chromium 오프라인 PASS, Windows 수동 PASS 사용자 보고(원본 로그·SHA 미제출).
 - **23:** 엄격 VIDEO target Resolver frontend 병합, 사용자 보고 기준 Node 46/46·Windows 검증 통과 및 동일 테스트 SHA 확인.
 - **24:** 채널 ID와 @handle 분리 코드 frontend 병합. 사용자 검증 PASS·테스트 SHA 일치 보고(독립 로그 미제출).
-- **25:** Hover 상태 제어 코드 준비·V8 모의 전체 118/118 PASS. 실제 Node CLI·Windows 신규 QA 대기.
-- **26~29:** 실제 Hover 카드·더보기 메시지·Side Panel 대상 고정·Chrome 통합 E2E 미구현.
+- **25:** Hover 상태 제어 frontend 병합; V8 118/118 PASS 및 사용자 Windows 검증 PASS·테스트 SHA/Clean Worktree 보고.
+- **26:** 실제 Shadow DOM Hover 카드 UI·고정 합성 데이터 모델 구현, V8 모의 전체 149/149 PASS, 신규 Node CLI·Windows Chrome 시각 검증 미완료.
+- **27~29:** 확장 메시지·Side Panel 분석 대상 고정·실사이트 최종 통합 E2E 미구현.
 - **실제 YouTube API/외부 AI/구독 결제:** 구현하지 않음.
