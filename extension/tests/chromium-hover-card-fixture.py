@@ -107,6 +107,48 @@ with sync_playwright() as pw:
         assert "27~28번" in card.locator(".more-status").inner_text()
         assert page.locator("#youtube-fixture").inner_html() == fixture_before
 
+        # 실사용 재진입: 같은 영상 A를 떠나 200ms 유예 후 닫고
+        # 다시 들어오면 매번 약 160ms 뒤 정상 카드가 열려야 한다.
+        # 카드 내부 더보기 버튼의 키보드 포커스도 해제해 포커스 유지와 구분한다.
+        card.locator(".more").evaluate("(button) => button.blur()")
+        page.mouse.move(950, 700)
+        page.wait_for_function(
+            "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().hostCount === 0",
+            timeout=5000,
+        )
+        for cycle in range(3):
+            page.locator("#video-a a#thumbnail").hover(timeout=5000)
+            page.wait_for_function(
+                """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().visible &&
+                   window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyz'""",
+                timeout=5000,
+            )
+            page.mouse.move(950, 700)
+            page.wait_for_function(
+                "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().hostCount === 0",
+                timeout=5000,
+            )
+
+        # 카드 내부 닫기 버튼 이후 원래 영상으로 돌아와도 suppressedAnchor
+        # 잔류로 인해 다음 진입이 막히지 않아야 한다.
+        page.locator("#video-a a#thumbnail").hover(timeout=5000)
+        page.wait_for_function(
+            "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().visible",
+            timeout=5000,
+        )
+        card.locator(".close").click(timeout=5000)
+        page.wait_for_function(
+            "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().hostCount === 0",
+            timeout=5000,
+        )
+        page.mouse.move(950, 700)
+        page.locator("#video-a a#thumbnail").hover(timeout=5000)
+        page.wait_for_function(
+            """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().visible &&
+               window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyz'""",
+            timeout=5000,
+        )
+
         # 회귀: 실제 사용자와 Playwright 모두 B 썸네일 중앙을 Hover할 수 있어야 한다.
         # force=True로 Overlay를 우회하면 실제 UX 결함이 가려지므로 사용하지 않는다.
         neighbor = page.evaluate("""() => {
