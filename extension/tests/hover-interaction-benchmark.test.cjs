@@ -82,6 +82,15 @@ test("composedPath가 없을 때 parentElement/parentNode로 링크 인식",()=>
   assert.equal(pointer.resolve({pointerType:"mouse",target:img},new Map([[a,b]]),{}),b);
 });
 
+test("SPA에서 분리된 anchor는 오래된 composedPath가 있어도 선택하지 않음",()=>{
+  const {pointer}=fixture(),renderer={};
+  const a=link(renderer,box(0,0,100,80)),b=bind("Ab0_-123xyz",a);
+  a.isConnected=false;
+  assert.equal(pointer.resolve({
+    pointerType:"mouse",target:a,composedPath:()=>[a,renderer],
+  },new Map([[a,b]]),{}),null);
+});
+
 test("touch 포인터는 hover target으로 취급하지 않음",()=>{
   const {pointer}=fixture(),renderer={};
   const a=link(renderer,box(0,0,100,80)),b=bind("Ab0_-123xyz",a);
