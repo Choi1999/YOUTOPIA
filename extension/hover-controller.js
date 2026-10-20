@@ -1,16 +1,15 @@
 /*
- * YUTOPIA Strict Thumbnail Hover Controller — YU-26 interaction correction
+ * YUTOPIA Strict Thumbnail Hover Controller — YU-26
  *
- * User interaction contract:
- *   mouse physically enters identified thumbnail -> immediately show its card
- *   mouse leaves thumbnail -> immediately remove card
- *   repeated A->outside->A / A->B->A -> always activate current target
+ * Contract:
+ *   pointer on an identified thumbnail -> show that target immediately
+ *   pointer outside the thumbnail      -> hide immediately
+ *   A -> B -> C and repeated A reentry -> always publish the current target
  *
- * The controller is the single authority for the selected target and requestId.
- * It has NO hover delay, leave grace, persistent suppression or card-focus latch.
- * The pointer tracker determines physical link hits; the presence reducer keeps
- * observations separate from the published card state.
- * No YouTube source DOM mutation, network call or behavioral interception.
+ * One delegated document listener set owns pointer state. There are no
+ * per-anchor listeners, open/close timers, grace periods, overlay occupancy,
+ * or persistent suppression. Discovery owns identity; this module only maps
+ * the current physical pointer/focus boundary to one stable logical target.
  */
 (function initializeYutopiaHoverController(scope) {
   "use strict";
@@ -18,36 +17,50 @@
 
   const discovery = scope.YUTOPIA_VIDEO_DISCOVERY;
   const channels = scope.YUTOPIA_CHANNEL_TARGET_RESOLVER;
-  const tracker = scope.YUTOPIA_HOVER_POINTER_TRACKER;
-  const reducer = scope.YUTOPIA_HOVER_PRESENCE_REDUCER;
-  if (!discovery || !tracker || !reducer) return;
+  const doc = scope.document;
+  if (!discovery || !doc) return;
 
   const bindings = new Map();
   const subscribers = new Set();
   const unsubscribeSources = [];
-  const doc = scope.document;
-  let selected = null;
-  let selectedMode = null;
-  let presence = reducer.initial();
+  const MAX_PATH_DEPTH = 30;
+  let active = null;
+  let activeMode = null;
   let sequence = 0;
   let connected = false;
   let disposed = false;
   let pointerRecoveries = 0;
   let lastReason = "INITIAL";
   let snapshot = Object.freeze({
-    phase: "IDLE", requestId: 0, targetType: null, targetId: null,
-    target: null, anchor: null, identityStatus: null, reason: "INITIAL",
+    phase: "IDLE", requestId: 0, targetKey: null,
+    targetType: null, targetId: null, target: null,
+    anchor: null, identityStatus: null, reason: "INITIAL",
   });
+
+  function stableTargetKey(binding) {
+    const type = binding?.target?.targetType;
+    const id = binding?.target?.targetId;
+    if ((type !== "VIDEO" && type !== "CHANNEL") ||
+        typeof id !== "string" || !id) return null;
+    return type + ":" + id;
+  }
+
+  function valid(binding) {
+    return Boolean(binding && bindings.get(binding.element) === binding &&
+      binding.element?.isConnected !== false);
+  }
 
   function publish(phase, reason) {
     lastReason = reason;
     snapshot = Object.freeze({
-      phase, requestId: sequence,
-      targetType: selected?.kind ?? null,
-      targetId: selected?.target?.targetId ?? null,
-      target: selected?.target ?? null,
-      anchor: selected?.element ?? null,
-      identityStatus: selected?.identityStatus ?? null,
+      phase,
+      requestId: sequence,
+      targetKey: stableTargetKey(active),
+      targetType: active?.kind ?? null,
+      targetId: active?.target?.targetId ?? null,
+      target: active?.target ?? null,
+      anchor: active?.element ?? null,
+      identityStatus: active?.identityStatus ?? null,
       reason,
     });
     for (const listener of [...subscribers]) {
@@ -56,48 +69,37 @@
     }
   }
 
-  function valid(binding) {
-    return Boolean(binding && bindings.get(binding.element) === binding &&
-      binding.element?.isConnected !== false);
-  }
-
-  function reset(reason, phase = "IDLE") {
-    if (!selected && snapshot.phase === phase) {
+  function clear(reason, phase = "IDLE") {
+    if (!active && snapshot.phase === phase) {
       lastReason = reason;
       return;
     }
-    selected = null;
-    selectedMode = null;
-    presence = reducer.initial();
+    active = null;
+    activeMode = null;
     publish(phase, reason);
   }
 
-  function activate(binding, mode, reason, preserveId = false) {
+  function activate(binding, mode, reason, preserveRequestId = false) {
     if (disposed || !valid(binding)) return;
-    if (selected === binding && snapshot.phase ===
-        (binding.target ? "READY" : "UNRESOLVED")) {
-      selectedMode = mode;
-      presence = reducer.reduce(reducer.initial(),
-        mode === "FOCUS" ? "FOCUS_ENTER" : "POINTER_ENTER");
+    const phase = binding.target ? "READY" : "UNRESOLVED";
+    if (active === binding && snapshot.phase === phase) {
+      activeMode = mode;
       return;
     }
-    const old = selected;
-    const sameLogical = preserveId && old &&
-      tracker.targetKey(old) !== null &&
-      tracker.targetKey(old) === tracker.targetKey(binding);
-    if (!sameLogical) sequence += 1;
-    selected = binding;
-    selectedMode = mode;
-    presence = reducer.reduce(reducer.initial(),
-      mode === "FOCUS" ? "FOCUS_ENTER" : "POINTER_ENTER");
-    publish(binding.target ? "READY" : "UNRESOLVED", reason);
+    const sameLogicalTarget = preserveRequestId && active &&
+      stableTargetKey(active) !== null &&
+      stableTargetKey(active) === stableTargetKey(binding);
+    if (!sameLogicalTarget) sequence += 1;
+    active = binding;
+    activeMode = mode;
+    publish(phase, reason);
   }
 
   function toBinding(entry, kind) {
     const element = kind === "VIDEO" ? entry?.thumbnailLink : entry?.channelLink;
-    if (!element || typeof element.addEventListener !== "function" ||
-        typeof element.removeEventListener !== "function") return null;
-    let target = null, identityStatus = null;
+    if (!element) return null;
+    let target = null;
+    let identityStatus = null;
     if (kind === "VIDEO") {
       if (entry.target?.targetType !== "VIDEO" || !entry.target.targetId) return null;
       target = entry.target;
@@ -107,175 +109,233 @@
       if (target?.targetType === "CHANNEL" && target.targetId) {
         identityStatus = "CHANNEL_ID_FORMAT_VALID";
       } else if (entry.identity?.resolutionStatus === "HANDLE_UNRESOLVED") {
-        target = null;
         identityStatus = "HANDLE_UNRESOLVED";
-      } else return null;
+      } else {
+        return null;
+      }
     }
     return {
-      kind, element, target, identityStatus,
-      href: entry.href ?? element.getAttribute?.("href") ?? null
+      kind,
+      element,
+      card: entry.card ?? null,
+      target,
+      identityStatus,
+      href: entry.href ?? element.getAttribute?.("href") ?? null,
     };
   }
 
-  function detach(binding) {
-    if (!binding) return;
-    binding.element.removeEventListener("pointerenter", binding.enter);
-    binding.element.removeEventListener("pointerleave", binding.leave);
-    binding.element.removeEventListener("focusin", binding.focus);
-    binding.element.removeEventListener("focusout", binding.blur);
+  function sameMetadata(left, right) {
+    return Boolean(left && right &&
+      left.kind === right.kind && left.card === right.card &&
+      left.href === right.href && left.identityStatus === right.identityStatus &&
+      stableTargetKey(left) === stableTargetKey(right));
   }
 
-  function assign(binding) {
-    binding.enter = event => {
-      if (event?.pointerType === "touch") return;
-      activate(binding, "POINTER", "THUMBNAIL_ENTER");
-    };
-    binding.leave = event => {
-      if (selected !== binding || selectedMode !== "POINTER") return;
-      const next = hitAfterLeave(event);
-      if (next === binding) return;
-      if (next) activate(next, "POINTER", "THUMBNAIL_SWITCH");
-      else reset("THUMBNAIL_LEAVE");
-    };
-    binding.focus = () => activate(binding, "FOCUS", "FOCUS_ENTER");
-    binding.blur = event => {
-      if (selected !== binding || selectedMode !== "FOCUS") return;
-      if (tracker.contains(binding.element, event?.relatedTarget)) return;
-      reset("FOCUS_LEAVE");
-    };
-    bindings.set(binding.element, binding);
-    binding.element.addEventListener("pointerenter", binding.enter);
-    binding.element.addEventListener("pointerleave", binding.leave);
-    binding.element.addEventListener("focusin", binding.focus);
-    binding.element.addEventListener("focusout", binding.blur);
+  function upsert(entry, kind) {
+    const element = kind === "VIDEO" ? entry?.thumbnailLink : entry?.channelLink;
+    const candidate = toBinding(entry, kind);
+    const previous = element ? bindings.get(element) : null;
+    if (!candidate) {
+      if (previous?.kind === kind) bindings.delete(element);
+      return null;
+    }
+    if (sameMetadata(previous, candidate)) return previous;
+    bindings.set(element, candidate);
+    return candidate;
   }
 
-  function hitAfterLeave(event) {
+  function bindingFromNode(node) {
+    let current = node;
+    for (let depth = 0; current && depth < MAX_PATH_DEPTH; depth += 1) {
+      const binding = bindings.get(current);
+      if (valid(binding)) return binding;
+      current = current.parentElement || current.parentNode || current.host || null;
+    }
+    return null;
+  }
+
+  function pointInside(binding, x, y) {
+    if (!valid(binding) || !Number.isFinite(x) || !Number.isFinite(y) ||
+        typeof binding.element.getBoundingClientRect !== "function") return false;
+    const rect = binding.element.getBoundingClientRect();
+    return Boolean(rect && rect.width > 0 && rect.height > 0 &&
+      x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom);
+  }
+
+  /*
+   * YouTube can put an animated preview sibling or portal above the anchor.
+   * Event path matching is authoritative; coordinates only match rectangles of
+   * already discovered anchors and never infer an ID from page content.
+   */
+  function bindingFromEvent(event) {
     if (!event || event.pointerType === "touch") return null;
-    const related = event.relatedTarget;
-    if (!related) return null;
-    const next = {
-      pointerType: event.pointerType,
-      target: related,
-      clientX: event.clientX,
-      clientY: event.clientY,
-    };
-    return tracker.resolve(next, bindings, doc);
+    const path = event.composedPath?.();
+    if (Array.isArray(path)) {
+      for (const item of path.slice(0, MAX_PATH_DEPTH)) {
+        const binding = bindings.get(item);
+        if (valid(binding)) return binding;
+      }
+    }
+    const direct = bindingFromNode(event.target);
+    if (direct) return direct;
+
+    const x = event.clientX;
+    const y = event.clientY;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    const top = doc.elementFromPoint?.(x, y) || event.target;
+    const renderer = top?.closest?.(
+      "ytd-rich-item-renderer, ytd-video-renderer, yt-lockup-view-model"
+    ) || null;
+
+    let chosen = null;
+    let smallestArea = Infinity;
+    for (const binding of bindings.values()) {
+      if (renderer && binding.card !== renderer) continue;
+      if (!pointInside(binding, x, y)) continue;
+      const rect = binding.element.getBoundingClientRect();
+      const area = rect.width * rect.height;
+      if (area < smallestArea) {
+        chosen = binding;
+        smallestArea = area;
+      }
+    }
+    // YouTube can portal #video-preview under ytd-app, outside the originating
+    // renderer. Fall back to discovered anchor rectangles only; identity still
+    // comes from Discovery and is never read from the overlay or its content.
+    if (!chosen && renderer) {
+      for (const binding of bindings.values()) {
+        if (!pointInside(binding, x, y)) continue;
+        const rect = binding.element.getBoundingClientRect();
+        const area = rect.width * rect.height;
+        if (area < smallestArea) {
+          chosen = binding;
+          smallestArea = area;
+        }
+      }
+    }
+    return chosen;
   }
 
   function onPointerPresence(event) {
     if (disposed || event?.pointerType === "touch") return;
-    const binding = tracker.resolve(event, bindings, doc);
-    if (binding && valid(binding)) {
-      if (selected !== binding || selectedMode !== "POINTER") {
-        pointerRecoveries += 1;
-        activate(binding, "POINTER",
-          selected ? "THUMBNAIL_SWITCH" : "THUMBNAIL_HIT");
+    const next = bindingFromEvent(event);
+    if (next) {
+      if (active !== next || activeMode !== "POINTER") {
+        if (event.type === "pointermove") pointerRecoveries += 1;
+        activate(next, "POINTER", active ? "THUMBNAIL_SWITCH" : "THUMBNAIL_ENTER");
       }
-      return;
+    } else if (active && activeMode === "POINTER") {
+      clear("THUMBNAIL_LEAVE");
     }
-    if (selected && selectedMode === "POINTER") reset("POINTER_OUTSIDE");
   }
 
   function onPointerOut(event) {
     if (disposed || event?.pointerType === "touch" ||
-        !selected || selectedMode !== "POINTER") return;
-    if (!tracker.contains(selected.element, event?.target)) return;
-    const next = hitAfterLeave(event);
-    if (next === selected) return;
-    if (next && valid(next)) activate(next, "POINTER", "THUMBNAIL_SWITCH");
-    else reset("THUMBNAIL_LEAVE");
+        !active || activeMode !== "POINTER") return;
+    const leaving = bindingFromNode(event.target);
+    if (leaving && leaving !== active) return;
+    const next = bindingFromNode(event.relatedTarget);
+    if (next) {
+      if (next !== active) activate(next, "POINTER", "THUMBNAIL_SWITCH");
+      return;
+    }
+    const recovered = event.relatedTarget && bindingFromEvent({
+      type: "pointerout",
+      pointerType: event.pointerType,
+      target: event.relatedTarget,
+      clientX: event.clientX,
+      clientY: event.clientY,
+    });
+    if (recovered) {
+      if (recovered !== active) activate(recovered, "POINTER", "THUMBNAIL_SWITCH");
+      return;
+    }
+    clear("THUMBNAIL_LEAVE");
+  }
+
+  function onFocusIn(event) {
+    const next = bindingFromNode(event?.target);
+    if (next) activate(next, "FOCUS", "FOCUS_ENTER");
+  }
+
+  function onFocusOut(event) {
+    if (!active || activeMode !== "FOCUS") return;
+    const next = bindingFromNode(event?.relatedTarget);
+    if (next === active) return;
+    if (next) activate(next, "FOCUS", "FOCUS_SWITCH");
+    else clear("FOCUS_LEAVE");
+  }
+
+  function elementObserved(binding, mode = "POINTER") {
+    if (!valid(binding)) return false;
+    try {
+      return Boolean(binding.element.matches?.(
+        mode === "FOCUS" ? ":focus-within" : ":hover"
+      ));
+    } catch (_error) {
+      return false;
+    }
   }
 
   function onDiscovery(kind, change) {
     if (disposed || !change) return;
     const removed = change.removed || [];
-    const incoming = [...(change.updated || []), ...(change.added || [])];
-    const old = selected;
+    const incomingEntries = [...(change.updated || []), ...(change.added || [])];
+    const incomingElements = new Set();
+    const candidates = [];
+    const previousActive = active;
+    const previousKey = stableTargetKey(previousActive);
 
-    // Resolve the new bindings before deleting any old reference, so replacing
-    // a hovered DOM link with the SAME identified target never clears the card.
-    for (const entry of incoming) {
-      const candidate = toBinding(entry, kind);
-      if (!candidate) continue;
-      const oldBinding = bindings.get(candidate.element);
-      if (oldBinding && oldBinding.kind === candidate.kind &&
-          oldBinding.href === candidate.href &&
-          oldBinding.target?.targetId === candidate.target?.targetId &&
-          oldBinding.identityStatus === candidate.identityStatus) continue;
-      if (oldBinding) {
-        bindings.delete(oldBinding.element);
-        detach(oldBinding);
-      }
-      assign(candidate);
+    for (const entry of incomingEntries) {
+      const element = kind === "VIDEO" ? entry?.thumbnailLink : entry?.channelLink;
+      if (element) incomingElements.add(element);
+      const candidate = upsert(entry, kind);
+      if (candidate) candidates.push(candidate);
     }
-
-    let rebound = false;
-    if (old && old.kind === kind && selected === old) {
-      const missing = removed.some(entry =>
-        (kind === "VIDEO" ? entry?.thumbnailLink : entry?.channelLink) === old.element
-      ) || bindings.get(old.element) !== old;
-      if (missing) {
-        for (const entry of incoming) {
-          const element = kind === "VIDEO" ? entry?.thumbnailLink : entry?.channelLink;
-          const candidate = bindings.get(element);
-          if (!valid(candidate)) continue;
-          const oldKey = tracker.targetKey(old);
-          if (!oldKey || oldKey !== tracker.targetKey(candidate)) continue;
-          let hovered = false;
-          try {
-            hovered = Boolean(candidate.element.matches?.(":hover") ||
-              (selectedMode === "FOCUS" && candidate.element.matches?.(":focus-within")));
-          } catch (_error) { hovered = false; }
-          if (!hovered) continue;
-          activate(candidate, selectedMode || "POINTER",
-            "TARGET_REBOUND_SAME_ID", true);
-          rebound = true;
-          break;
-        }
-      }
-    }
-
     for (const entry of removed) {
       const element = kind === "VIDEO" ? entry?.thumbnailLink : entry?.channelLink;
+      if (!element || incomingElements.has(element)) continue;
       const binding = bindings.get(element);
-      if (!binding || binding.kind !== kind) continue;
-      bindings.delete(element);
-      detach(binding);
+      if (binding?.kind === kind) bindings.delete(element);
     }
 
-    if (old && old.kind === kind && selected === old &&
-        !valid(old) && !rebound) reset("ANCHOR_REMOVED");
+    if (previousActive?.kind === kind && !valid(previousActive)) {
+      const sameElement = candidates.find(candidate =>
+        candidate.element === previousActive.element &&
+        elementObserved(candidate, activeMode || "POINTER")
+      );
+      const sameTarget = candidates.find(candidate =>
+        previousKey && stableTargetKey(candidate) === previousKey &&
+        elementObserved(candidate, activeMode || "POINTER")
+      );
+      const rebound = sameElement || sameTarget;
+      if (rebound) {
+        activate(rebound, activeMode || "POINTER", "TARGET_REBOUND",
+          previousKey !== null && stableTargetKey(rebound) === previousKey);
+      } else {
+        clear("ANCHOR_REMOVED");
+      }
+    }
 
-    // A YouTube SPA may insert a target underneath an already-stationary
-    // pointer; CSS :hover is an observation, not a trusted video ID.
-    if (!selected || snapshot.phase === "IDLE") {
-      for (const entry of incoming) {
-        const element = kind === "VIDEO" ? entry?.thumbnailLink : entry?.channelLink;
-        const candidate = bindings.get(element);
-        if (!valid(candidate)) continue;
-        try {
-          if (candidate.element.matches?.(":hover")) {
-            pointerRecoveries += 1;
-            activate(candidate, "POINTER", "DOM_HOVER_RECOVERY");
-            break;
-          }
-        } catch (_error) { /* stale anchor */ }
+    if (!active) {
+      const hovered = candidates.find(candidate => elementObserved(candidate));
+      if (hovered) {
+        pointerRecoveries += 1;
+        activate(hovered, "POINTER", "DOM_HOVER_RECOVERY");
       }
     }
   }
 
   function handleEscape(event) {
-    if (event?.key === "Escape" && selected) reset("ESCAPE", "DISMISSED");
-    // Do not alter YouTube's own keyboard handling.
+    if (event?.key === "Escape" && active) clear("ESCAPE", "DISMISSED");
   }
 
   function handleVisibility() {
-    if (doc?.hidden) reset("DOCUMENT_HIDDEN", "DISMISSED");
+    if (doc.hidden) clear("DOCUMENT_HIDDEN", "DISMISSED");
   }
 
   function dismiss(reason = "DISMISSED") {
-    if (selected) reset(reason, "DISMISSED");
+    if (active) clear(reason, "DISMISSED");
   }
 
   function subscribe(listener) {
@@ -289,46 +349,53 @@
   function getRuntimeStatus() {
     const list = [...bindings.values()];
     return {
-      connected, disposed,
-      phase: snapshot.phase, lastReason, requestId: sequence,
-      strategy: "STRICT_THUMBNAIL", activationDelayMs: 0, leaveGraceMs: 0,
-      selectedMode, activeTargetKey: tracker.targetKey(selected),
-      pointerInside: presence.pointerInside,
-      focusInside: presence.focusInside,
-      overlayPointerInside: false, overlayFocusInside: false,
-      suppressedAnchorActive: false, pointerRecoveries,
-      boundVideoAnchors: list.filter(x => x.kind === "VIDEO").length,
-      boundChannelAnchors: list.filter(x => x.kind === "CHANNEL").length,
-      hoveredBoundAnchors: list.filter(x => {
-        try { return Boolean(x.element.matches?.(":hover")); }
-        catch (_error) { return false; }
-      }).length,
-      enterScheduled: false, leaveScheduled: false,
+      connected,
+      disposed,
+      phase: snapshot.phase,
+      lastReason,
+      requestId: sequence,
+      strategy: "DELEGATED_STRICT_THUMBNAIL",
+      activationDelayMs: 0,
+      leaveGraceMs: 0,
+      selectedMode: activeMode,
+      activeTargetKey: stableTargetKey(active),
+      pointerInside: activeMode === "POINTER",
+      focusInside: activeMode === "FOCUS",
+      suppressedAnchorActive: false,
+      pointerRecoveries,
+      boundVideoAnchors: list.filter(item => item.kind === "VIDEO").length,
+      boundChannelAnchors: list.filter(item => item.kind === "CHANNEL").length,
+      delegatedPointerListeners: connected ? 3 : 0,
+      perAnchorListeners: 0,
+      enterScheduled: false,
+      leaveScheduled: false,
       stateSubscribers: subscribers.size,
     };
   }
 
   function isCurrentRequest(request) {
-    return Boolean(!disposed && selected?.target &&
-      snapshot.phase === "READY" && request &&
-      request.requestId === sequence &&
-      request.targetType === selected.target.targetType &&
-      request.targetId === selected.target.targetId);
+    return Boolean(!disposed && active?.target && snapshot.phase === "READY" &&
+      request && request.requestId === sequence &&
+      request.targetType === active.target.targetType &&
+      request.targetId === active.target.targetId);
   }
+
+  function dismissOnBlur() { clear("WINDOW_BLUR"); }
 
   function dispose() {
     if (disposed) return;
-    reset("DISPOSED");
+    clear("DISPOSED");
     disposed = true;
     for (const off of unsubscribeSources) off();
     unsubscribeSources.length = 0;
-    for (const binding of bindings.values()) detach(binding);
     bindings.clear();
-    doc?.removeEventListener?.("pointermove", onPointerPresence, true);
-    doc?.removeEventListener?.("pointerover", onPointerPresence, true);
-    doc?.removeEventListener?.("pointerout", onPointerOut, true);
-    doc?.removeEventListener?.("keydown", handleEscape);
-    doc?.removeEventListener?.("visibilitychange", handleVisibility);
+    doc.removeEventListener?.("pointerover", onPointerPresence, true);
+    doc.removeEventListener?.("pointermove", onPointerPresence, true);
+    doc.removeEventListener?.("pointerout", onPointerOut, true);
+    doc.removeEventListener?.("focusin", onFocusIn, true);
+    doc.removeEventListener?.("focusout", onFocusOut, true);
+    doc.removeEventListener?.("keydown", handleEscape);
+    doc.removeEventListener?.("visibilitychange", handleVisibility);
     scope.removeEventListener?.("blur", dismissOnBlur);
     scope.removeEventListener?.("pagehide", dispose);
     subscribers.clear();
@@ -336,28 +403,28 @@
     if (scope.YUTOPIA_HOVER_CONTROLLER === api) delete scope.YUTOPIA_HOVER_CONTROLLER;
   }
 
-  function dismissOnBlur() { reset("WINDOW_BLUR"); }
-
   const api = Object.freeze({
-    subscribe, getSnapshot: () => ({...snapshot}),
-    getRuntimeStatus, isCurrentRequest, dismiss, dispose,
-    // Preserved for compatibility; under strict thumbnail mode floating-card
-    // pointer/focus must NOT prolong its visibility beyond the thumbnail.
-    overlayPointerEnter() {}, overlayPointerLeave() {},
-    overlayFocusIn() {}, overlayFocusOut() {},
+    subscribe,
+    getSnapshot: () => ({...snapshot}),
+    getRuntimeStatus,
+    isCurrentRequest,
+    dismiss,
+    dispose,
   });
   scope.YUTOPIA_HOVER_CONTROLLER = api;
 
   if (typeof discovery.subscribe === "function" &&
       typeof discovery.subscribeChannels === "function") {
-    unsubscribeSources.push(discovery.subscribe(c => onDiscovery("VIDEO", c)));
-    unsubscribeSources.push(discovery.subscribeChannels(c => onDiscovery("CHANNEL", c)));
+    unsubscribeSources.push(discovery.subscribe(change => onDiscovery("VIDEO", change)));
+    unsubscribeSources.push(discovery.subscribeChannels(change => onDiscovery("CHANNEL", change)));
     connected = true;
-    doc?.addEventListener?.("pointermove", onPointerPresence, true);
-    doc?.addEventListener?.("pointerover", onPointerPresence, true);
-    doc?.addEventListener?.("pointerout", onPointerOut, true);
-    doc?.addEventListener?.("keydown", handleEscape);
-    doc?.addEventListener?.("visibilitychange", handleVisibility);
+    doc.addEventListener?.("pointerover", onPointerPresence, true);
+    doc.addEventListener?.("pointermove", onPointerPresence, true);
+    doc.addEventListener?.("pointerout", onPointerOut, true);
+    doc.addEventListener?.("focusin", onFocusIn, true);
+    doc.addEventListener?.("focusout", onFocusOut, true);
+    doc.addEventListener?.("keydown", handleEscape);
+    doc.addEventListener?.("visibilitychange", handleVisibility);
     scope.addEventListener?.("blur", dismissOnBlur);
     scope.addEventListener?.("pagehide", dispose);
   }

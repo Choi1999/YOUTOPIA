@@ -12,7 +12,6 @@ from playwright.sync_api import sync_playwright
 extension = Path(__file__).resolve().parents[1]
 modules = [
     "target-resolver.js", "channel-target-resolver.js", "content.js",
-    "hover-pointer-tracker.js", "hover-presence-reducer.js",
     "hover-controller.js", "hover-card-model.js", "hover-card.js",
 ]
 scripts = []
@@ -39,6 +38,9 @@ markup = f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
   <ytd-video-renderer id="video-b">
     <a id="thumbnail" href="/watch?v=Ab0_-123xyZ">Video B</a>
     <ytd-channel-name><a href="/@creator">Unresolved handle</a></ytd-channel-name>
+  </ytd-video-renderer>
+  <ytd-video-renderer id="video-c">
+    <a id="thumbnail" href="/watch?v=Ab0_-123xy0">Video C</a>
   </ytd-video-renderer>
 </main></body></html>"""
 
@@ -128,7 +130,7 @@ with sync_playwright() as pw:
             "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().hostCount === 0",
             timeout=5000,
         )
-        for cycle in range(10):
+        for cycle in range(20):
             page.locator("#video-a a#thumbnail").hover(timeout=5000)
             page.wait_for_function(
                 """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().visible &&
@@ -191,8 +193,8 @@ with sync_playwright() as pw:
         assert "Ab0_-123xyZ" in card_content.inner_text()
         assert "Ab0_-123xyz" not in card_content.inner_text()
 
-        # Repeated A -> B -> A with no leave/entry delay or stale card.
-        for cycle in range(10):
+        # Repeated A -> B -> C -> A with no leave/entry delay or stale card.
+        for cycle in range(20):
             page.locator("#video-a a#thumbnail").hover(timeout=5000)
             page.wait_for_function(
                 """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyz'""",
@@ -203,10 +205,21 @@ with sync_playwright() as pw:
                 """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyZ'""",
                 timeout=5000,
             )
+            page.locator("#video-c a#thumbnail").hover(timeout=5000)
+            page.wait_for_function(
+                """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xy0'""",
+                timeout=5000,
+            )
+            page.locator("#video-a a#thumbnail").hover(timeout=5000)
+            page.wait_for_function(
+                """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyz'""",
+                timeout=5000,
+            )
             assert card.count() == 1
 
         # SPA가 포인터 아래 썸네일 노드를 교체해도 다음 mousemove 없이 복구해야 한다.
         # 이전 코드에는 새 anchor의 pointerenter 이벤트가 누락되어 IDLE에 머물 위험이 있었다.
+        page.locator("#video-b a#thumbnail").hover(timeout=5000)
         before_request = page.evaluate(
             "window.__fixtureScope.YUTOPIA_HOVER_CONTROLLER.getSnapshot().requestId"
         )

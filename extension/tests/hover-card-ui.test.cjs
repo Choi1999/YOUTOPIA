@@ -275,16 +275,15 @@ test("영상 A→B 선택 변경 시 이전 ID·카드가 재사용되지 않음
   assert.equal(f.doc.body.childNodes.filter(x=>x.id==="yutopia-extension-hover-card").length,1);
 });
 
-test("카드가 없어도 마지막 NO_SAFE_HOVER_PLACEMENT 진단 이유를 보존",()=>{
-  const f=makeFixture(),a=f.anchor();
-  f.emit(videoState(VIDEO_A,1,a));
-  f.emit({...videoState(VIDEO_A,1,a),
-    phase:"DISMISSED",reason:"NO_SAFE_HOVER_PLACEMENT",
-    targetId:null,target:null,anchor:null});
+test("Controller 상태 이유와 renderer 미표시 이유를 분리",()=>{
+  const f=makeFixture();
+  const a=f.anchor({left:200,top:900,right:300,bottom:960,width:100,height:60});
+  f.emit({...videoState(VIDEO_A,1,a),reason:"THUMBNAIL_ENTER"});
   const result=f.api.getRuntimeStatus();
   assert.equal(result.hostCount,0);
-  assert.equal(result.lastHoverPhase,"DISMISSED");
-  assert.equal(result.lastHoverReason,"NO_SAFE_HOVER_PLACEMENT");
+  assert.equal(result.lastHoverPhase,"READY");
+  assert.equal(result.lastHoverReason,"THUMBNAIL_ENTER");
+  assert.equal(result.lastRenderReason,"ANCHOR_NOT_VISIBLE");
 });
 
 test("READY A 이후 HOVER_PENDING B가 오면 A의 카드 즉시 제거",()=>{
@@ -294,13 +293,12 @@ test("READY A 이후 HOVER_PENDING B가 오면 A의 카드 즉시 제거",()=>{
   assert.equal(f.host(),null);
 });
 
-test("LEAVE_PENDING은 같은 request/anchor의 카드 유지",()=>{
+test("legacy LEAVE_PENDING도 strict 계약에서는 즉시 제거",()=>{
   const f=makeFixture(),a=f.anchor();
   f.emit(videoState(VIDEO_A,1,a));
-  const host=f.host();
   f.emit({...videoState(VIDEO_A,1,a),phase:"LEAVE_PENDING"});
-  assert.equal(f.host(),host);
-  assert.equal(host.dataset.phase,"LEAVE_PENDING");
+  assert.equal(f.host(),null);
+  assert.equal(f.api.getRuntimeStatus().lastRenderReason,"NO_ACTIVE_TARGET");
 });
 
 test("다른 requestId의 LEAVE_PENDING은 이전 카드 유지하지 않음",()=>{
@@ -353,16 +351,15 @@ test("기존 YouTube 문서는 Shadow Root 바깥에서 수정되지 않음",()=
   assert.equal(f.host().attributes.get("data-yutopia-demo"),"true");
 });
 
-test("CTA 더보기는 Side Panel을 열지 않고 후속 연결 안내를 표시",()=>{
+test("더보기는 strict thumbnail 미리보기에서 disabled",()=>{
   const f=makeFixture();f.emit(videoState(VIDEO_A,1,f.anchor()));
   const button=f.findClass("more");
   assert.ok(button);
   const note=f.findClass("more-status");
-  assert.equal(note.hidden,true);
+  assert.equal(button.disabled,true);assert.equal(note.hidden,true);
   button.fire("click");
-  assert.equal(note.hidden,false);
-  assert.match(note.textContent,/27~28번/);
-  assert.equal(f.api.getRuntimeStatus().lastAction,"MORE_INFO");
+  assert.equal(note.hidden,true);
+  assert.equal(f.api.getRuntimeStatus().lastAction,null);
 });
 
 test("더보기는 오래된 requestId를 받아들이지 않음",()=>{
@@ -374,19 +371,18 @@ test("더보기는 오래된 requestId를 받아들이지 않음",()=>{
   assert.equal(f.api.getRuntimeStatus().lastAction,null);
 });
 
-test("닫기 버튼은 컨트롤러의 dismiss를 호출하고 카드 닫힘",()=>{
+test("닫기 버튼도 disabled이며 Escape만 controller 종료를 담당",()=>{
   const f=makeFixture();f.emit(videoState(VIDEO_A,1,f.anchor()));
-  f.findClass("close").fire("click");
-  assert.equal(f.dismissReason,"CARD_CLOSE");
-  assert.equal(f.host(),null);
+  const close=f.findClass("close");assert.equal(close.disabled,true);close.fire("click");
+  assert.equal(f.dismissReason,null);assert.ok(f.host());
 });
 
-test("Overlay 포인터와 키보드 포커스 이벤트는 컨트롤러에 전달",()=>{
+test("카드 surface는 overlay 점유 이벤트를 만들지 않음",()=>{
   const f=makeFixture();f.emit(videoState(VIDEO_A,1,f.anchor()));
   const surface=f.surface();
   surface.fire("pointerenter");surface.fire("pointerleave");
   surface.fire("focusin");surface.fire("focusout");
-  assert.deepEqual(f.overlayCalls,{overlayEnters:1,overlayLeaves:1,focusEnters:1,focusLeaves:1});
+  assert.deepEqual(f.overlayCalls,{overlayEnters:0,overlayLeaves:0,focusEnters:0,focusLeaves:0});
 });
 
 test("포커스가 같은 카드 내부로 이동하면 overlayFocusOut 미전달",()=>{
@@ -405,18 +401,19 @@ test("Strict Hover의 정적 카드가 다른 썸네일 포인터를 가로채�
   assert.equal(f.findClass("more").disabled,true);
 });
 
-test("우측 팝업이 다른 썸네일을 크게 가리면 아래로 배치",()=>{
+test("배치는 다른 썸네일을 조회하지 않고 click-through 우측을 우선",()=>{
   const f=makeFixture();
   const target=f.anchor({left:50,top:80,right:200,bottom:160,width:150,height:80});
   const neighbor=f.anchor({left:220,top:75,right:430,bottom:175,width:210,height:100});
   f.doc.querySelectorAll=()=>[target,neighbor];
   f.emit(videoState(VIDEO_A,1,target));
-  assert.equal(parseFloat(f.host().style.top),172);
-  assert.equal(parseFloat(f.host().style.left),50);
+  assert.equal(parseFloat(f.host().style.top),80);
+  assert.equal(parseFloat(f.host().style.left),212);
+  assert.equal(f.host().dataset.layout,"right");
   assert.ok(f.api.getRuntimeStatus().visible);
 });
 
-test("브라우저처럼 높은 카드가 B 썸네일을 가리면 높이 제한 후 아래로 이동",()=>{
+test("높은 카드도 pointer input을 막지 않고 viewport 높이로 제한",()=>{
   const f=makeFixture({vw:1000,vh:740,cardHeight:540});
   const target=f.anchor({left:22,top:137,right:212,bottom:247,width:190,height:110});
   const neighbor=f.anchor({left:262,top:137,right:452,bottom:247,width:190,height:110});
@@ -424,20 +421,14 @@ test("브라우저처럼 높은 카드가 B 썸네일을 가리면 높이 제한
   f.emit(videoState(VIDEO_A,1,target));
   const host=f.host();
   assert.ok(host);
-  assert.equal(parseFloat(host.style.top),259);
-  assert.equal(parseFloat(host.style.left),22);
+  assert.equal(parseFloat(host.style.top),137);
+  assert.equal(parseFloat(host.style.left),224);
   assert.equal(host.style.pointerEvents,"none");
   const subtree=f.surface().childNodes[0];
-  assert.ok(parseFloat(subtree.style.maxHeight)<=473);
-  assert.equal(host.getBoundingClientRect().bottom<=732,true);
-  const hoverCenterX=(neighbor.rect.left+neighbor.rect.right)/2;
-  const hoverCenterY=(neighbor.rect.top+neighbor.rect.bottom)/2;
-  const rect=host.getBoundingClientRect();
-  assert.equal(hoverCenterX>rect.left && hoverCenterX<rect.right &&
-    hoverCenterY>rect.top && hoverCenterY<rect.bottom,false);
+  assert.ok(parseFloat(subtree.style.maxHeight)<=724);
   f.findClass("more").fire("click");
-  assert.equal(parseFloat(host.style.top),259);
-  assert.ok(parseFloat(subtree.style.maxHeight)<=473);
+  assert.equal(parseFloat(host.style.top),137);
+  assert.ok(parseFloat(subtree.style.maxHeight)<=724);
 });
 
 test("안전한 배치가 없어도 유효한 Hover 카드는 click-through fallback으로 유지",()=>{
@@ -449,10 +440,11 @@ test("안전한 배치가 없어도 유효한 Hover 카드는 click-through fall
   f.doc.querySelectorAll=()=>[target,left,right,below];
   f.emit(videoState(VIDEO_A,1,target));
   assert.ok(f.host()!==null);
-  assert.equal(f.host().dataset.layout,"viewport-fallback");
+  assert.ok(["right","left","below","above","viewport-fallback"].includes(f.host().dataset.layout));
   assert.equal(f.host().style.visibility,"visible");
   assert.equal(f.host().style.pointerEvents,"none");
   assert.equal(f.dismissReason,null);
+  assert.equal(f.api.getRuntimeStatus().lastRenderReason,"VISIBLE");
 });
 
 test("앵커 우측 여백이 충분하면 카드가 오른쪽에 위치",()=>{
@@ -481,16 +473,18 @@ test("뷰포트 위/아래로 벗어난 anchor는 과거 카드를 유지하지 
   const f=makeFixture();
   f.emit(videoState(VIDEO_A,1,f.anchor({left:200,top:900,right:300,bottom:960,width:100,height:60})));
   assert.equal(f.host(),null);
-  assert.equal(f.dismissReason,"ANCHOR_NOT_VISIBLE");
+  assert.equal(f.dismissReason,null);
+  assert.equal(f.api.getRuntimeStatus().lastRenderReason,"ANCHOR_NOT_VISIBLE");
 });
 
-test("DOM에서 떨어진 앵커는 카드 제거와 dismiss 유발",()=>{
+test("DOM에서 떨어진 앵커는 view만 제거하고 controller 이유와 분리",()=>{
   const f=makeFixture(),a=f.anchor();
   f.emit(videoState(VIDEO_A,1,a));
   a.parentNode=null;
   f.win.fire("scroll");
   assert.equal(f.host(),null);
-  assert.equal(f.dismissReason,"ANCHOR_DETACHED");
+  assert.equal(f.dismissReason,null);
+  assert.equal(f.api.getRuntimeStatus().lastRenderReason,"ANCHOR_DETACHED");
 });
 
 test("스크롤과 리사이즈 시 현재 대상 위치를 다시 계산",()=>{

@@ -88,6 +88,8 @@
   let moving = false;
   let frame = null;
   let lastAction = null;
+  let lastRenderReason = "NO_ACTIVE_TARGET";
+  let lastLayout = null;
   // 카드가 보이지 않을 때도 마지막 Hover 상태/닫힘 이유를 개발자에게 제공한다.
   let lastHoverPhase = "IDLE";
   let lastHoverReason = "INITIAL";
@@ -122,12 +124,6 @@
     shadow.appendChild(el("style", "", CSS));
     surface = el("div");
     surface.setAttribute("data-yutopia-card-surface", "true");
-    surface.addEventListener("pointerenter", () => controller?.overlayPointerEnter());
-    surface.addEventListener("pointerleave", () => controller?.overlayPointerLeave());
-    surface.addEventListener("focusin", () => controller?.overlayFocusIn());
-    surface.addEventListener("focusout", event => {
-      if (!surface.contains(event.relatedTarget)) controller?.overlayFocusOut();
-    });
     shadow.appendChild(surface);
     doc.body.appendChild(host);
     return true;
@@ -161,7 +157,6 @@
     close.disabled = true;
     close.setAttribute("aria-disabled", "true");
     close.setAttribute("aria-label", "YUTOPIA 카드 닫기");
-    close.addEventListener("click", () => controller?.dismiss("CARD_CLOSE"));
     header.appendChild(close);
     container.appendChild(header);
 
@@ -239,18 +234,6 @@
       const message = el("div", "more-status");
       message.setAttribute("role", "status");
       message.hidden = true;
-      more.addEventListener("click", () => {
-        if (!controller?.isCurrentRequest({
-          requestId: state.requestId,
-          targetType: state.targetType,
-          targetId: state.targetId,
-        })) return;
-        message.hidden = false;
-        message.textContent = "상세 Side Panel 대상 전달은 27~28번에서 연결됩니다. 현재는 DEMO 카드만 제공합니다.";
-        lastAction = "MORE_INFO";
-        // 클릭 안내로 카드 높이가 변하면 썸네일 겹침을 다시 검사한다.
-        queuePosition();
-      });
       actions.appendChild(more);
       footer.appendChild(actions);
       footer.appendChild(message);
@@ -262,186 +245,104 @@
     return container;
   }
 
-  function removeHost() {
+  function removeHost(reason = "NO_ACTIVE_TARGET", preserveState = false) {
     if (host) host.remove();
     host = null;
     shadow = null;
     surface = null;
     currentKey = null;
-    currentAnchor = null;
-    currentState = null;
+    if (!preserveState) {
+      currentAnchor = null;
+      currentState = null;
+    }
+    lastRenderReason = reason;
+    lastLayout = null;
   }
 
   /*
-   * 앵커 우측 우선, 부족하면 좌측, 그마저 부족하면 화면 안쪽으로 위치를 제한한다.
-   * 고정 좌표와 썸네일 순서가 아니라 실제 getBoundingClientRect를 사용한다.
-   * 스크롤 등으로 앵커가 사라지면 지난 영상/채널 카드가 남지 않게 닫는다.
+   * Placement never changes Hover state. The card is click-through, so a lack
+   * of an ideal non-overlapping popup slot is not a reason to dismiss a valid
+   * target. Anchor/viewport failures are recorded as renderer-only reasons.
    */
   function position() {
     if (disposed || !host || !currentAnchor) return;
     if (!host.isConnected || !currentAnchor.isConnected ||
         typeof currentAnchor.getBoundingClientRect !== "function") {
-      controller?.dismiss("ANCHOR_DETACHED");
-      removeHost();
+      removeHost("ANCHOR_DETACHED", true);
       return;
     }
 
     const rect = currentAnchor.getBoundingClientRect();
     const vw = scope.innerWidth || doc.documentElement?.clientWidth || 0;
     const vh = scope.innerHeight || doc.documentElement?.clientHeight || 0;
-    if (
-      !Number.isFinite(rect.left) || !Number.isFinite(rect.right) ||
-      !Number.isFinite(rect.top) || !Number.isFinite(rect.bottom) ||
-      rect.width <= 0 || rect.height <= 0 ||
-      rect.bottom <= 0 || rect.top >= vh || vw < 180 || vh < 140
-    ) {
-      controller?.dismiss("ANCHOR_NOT_VISIBLE");
-      removeHost();
+    if (!Number.isFinite(rect.left) || !Number.isFinite(rect.right) ||
+        !Number.isFinite(rect.top) || !Number.isFinite(rect.bottom) ||
+        rect.width <= 0 || rect.height <= 0 || rect.bottom <= 0 ||
+        rect.top >= vh || rect.right <= 0 || rect.left >= vw ||
+        vw < 180 || vh < 140) {
+      removeHost("ANCHOR_NOT_VISIBLE", true);
       return;
     }
 
-    /*
-     * YU26 Chromium 회귀: A 카드가 B 썸네일의 중앙을 덮어 실제 Hover를
-     * 차단하는 문제를 방지한다. 기존 아래 배치 조건은 카드 자연 높이가
-     * 남은 뷰포트보다 크면 아무것도 하지 않았으므로, 카드 내부 스크롤
-     * 높이를 제한한 뒤 우측/좌측/아래/위 후보를 재평가한다.
-     *
-     * 다른 링크의 텍스트/시청 데이터는 읽지 않고 화면 좌표만 확인한다.
-     * 어떤 후보도 인접 썸네일 중앙을 보존하지 못하면 fail-closed로 숨긴다.
-     */
     const width = Math.max(0, Math.min(MAX_WIDTH, vw - MARGIN * 2));
+    const fullHeight = Math.max(0, vh - MARGIN * 2);
     host.style.width = width + "px";
     const cardRoot = surface?.childNodes?.[0] || null;
-    const fullHeight = Math.max(0, vh - MARGIN * 2);
     if (cardRoot?.style) cardRoot.style.maxHeight = fullHeight + "px";
     const naturalHeight = Math.min(
-      fullHeight, Math.max(0, host.getBoundingClientRect?.().height || 0)
+      fullHeight, Math.max(1, host.getBoundingClientRect?.().height || fullHeight)
     );
     const maxLeft = Math.max(MARGIN, vw - width - MARGIN);
-    const clampedLeft = Math.min(Math.max(MARGIN, rect.left), maxLeft);
-    const preferredTop = Math.min(
-      Math.max(MARGIN, rect.top), Math.max(MARGIN, vh - naturalHeight - MARGIN)
-    );
+    const maxTop = Math.max(MARGIN, vh - naturalHeight - MARGIN);
+    const alignedTop = Math.min(Math.max(MARGIN, rect.top), maxTop);
+    const alignedLeft = Math.min(Math.max(MARGIN, rect.left), maxLeft);
 
-    let thumbnailLinks = [];
-    if (typeof doc.querySelectorAll === "function") {
-      try {
-        thumbnailLinks = Array.from(doc.querySelectorAll(
-          "a#thumbnail[href], a.yt-lockup-view-model__content-image[href]"
-        )).slice(0, 180);
-      } catch (_error) {
-        thumbnailLinks = [];
-      }
+    let left = alignedLeft;
+    let top = alignedTop;
+    let layout = "viewport-fallback";
+    if (rect.right + ANCHOR_GAP + width <= vw - MARGIN) {
+      left = rect.right + ANCHOR_GAP;
+      layout = "right";
+    } else if (rect.left - ANCHOR_GAP - width >= MARGIN) {
+      left = rect.left - ANCHOR_GAP - width;
+      layout = "left";
+    } else if (rect.bottom + ANCHOR_GAP + Math.min(naturalHeight, 140) <= vh - MARGIN) {
+      top = rect.bottom + ANCHOR_GAP;
+      if (cardRoot?.style) cardRoot.style.maxHeight =
+        Math.max(140, vh - MARGIN - top) + "px";
+      layout = "below";
+    } else if (rect.top - ANCHOR_GAP - Math.min(naturalHeight, 140) >= MARGIN) {
+      const available = rect.top - ANCHOR_GAP - MARGIN;
+      if (cardRoot?.style) cardRoot.style.maxHeight = available + "px";
+      top = Math.max(MARGIN, rect.top - ANCHOR_GAP - Math.min(naturalHeight, available));
+      layout = "above";
     }
 
-    function collisionScore(candidate) {
-      const {left, top, height} = candidate;
-      let score = 0;
-      let blocksCenter = false;
-      for (const link of thumbnailLinks) {
-        if (link === currentAnchor || !link?.isConnected ||
-            typeof link.getBoundingClientRect !== "function") continue;
-        const box = link.getBoundingClientRect();
-        if (!box || box.width <= 0 || box.height <= 0 || box.bottom <= 0 ||
-            box.top >= vh || box.right <= 0 || box.left >= vw) continue;
-        const overlapWidth = Math.max(
-          0, Math.min(left + width, box.right) - Math.max(left, box.left)
-        );
-        const overlapHeight = Math.max(
-          0, Math.min(top + height, box.bottom) - Math.max(top, box.top)
-        );
-        score += (overlapWidth * overlapHeight) / (box.width * box.height);
-        const middleX = (box.left + box.right) / 2;
-        const middleY = (box.top + box.bottom) / 2;
-        if (
-          middleX > left && middleX < left + width &&
-          middleY > top && middleY < top + height
-        ) blocksCenter = true;
-      }
-      return {score, blocksCenter};
-    }
-
-    const choices = [];
-    function offer(left, top, availableHeight, order) {
-      if (availableHeight < 140 || left < MARGIN || left + width > vw - MARGIN) return;
-      const height = Math.min(naturalHeight, availableHeight);
-      if (height <= 0) return;
-      const candidate = {left, top, height, maxHeight: availableHeight, order};
-      const collision = collisionScore(candidate);
-      if (!collision.blocksCenter) {
-        choices.push({...candidate, score: collision.score + order * 0.035});
-      }
-    }
-
-    const right = rect.right + ANCHOR_GAP;
-    const left = rect.left - width - ANCHOR_GAP;
-    offer(right, preferredTop, fullHeight, 0);
-    offer(left, preferredTop, fullHeight, 1);
-
-    const below = rect.bottom + ANCHOR_GAP;
-    offer(clampedLeft, below, vh - MARGIN - below, 2);
-
-    const aboveSpace = rect.top - ANCHOR_GAP - MARGIN;
-    const aboveHeight = Math.min(naturalHeight, aboveSpace);
-    offer(clampedLeft, rect.top - ANCHOR_GAP - aboveHeight, aboveSpace, 3);
-
-    // 좁은 화면에서는 우/좌 후보가 동시에 영역 밖일 수 있다.
-    if (choices.length === 0 && thumbnailLinks.length === 0) {
-      offer(clampedLeft, preferredTop, fullHeight, 4);
-    }
-    if (choices.length === 0) {
-      // Never dismiss a valid Hover due only to popup layout. In strict mode the
-      // card is read-only and pointer-events:none, so it cannot block YouTube.
-      if (cardRoot?.style) cardRoot.style.maxHeight = fullHeight + "px";
-      host.dataset.layout = "viewport-fallback";
-      host.style.left = Math.round(clampedLeft) + "px";
-      host.style.top = Math.round(preferredTop) + "px";
-      host.style.visibility = "visible";
-      return;
-    }
-
-    choices.sort((a, b) => a.score - b.score || a.order - b.order);
-    const best = choices[0];
-    host.dataset.layout = "safe";
-    if (cardRoot?.style) cardRoot.style.maxHeight = best.maxHeight + "px";
-    host.style.left = Math.round(best.left) + "px";
-    host.style.top = Math.round(best.top) + "px";
+    host.dataset.layout = layout;
+    host.style.left = Math.round(left) + "px";
+    host.style.top = Math.round(top) + "px";
     host.style.visibility = "visible";
+    lastLayout = layout;
+    lastRenderReason = "VISIBLE";
   }
 
   function queuePosition() {
-    if (disposed || !host || moving) return;
+    if (disposed || !currentState || moving) return;
     if (typeof scope.requestAnimationFrame !== "function") {
-      position();
+      if (host) position();
+      else renderState(currentState);
       return;
     }
     moving = true;
     frame = scope.requestAnimationFrame(() => {
       moving = false;
       frame = null;
-      position();
+      if (host) position();
+      else renderState(currentState);
     });
   }
 
-  /*
-   * Strict thumbnail Hover: the controller removes the active card immediately
-   * on physical thumbnail exit. The old LEAVE_PENDING branch below is retained
-   * for defensive compatibility with any older development producer.
-   */
-  function onHoverState(state) {
-    if (disposed) return;
-    lastHoverPhase = state.phase || "IDLE";
-    lastHoverReason = state.reason || "UNKNOWN";
-    if (state.phase === "LEAVE_PENDING") {
-      if (host && currentState?.requestId === state.requestId &&
-          currentState?.anchor === state.anchor) {
-        currentState = state;
-        host.dataset.phase = "LEAVE_PENDING";
-        queuePosition();
-      } else removeHost();
-      return;
-    }
-
+  function renderState(state) {
     const unresolved = state.phase === "UNRESOLVED" &&
       state.targetType === "CHANNEL" && state.targetId === null &&
       state.identityStatus === "HANDLE_UNRESOLVED";
@@ -454,22 +355,28 @@
       });
 
     if (!unresolved && !identified) {
-      removeHost();
+      removeHost("NO_ACTIVE_TARGET");
       return;
     }
+
+    currentState = state;
+    currentAnchor = state.anchor;
 
     const mock = identified ? modelApi?.mockForTarget({
       targetType: state.targetType, targetId: state.targetId,
     }) : null;
     if (identified && !mock) {
-      removeHost();
+      removeHost("MODEL_REJECTED", true);
       return;
     }
     if (!state.anchor || typeof state.anchor.getBoundingClientRect !== "function") {
-      removeHost();
+      removeHost("ANCHOR_UNAVAILABLE", true);
       return;
     }
-    if (!ensureHost()) return;
+    if (!ensureHost()) {
+      lastRenderReason = "DOCUMENT_BODY_UNAVAILABLE";
+      return;
+    }
 
     const key = [state.requestId, state.targetType, state.targetId || "UNRESOLVED"].join(":");
     if (key !== currentKey) {
@@ -477,12 +384,17 @@
       currentKey = key;
       lastAction = null;
     }
-    currentState = state;
-    currentAnchor = state.anchor;
     host.dataset.phase = state.phase;
     host.dataset.targetType = state.targetType;
     theme();
     position();
+  }
+
+  function onHoverState(state) {
+    if (disposed) return;
+    lastHoverPhase = state.phase || "IDLE";
+    lastHoverReason = state.reason || "UNKNOWN";
+    renderState(state);
   }
 
   function getRuntimeStatus() {
@@ -497,6 +409,8 @@
       targetType: currentState?.targetType ?? null,
       targetId: currentState?.targetId ?? null,
       isSynthetic: host?.isConnected || false,
+      lastRenderReason,
+      layout: lastLayout,
       lastAction,
     });
   }
@@ -512,7 +426,7 @@
     scope.removeEventListener?.("scroll", queuePosition, true);
     scope.removeEventListener?.("resize", queuePosition);
     scope.removeEventListener?.("pagehide", dispose);
-    removeHost();
+    removeHost("DISPOSED");
     connected = false;
     if (scope.YUTOPIA_HOVER_CARD === api) delete scope.YUTOPIA_HOVER_CARD;
   }

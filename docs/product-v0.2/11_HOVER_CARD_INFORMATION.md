@@ -54,12 +54,12 @@
 
 ## 2.1 26번 Mock Hover 카드 구현 상세
 
-- Shadow DOM 실제 UI 코드는 25번 READY/UNRESOLVED를 구독하고, 한 번에 하나의 카드만 표시한다. 400ms 초기 지연/200ms 이탈 유예는 25번 Controller 계약에 따른다.
+- Shadow DOM 실제 UI 코드는 위임형 Strict Controller의 READY/UNRESOLVED를 구독하고, 한 번에 하나의 카드만 표시한다. 26번 현재 계약에는 초기 지연과 이탈 유예가 없다.
 - 데모는 **정규 ID만 표시**한다. 영상 제목·실제 채널 이름은 아직 읽지 않으므로, 앞의 1번 UX 원칙인 실제 제목 2줄 표시와 픽셀 정합성은 향후 실제 데이터/UX 검토를 거쳐야 한다.
 - 차트 퍼센트·표본 N·주제 2개·브리핑은 고정 합성 예시이며, 실제 YouTube 댓글에 대한 분모·기간/모델 버전·마지막 분석 시각이 존재하지 않는다고 명시한다.
 - @handle만 있을 때는 CHANNEL ID 미확정 상태를 보여주고 퍼센트 차트·더보기는 제공하지 않는다.
 - 더보기 버튼을 클릭하면 '27~28번 연결 예정' 안내만 나타난다. 26번 단독으로 Chrome Side Panel의 선택 대상을 지정하거나 변경하지 않는다.
-- 구현 증거는 [26번 QA](../../extension/tests/QA_26_EVIDENCE.md)에서 확인한다. 모의 테스트 204/204와 실제 Windows Chrome 시각 승인/접근성 승인은 별개다.
+- 구현 증거는 [26번 QA](../../extension/tests/QA_26_EVIDENCE.md)에서 확인한다. Node 144/144·오프라인 Chromium·실 검색 DOM 결과와 실제 Windows Chrome 시각 승인/접근성 승인은 별개다.
 
 ## 3. 표시 우선순위와 줄바꿈
 
