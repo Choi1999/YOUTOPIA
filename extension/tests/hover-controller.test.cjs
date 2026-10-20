@@ -241,6 +241,130 @@ test("진입 전에 이탈한 원인은 IDLE 상태에서도 진단 가능",()=>
   assert.equal(f.api().getRuntimeStatus().lastReason,"LEFT_BEFORE_DELAY");
 });
 
+test("같은 영상 A를 완전히 떠났다가 반복 재진입하면 매번 160ms 후 READY",()=>{
+  const a=anchor("A"),f=fixture({videos:[video(a)]});
+  for(let cycle=0;cycle<3;cycle++){
+    f.doc.fire("pointerover",{target:a,pointerType:"mouse"});
+    assert.equal(f.api().getSnapshot().phase,"HOVER_PENDING");
+    f.advance(159);assert.equal(f.api().getSnapshot().phase,"HOVER_PENDING");
+    f.advance(1);assert.equal(f.api().getSnapshot().phase,"READY");
+    f.doc.fire("pointerout",{target:a,relatedTarget:{},pointerType:"mouse"});
+    assert.equal(f.api().getSnapshot().phase,"LEAVE_PENDING");
+    f.advance(200);assert.equal(f.api().getSnapshot().phase,"IDLE");
+  }
+  assert.equal(f.api().getSnapshot().requestId,3);
+  assert.equal(f.timers.size,0);
+});
+
+test("명시적 닫기 후 링크의 실제 pointerleave는 suppression을 해제",()=>{
+  const a=anchor("A"),f=fixture({videos:[video(a)]});
+  a.fire("pointerenter");f.advance(160);
+  f.api().dismiss("CARD_CLOSE");
+  assert.equal(f.api().getRuntimeStatus().suppressedAnchorActive,true);
+  a.fire("pointerleave");
+  assert.equal(f.api().getRuntimeStatus().suppressedAnchorActive,false);
+  f.doc.fire("pointermove",{target:a,pointerType:"mouse"});
+  assert.equal(f.api().getSnapshot().phase,"HOVER_PENDING");
+  f.advance(160);
+  assert.equal(f.api().getSnapshot().phase,"READY");
+});
+
+test("명시적 닫기 후 anchor pointerleave가 누락돼도 문서 pointerout으로 해제",()=>{
+  const a=anchor("A"),f=fixture({videos:[video(a)]});
+  a.fire("pointerenter");f.advance(160);f.api().dismiss("CARD_CLOSE");
+  f.doc.fire("pointerout",{target:a,relatedTarget:{},pointerType:"mouse"});
+  assert.equal(f.api().getRuntimeStatus().suppressedAnchorActive,false);
+  f.doc.fire("pointerover",{target:a,pointerType:"mouse"});
+  f.advance(160);
+  assert.equal(f.api().getSnapshot().phase,"READY");
+});
+
+test("명시적 닫기 후 링크 내부 이동만으로는 카드가 바로 재열리지 않음",()=>{
+  const a=anchor("A"),f=fixture({videos:[video(a)]});
+  a.fire("pointerenter");f.advance(160);f.api().dismiss("ESCAPE");
+  f.doc.fire("pointerover",{target:a,pointerType:"mouse"});
+  f.doc.fire("pointermove",{target:a,pointerType:"mouse"});
+  f.advance(500);
+  assert.equal(f.api().getSnapshot().phase,"DISMISSED");
+  assert.equal(f.api().getRuntimeStatus().suppressedAnchorActive,true);
+});
+
+test("anchor 내부 자식 간 pointerout은 전체 썸네일 이탈로 취급하지 않음",()=>{
+  const a=anchor("A"),one={parentElement:a},two={parentElement:a};
+  const f=fixture({videos:[video(a)]});
+  a.fire("pointerenter");f.advance(160);
+  f.doc.fire("pointerout",{target:one,relatedTarget:two,pointerType:"mouse"});
+  assert.equal(f.api().getSnapshot().phase,"READY");
+  assert.equal(f.api().getRuntimeStatus().pointerInside,true);
+});
+
+test("anchor 자식에서 바깥으로 이동한 pointerout은 200ms 후 종료",()=>{
+  const a=anchor("A"),child={parentElement:a},f=fixture({videos:[video(a)]});
+  a.fire("pointerenter");f.advance(160);
+  f.doc.fire("pointerout",{target:child,relatedTarget:{},pointerType:"mouse"});
+  assert.equal(f.api().getSnapshot().phase,"LEAVE_PENDING");
+  f.advance(200);assert.equal(f.api().getSnapshot().phase,"IDLE");
+});
+
+test("native pointerleave가 누락되면 문서 pointermove가 이탈을 정리",()=>{
+  const a=anchor("A"),f=fixture({videos:[video(a)]});
+  a.fire("pointerenter");f.advance(160);
+  f.doc.fire("pointermove",{target:{},pointerType:"mouse"});
+  assert.equal(f.api().getSnapshot().phase,"LEAVE_PENDING");
+  f.advance(200);assert.equal(f.api().getSnapshot().phase,"IDLE");
+});
+
+test("카드 Overlay에 포인터가 있으면 anchor의 누락된 이탈을 보정해도 READY 유지",()=>{
+  const a=anchor("A"),f=fixture({videos:[video(a)]});
+  a.fire("pointerenter");f.advance(160);
+  f.api().overlayPointerEnter();
+  f.doc.fire("pointermove",{target:{},pointerType:"mouse"});
+  assert.equal(f.api().getRuntimeStatus().pointerInside,false);
+  f.advance(300);
+  assert.equal(f.api().getSnapshot().phase,"READY");
+  f.api().overlayPointerLeave();
+  f.advance(200);
+  assert.equal(f.api().getSnapshot().phase,"IDLE");
+});
+
+test("A→B→A 문서 pointerover 전환 시 마지막 요청만 재활성화",()=>{
+  const a=anchor("A"),b=anchor("B");
+  const f=fixture({videos:[video(a,VIDEO_A),video(b,VIDEO_B)]});
+  f.doc.fire("pointerover",{target:a,pointerType:"mouse"});f.advance(160);
+  const first=f.api().getSnapshot().requestId;
+  f.doc.fire("pointerover",{target:b,pointerType:"mouse"});f.advance(160);
+  f.doc.fire("pointerover",{target:a,pointerType:"mouse"});f.advance(160);
+  const state=f.api().getSnapshot();
+  assert.equal(state.phase,"READY");
+  assert.equal(state.targetId,VIDEO_A);
+  assert.equal(state.requestId,first+2);
+});
+
+test("터치 pointerenter와 pointerover는 Hover 상태를 생성하지 않음",()=>{
+  const a=anchor("A"),f=fixture({videos:[video(a)]});
+  a.fire("pointerenter",{pointerType:"touch"});
+  f.doc.fire("pointerover",{target:a,pointerType:"touch"});
+  f.advance(500);
+  assert.equal(f.api().getSnapshot().phase,"IDLE");
+});
+
+test("같은 영상 렌더러 내 썸네일 미리보기 Overlay의 좌표로만 복구",()=>{
+  const a=anchor("A");
+  const renderer={};
+  const overlay={closest:()=>renderer};
+  a.isConnected=true;
+  a.closest=()=>renderer;
+  a.getBoundingClientRect=()=>({left:40,right:230,top:40,bottom:150,width:190,height:110});
+  const f=fixture({videos:[video(a)]});
+  f.doc.elementFromPoint=()=>overlay;
+  f.doc.fire("pointermove",{target:overlay,clientX:100,clientY:100,pointerType:"mouse"});
+  f.advance(160);
+  assert.equal(f.api().getSnapshot().targetId,VIDEO_A);
+  assert.equal(f.api().getSnapshot().phase,"READY");
+  f.doc.fire("pointermove",{target:overlay,clientX:350,clientY:100,pointerType:"mouse"});
+  assert.equal(f.api().getSnapshot().phase,"LEAVE_PENDING");
+});
+
 test("빠른 A→B→C 진입 시 마지막 C만 READY",()=>{
   const a=anchor("A"),b=anchor("B"),c=anchor("C");
   const f=fixture({videos:[video(a,VIDEO_A),video(b,VIDEO_B),video(c,VIDEO_C)]});
@@ -505,6 +629,8 @@ test("dispose는 중복 호출해도 안전하고 이벤트 소비자를 해제"
   assert.equal(ctl.getRuntimeStatus().boundVideoAnchors,0);
   assert.equal(f.doc.count("keydown"),0);
   assert.equal(f.doc.count("pointermove"),0);
+  assert.equal(f.doc.count("pointerover"),0);
+  assert.equal(f.doc.count("pointerout"),0);
   assert.equal(f.win.count("pagehide"),0);
 });
 
