@@ -70,7 +70,7 @@
 ## 25번 Hover 상태 제어 (frontend 병합 완료)
 
 - Manifest에 hover-controller.js를 content.js **다음**에 로드하도록 추가했습니다.
-- 기존 VIDEO/CHANNEL 탐지 스트림을 사용합니다. 단일 활성 Hover를 보장하며 400ms 진입 지연과 200ms 이탈 유예를 적용합니다. 두 시간은 승인된 UX 문서의 테스트용 후보값입니다.
+- 기존 VIDEO/CHANNEL 탐지 스트림을 사용합니다. 단일 활성 Hover를 보장합니다. 기존 25번의 400ms 진입 지연은 사용자 26번 실환경 피드백에 따라 **26번 브랜치에서 160ms로 단축**했으며, 이탈 유예 200ms는 유지합니다. 확정된 UX 목표가 아닌 시험값입니다.
 - A→B→C 빠른 이동과 DOM 요소 교체 시 이전 타이머 및 requestId를 무효화합니다. READY는 실제 카드가 화면에 표시된 것이 아니라 26번 UI가 표시할 수 있는 준비 상태입니다.
 - 영상/채널 ID가 검증되지 않으면 상세 대상을 제공하지 않습니다. @handle만 확인된 경우 UNRESOLVED/targetId:null로 유지합니다.
 - overlayPointerEnter/Leave 및 overlayFocusIn/Out을 제공하며, 26번 개발 브랜치의 Shadow DOM 카드가 이 API를 이용해 포인터/키보드 이동 중 상태를 유지합니다.
@@ -86,8 +86,21 @@
 - 앵커 기준 우측/좌측 자동 배치, 좁은 창·세로 화면 클램프, 다크 테마, 카드로 마우스·키보드 이동, 닫기/Escape, SPA·스크롤 이후 대상 정리를 지원합니다.
 - **더보기 버튼은 현재 연결 예정 안내만 표시합니다.** Side Panel 대상 전달, 캐시/서비스 워커 메시지, 실제 감성 데이터는 27·28번 이후 별도 작업입니다.
 - Manifest 스크립트 순서: shared.js → target-resolver.js → channel-target-resolver.js → content.js → hover-controller.js → hover-card-model.js → hover-card.js.
-- 신규 테스트: `node --test extension/tests/hover-card-ui.test.cjs` (34건). 전체 6개 테스트 파일은 [26번 QA 기록](tests/QA_26_EVIDENCE.md)의 명시 명령을 사용하세요(152건).
-- 선택 오프라인 Chromium: `python extension/tests/chromium-hover-card-fixture.py` (실행 미확인). **현재 격리 V8 152/152 PASS**입니다. 이전 HEAD에서 사용자 Windows Node CLI 150/150 PASS를 두 번 확인했으나 최신 152건 CLI 재시험은 필요합니다. Chromium Fixture에서 인접 썸네일 포인터 가림이 확인돼 UI 배치·스크롤 제한 및 테스트를 수정했으며, 수정본 Chromium 전체 PASS와 실제 Chrome 시각 검증은 아직 대기 중입니다.
+- 신규 테스트: `node --test extension/tests/hover-card-ui.test.cjs` (35건). 전체 6개 테스트 파일은 [26번 QA 기록](tests/QA_26_EVIDENCE.md)의 명시 명령을 사용하세요(159건).
+- 선택 오프라인 Chromium: `python extension/tests/chromium-hover-card-fixture.py` (실행 미확인). **현재 격리 V8 159/159 PASS**입니다. 이전 HEAD에서 Windows Native Node CLI 152/152 PASS와 Chromium 오프라인 Fixture PASS를 사용자 로그로 확인했습니다. 그러나 실제 YouTube Chrome에서 느린/간헐적 미표시가 보고돼 진입 대기 160ms, SPA 앵커 Hover 복구 및 상태 진단을 추가했습니다. 최신 159건 Node CLI·수정된 Chromium Fixture·실제 Chrome 재검증은 대기 중입니다.
+
+### 간헐적으로 카드가 나타나지 않을 때
+
+- 실제 Youtube에서 광고·Shorts·WATCH 페이지는 식별 대상에서 제외되며, 영상 ID가 불명확하면 카드를 표시하지 않습니다.
+- Chrome DevTools **YUTOPIA Content Script** 컨텍스트에서 두 상태를 함께 확인합니다.
+
+~~~js
+globalThis.YUTOPIA_HOVER_CONTROLLER?.getRuntimeStatus()
+globalThis.YUTOPIA_HOVER_CARD?.getRuntimeStatus()
+~~~
+
+- Controller의 `lastReason`, `hoveredBoundAnchors`, `pointerRecoveries`, `activationDelayMs`와 Card의 `lastHoverReason`를 확인합니다. `NO_SAFE_HOVER_PLACEMENT`는 인접 썸네일 차단을 방지하기 위한 숨김입니다.
+- 위 도구는 현재 탭 메모리만 읽으며 결과를 전송하지 않습니다. 자세한 기록·실브라우저 검증 방법은 [26번 QA 지침](tests/QA_26_EVIDENCE.md)을 참고하세요.
 
 ## 현재 단계
 
@@ -97,6 +110,6 @@
 - **23:** 엄격 VIDEO target Resolver frontend 병합, 사용자 보고 기준 Node 46/46·Windows 검증 통과 및 동일 테스트 SHA 확인.
 - **24:** 채널 ID와 @handle 분리 코드 frontend 병합. 사용자 검증 PASS·테스트 SHA 일치 보고(독립 로그 미제출).
 - **25:** Hover 상태 제어 frontend 병합; V8 118/118 PASS 및 사용자 Windows 검증 PASS·테스트 SHA/Clean Worktree 보고.
-- **26:** 실제 Shadow DOM Hover 카드 UI·고정 합성 데이터 모델 구현, V8 모의 전체 152/152 PASS, 신규 Node CLI·Windows Chrome 시각 검증 미완료.
+- **26:** Shadow DOM 합성 카드 UI 구현 및 실제 Chrome 간헐적 Hover 누락 대응. V8 모의 전체 159/159 PASS, 이전 HEAD에서 Windows Node 152/152·Chromium 오프라인 PASS. 최신 159건·실사이트 Chrome 재검증 대기.
 - **27~29:** 확장 메시지·Side Panel 분석 대상 고정·실사이트 최종 통합 E2E 미구현.
 - **실제 YouTube API/외부 AI/구독 결제:** 구현하지 않음.
