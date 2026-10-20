@@ -113,13 +113,18 @@ with sync_playwright() as pw:
         geom = card.bounding_box()
         assert geom and geom["x"] >= 0 and geom["x"] + geom["width"] <= 1000
 
-        # Cards are read-only and click-through in strict thumbnail mode.
-        # The future Side Panel CTA is not yet a pointer-interactive action.
+        # Only the actual Shadow card accepts pointer events. Its fixed Host
+        # and surrounding Surface remain click-through, not full-screen blockers.
         assert card.locator(".more").is_disabled()
         assert card.locator(".close").is_disabled()
         assert page.evaluate("""() => {
             const host=document.querySelector('#yutopia-extension-hover-card');
-            return host && getComputedStyle(host).pointerEvents === 'none';
+            const surface=host?.shadowRoot?.querySelector('[data-yutopia-card-surface]');
+            const cardRoot=host?.shadowRoot?.querySelector('.card');
+            return host && surface && cardRoot &&
+                getComputedStyle(host).pointerEvents === 'none' &&
+                getComputedStyle(surface).pointerEvents === 'none' &&
+                getComputedStyle(cardRoot).pointerEvents === 'auto';
         }""")
         assert page.locator("#youtube-fixture").inner_html() == fixture_before
 
@@ -162,9 +167,40 @@ with sync_playwright() as pw:
             timeout=5000,
         )
 
-        # Regression: Chromium must immediately switch between A and B,
-        # and the preview must never intercept B's pointer center.
-        # force=True로 Overlay를 우회하면 실제 UX 결함이 가려지므로 사용하지 않는다.
+        # Physical A→card→A: cross the 12px gap with incremental mouse steps.
+        # No flicker or target change is permitted.
+        page.mouse.move(950, 700)
+        page.locator("#video-a a#thumbnail").hover()
+        page.wait_for_function(
+            "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().visible",
+            timeout=5000,
+        )
+        a_box = page.locator("#video-a a#thumbnail").bounding_box()
+        floating_box = card_content.bounding_box()
+        assert a_box and floating_box
+        page.mouse.move(
+            floating_box["x"] + 18,
+            a_box["y"] + a_box["height"] / 2,
+            steps=20,
+        )
+        page.wait_for_function(
+            """window.__fixtureScope.YUTOPIA_HOVER_CONTROLLER.getRuntimeStatus().cardPointerInside &&
+               window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyz'""",
+            timeout=5000,
+        )
+        page.mouse.move(
+            a_box["x"] + a_box["width"] / 2,
+            a_box["y"] + a_box["height"] / 2,
+            steps=20,
+        )
+        page.wait_for_function(
+            """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().visible &&
+               window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyz'""",
+            timeout=5000,
+        )
+
+        # B is visibly covered by the active A card. Its pointer input MUST be
+        # intercepted by the card, which pins logical target A.
         neighbor = page.evaluate("""() => {
             const link = document.querySelector("#video-b a#thumbnail");
             const rect = link.getBoundingClientRect();
@@ -183,8 +219,24 @@ with sync_playwright() as pw:
                 })() : null
             };
         }""")
-        assert neighbor["canHover"], f"Video B center is blocked by YUTOPIA card: {neighbor}"
-        # Playwright가 자체적으로 click/hover 경로를 검증하도록 일반 Hover 유지.
+        assert not neighbor["canHover"], (
+            "B should be blocked by the active A card: " + str(neighbor)
+        )
+        page.mouse.move(
+            (neighbor["linkRect"]["left"] + neighbor["linkRect"]["right"]) / 2,
+            (neighbor["linkRect"]["top"] + neighbor["linkRect"]["bottom"]) / 2,
+            steps=14,
+        )
+        page.wait_for_function(
+            """window.__fixtureScope.YUTOPIA_HOVER_CONTROLLER.getRuntimeStatus().cardPointerInside &&
+               window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyz'""",
+            timeout=5000,
+        )
+        page.mouse.move(950, 700)
+        page.wait_for_function(
+            "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().hostCount === 0",
+            timeout=5000,
+        )
         page.locator("#video-b a#thumbnail").hover(timeout=5000)
         page.wait_for_function(
             """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyZ'""",
@@ -194,10 +246,22 @@ with sync_playwright() as pw:
         assert "Ab0_-123xyz" not in card_content.inner_text()
 
         # Repeated A -> B -> C -> A with no leave/entry delay or stale card.
+        # The active card can hide other thumbnail centers: leave to neutral
+        # space between explicit thumbnails during this direct-reentry test.
         for cycle in range(20):
+            page.mouse.move(950, 700)
+            page.wait_for_function(
+                "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().hostCount === 0",
+                timeout=5000,
+            )
             page.locator("#video-a a#thumbnail").hover(timeout=5000)
             page.wait_for_function(
                 """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyz'""",
+                timeout=5000,
+            )
+            page.mouse.move(950, 700)
+            page.wait_for_function(
+                "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().hostCount === 0",
                 timeout=5000,
             )
             page.locator("#video-b a#thumbnail").hover(timeout=5000)
@@ -205,9 +269,19 @@ with sync_playwright() as pw:
                 """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyZ'""",
                 timeout=5000,
             )
+            page.mouse.move(950, 700)
+            page.wait_for_function(
+                "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().hostCount === 0",
+                timeout=5000,
+            )
             page.locator("#video-c a#thumbnail").hover(timeout=5000)
             page.wait_for_function(
                 """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xy0'""",
+                timeout=5000,
+            )
+            page.mouse.move(950, 700)
+            page.wait_for_function(
+                "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().hostCount === 0",
                 timeout=5000,
             )
             page.locator("#video-a a#thumbnail").hover(timeout=5000)
@@ -219,6 +293,11 @@ with sync_playwright() as pw:
 
         # SPA가 포인터 아래 썸네일 노드를 교체해도 다음 mousemove 없이 복구해야 한다.
         # 이전 코드에는 새 anchor의 pointerenter 이벤트가 누락되어 IDLE에 머물 위험이 있었다.
+        page.mouse.move(950, 700)
+        page.wait_for_function(
+            "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().hostCount === 0",
+            timeout=5000,
+        )
         page.locator("#video-b a#thumbnail").hover(timeout=5000)
         before_request = page.evaluate(
             "window.__fixtureScope.YUTOPIA_HOVER_CONTROLLER.getSnapshot().requestId"
@@ -244,6 +323,11 @@ with sync_playwright() as pw:
         assert "Ab0_-123xyZ" in card_content.inner_text()
 
         # Unresolved handle must not show a chart or expose a fabricated UC ID.
+        page.mouse.move(950, 700)
+        page.wait_for_function(
+            "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().hostCount === 0",
+            timeout=5000,
+        )
         page.locator("#video-b ytd-channel-name a").hover()
         page.wait_for_function(
             """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().phase === 'UNRESOLVED'""",
