@@ -30,6 +30,8 @@
         "target-resolver.js",
         "channel-target-resolver.js",
         "content.js",
+        "hover-pointer-tracker.js",
+        "hover-presence-reducer.js",
         "hover-controller.js",
         "hover-card-model.js",
         "hover-card.js"
