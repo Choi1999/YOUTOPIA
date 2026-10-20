@@ -1,6 +1,20 @@
 # YUTOPIA Hover Interaction — 외부 벤치마킹 적용 기록 (2026-10-20)
 
-> USER_APPROVED_DIRECTION / PR_13_DRAFT / P0_CODE_READY / MOCK_V8_204_PASS / NATIVE_CHROME_PENDING
+> **HISTORICAL_BENCHMARK_PROTOTYPE / SUPERSEDED_BY_STRICT_944B_AND_INTERACTIVE_CARD / PR13_DRAFT**
+
+## 현재 운영 구현 (2026-10-20 개정)
+
+이 문서 아래의 Pointer Tracker/Presence Reducer·160ms 진입/200ms 종료 유예·204건 모의 테스트 기록은 이전 벤치마킹 **실험 이력**이다. 해당 독립 모듈은 실제 YouTube 반복 Hover 누락 문제에 대응하는 944b Strict 개편에서 런타임과 Manifest에서 제거됐다.
+
+사용자 Chrome Home/Search/자동 Preview에서 944b 엄격 Hover는 PASS로 보고됐고, 이후 사용자 요구에 따라 **카드 영역 안으로 마우스를 옮기면 기존 대상과 카드가 유지되고, 카드가 가리는 배경 썸네일은 선택되지 않도록** 추가 수정했다.
+
+최신 PR #13 Interactive Card 구조는 별도 의존성 없는 hover-controller.js의 단일 active target, Shadow Card만 pointer-events:auto, Host와 빈 Surface pointer-events:none, 카드가 우선인 hit testing, 짧은 트리거↔카드 간격에서만 유한 160ms Safe Transit을 적용한다. 일반 썸네일 진입 및 이탈 지연은 0ms다. 더보기/닫기 버튼 및 Side Panel 연동은 아직 제공하지 않는다.
+
+최신 격리 V8 모의 결과 **158/158 PASS**. 최신 Windows Native Node/Chromium/실 YouTube Chrome 재검증은 PENDING이다. 근거는 [YU26 QA](../../extension/tests/QA_26_EVIDENCE.md)를 따른다.
+
+---
+
+
 
 이 문서는 외부 라이브러리에서 벤치마킹할 패턴과 YUTOPIA에서 실제 구현한 부분을 구분한다. 외부 코드나 패키지를 복사·설치하지 않았고, Figma 및 React·backend·실데이터 정책을 변경하지 않았다.
 
@@ -16,7 +30,7 @@
 
 ## 2. 외부 벤치마킹 패턴
 
-| 참조 | 참고할 설계 | 실제 적용 상태 |
+| 참조 | 참고할 설계 | 당시 P0 실험의 적용 상태 |
 |---|---|---|
 | [Floating UI useHover / safePolygon](https://floating-ui.com/docs/useHover) | 카드 방향 이동 안전 경로 | 새 Pointer Tracker에 순수 safeTransitPoint 기하 함수와 테스트 작성. 실제 카드 생명주기에는 아직 연결하지 않음 |
 | [Floating UI FloatingDelayGroup](https://floating-ui.com/docs/FloatingDelayGroup) | 연속 Hover에서 짧은 진입 지연 | 미적용. 첫 진입 160ms 시험값 유지 |
@@ -28,7 +42,7 @@
 
 위 외부 시스템의 특정 수치·성능을 현행 YUTOPIA의 보증값으로 취급하지 않는다.
 
-## 3. PR #13 적용 구조
+## 3. 이전 PR #13 P0 실험 구조 (현재 제거)
 
 ~~~text
 YouTube HOME / SEARCH
