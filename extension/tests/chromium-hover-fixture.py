@@ -68,15 +68,8 @@ with sync_playwright() as playwright:
         def hover_state():
             return page.evaluate("window.__fixtureScope.YUTOPIA_HOVER_CONTROLLER.getSnapshot()")
 
-        # 100ms quick hover never reaches READY.
-        page.locator("#video1 a#thumbnail").dispatch_event("pointerenter")
-        page.wait_for_timeout(100)
-        page.locator("#video1 a#thumbnail").dispatch_event("pointerleave")
-        page.wait_for_timeout(450)
-        assert hover_state()["phase"] == "IDLE", hover_state()
-
-        # VIDEO thumbnail hover reaches READY and keeps its own target id.
-        page.locator("#video1 a#thumbnail").dispatch_event("pointerenter")
+        # VIDEO thumbnail hover is immediate and keeps its own stable target.
+        page.locator("#video1 a#thumbnail").hover()
         page.wait_for_function(
             """window.__fixtureScope.YUTOPIA_HOVER_CONTROLLER.getSnapshot().phase === 'READY'""",
             timeout=4000,
@@ -84,20 +77,17 @@ with sync_playwright() as playwright:
         selected = hover_state()
         assert selected["targetType"] == "VIDEO", selected
         assert selected["targetId"] == "Ab0_-123xyz", selected
+        assert selected["targetKey"] == "VIDEO:Ab0_-123xyz", selected
 
-        # Moving from the anchor into a future overlay cancels leave grace.
-        page.locator("#video1 a#thumbnail").dispatch_event("pointerleave")
-        page.evaluate("window.__fixtureScope.YUTOPIA_HOVER_CONTROLLER.overlayPointerEnter()")
-        page.wait_for_timeout(260)
-        assert hover_state()["phase"] == "READY", hover_state()
-        page.evaluate("window.__fixtureScope.YUTOPIA_HOVER_CONTROLLER.overlayPointerLeave()")
+        # Physical thumbnail exit is immediate; no overlay/grace state exists.
+        page.mouse.move(1000, 700)
         page.wait_for_function(
             """window.__fixtureScope.YUTOPIA_HOVER_CONTROLLER.getSnapshot().phase === 'IDLE'""",
             timeout=4000,
         )
 
         # Channel handle only: unresolved, no stable targetId.
-        page.locator("#video2 ytd-channel-name a").dispatch_event("pointerenter")
+        page.locator("#video2 ytd-channel-name a").hover()
         page.wait_for_function(
             """window.__fixtureScope.YUTOPIA_HOVER_CONTROLLER.getSnapshot().phase === 'UNRESOLVED'""",
             timeout=4000,
@@ -106,7 +96,7 @@ with sync_playwright() as playwright:
         assert handle["targetId"] is None and handle["identityStatus"] == "HANDLE_UNRESOLVED", handle
 
         # Keyboard focus and Escape work without blocking native YouTube key handlers.
-        page.locator("#video1 a#thumbnail").dispatch_event("focusin")
+        page.locator("#video1 a#thumbnail").focus()
         page.wait_for_function(
             """window.__fixtureScope.YUTOPIA_HOVER_CONTROLLER.getSnapshot().phase === 'READY'""",
             timeout=4000,

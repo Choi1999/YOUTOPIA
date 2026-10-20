@@ -111,8 +111,18 @@
       if (card.closest?.(EXCLUDED_SELECTOR)) continue;
       if (card.matches?.("[hidden], [aria-hidden='true']")) continue;
 
-      const anchors = card.querySelectorAll?.(LINK_SELECTOR) || [];
-      for (const link of anchors) {
+      const anchors = Array.from(card.querySelectorAll?.(LINK_SELECTOR) || []);
+      // A title /watch link can precede the actual thumbnail link in YouTube
+      // variants. Prefer the visual thumbnail as the physical Hover trigger;
+      // otherwise pointerenter is attached to the wrong element and the user
+      // sees a valid video that never displays its preview.
+      const thumbnails = anchors.filter(link =>
+        link.id === "thumbnail" ||
+        link.classList?.contains?.("yt-lockup-view-model__content-image") ||
+        link.matches?.("a#thumbnail[href], a.yt-lockup-view-model__content-image[href]")
+      );
+      const triggerLinks = thumbnails.length ? thumbnails : anchors;
+      for (const link of triggerLinks) {
         if (link.closest?.(EXCLUDED_SELECTOR)) continue;
         if (!isWatchLink(link)) continue;
         if (!currentLinks.has(link)) {

@@ -63,6 +63,17 @@ test("HOME: 일반 영상 썸네일 2개를 읽기 전용으로 탐지", () => {
   assert.equal(fixture.doc.cards.length,2);
 });
 
+test("YouTube 제목 링크가 썸네일보다 먼저 나와도 썸네일을 Hover 대상으로 선택",()=>{
+  const title=link("/watch?v=Ab0_-123xyz");
+  const thumb=link("/watch?v=Ab0_-123xyz");
+  thumb.id="thumbnail";
+  const fixture=sandbox({cards:[card([title,thumb])]});
+  fixture.execute();
+  const found=fixture.api().findCandidates();
+  assert.equal(found.length,1);
+  assert.equal(found[0].thumbnailLink,thumb);
+});
+
 test("SEARCH: 일반 영상과 절대 YouTube watch 주소 감지", () => {
   const fixture = sandbox({pathname:"/results",cards:[card([link("https://www.youtube.com/watch?v=resultA")]) ]});
   fixture.execute();assert.equal(fixture.api().getSnapshot().route,"SEARCH");
