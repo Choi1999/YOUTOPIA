@@ -27,6 +27,7 @@
       ],
       "js": [
         "shared.js",
+        "target-resolver.js",
         "content.js"
       ],
       "run_at": "document_idle"

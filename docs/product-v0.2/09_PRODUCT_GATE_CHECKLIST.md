@@ -48,7 +48,7 @@
 | **PG-01 방향 정렬** | 제품·사용자·핵심 Hover→Side Panel 명확 | **PASS — 사용자 승인 방향** |
 | **PG-02 문서 준비** | 00~09 문서 10개 모두 작성·연결·검수 | **READY_FOR_REVIEW — 문서·링크 검사 완료, 사람 검토 전** |
 | **PG-03 시각 디자인** | 10~19 상세 UX/접근성/오류 상태 검수 | **FIGMA_VISUAL_APPROVED / CHROME_A11Y_UNTESTED** — 2026-10-16 정적 시안 사용자 승인, 브라우저/키보드/접근성 검증 별도 |
-| **PG-04 확장 구현** | Chrome MV3 local mock/Side Panel 실제 시연 | **MV3_SKELETON_MERGED / CHROME_NOT_TESTED** — PR #6 / extension/ 존재, Hover·패널 작동 PASS 미확인 |
+| **PG-04 확장 구현** | Chrome MV3 local mock/Side Panel 실제 시연 | **21·22 CODE_MERGED / USER_REPORTED_WINDOWS_SMOKE_PASS / FULL_E2E_NOT_DONE** — PR #8/#9 순차 병합, Service Worker·Side Panel·홈/검색/스크롤 수동 PASS 사용자 보고. 실제 Hover 카드·대상 고정 구현과 23번 ID 신규 실브라우저 검증은 미완료 |
 | **PG-05 실제 분석 데이터** | YouTube 파생지표·원문/보존·API 권한 근거 | **BLOCKED_EXTERNAL_GATE** |
 | **PG-06 구독/결제** | 구체 요금제·청구·취소 정책 | **UNRESOLVED** |
 | **PG-07 공개 출시** | 정책·안전·스토어·운영 승인 | **NOT_APPROVED** |
