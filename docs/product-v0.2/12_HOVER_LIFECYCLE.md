@@ -75,8 +75,9 @@ IDLE
 ## 4.2 실제 Chrome에서 제기된 간헐적 누락 대응 (26번)
 
 - YouTube SPA가 이미 포인터 아래 있던 anchor를 교체하면 그 새 요소에서 `pointerenter` 이벤트가 발생하지 않을 수 있다. 신규 바인딩 시 `:hover` 상태를 재확인하고, `document.pointermove`에서 현재 바인딩된 anchor를 재확인해 복구한다.
-- 사용자의 ESC·닫기 후 동일 썸네일 안에서 pointermove만 발생한 경우 자동 재열림을 방지하고, 실제 링크 재진입은 허용한다.
+- 사용자의 ESC·닫기 후 같은 썸네일 안에 포인터가 남은 경우 자동 재열림을 방지한다. 실제 링크의 pointerleave 또는 캡처 pointerout으로 물리적 이탈을 확인하면 억제 상태를 해제하고, 카드 내부 닫기 버튼 클릭은 원래 링크 재진입을 차단하지 않는다.
 - 터치 Pointer 이벤트는 Hover 복구에서 제외한다. 마우스 좌표·브라우징 내용·시청 기록은 저장 또는 전송하지 않는다.
+- `document.pointerover/move/out`을 통해 YouTube가 개별 `pointerleave`나 `pointerenter`를 누락해도 포인터가 썸네일 밖으로 나갔는지 재판정한다. 같은 영상 A를 반복해 떠났다가 돌아오면 매번 새 160ms 진입 대기를 시작하고, 200ms 이탈 유예가 끝나면 IDLE로 돌아오는지 Chromium 검증을 추가했다.
 - 인접 영상 링크를 가리지 않는 카드 위치를 못 찾으면 `NO_SAFE_HOVER_PLACEMENT`로 닫는다. 광고·Shorts·잘못된 영상 ID도 원래 카드 표시 대상이 아니다.
 - 26번 진입 지연·DOM 복구 검증은 별도의 Node/Chromium/실사이트 게이트를 가진다. 기존 25번 PR #12 병합 코드와 최신 26번 브랜치 상태를 혼동하지 않는다.
 
