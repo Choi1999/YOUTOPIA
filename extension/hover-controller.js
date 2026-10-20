@@ -383,6 +383,10 @@
       else stopTransit();
       return;
     }
+    // A real thumbnail exit toward the card should start one bounded
+    // gap transit before coordinate-based YouTube preview recovery gets a
+    // chance to mistake the old thumbnail edge for continued occupancy.
+    if (beginSafeTransit(event)) return;
     const recovered = event.relatedTarget && bindingFromEvent({
       type: "pointerout",
       pointerType: event.pointerType,
@@ -394,7 +398,6 @@
       if (recovered !== active) activate(recovered, "POINTER", "THUMBNAIL_SWITCH");
       return;
     }
-    if (beginSafeTransit(event)) return;
     clear("THUMBNAIL_LEAVE");
   }
 
