@@ -31,7 +31,7 @@
     "  --ytp-soft: #2a3441; --ytp-accent: #9aaaff; --ytp-positive: #7bc1ad;",
     "  --ytp-neutral: #96a8c3; --ytp-negative: #e39690; }",
     "*, *::before, *::after { box-sizing: border-box; }",
-    ".card { pointer-events: none; color: var(--ytp-ink); background: var(--ytp-bg); border: 1px solid var(--ytp-line);",
+    ".card { pointer-events: auto; color: var(--ytp-ink); background: var(--ytp-bg); border: 1px solid var(--ytp-line);",
     "  border-radius: 16px; box-shadow: 0 16px 48px rgba(0,0,0,.22);",
     "  max-height: calc(100vh - 16px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }",
     ".header { display: flex; align-items: center; gap: 7px; padding: 13px 14px 9px; }",
@@ -123,6 +123,7 @@
     shadow = host.attachShadow({mode: "open"});
     shadow.appendChild(el("style", "", CSS));
     surface = el("div");
+    surface.style.pointerEvents = "none";
     surface.setAttribute("data-yutopia-card-surface", "true");
     shadow.appendChild(surface);
     doc.body.appendChild(host);
@@ -151,8 +152,8 @@
     header.appendChild(el("span", "tag", "DEMO · 가상 데이터"));
     header.appendChild(el("span", "spacer"));
     const close = el("button", "close", "×");
-    // Strict thumbnail-only preview: moving into the card closes it immediately.
-    // Controls remain as future markup, but must not promise working click actions.
+    // The card itself is interactive for pointer containment. Stage 27-28
+    // Side Panel/CTA actions remain disabled pending their own authorization.
     close.type = "button";
     close.disabled = true;
     close.setAttribute("aria-disabled", "true");
@@ -246,6 +247,7 @@
   }
 
   function removeHost(reason = "NO_ACTIVE_TARGET", preserveState = false) {
+    controller?.setCardRegion?.(null, null);
     if (host) host.remove();
     host = null;
     shadow = null;
@@ -260,9 +262,10 @@
   }
 
   /*
-   * Placement never changes Hover state. The card is click-through, so a lack
-   * of an ideal non-overlapping popup slot is not a reason to dismiss a valid
-   * target. Anchor/viewport failures are recorded as renderer-only reasons.
+   * Placement never changes Hover state. Only the actual card receives pointer
+   * events; the host/surface outside the card are click-through. A layout
+   * fallback does not terminate a valid target. Anchor/viewport failures
+   * are renderer-only reasons.
    */
   function position() {
     if (disposed || !host || !currentAnchor) return;
@@ -387,6 +390,9 @@
     host.dataset.phase = state.phase;
     host.dataset.targetType = state.targetType;
     theme();
+    // Register before showing the card so capture-phase document pointer
+    // handlers can recognize the host/Shadow card on its first pointerover.
+    controller?.setCardRegion?.(host, surface.childNodes[0] || null);
     position();
   }
 
