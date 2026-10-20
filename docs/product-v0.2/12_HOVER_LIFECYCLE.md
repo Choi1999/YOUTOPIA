@@ -38,7 +38,7 @@ IDLE
   └─ 영상 B pointerenter → A timer/request 정리 후 B 대상만 표시
 ```
 
-- **초기 Hover 지연:** 약 `400ms`를 디자인 후보로 두고 사용자 테스트 후 조정. **확정된 성능 목표가 아님**.
+- **초기 Hover 지연:** 25번 최초 후보는 `400ms`였으나 실제 Chrome 사용자 피드백에서 지연이 길다고 보고돼 26번 브랜치는 **`160ms` 시험값**으로 변경했다. **확정된 성능 목표가 아님**.
 - **카드 이동/퇴장 유예:** 약 `150~250ms` 후보. 카드↔썸네일 사이 이동 시 깜빡임이 없는지 우선 검증.
 - **다른 썸네일 진입:** A/이전 대상의 미리보기 타이머·작업을 취소하거나 응답 적용을 거부.
 - **Side Panel:** Hover 닫기와 무관하게, 마지막으로 더보기를 클릭한 대상은 별도로 유지.
@@ -62,7 +62,7 @@ IDLE
 
 25번 브랜치에는 실제 Hover 카드 없이 단일 Hover Controller가 추가됐다.
 
-- 포인터/포커스 진입 → HOVER_PENDING(400ms 후보) → READY(정규 VIDEO/CHANNEL targetId 확보), 또는 UNRESOLVED(@handle만 있어 targetId 없음).
+- 포인터/포커스 진입 → HOVER_PENDING(26번 브랜치 `160ms` 후보) → READY(정규 VIDEO/CHANNEL targetId 확보), 또는 UNRESOLVED(@handle만 있어 targetId 없음).
 - READY는 26번 UI가 LOADING/VISIBLE로 전환할 수 있는 **준비 상태**이지 실제 카드가 표시됐다는 뜻이 아니다.
 - 정상 타깃에서 pointerleave/focusout → LEAVE_PENDING(200ms 후보) → IDLE. Overlay 이동용 API는 있으나 Overlay DOM은 26번 범위.
 - targetType + targetId + 증가하는 requestId를 검사하는 isCurrentRequest()를 제공한다. 실제 비동기 응답·패널은 이번 범위에 포함하지 않는다.
@@ -72,10 +72,20 @@ IDLE
 
 증거: [25번 QA 기록](../../extension/tests/QA_25_EVIDENCE.md).
 
+## 4.2 실제 Chrome에서 제기된 간헐적 누락 대응 (26번)
+
+- YouTube SPA가 이미 포인터 아래 있던 anchor를 교체하면 그 새 요소에서 `pointerenter` 이벤트가 발생하지 않을 수 있다. 신규 바인딩 시 `:hover` 상태를 재확인하고, `document.pointermove`에서 현재 바인딩된 anchor를 재확인해 복구한다.
+- 사용자의 ESC·닫기 후 동일 썸네일 안에서 pointermove만 발생한 경우 자동 재열림을 방지하고, 실제 링크 재진입은 허용한다.
+- 터치 Pointer 이벤트는 Hover 복구에서 제외한다. 마우스 좌표·브라우징 내용·시청 기록은 저장 또는 전송하지 않는다.
+- 인접 영상 링크를 가리지 않는 카드 위치를 못 찾으면 `NO_SAFE_HOVER_PLACEMENT`로 닫는다. 광고·Shorts·잘못된 영상 ID도 원래 카드 표시 대상이 아니다.
+- 26번 진입 지연·DOM 복구 검증은 별도의 Node/Chromium/실사이트 게이트를 가진다. 기존 25번 PR #12 병합 코드와 최신 26번 브랜치 상태를 혼동하지 않는다.
+
+검증 근거: [26번 QA 기록](../../extension/tests/QA_26_EVIDENCE.md).
+
 ## 5. 수용 테스트
 
 - [ ] 영상 A 위에서 100ms만 머문 경우 카드가 무분별하게 나타나지 않음.
-- [ ] A를 400ms 이상 Hover하면 A 카드(확정 아닌 후보 타이밍)가 나타남.
+- [ ] A를 160ms 안팎으로 Hover하면 A 카드가 표시되는지 검증(실측 렌더링 지연은 별도).
 - [ ] A 카드 위로 포인터를 옮기고 **더보기**를 누를 수 있음.
 - [ ] A→B→C를 빠르게 움직이면 A/B 응답이 C를 덮어쓰지 않음.
 - [ ] 화면의 A 요소가 무한 스크롤로 제거되면 카드/리스너 정리.
