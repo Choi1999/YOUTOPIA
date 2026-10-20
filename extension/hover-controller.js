@@ -277,7 +277,16 @@
     if (suppressedAnchor && binding?.element !== suppressedAnchor) {
       suppressedAnchor = null;
     }
-    if (!binding || binding === selected || binding.element === suppressedAnchor) return;
+    if (binding === selected) {
+      // native pointerenter가 누락된 채 같은 anchor로 돌아오더라도
+      // LEAVE_PENDING의 200ms 종료 타이머를 취소하고 READY를 복원한다.
+      if (!pointerInside) {
+        pointerRecoveryCount += 1;
+        queueEnter(binding, "POINTER", "SAME_ANCHOR_REENTRY_RECOVERY");
+      }
+      return;
+    }
+    if (!binding || binding.element === suppressedAnchor) return;
     pointerRecoveryCount += 1;
     queueEnter(binding, "POINTER", event.type === "pointerover" ?
       "POINTER_OVER_RECOVERY" : "POINTER_MOVE_RECOVERY");
