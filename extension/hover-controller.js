@@ -182,42 +182,114 @@
   }
 
   function leaveBinding(binding, mode) {
-    if (disposed || selected !== binding) return;
+    if (disposed) return;
+    // 카드 닫기/Escape 이후 selected가 null이어도 실제 anchor 이탈 시
+    // suppression을 해제해야 같은 영상으로 돌아왔을 때 복구가 가능하다.
+    if (mode === "POINTER" && suppressedAnchor === binding.element) {
+      suppressedAnchor = null;
+    }
+    if (selected !== binding) return;
     if (mode === "POINTER") pointerInside = false;
     if (mode === "FOCUS") focusInside = false;
     beginLeave(mode === "POINTER" ? "POINTER_LEAVE" : "FOCUS_OUT");
   }
 
   /*
-   * 실제 사용 환경에서 YouTube 카드 DOM이 포인터 아래에서 재생성되면
-   * 신규 anchor에는 pointerenter가 발생하지 않을 수 있다.
-   * document pointermove의 composedPath/상위 DOM에서 이미 등록된
-   * anchor만 확인해 복구한다. 개별 영상/채널 데이터나 좌표는 저장하지 않는다.
+   * 포인터 경계 추적:
+   * - pointerover/move는 영상 anchor 하위 DOM(섬네일 이미지 등) 및
+   *   같은 렌더러 내부에서 썸네일을 덮는 YouTube preview를 인식한다.
+   * - pointerout은 관련 target이 실제 anchor 밖으로 바뀔 때만
+   *   이탈 처리하고, 명시적으로 닫은 카드의 suppression도 해제한다.
+   * - 포인터 이벤트가 누락돼도 다음 이동에서 현재 타깃을 재정렬한다.
+   *
+   * 현재 탭 안의 DOM과 좌표만 잠깐 읽고 사용자 정보를 저장/전송하지 않는다.
    */
-  function handlePointerMove(event) {
-    if (disposed || event?.pointerType === "touch") return;
-    let binding = null;
-    const path = event?.composedPath?.();
+  function isWithin(node, root) {
+    if (!node || !root) return false;
+    for (let n = node, i = 0; n && i < 30; i += 1) {
+      if (n === root) return true;
+      n = n.parentElement || n.parentNode || n.host || null;
+    }
+    return false;
+  }
+
+  function findPointerBinding(event) {
+    if (!event || event.pointerType === "touch") return null;
+    const path = event.composedPath?.();
     if (Array.isArray(path)) {
-      for (const element of path.slice(0, 24)) {
-        binding = bindings.get(element);
-        if (binding) break;
+      for (const node of path.slice(0, 30)) {
+        const binding = bindings.get(node);
+        if (binding) return binding;
       }
     }
-    if (!binding) {
-      let element = event?.target;
-      for (let i = 0; element && i < 24; i += 1) {
-        binding = bindings.get(element);
-        if (binding) break;
-        element = element.parentElement || element.parentNode || null;
+    let node = event.target;
+    for (let i = 0; node && i < 30; i += 1) {
+      const binding = bindings.get(node);
+      if (binding) return binding;
+      node = node.parentElement || node.parentNode || node.host || null;
+    }
+
+    // YouTube의 썸네일 미리보기 Overlay가 anchor와 형제 요소로 뜨는 경우,
+    // 같은 renderer 내부이면서 anchor의 화면 직사각형 안에 있을 때만 복구.
+    const x = event.clientX;
+    const y = event.clientY;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    const top = scope.document?.elementFromPoint?.(x, y) || event.target;
+    if (!top || typeof top.closest !== "function") return null;
+    const selector = "ytd-rich-item-renderer, ytd-video-renderer, yt-lockup-view-model";
+    const renderer = top.closest(selector);
+    if (!renderer) return null;
+
+    let result = null;
+    let area = Infinity;
+    for (const binding of bindings.values()) {
+      const element = binding.element;
+      if (!element?.isConnected ||
+          typeof element.getBoundingClientRect !== "function" ||
+          element.closest?.(selector) !== renderer) continue;
+      const rect = element.getBoundingClientRect();
+      if (!rect || rect.width <= 0 || rect.height <= 0 ||
+          x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) continue;
+      const size = rect.width * rect.height;
+      if (size < area) {
+        result = binding;
+        area = size;
       }
+    }
+    return result;
+  }
+
+  function handlePointerActivity(event) {
+    if (disposed || event?.pointerType === "touch") return;
+    const binding = findPointerBinding(event);
+
+    // per-anchor pointerleave가 YouTube 재배치나 Preview에 의해 누락됐을
+    // 때 문서 이벤트에서 이탈을 보정한다. 카드 이동에는 200ms 유예 유지.
+    if (selected && pointerInside && binding !== selected) {
+      leaveBinding(selected, "POINTER");
     }
     if (suppressedAnchor && binding?.element !== suppressedAnchor) {
       suppressedAnchor = null;
     }
     if (!binding || binding === selected || binding.element === suppressedAnchor) return;
     pointerRecoveryCount += 1;
-    queueEnter(binding, "POINTER", "POINTER_MOVE_RECOVERY");
+    queueEnter(binding, "POINTER", event.type === "pointerover" ?
+      "POINTER_OVER_RECOVERY" : "POINTER_MOVE_RECOVERY");
+  }
+
+  function handlePointerOut(event) {
+    if (disposed || event?.pointerType === "touch") return;
+    const next = event?.relatedTarget;
+    if (suppressedAnchor &&
+        isWithin(event?.target, suppressedAnchor) &&
+        !isWithin(next, suppressedAnchor)) {
+      suppressedAnchor = null;
+    }
+    if (selected && pointerInside &&
+        isWithin(event?.target, selected.element) &&
+        !isWithin(next, selected.element)) {
+      leaveBinding(selected, "POINTER");
+    }
   }
 
   /*
@@ -404,6 +476,11 @@
       activationDelayMs: ENTER_DELAY_MS,
       leaveGraceMs: LEAVE_GRACE_MS,
       pointerRecoveries: pointerRecoveryCount,
+      pointerInside,
+      focusInside,
+      overlayPointerInside,
+      overlayFocusInside,
+      suppressedAnchorActive: Boolean(suppressedAnchor),
       requestId,
       boundVideoAnchors: list.filter(entry => entry.kind === "VIDEO").length,
       boundChannelAnchors: list.filter(entry => entry.kind === "CHANNEL").length,
@@ -425,7 +502,9 @@
     unsubscribeSources.length = 0;
     for (const binding of bindings.values()) detach(binding);
     bindings.clear();
-    scope.document?.removeEventListener?.("pointermove", handlePointerMove, true);
+    scope.document?.removeEventListener?.("pointermove", handlePointerActivity, true);
+    scope.document?.removeEventListener?.("pointerover", handlePointerActivity, true);
+    scope.document?.removeEventListener?.("pointerout", handlePointerOut, true);
     suppressedAnchor = null;
     scope.document?.removeEventListener?.("keydown", handleKeyDown);
     scope.document?.removeEventListener?.("visibilitychange", handleVisibility);
@@ -458,7 +537,9 @@
     unsubscribeSources.push(discovery.subscribe(change => handleDiscovery("VIDEO", change)));
     unsubscribeSources.push(discovery.subscribeChannels(change => handleDiscovery("CHANNEL", change)));
     connected = true;
-    scope.document?.addEventListener?.("pointermove", handlePointerMove, true);
+    scope.document?.addEventListener?.("pointermove", handlePointerActivity, true);
+    scope.document?.addEventListener?.("pointerover", handlePointerActivity, true);
+    scope.document?.addEventListener?.("pointerout", handlePointerOut, true);
     scope.document?.addEventListener?.("keydown", handleKeyDown);
     scope.document?.addEventListener?.("visibilitychange", handleVisibility);
     scope.addEventListener?.("pagehide", dispose);
