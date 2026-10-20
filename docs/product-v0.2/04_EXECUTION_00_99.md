@@ -19,7 +19,7 @@
 - **00:** 사용자가 제품 방향을 승인했고 `00_PRODUCT_DIRECTION.md` 초안이 작성됨.
 - **01~03:** 사용자 승인 방향과 프론트 소스를 반영한 문서 초안이 작성됨. UX 세부와 기술 스택·권한은 검토 필요.
 - **04:** 00~99 순서, 산출물, 현재 상태를 정의하는 본 문서(초안 작성 완료, 외부 검토 필요).
-- **05~09:** 제품 정의 세부/게이트 **문서 초안 작성**. **10~19:** YouTube 홈, Hover·Side Panel의 **UX 문서 초안 작성**. **20:** MV3 스켈레톤 PR #6 병합. **21~25:** 탐지·SPA·ID·기존 Hover Controller frontend 병합. **26:** 이전 Strict Thumbnail Hover는 Node 144/144·오프라인 Chromium·실 Search DOM·사용자 Chrome Home/Search 수동 PASS 보고. 추가 승인에 따라 Shadow Card 포인터 우선, A→Card 고정, 배경 B 차단, 160ms 한정 Safe Transit을 구현했으며 최신 V8 모의 158/158 PASS. 최신 Windows Native Node/Chromium/Live/MV3 수동 재검증 PENDING이므로 PR #13 Draft·미병합 유지. **27~99:** 후속 기능 실제 구현·검증 완료 아님. 실행대장 자체의 작성은 실서비스 동작 증거가 아님.
+- **05~09:** 제품 정의 세부/게이트 **문서 초안 작성**. **10~19:** YouTube 홈, Hover·Side Panel의 **UX 문서 초안 작성**. **20:** MV3 스켈레톤 PR #6 병합. **21~25:** 탐지·SPA·ID·기존 Hover Controller frontend 병합. **26:** 이전 Strict Thumbnail Hover는 Node 144/144·오프라인 Chromium·실 Search DOM·사용자 Chrome Home/Search 수동 PASS 보고. 추가 승인에 따라 Shadow Card 포인터 우선, A→Card 고정, 배경 B 차단, 160ms 한정 Safe Transit을 구현했으며 코드 리뷰에서 발견한 원격 중복 영상 재결합 문제까지 수정해 최신 V8 모의 160/160 PASS. 최신 Windows Native Node/Chromium/Live/MV3 재검증 PENDING이므로 PR #13 Ready for review·미병합 유지. **27~99:** 후속 기능 실제 구현·검증 완료 아님. 실행대장 자체의 작성은 실서비스 동작 증거가 아님.
 
 ## 00~99 상세 작업
 
@@ -63,7 +63,7 @@
 | **23** | 영상 대상 식별 | 확실한 videoId 추출 및 잘못된 링크 거부 | `MERGED / USER_REPORTED_NODE_AND_WINDOWS_PASS / TESTED_SHA_MATCH` | [PR #10](https://github.com/Choi1999/YOUTOPIA/pull/10), `extension/target-resolver.js`, [QA 23 기록](../../extension/tests/QA_23_EVIDENCE.md) |
 | **24** | 채널 대상 식별 | channelId/@handle 구별·불확실 시 유보 | `MERGED / V8_FIXTURE_TESTED / USER_REPORTED_WINDOWS_PASS / TESTED_SHA_MATCH` | [PR #11](https://github.com/Choi1999/YOUTOPIA/pull/11), `extension/channel-target-resolver.js`, [QA 24 기록](../../extension/tests/QA_24_EVIDENCE.md) |
 | **25** | Hover 상태 제어 | 타이머·마우스 카드 이동·연속/겹침 요청 취소 | `MERGED / V8_FIXTURE_TESTED / USER_REPORTED_WINDOWS_PASS / TESTED_SHA_AND_CLEAN` | [PR #12](https://github.com/Choi1999/YOUTOPIA/pull/12), `extension/hover-controller.js`, [QA 25 기록](../../extension/tests/QA_25_EVIDENCE.md) |
-| **26** | 경량 Hover 카드 UI | 합성 카드·카드 안 포인터 고정·빈 Host 투명·Safe Transit | `IN_PROGRESS / INTERACTIVE_CARD_PINNING / V8_MOCK_158_PASS / NATIVE_NODE_158_CHROMIUM_LIVE_RETEST_PENDING / PR13_DRAFT` | `extension/hover-controller.js`, `extension/hover-card.js`, [QA 26 기록](../../extension/tests/QA_26_EVIDENCE.md) |
+| **26** | 경량 Hover 카드 UI | 합성 카드·카드 안 포인터 고정·빈 Host 투명·Safe Transit | `IN_PROGRESS / INTERACTIVE_CARD_PINNING / V8_MOCK_160_PASS / NATIVE_NODE_160_CHROMIUM_LIVE_RETEST_PENDING / PR13_READY_FOR_REVIEW` | `extension/hover-controller.js`, `extension/hover-card.js`, [QA 26 기록](../../extension/tests/QA_26_EVIDENCE.md) |
 | **27** | 확장 서비스 워커 메시지/캐시 | targetId·requestId 검증과 권한 최소화 | `NOT_STARTED` | `background tests` |
 | **28** | Chrome Side Panel 연동 | 사용자 클릭 제스처로 열기·동일 대상 유지 | `NOT_STARTED` | `panel smoke` |
 | **29** | 실제 YouTube 홈 수동·자동 PoC | 선정 브라우저에서 카드 위치·패널·충돌 체크 | `NOT_STARTED` | `Chrome local QA` |
@@ -223,3 +223,4 @@
 | 2026-10-20 | 26 실제 YouTube에서 지속된 Hover 누락·재진입 실패에 대응, 사용자 명시 규칙으로 전환 | 썸네일 진입 즉시 카드 표시·이탈 즉시 닫힘. 진입/종료 타이머 제거, 비대화식 click-through 카드, 물리 썸네일 링크 우선, 배치 실패시 fallback. 신규 컨트롤러 회귀 41건 등 최신 모의 V8 184/184 PASS. Windows Native Node/Chromium/실 YouTube 재검증 전, PR #13 Draft 유지 |
 | 2026-10-20 | PR #13 Strict Hover 단순화 및 실 DOM 재현 | anchor별 리스너·tracker/reducer·overlay/suppression 제거, 문서 이벤트 위임·단일 active binding·stable target key 적용. YouTube portal video-preview 좌표 복구 추가. Node 144/144, 오프라인 Chromium, 실 검색 DOM same-A/A-B-C 반복 PASS. 익명 Home feed·수동 확장 E2E는 PENDING |
 | 2026-10-20 | 사용자 Chrome Home/Search/YouTube Preview PASS 후 카드 내부 포인터 유지 UX 추가 승인 | PR #13 카드만 pointer-events:auto, Host/Surface pointer 투명, 카드가 덮는 B 선택 차단, A↔카드 160ms 한정 안전 경로, SPA 같은 ID 핀 유지. 신규 14건 포함 격리 V8 158/158 PASS. 최신 Windows Native Node/Chromium/Live/설치 MV3 QA 재검증 PENDING, 미병합 |
+| 2026-10-20 | PR #13 코드 리뷰: A 카드 고정 중 동영상 ID 중복 앵커의 원거리 SPA 재결합 오류 재현·수정 | 사용자 수동 Chrome 검증 통과 SHA 4193f 후속 변경. 활성 앵커의 마지막 화면 사각형을 저장하고 가까운 DOM 교체만 targetKey/requestId 유지. 격리 V8 모의 160/160 PASS, 최신 Native Node·Chromium·설치형 MV3 검증 PENDING. PR Ready for review·미병합 |
