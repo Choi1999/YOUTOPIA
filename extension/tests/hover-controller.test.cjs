@@ -414,6 +414,10 @@ test("포인터가 카드 위에 있는 동안 SPA가 같은 ID anchor 교체해
   expectVisible(f,A);
   assert.equal(f.api().getSnapshot().requestId,id);
   assert.equal(f.api().getSnapshot().anchor,b);
+  assert.equal(f.api().getRuntimeStatus().cardPointerInside,true);
+  // The removed A DOM's delayed pointerout must not erase the card.
+  pointer(f,"pointerout",a,{relatedTarget:null,clientX:800,clientY:500});
+  expectVisible(f,A);
 });
 
 test("discovery가 없으면 controller를 초기화하지 않음",()=>{assert.equal(fixture({available:false}).api(),undefined);});
