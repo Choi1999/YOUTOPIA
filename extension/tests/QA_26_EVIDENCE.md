@@ -1,6 +1,6 @@
 # YUTOPIA 26번 — 실제 Hover 카드 UI(합성 데이터) 검증 기록
 
-> **2026-10-20 / CARD_UI_CODE_READY / NATIVE_WINDOWS_NODE_150_OF_150_PASS / CHROMIUM_FIXTURE_RETEST_PENDING / LIVE_CHROME_QA_PENDING**
+> **2026-10-20 / CARD_UI_CODE_READY / V8_MOCK_152_OF_152_PASS / NATIVE_WINDOWS_NODE_150_PASS_PRIOR_HEAD / CHROMIUM_RETEST_PENDING / LIVE_CHROME_QA_PENDING**
 
 이 기록은 Chrome MV3 확장 개발자용 **MOCK Hover 카드 UI**를 설명한다. 실제 YouTube 데이터 분석, 운영 배포, 사용자 승인 UI 시안 완성 또는 Side Panel 대상 연동에 대한 증거가 아니다.
 
@@ -28,15 +28,15 @@
 | 23 VIDEO ID 검증 | 21 | PASS, 격리 V8 |
 | 24 CHANNEL ID/@handle | 32 | PASS, 격리 V8 |
 | 25 Hover 상태 제어 | 40 | PASS, 격리 V8 (Manifest 순서 계약 신규 파일 대응) |
-| 26 Hover 카드 모델/DOM/CTA·썸네일 겹침 보완 | 32 | PASS, 격리 V8 Mock DOM |
-| **전체** | **150** | **150/150 PASS — 실제 Node.js CLI/Chrome 실행 아님** |
+| 26 Hover 카드 모델/DOM/CTA·썸네일 클릭 가림 회귀 | 34 | PASS, 격리 V8 Mock DOM |
+| **전체** | **152** | **152/152 PASS — 격리 V8 모의 실행 (최신 브랜치)** |
 | JavaScript 구문 | 신규 모델/렌더러/테스트 | PASS, 격리 V8 파서 |
-| Native Node.js CLI | node --test 6개 파일 2회 실행 | **150/150 PASS × 2 — 사용자 제출 PowerShell 원본 로그** |
-| Chromium 오프라인 DOM | chromium-hover-card-fixture.py | **실행 중 Host.inner_text() 검증 실패; Shadow Root 내부 검사로 수정 커밋, 재실행 대기** |
+| Native Node.js CLI | 이전 HEAD에서 node --test 6개 파일 2회 | **150/150 PASS × 2 — 사용자 제출 PowerShell 로그. 최신 152개 변경 테스트 재실행 대기** |
+| Chromium 오프라인 DOM | chromium-hover-card-fixture.py | **Host 텍스트 선택 오류 수정 후 A→B Hover 실패 확인; UI 위치·포인터 가림 수정 및 재실행 대기** |
 | Windows Chrome | 실제 YouTube 홈/검색 카드 위치/조작, 다크/라이트/줌 | **NOT VERIFIED** |
 | CI·독립 리뷰 | GitHub 상태 검사·PR 리뷰 | **NOT VERIFIED** |
 
-**격리 V8 수행 방법:** GitHub PR 브랜치 파일을 이용한 모의 어댑터 테스트 150/150 PASS. **별도로** Windows PowerShell 원본 로그에서 실제 Node.js CLI 150/150 PASS를 2회 확인했다(해당 시점 검사 HEAD `84c9e5949c94fa4db6ac842f05f652b7f57d1e87`). Chromium Fixture 검증 성공이나 실제 YouTube Chrome 시각 검증 완료로는 취급하지 않는다.
+**격리 V8 수행 방법:** GitHub PR 최신 브랜치 파일을 이용한 모의 어댑터 테스트 **152/152 PASS**. **별도로** Windows PowerShell 원본 로그에서 수정 이전의 실제 Node.js CLI 150/150 PASS를 2회 확인했다(해당 시점 검사 HEAD `84c9e5949c94fa4db6ac842f05f652b7f57d1e87`). Chromium Fixture 검증 성공이나 실제 YouTube Chrome 시각 검증 완료로는 취급하지 않는다.
 
 ## 2.1 Windows 실행 로그·Chromium 실패 분석 (2026-10-20)
 
@@ -45,6 +45,15 @@
 - 원인: `<div id="yutopia-extension-hover-card">`는 **open Shadow Root 호스트**이고, 브라우저에서 호스트의 innerText에는 Shadow DOM 안의 텍스트가 포함되지 않는다. 독립 Chromium 최소 사례에서 Host.innerText는 빈 문자열, Host 안 `.card`의 innerText는 기대 문자열로 확인했다. **실제 카드 콘텐츠가 비어 있었다는 증거가 아니다.**
 - 대응: `card_content = card.locator(".card")`로 Shadow DOM 내부를 직접 선택하고, 검증 전에 Shadow Root와 `.card` 존재 여부를 별도로 검사하도록 **테스트 Fixture만 수정**. Content Script UI·모델·권한·Node 테스트는 변경하지 않았다.
 - 결과: **원인 분석·Fixture 소스 수정 완료 / 사용자 Windows Chromium 재실행 전**. 수정 이후의 Chromium PASS를 주장하지 않는다. 수정본을 `git pull --ff-only`로 받은 후 재검증 필요.
+## 2.2 Chromium 두 번째 실패 및 수정 (2026-10-20)
+
+- 사용자는 Shadow Root 검사 수정 HEAD `6e8c876d88e87a731226fe41e2d0eb88e65d8873`를 `git pull --ff-only`로 받아 Clean Worktree로 재실행했다.
+- 이전 `card.inner_text()` Assertion은 통과했고, VIDEO A 카드·합성 데이터·더보기 안내 이후 **111행에서 VIDEO B 썸네일로 이동하려 할 때** Playwright `Locator.hover: Timeout 30000ms exceeded`가 발생했다. 로그에 `<div id="yutopia-extension-hover-card"> intercepts pointer events`가 반복됐다.
+- **실제 UI 결함:** 카드가 옆 영상 썸네일을 덮어 B의 Hover/클릭 진입을 방해할 수 있다. 단순한 테스트 선택 오류가 아니므로 `force=True` 같은 우회는 금지한다.
+- **원인:** 기존 배치 로직은 우측 카드가 다른 썸네일을 가려도 아래쪽 남는 높이가 카드 전체 자연 높이보다 짧으면 이동을 포기했다. 긴 카드 및 더보기 확장 상태에서 옆 썸네일을 가릴 수 있었다.
+- **수정:** 카드 자체의 `maxHeight`를 남은 화면 높이로 제한해 내부 스크롤을 허용하고, 우측/좌측/하단/상단 후보 중 다른 썸네일의 **중앙 포인터 영역을 피하는 위치**를 선택한다. 안전한 후보가 없으면 카드 표시를 취소한다. Host의 빈 영역은 `pointer-events:none`, 실제 Card 내부만 `pointer-events:auto`로 유지한다. 더보기 안내로 높이가 변할 때도 위치 재검사.
+- **회귀 보강:** 가상의 긴 카드가 A 옆 B 중앙을 덮는 상황과 모든 위치가 막힌 경우를 Node Fake DOM 테스트에 추가했다. Chromium Fixture는 A→B 이동 전에 `document.elementFromPoint()`로 B 중앙 가림 여부를 확인하며, 강제 Hover 없이 최대 5초 내에 실제 Hover를 시도하도록 보강했다.
+- **결과 상태:** 최신 개발 브랜치 기준 기존 회귀 118 + 26번 34 = **격리 V8 모의 152/152 PASS**, **Native Windows Node 152건 및 Chromium 수정본 전체 통과는 아직 미검증**. 실제 YouTube Chrome 실사이트 검증도 대기 중.
 ## 3. Node.js 및 선택 Chromium 실행 명령
 
 저장소 루트 기준:
@@ -55,7 +64,7 @@ node --check extension/hover-card.js
 node --test extension/tests/content-discovery.test.cjs extension/tests/content-spa-observer.test.cjs extension/tests/video-target-resolver.test.cjs extension/tests/channel-target-resolver.test.cjs extension/tests/hover-controller.test.cjs extension/tests/hover-card-ui.test.cjs
 ~~~
 
-정상 기대값: 150 tests, 150 pass, 0 fail.
+최신 코드 기대값: 152 tests, 152 pass, 0 fail.
 
 선택적인 오프라인 Chromium DOM 검증:
 
@@ -68,7 +77,7 @@ python extension/tests/chromium-hover-card-fixture.py
 ## 4. Windows Chrome 실제 시각 QA — 아직 미실행
 
 1. 기존 개발 폴더를 수정하지 않고 별도 clone/worktree로 feature/yutopia-26-hover-card 브랜치 복제.
-2. PowerShell에서 git rev-parse HEAD와 git status --short 확인, 위 Node 테스트 150건 PASS 및 구문 통과 기록.
+2. PowerShell에서 git rev-parse HEAD와 git status --short 확인, 수정된 Node 테스트 152건 PASS 및 구문 통과 기록.
 3. Chrome chrome://extensions에서 기존 YUTOPIA 검증 확장 일시 비활성화, 이번 브랜치 extension/ 폴더 로드. YouTube 홈 새로고침.
 4. YouTube 홈의 4개 이상 썸네일 중 A 위에 마우스를 잠깐(100ms) 올렸다 떼면 카드가 나타나지 않아야 한다.
 5. A 위 400ms가량 유지 시 앵커 옆 Hover 카드가 표시되어야 하며, ID가 A 링크의 /watch?v= 값과 같아야 한다. 긍정/중립/부정 차트와 DEMO·STATIC FIXTURE 고지 및 가상 표본/기간이 함께 보여야 한다.
@@ -85,13 +94,13 @@ globalThis.YUTOPIA_HOVER_CARD?.getRuntimeStatus();
 globalThis.YUTOPIA_HOVER_CONTROLLER?.getRuntimeStatus();
 ~~~
 
-13. Chrome 버전, 테스트 SHA, 150개 Node CLI 테스트 결과, UI 이상·스크린샷/재현 절차 및 미커밋 상태를 기록한다.
+13. Chrome 버전, 테스트 SHA, 152개 Node CLI 테스트 결과, UI 이상·스크린샷/재현 절차 및 미커밋 상태를 기록한다.
 
 ## 5. Gate
 
 - 26번 코드/모의 검증: READY_FOR_REVIEW / ISOLATED_V8_TESTED.
-- Native Windows Node CLI 150/150: PASS × 2 (수정 이전 HEAD의 사용자 로그). 수정 커밋 이후 회귀 재확인은 PENDING.
-- Chromium 오프라인 Fixture: Shadow DOM 검증 대상 수정 후 **RETEST_PENDING**.
+- Native Windows Node CLI 150/150: PASS × 2 (이전 HEAD의 사용자 로그). 최신 152/152 CLI 재실행은 PENDING.
+- Chromium 오프라인 Fixture: 두 번째 A→B 포인터 차단 결함 수정 후 **RETEST_PENDING**.
 - 실제 YouTube Windows Chrome 시각·접근성/이벤트 동작: PENDING.
 - Figma 픽셀 패리티: 별도 사람 검수 및 승인 필요.
 - 27번 메시지·28번 패널 대상 고정·29번 실제 Chrome 통합 QA: 아직 미구현.
