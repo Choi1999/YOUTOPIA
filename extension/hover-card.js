@@ -31,7 +31,7 @@
     "  --ytp-soft: #2a3441; --ytp-accent: #9aaaff; --ytp-positive: #7bc1ad;",
     "  --ytp-neutral: #96a8c3; --ytp-negative: #e39690; }",
     "*, *::before, *::after { box-sizing: border-box; }",
-    ".card { pointer-events: auto; color: var(--ytp-ink); background: var(--ytp-bg); border: 1px solid var(--ytp-line);",
+    ".card { pointer-events: none; color: var(--ytp-ink); background: var(--ytp-bg); border: 1px solid var(--ytp-line);",
     "  border-radius: 16px; box-shadow: 0 16px 48px rgba(0,0,0,.22);",
     "  max-height: calc(100vh - 16px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }",
     ".header { display: flex; align-items: center; gap: 7px; padding: 13px 14px 9px; }",
@@ -69,6 +69,7 @@
     "  background: var(--ytp-accent); color: #ffffff; border-radius: 10px; }",
     ":host([data-theme='dark']) .more { color: #171d28; }",
     ".more:hover { filter: brightness(1.06); }",
+    ".more:disabled, .close:disabled { opacity: .45; cursor: default; }",
     ".more:focus-visible, .close:focus-visible { outline: 3px solid var(--ytp-accent); outline-offset: 2px; }",
     ".more-status { font-size: 11px; color: var(--ytp-muted); }",
     "[hidden] { display: none !important; }",
@@ -154,7 +155,11 @@
     header.appendChild(el("span", "tag", "DEMO · 가상 데이터"));
     header.appendChild(el("span", "spacer"));
     const close = el("button", "close", "×");
+    // Strict thumbnail-only preview: moving into the card closes it immediately.
+    // Controls remain as future markup, but must not promise working click actions.
     close.type = "button";
+    close.disabled = true;
+    close.setAttribute("aria-disabled", "true");
     close.setAttribute("aria-label", "YUTOPIA 카드 닫기");
     close.addEventListener("click", () => controller?.dismiss("CARD_CLOSE"));
     header.appendChild(close);
@@ -228,7 +233,9 @@
       const actions = el("div", "actions");
       const more = el("button", "more", "더보기 →");
       more.type = "button";
-      more.setAttribute("aria-label", "가상 반응 미리보기 더보기 안내");
+      more.disabled = true;
+      more.setAttribute("aria-disabled", "true");
+      more.setAttribute("aria-label", "정지형 Hover 미리보기 · 상세 보기는 향후 클릭 동작으로 제공");
       const message = el("div", "more-status");
       message.setAttribute("role", "status");
       message.hidden = true;
@@ -383,13 +390,19 @@
       offer(clampedLeft, preferredTop, fullHeight, 4);
     }
     if (choices.length === 0) {
-      controller?.dismiss("NO_SAFE_HOVER_PLACEMENT");
-      removeHost();
+      // Never dismiss a valid Hover due only to popup layout. In strict mode the
+      // card is read-only and pointer-events:none, so it cannot block YouTube.
+      if (cardRoot?.style) cardRoot.style.maxHeight = fullHeight + "px";
+      host.dataset.layout = "viewport-fallback";
+      host.style.left = Math.round(clampedLeft) + "px";
+      host.style.top = Math.round(preferredTop) + "px";
+      host.style.visibility = "visible";
       return;
     }
 
     choices.sort((a, b) => a.score - b.score || a.order - b.order);
     const best = choices[0];
+    host.dataset.layout = "safe";
     if (cardRoot?.style) cardRoot.style.maxHeight = best.maxHeight + "px";
     host.style.left = Math.round(best.left) + "px";
     host.style.top = Math.round(best.top) + "px";
@@ -411,8 +424,9 @@
   }
 
   /*
-   * LEAVE_PENDING 동안은 기존 카드를 유지해 포인터가 화면 카드로 이동할 수 있다.
-   * 타깃/requestId가 달라지면 이전 카드를 절대 재사용하지 않는다.
+   * Strict thumbnail Hover: the controller removes the active card immediately
+   * on physical thumbnail exit. The old LEAVE_PENDING branch below is retained
+   * for defensive compatibility with any older development producer.
    */
   function onHoverState(state) {
     if (disposed) return;
