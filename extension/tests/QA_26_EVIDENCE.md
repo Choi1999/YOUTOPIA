@@ -1,13 +1,72 @@
-# YU-26 Strict Thumbnail Hover 검증 기록
+# YU-26 Interactive Hover Card QA — 2026-10-20
 
-## 현재 범위
+> PR13_OPEN_DRAFT / CARD_PINNING_CODE_READY / ISOLATED_V8_158_OF_158_PASS / NATIVE_CHROMIUM_LIVE_RETEST_PENDING / FRONTEND_UNCHANGED
+
+## 최신 승인 요구 — 카드 안으로 이동 시 현재 영상 고정
+
+기존 944b935eea2225e1375b28cd0506aad9790a553c의 Windows Chrome Home/Search/YouTube 자동 영상 미리보기 반복 Hover는 사용자가 모두 PASS로 보고했다. 다만 마우스가 카드 위에 진입하면 카드가 닫히고, 카드 아래 다른 영상 B가 선택되는 문제가 있어 **새 카드 유지 UX가 승인되었다**. 이 절이 아래 944b Strict 계약 이력보다 우선한다.
+
+1. 유효한 영상/채널 썸네일 진입 시 즉시 현재 대상 카드 표시. 일반 열림 지연 0ms.
+2. 썸네일 A → A의 카드로 마우스를 움직이면 targetKey/requestId를 유지하면서 카드가 계속 표시된다.
+3. 실제 Shadow Card만 포인터 이벤트를 받고, 카드가 가리고 있는 B 영상은 포인터/클릭 입력을 받지 않는다. Host와 빈 Surface는 pointer-events:none 유지.
+4. 썸네일과 카드 사이의 **짧은 기하학적 간격**만 최대 160ms 유예. 일반적인 썸네일 이탈/다른 영상 진입은 즉시 종료/전환. 같은 간격 안에서 pointermove를 반복해도 유예 종료 기한은 연장되지 않는다.
+5. 카드 → 빈 영역에서는 카드 종료. 카드 → 노출된 B 영상은 즉시 B 표시. 카드 → A 썸네일 재진입은 기존 대상 유지. 같은 영상 반복 Hover와 A→B→C도 기존처럼 정상 동작.
+6. SPA에서 같은 논리적 VIDEO/CHANNEL ID의 앵커가 교체되면 현재 카드/요청 상태를 유지하며, 다른 ID이거나 잘못된 ID는 기존대로 안전하게 취소한다.
+7. MOCK/DEMO/STATIC FIXTURE 외 실제 YouTube 제목·본문·댓글 수집·표시하지 않음. Shorts/광고/불확실한 ID는 계속 제외.
+8. 더보기/닫기 버튼은 현재 disabled이며 Side Panel 연결은 27~28번 범위로 남긴다.
+
+## 코드 변경과 검증 범위
+
+- hover-controller.js: setCardRegion(host,card), 카드 이벤트 우선 판정, cardPointerInside, card transit 160ms 타이머, 일반 열림·종료 지연은 0ms, SPA 및 오래된 이벤트 처리.
+- hover-card.js: Host/Surface는 포인터 투명, Shadow .card만 pointer-events:auto. 생성/제거 시 컨트롤러 카드 영역 등록/해제.
+- hover-controller.test.cjs: 추가 11건. A↔카드↔A 20회, 카드가 덮은 B 선택 차단, 직접 카드→노출된 영상 전환, 안전 간격 유예·만료·기한 불연장, SPA 교체·이전 이벤트 경합.
+- hover-card-ui.test.cjs: 추가 3건. 카드 영역 등록·교체·해제 및 pointer-events 값.
+- chromium-hover-card-fixture.py: 실제 Chromium에서 단계별 A→카드→A, B 가림/노출, Card→노출 C, 반복 영상 전환 검증하도록 수정.
+- chromium-live-youtube-hover.py: 새로운 strategy 확인값을 반영. 실제 라이브 테스트 최신 재실행은 아직 없음.
+
+| 검증 | 결과 |
+|---|---|
+| 이번 수정 JS 구문·V8 모의 Node/DOM/URL | **158/158 PASS** |
+| 944b Native Windows Node (이전 코드) | **144/144 PASS — 사용자 PowerShell 로그** |
+| 944b 오프라인 Chromium 2개 (이전 코드) | **둘 다 PASS — 사용자 PowerShell 로그** |
+| 944b 실 YouTube 검색 DOM (이전 코드) | **PASS; Home 익명 추천 없음으로 SKIP** |
+| 최신 Interactive Card Native Node 158건 | **PENDING** |
+| 최신 Interactive Card Chromium 오프라인·실 YouTube | **PENDING** |
+| 최신 Interactive Card 설치형 MV3 Chrome 확장 수동 검증 | **PENDING** |
+
+### Windows 재검증
+
+~~~powershell
+Set-Location "$env:USERPROFILE\YUTOPIA-Chrome-QA-26"
+git pull --ff-only origin feature/yutopia-26-hover-card
+git rev-parse HEAD
+git status --short
+node --test extension/tests/*.test.cjs
+
+$py = Join-Path $env:USERPROFILE "YUTOPIA-QA26-venv\Scripts\python.exe"
+& $py extension/tests/chromium-hover-fixture.py
+& $py extension/tests/chromium-hover-card-fixture.py
+
+$env:RUN_LIVE_YOUTUBE = "1"
+& $py extension/tests/chromium-live-youtube-hover.py
+Remove-Item Env:\RUN_LIVE_YOUTUBE -ErrorAction SilentlyContinue
+~~~
+
+필수 게이트: Native Node 158 PASS/0 FAIL 및 Chromium Fixture 두 개 PASS, 사용자 Chrome 로그인 Home/Search A→카드→A 20회, 카드 아래 B 선택 차단, 카드→노출된 C 정상 전환, 다른 썸네일 직접 이동, 빈 공간 이탈 시 카드 종료와 재진입 반복 20회. 한 번이라도 누락·깜빡임·잘못된 대상 발생 시 FAIL. 이전 944b PASS를 현재 변경의 PASS로 소급하지 않는다.
+
+**PR #13은 OPEN / Draft / 미병합 상태 유지. frontend/main/dev/backend/Figma 변경 금지.**
+
+---
+
+
+## 이전 검증 범위 (944b935e — 이력)
 
 - PR: `#13 feature/yutopia-26-hover-card` → `frontend`, Draft·미병합 유지.
 - 변경 금지: `frontend/main/dev/backend/Figma` 브랜치와 실제 서비스 데이터 계약.
 - 데이터: 카드 값은 `MOCK/DEMO/STATIC FIXTURE`만 사용한다. 실제 YouTube 본문·제목·URL·댓글·통계 값을 수집·출력·분석하지 않는다.
 - 권한: 기존 `sidePanel`, `storage`, `https://www.youtube.com/*` 외 추가 없음.
 
-## 확정 UX 계약
+## 944b 당시 Strict UX 계약 (현재 개정됨)
 
 1. 확인된 썸네일에 포인터가 들어오면 즉시 카드 표시.
 2. 썸네일 밖으로 나가면 즉시 카드 제거.
@@ -16,7 +75,7 @@
 5. 카드로 이동하는 순간 썸네일 밖이므로 카드가 닫힌다. 카드/Host는 `pointer-events:none`, 더보기/닫기는 현재 disabled다.
 6. 카드 배치 결과는 Hover Controller 상태를 닫지 않는다.
 
-## 구현 결정
+## 944b 구현 결정 (이력)
 
 - `document` capture `pointerover/move/out`과 `focusin/out`만 사용한다. anchor별 이벤트 리스너는 0개다.
 - 별도 Pointer Tracker/Presence Reducer와 overlay 점유 API를 Manifest에서 제거했다.
@@ -26,7 +85,7 @@
 - event path가 우선이며, YouTube portal `#video-preview`가 renderer 밖에서 원본 링크를 덮는 경우에는 Discovery가 이미 승인한 anchor 사각형만 좌표 hit-test한다. overlay 내용이나 URL로 ID를 추측하지 않는다.
 - View는 `lastHoverReason`과 `lastRenderReason`을 따로 보존한다. `ANCHOR_NOT_VISIBLE`/`ANCHOR_DETACHED`는 renderer 이유이며 Controller를 `DISMISSED`로 만들지 않는다.
 
-## 자동 검증
+## 944b 자동 검증 (이력)
 
 ### Node
 
@@ -64,7 +123,7 @@ python extension/tests/chromium-live-youtube-hover.py
 - 익명·새 컨텍스트 Home: 영상 feed 자체가 제공되지 않아 `LIVE_YOUTUBE_BOUNDARY_SKIP HOME anonymous-feed-unavailable`. 사용자 프로필·시청 기록을 재사용하거나 로그인하지 않았다.
 - 테스트는 DOM 요소 경계, Host 표시 여부, numeric request sequence만 확인했다. 본문 텍스트·제목·href·targetId·댓글 값은 읽거나 출력하지 않았다.
 
-## 수동 Windows Chrome 재검증
+## 944b 수동 Windows Chrome 재검증 (이력)
 
 1. `chrome://extensions`에서 압축해제된 `extension/`을 새로고침한다.
 2. YouTube 탭도 새로고침한다.
@@ -83,7 +142,7 @@ globalThis.YUTOPIA_HOVER_CARD?.getRuntimeStatus()
 
 정상 기준: `strategy:"DELEGATED_STRICT_THUMBNAIL"`, `perAnchorListeners:0`, `activationDelayMs:0`, `leaveGraceMs:0`, `enterScheduled:false`, `leaveScheduled:false`.
 
-## 남은 위험
+## 944b 당시 남은 위험 (이력)
 
 - 익명 자동화 세션의 YouTube Home feed가 비어 있어 실제 Home renderer 반복은 자동 검증하지 못했다.
 - Playwright는 페이지 컨텍스트에 동일 모듈을 주입한 검증이며, Chrome MV3 isolated world·확장 새로고침·실사용 프로필을 포함한 완전한 설치 E2E는 아니다.
