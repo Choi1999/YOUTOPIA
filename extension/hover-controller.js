@@ -33,6 +33,9 @@
   let transitGeneration = 0;
   let active = null;
   let activeMode = null;
+  // Save the last valid trigger geometry before YouTube detaches its DOM node.
+  // Detached elements generally lose their usable getBoundingClientRect().
+  let activeTriggerRect = null;
   let sequence = 0;
   let connected = false;
   let disposed = false;
@@ -50,6 +53,39 @@
     if ((type !== "VIDEO" && type !== "CHANNEL") ||
         typeof id !== "string" || !id) return null;
     return type + ":" + id;
+  }
+
+  function snapshotRect(binding) {
+    try {
+      const rect = binding?.element?.getBoundingClientRect?.();
+      if (!rect) return null;
+      const fields = [rect.left, rect.top, rect.right, rect.bottom,
+        rect.width, rect.height];
+      if (!fields.every(Number.isFinite) || rect.width <= 0 || rect.height <= 0)
+        return null;
+      return {
+        left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
+        width: rect.width, height: rect.height,
+      };
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  /*
+   * A card-pinned SPA rebound must represent the thumbnail under which this
+   * card opened, not an arbitrary other copy of the same video elsewhere.
+   * Prefer fail-closed when a detached original has no last known geometry.
+   */
+  function nearPreviousTrigger(binding) {
+    const old = activeTriggerRect;
+    const next = snapshotRect(binding);
+    if (!old || !next) return false;
+    const dx = Math.abs((old.left + old.right - next.left - next.right) / 2);
+    const dy = Math.abs((old.top + old.bottom - next.top - next.bottom) / 2);
+    const maxDx = Math.max(32, Math.min(96, old.width * 0.4));
+    const maxDy = Math.max(32, Math.min(96, old.height * 0.4));
+    return dx <= maxDx && dy <= maxDy;
   }
 
   function valid(binding) {
@@ -91,6 +127,7 @@
     }
     active = null;
     activeMode = null;
+    activeTriggerRect = null;
     publish(phase, reason);
   }
 
@@ -112,6 +149,7 @@
     if (!sameLogicalTarget) sequence += 1;
     active = binding;
     activeMode = mode;
+    activeTriggerRect = snapshotRect(binding);
     publish(phase, reason);
   }
 
@@ -463,7 +501,8 @@
       const sameTarget = candidates.find(candidate =>
         previousKey && stableTargetKey(candidate) === previousKey &&
         (elementObserved(candidate, activeMode || "POINTER") ||
-         (cardPointerInside && candidate.href === previousActive.href))
+         (cardPointerInside && candidate.href === previousActive.href &&
+          nearPreviousTrigger(candidate)))
       );
       const rebound = sameElement || sameTarget;
       if (rebound) {
