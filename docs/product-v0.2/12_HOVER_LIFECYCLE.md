@@ -54,7 +54,7 @@ READY / UNRESOLVED
 ## DOM churn과 배치
 
 - Content Discovery는 같은 DOM anchor의 href/ID 갱신과 anchor 제거·추가를 알린다.
-- 활성 anchor 교체 시 같은 targetKey의 새 anchor가 Hover/Focus 상태거나 포인터가 현재 카드에 고정된 상태이면 card/requestId를 유지한다.
+- 활성 anchor 교체 시 같은 targetKey의 새 anchor가 Hover/Focus 상태이면 card/requestId를 유지한다. **포인터가 카드에 고정된 경우는 추가로 기존 앵커의 마지막 유효 화면 사각형과 위치가 가까운 새 앵커에 한해서만** 재결합한다. 동일 videoId·href라 해도 화면 멀리 있는 중복 영상은 채택하지 않는다.
 - 새 anchor가 hover가 아니거나 대상 ID가 바뀌면 이전 대상은 유지하지 않는다.
 - 카드 배치는 우측→좌측→아래→위→viewport fallback 순서다. 카드는 겹친 썸네일의 포인터 입력을 **의도적으로 차단**하지만, 겹침 자체가 Hover 종료 원인은 아니다. Host 전체가 클릭 차단막이 되어서는 안 된다.
 - Controller 종료 이유(`THUMBNAIL_LEAVE`, `ANCHOR_REMOVED` 등)와 renderer 결과(`VISIBLE`, `ANCHOR_NOT_VISIBLE`, `ANCHOR_DETACHED`)를 별도 상태로 기록한다. 배치 실패가 Controller를 `DISMISSED`로 바꾸지 않는다.
