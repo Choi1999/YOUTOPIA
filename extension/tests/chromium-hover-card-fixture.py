@@ -232,6 +232,23 @@ with sync_playwright() as pw:
                window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyz'""",
             timeout=5000,
         )
+        # Card → uncovered C should directly switch targets, while B
+        # covered by the same card must remain unselectable.
+        c_available = page.evaluate("""() => {
+            const link=document.querySelector('#video-c a#thumbnail');
+            const rect=link.getBoundingClientRect();
+            const top=document.elementFromPoint(
+                (rect.left+rect.right)/2,(rect.top+rect.bottom)/2
+            );
+            return Boolean(top && (top===link || link.contains(top)));
+        }""")
+        assert c_available, "Uncovered Video C center should be reachable"
+        page.locator("#video-c a#thumbnail").hover(timeout=5000)
+        page.wait_for_function(
+            """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xy0'""",
+            timeout=5000,
+        )
+
         page.mouse.move(950, 700)
         page.wait_for_function(
             "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().hostCount === 0",
