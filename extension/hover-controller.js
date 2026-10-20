@@ -277,7 +277,7 @@
     if (suppressedAnchor && binding?.element !== suppressedAnchor) {
       suppressedAnchor = null;
     }
-    if (binding === selected) {
+    if (binding && binding === selected) {
       // native pointerenter가 누락된 채 같은 anchor로 돌아오더라도
       // LEAVE_PENDING의 200ms 종료 타이머를 취소하고 READY를 복원한다.
       if (!pointerInside) {
