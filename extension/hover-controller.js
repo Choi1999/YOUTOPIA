@@ -1,562 +1,364 @@
 /*
- * YUTOPIA Hover State Controller — 작업 25·26 / Interaction benchmark
+ * YUTOPIA Strict Thumbnail Hover Controller — YU-26 interaction correction
  *
- * 목적:
- *   - 마지막으로 확실히 진입한 VIDEO / CHANNEL 앵커만 활성 상태로 유지한다.
- *   - 160ms 진입 지연, 200ms 이탈 유예, 빠른 A→B→C 이동 및 비동기 응답을 차단한다.
- *   - VIDEO의 정규 targetId와 CHANNEL의 명시적인 UC ID만 상세 분석 가능 대상으로 전달한다.
- *   - @handle은 HANDLE_UNRESOLVED 표시 후보일 뿐 channelId로 추측하지 않는다.
- *   - 같은 브라우저 탭에서 하나의 Hover 상태만 허용한다.
+ * User interaction contract:
+ *   mouse physically enters identified thumbnail -> immediately show its card
+ *   mouse leaves thumbnail -> immediately remove card
+ *   repeated A->outside->A / A->B->A -> always activate current target
  *
- * 입력: YUTOPIA_VIDEO_DISCOVERY.subscribe/subscribeChannels의 DOM 후보 이벤트.
- * 출력: 격리 콘텐츠 스크립트의 상태 구독 API, 식별된 대상과 requestId.
- * 실패: DOM 해제·SPA 이동·Escape·탭 이탈·dispose 시 즉시 또는 유예 후 상태 취소.
- * 안전: DOM 내용/클릭/YouTube 프리뷰/Side Panel/외부 통신/시청 데이터를 수정하지 않는다.
- *
- * 의도적 미구현:
- *   - 카드 렌더링은 별도 26번 모듈, 27번 메시지/28번 패널 열기는 미구현.
- *   - READY는 표시 가능한 안정 상태이지 실제 카드가 VISIBLE이라는 뜻이 아니다.
+ * The controller is the single authority for the selected target and requestId.
+ * It has NO hover delay, leave grace, persistent suppression or card-focus latch.
+ * The pointer tracker determines physical link hits; the presence reducer keeps
+ * observations separate from the published card state.
+ * No YouTube source DOM mutation, network call or behavioral interception.
  */
 (function initializeYutopiaHoverController(scope) {
   "use strict";
-
   if (scope.YUTOPIA_HOVER_CONTROLLER) return;
 
-  const ENTER_DELAY_MS = 160; // 26번 Windows QA 피드백: 400ms 체감 지연 축소 (시험값)
-  const LEAVE_GRACE_MS = 200; // 카드로 이동하는 포인터 유예, UX 후보 범위 150~250ms
   const discovery = scope.YUTOPIA_VIDEO_DISCOVERY;
-  const channelResolver = scope.YUTOPIA_CHANNEL_TARGET_RESOLVER;
-  const pointerTracker = scope.YUTOPIA_HOVER_POINTER_TRACKER;
-  const presenceReducer = scope.YUTOPIA_HOVER_PRESENCE_REDUCER;
-  if (!pointerTracker || !presenceReducer) return;
+  const channels = scope.YUTOPIA_CHANNEL_TARGET_RESOLVER;
+  const tracker = scope.YUTOPIA_HOVER_POINTER_TRACKER;
+  const reducer = scope.YUTOPIA_HOVER_PRESENCE_REDUCER;
+  if (!discovery || !tracker || !reducer) return;
 
   const bindings = new Map();
-  const stateSubscribers = new Set();
+  const subscribers = new Set();
   const unsubscribeSources = [];
+  const doc = scope.document;
   let selected = null;
-  // Only this reducer changes pointer/focus occupancy. DOM events are observations.
-  let presence = presenceReducer.initial();
-  function changePresence(action) {
-    presence = presenceReducer.reduce(presence, action);
-  }
-  let enterTimer = null;
-  let exitTimer = null;
-  let generation = 0;
-  let exitGeneration = 0;
-  let requestId = 0;
-  let lastReadyPhase = null;
-  let disposed = false;
+  let selectedMode = null;
+  let presence = reducer.initial();
+  let sequence = 0;
   let connected = false;
-  // YouTube SPA 링크 교체 시 이미 포인터가 위치하면 pointerenter가 생략될 수 있다.
-  // 좌표/대상은 현재 탭 메모리에서만 처리하고 저장·전송하지 않는다.
-  let suppressedAnchor = null;
-  let pointerRecoveryCount = 0;
-
+  let disposed = false;
+  let pointerRecoveries = 0;
+  let lastReason = "INITIAL";
   let snapshot = Object.freeze({
-    phase: "IDLE",
-    requestId: 0,
-    targetType: null,
-    targetId: null,
-    target: null,
-    identityStatus: null,
-    anchor: null,
-    reason: "INITIAL",
+    phase: "IDLE", requestId: 0, targetType: null, targetId: null,
+    target: null, anchor: null, identityStatus: null, reason: "INITIAL",
   });
 
-  /*
-   * 구독자는 원시 댓글/제목/개인정보 대신 현재 대상과 상태만 받는다.
-   * 하나의 상태 소비자 오류가 나머지 소비자를 중단하지 않도록 격리한다.
-   */
   function publish(phase, reason) {
+    lastReason = reason;
     snapshot = Object.freeze({
-      phase,
-      requestId,
+      phase, requestId: sequence,
       targetType: selected?.kind ?? null,
       targetId: selected?.target?.targetId ?? null,
       target: selected?.target ?? null,
-      identityStatus: selected?.identityStatus ?? null,
       anchor: selected?.element ?? null,
+      identityStatus: selected?.identityStatus ?? null,
       reason,
     });
-    for (const subscriber of [...stateSubscribers]) {
-      try {
-        subscriber({ ...snapshot });
-      } catch (_error) {
-        // Consumer 오류를 콘텐츠 스크립트로 전파하지 않는다.
-      }
+    for (const listener of [...subscribers]) {
+      try { listener({...snapshot}); }
+      catch (_error) { /* isolate consumers */ }
     }
   }
 
-  function clearEnterTimer() {
-    if (enterTimer !== null) scope.clearTimeout?.(enterTimer);
-    enterTimer = null;
+  function valid(binding) {
+    return Boolean(binding && bindings.get(binding.element) === binding &&
+      binding.element?.isConnected !== false);
   }
 
-  function clearExitTimer() {
-    // 이미 큐에 들어간 오래된 이탈 콜백도 무효화한다.
-    exitGeneration += 1;
-    if (exitTimer !== null) scope.clearTimeout?.(exitTimer);
-    exitTimer = null;
-  }
-
-  /*
-   * generation은 이전 타이머·비동기 상태가 새 대상을 덮어쓰지 못하게 한다.
-   * requestId는 소비자에게 주는 공개 시퀀스, generation은 내부 타이머 버전이다.
-   */
-  function clearActive(reason, finalPhase = "IDLE") {
-    clearEnterTimer();
-    clearExitTimer();
-    generation += 1;
+  function reset(reason, phase = "IDLE") {
+    if (!selected && snapshot.phase === phase) {
+      lastReason = reason;
+      return;
+    }
     selected = null;
-    presence = presenceReducer.initial();
-    lastReadyPhase = null;
-    publish(finalPhase, reason);
+    selectedMode = null;
+    presence = reducer.initial();
+    publish(phase, reason);
   }
 
-  function queueEnter(binding, mode, source = null) {
-    if (disposed || bindings.get(binding.element) !== binding) return;
-    if (mode === "POINTER") suppressedAnchor = null;
-
-    if (selected === binding) {
-      changePresence(mode === "POINTER" ? "POINTER_ENTER" : "FOCUS_ENTER");
-      if (exitTimer !== null) {
-        clearExitTimer();
-        publish(lastReadyPhase || "READY", "ANCHOR_RETURNED");
-      }
+  function activate(binding, mode, reason, preserveId = false) {
+    if (disposed || !valid(binding)) return;
+    if (selected === binding && snapshot.phase ===
+        (binding.target ? "READY" : "UNRESOLVED")) {
+      selectedMode = mode;
+      presence = reducer.reduce(reducer.initial(),
+        mode === "FOCUS" ? "FOCUS_ENTER" : "POINTER_ENTER");
       return;
     }
-
-    clearEnterTimer();
-    clearExitTimer();
-    generation += 1;
-    requestId += 1;
+    const old = selected;
+    const sameLogical = preserveId && old &&
+      tracker.targetKey(old) !== null &&
+      tracker.targetKey(old) === tracker.targetKey(binding);
+    if (!sameLogical) sequence += 1;
     selected = binding;
-    presence = presenceReducer.reduce(presenceReducer.initial(),
-      mode === "POINTER" ? "POINTER_ENTER" : "FOCUS_ENTER");
-    lastReadyPhase = null;
-    publish("HOVER_PENDING", source ||
-      (mode === "POINTER" ? "POINTER_ENTER" : "FOCUS_IN"));
-
-    const token = generation;
-    if (typeof scope.setTimeout !== "function") {
-      // Timer가 없는 비브라우저 환경에서는 카드 가시성을 승인하지 않는다.
-      clearActive("TIMERS_UNAVAILABLE");
-      return;
-    }
-    enterTimer = scope.setTimeout(() => {
-      if (disposed || token !== generation || selected !== binding) return;
-      enterTimer = null;
-      lastReadyPhase = binding.target ? "READY" : "UNRESOLVED";
-      publish(lastReadyPhase, "HOVER_DELAY_COMPLETE");
-    }, ENTER_DELAY_MS);
+    selectedMode = mode;
+    presence = reducer.reduce(reducer.initial(),
+      mode === "FOCUS" ? "FOCUS_ENTER" : "POINTER_ENTER");
+    publish(binding.target ? "READY" : "UNRESOLVED", reason);
   }
 
-  function beginLeave(reason) {
-    if (disposed || !selected) return;
-    if (presenceReducer.occupied(presence)) return;
-    if (enterTimer !== null) {
-      // 짧게 스쳐 지나간 대상에서는 분석 상태가 생성되지 않는다.
-      clearActive("LEFT_BEFORE_DELAY");
-      return;
-    }
-    if (exitTimer !== null) return;
-    if (typeof scope.setTimeout !== "function") {
-      clearActive(reason);
-      return;
-    }
-    publish("LEAVE_PENDING", reason);
-    const token = generation;
-    const exitToken = ++exitGeneration;
-    const anchor = selected;
-    exitTimer = scope.setTimeout(() => {
-      if (
-        disposed || token !== generation || exitToken !== exitGeneration || selected !== anchor
-      ) return;
-      exitTimer = null;
-      if (!presenceReducer.occupied(presence)) {
-        clearActive("GRACE_EXPIRED");
-      }
-    }, LEAVE_GRACE_MS);
-  }
-
-  function leaveBinding(binding, mode) {
-    if (disposed) return;
-    // 카드 닫기/Escape 이후 selected가 null이어도 실제 anchor 이탈 시
-    // suppression을 해제해야 같은 영상으로 돌아왔을 때 복구가 가능하다.
-    if (mode === "POINTER" && suppressedAnchor === binding.element) {
-      suppressedAnchor = null;
-    }
-    if (selected !== binding) return;
-    changePresence(mode === "POINTER" ? "POINTER_LEAVE" : "FOCUS_LEAVE");
-    beginLeave(mode === "POINTER" ? "POINTER_LEAVE" : "FOCUS_OUT");
-  }
-
-  /*
-   * 포인터 경계 추적:
-   * - pointerover/move는 영상 anchor 하위 DOM(섬네일 이미지 등) 및
-   *   같은 렌더러 내부에서 썸네일을 덮는 YouTube preview를 인식한다.
-   * - pointerout은 관련 target이 실제 anchor 밖으로 바뀔 때만
-   *   이탈 처리하고, 명시적으로 닫은 카드의 suppression도 해제한다.
-   * - 포인터 이벤트가 누락돼도 다음 이동에서 현재 타깃을 재정렬한다.
-   *
-   * 현재 탭 안의 DOM과 좌표만 잠깐 읽고 사용자 정보를 저장/전송하지 않는다.
-   */
-  // Pointer Tracker owns hit-testing; Controller owns exactly one active state.
-  function isWithin(node, root) {
-    return pointerTracker.contains(root, node);
-  }
-
-  function findPointerBinding(event) {
-    return pointerTracker.resolve(event, bindings, scope.document);
-  }
-
-  function handlePointerActivity(event) {
-    if (disposed || event?.pointerType === "touch") return;
-    const binding = findPointerBinding(event);
-
-    // per-anchor pointerleave가 YouTube 재배치나 Preview에 의해 누락됐을
-    // 때 문서 이벤트에서 이탈을 보정한다. 카드 이동에는 200ms 유예 유지.
-    if (selected && presence.pointerInside && binding !== selected) {
-      leaveBinding(selected, "POINTER");
-    }
-    if (suppressedAnchor && binding?.element !== suppressedAnchor) {
-      suppressedAnchor = null;
-    }
-    if (binding && binding === selected) {
-      // native pointerenter가 누락된 채 같은 anchor로 돌아오더라도
-      // LEAVE_PENDING의 200ms 종료 타이머를 취소하고 READY를 복원한다.
-      if (!presence.pointerInside) {
-        pointerRecoveryCount += 1;
-        queueEnter(binding, "POINTER", "SAME_ANCHOR_REENTRY_RECOVERY");
-      }
-      return;
-    }
-    if (!binding || binding.element === suppressedAnchor) return;
-    pointerRecoveryCount += 1;
-    queueEnter(binding, "POINTER", event.type === "pointerover" ?
-      "POINTER_OVER_RECOVERY" : "POINTER_MOVE_RECOVERY");
-  }
-
-  function handlePointerOut(event) {
-    if (disposed || event?.pointerType === "touch") return;
-    const next = event?.relatedTarget;
-    if (suppressedAnchor &&
-        isWithin(event?.target, suppressedAnchor) &&
-        !isWithin(next, suppressedAnchor)) {
-      suppressedAnchor = null;
-    }
-    if (selected && presence.pointerInside &&
-        isWithin(event?.target, selected.element) &&
-        !isWithin(next, selected.element)) {
-      leaveBinding(selected, "POINTER");
-    }
-  }
-
-  /*
-   * 26번 Card root가 생성되면 이 핸들러를 pointerenter/leave, focusin/out에 연결한다.
-   * 현재 단계는 Card DOM을 만들지 않으며 YouTube에 오버레이를 삽입하지 않는다.
-   */
-  function setOverlayInteraction(kind, active) {
-    if (disposed || !selected) return;
-    if (kind === "POINTER") {
-      changePresence(active ? "OVERLAY_POINTER_ENTER" : "OVERLAY_POINTER_LEAVE");
-    } else if (kind === "FOCUS") {
-      changePresence(active ? "OVERLAY_FOCUS_ENTER" : "OVERLAY_FOCUS_LEAVE");
-    } else return;
-
-    if (active && exitTimer !== null) {
-      clearExitTimer();
-      publish(lastReadyPhase || "READY", "OVERLAY_ENTER");
-    } else if (!active) {
-      beginLeave("OVERLAY_LEAVE");
-    }
-  }
-
-  /*
-   * API 계약상 분석 상세 요청에 사용할 수 있는 대상은 targetId가 존재할 때뿐.
-   * @handle은 HOVER 지연 후 UNRESOLVED로 구분하되 상세 전송을 허용하지 않는다.
-   */
   function toBinding(entry, kind) {
     const element = kind === "VIDEO" ? entry?.thumbnailLink : entry?.channelLink;
-    if (
-      !element ||
-      typeof element.addEventListener !== "function" ||
-      typeof element.removeEventListener !== "function"
-    ) return null;
-
-    let target = null;
-    let identityStatus = null;
+    if (!element || typeof element.addEventListener !== "function" ||
+        typeof element.removeEventListener !== "function") return null;
+    let target = null, identityStatus = null;
     if (kind === "VIDEO") {
       if (entry.target?.targetType !== "VIDEO" || !entry.target.targetId) return null;
       target = entry.target;
       identityStatus = "VIDEO_ID_VALID";
     } else {
-      target = channelResolver?.toIdentifiedTarget(entry.identity) ?? null;
+      target = channels?.toIdentifiedTarget(entry.identity) ?? null;
       if (target?.targetType === "CHANNEL" && target.targetId) {
         identityStatus = "CHANNEL_ID_FORMAT_VALID";
       } else if (entry.identity?.resolutionStatus === "HANDLE_UNRESOLVED") {
         target = null;
         identityStatus = "HANDLE_UNRESOLVED";
-      } else {
-        return null;
-      }
+      } else return null;
     }
-
     return {
-      element,
-      kind,
-      target,
-      identityStatus,
-      href: entry.href ?? element.getAttribute?.("href") ?? null,
+      kind, element, target, identityStatus,
+      href: entry.href ?? element.getAttribute?.("href") ?? null
     };
   }
 
   function detach(binding) {
     if (!binding) return;
-    binding.element.removeEventListener("pointerenter", binding.onPointerEnter);
-    binding.element.removeEventListener("pointerleave", binding.onPointerLeave);
-    binding.element.removeEventListener("focusin", binding.onFocusIn);
-    binding.element.removeEventListener("focusout", binding.onFocusOut);
+    binding.element.removeEventListener("pointerenter", binding.enter);
+    binding.element.removeEventListener("pointerleave", binding.leave);
+    binding.element.removeEventListener("focusin", binding.focus);
+    binding.element.removeEventListener("focusout", binding.blur);
   }
 
-  function attach(binding) {
-    binding.onPointerEnter = event => {
-      if (event?.pointerType !== "touch") queueEnter(binding, "POINTER");
+  function assign(binding) {
+    binding.enter = event => {
+      if (event?.pointerType === "touch") return;
+      activate(binding, "POINTER", "THUMBNAIL_ENTER");
     };
-    binding.onPointerLeave = () => leaveBinding(binding, "POINTER");
-    binding.onFocusIn = () => queueEnter(binding, "FOCUS");
-    binding.onFocusOut = () => leaveBinding(binding, "FOCUS");
+    binding.leave = event => {
+      if (selected !== binding || selectedMode !== "POINTER") return;
+      const next = hitAfterLeave(event);
+      if (next === binding) return;
+      if (next) activate(next, "POINTER", "THUMBNAIL_SWITCH");
+      else reset("THUMBNAIL_LEAVE");
+    };
+    binding.focus = () => activate(binding, "FOCUS", "FOCUS_ENTER");
+    binding.blur = event => {
+      if (selected !== binding || selectedMode !== "FOCUS") return;
+      if (tracker.contains(binding.element, event?.relatedTarget)) return;
+      reset("FOCUS_LEAVE");
+    };
     bindings.set(binding.element, binding);
-    binding.element.addEventListener("pointerenter", binding.onPointerEnter);
-    binding.element.addEventListener("pointerleave", binding.onPointerLeave);
-    binding.element.addEventListener("focusin", binding.onFocusIn);
-    binding.element.addEventListener("focusout", binding.onFocusOut);
+    binding.element.addEventListener("pointerenter", binding.enter);
+    binding.element.addEventListener("pointerleave", binding.leave);
+    binding.element.addEventListener("focusin", binding.focus);
+    binding.element.addEventListener("focusout", binding.blur);
   }
 
-  function removeBinding(entry, kind) {
-    const element = kind === "VIDEO" ? entry?.thumbnailLink : entry?.channelLink;
-    const existing = bindings.get(element);
-    if (!existing || existing.kind !== kind) return;
-    bindings.delete(element);
-    detach(existing);
-    if (suppressedAnchor === element) suppressedAnchor = null;
-    if (selected === existing) clearActive("ANCHOR_REMOVED");
+  function hitAfterLeave(event) {
+    if (!event || event.pointerType === "touch") return null;
+    const related = event.relatedTarget;
+    if (!related) return null;
+    const next = {
+      pointerType: event.pointerType,
+      target: related,
+      clientX: event.clientX,
+      clientY: event.clientY,
+    };
+    return tracker.resolve(next, bindings, doc);
   }
 
-  /*
-   * SPA가 같은 anchor의 href나 채널 정체성을 교체하면 기존 선택을 무효화한다.
-   * 아직 그 anchor에 포인터/포커스가 있다면 새로운 requestId로 다시 대기한다.
-   */
-  function upsertBinding(entry, kind) {
-    const rawElement = kind === "VIDEO" ? entry?.thumbnailLink : entry?.channelLink;
-    const replacement = toBinding(entry, kind);
-    const existing = bindings.get(rawElement);
-    const same = Boolean(existing && replacement &&
-      existing.kind === replacement.kind &&
-      existing.href === replacement.href &&
-      existing.target?.targetId === replacement.target?.targetId &&
-      existing.identityStatus === replacement.identityStatus);
-    if (same) return;
-
-    const stillHovered = existing && selected === existing;
-    const keepPointer = Boolean(stillHovered && presence.pointerInside);
-    const keepFocus = Boolean(stillHovered && presence.focusInside);
-    if (existing) removeBinding(entry, existing.kind);
-    if (!replacement || disposed) return;
-
-    attach(replacement);
-
-    if (keepPointer || keepFocus) {
-      queueEnter(replacement, keepPointer ? "POINTER" : "FOCUS");
-      if (keepFocus && keepPointer) changePresence("FOCUS_ENTER");
-    } else if (
-      replacement.element !== suppressedAnchor &&
-      replacement.element.matches?.(":hover")
-    ) {
-      // DOM이 포인터 아래에서 교체돼도 사용자의 다음 마우스 이동을 기다리지 않는다.
-      pointerRecoveryCount += 1;
-      queueEnter(replacement, "POINTER", "DOM_HOVER_RECOVERY");
+  function onPointerPresence(event) {
+    if (disposed || event?.pointerType === "touch") return;
+    const binding = tracker.resolve(event, bindings, doc);
+    if (binding && valid(binding)) {
+      if (selected !== binding || selectedMode !== "POINTER") {
+        pointerRecoveries += 1;
+        activate(binding, "POINTER",
+          selected ? "THUMBNAIL_SWITCH" : "THUMBNAIL_HIT");
+      }
+      return;
     }
+    if (selected && selectedMode === "POINTER") reset("POINTER_OUTSIDE");
   }
 
-  /*
-   * 22/24번 발견기의 구독 스트림을 사용해 anchor별 리스너를 추가/제거한다.
-   * 기존 DOM 콘텐츠에 스타일을 쓰거나 YouTube의 클릭·기본 동작을 막지 않는다.
-   */
-  function handleDiscovery(kind, change) {
-    if (disposed || !change) return;
+  function onPointerOut(event) {
+    if (disposed || event?.pointerType === "touch" ||
+        !selected || selectedMode !== "POINTER") return;
+    if (!tracker.contains(selected.element, event?.target)) return;
+    const next = hitAfterLeave(event);
+    if (next === selected) return;
+    if (next && valid(next)) activate(next, "POINTER", "THUMBNAIL_SWITCH");
+    else reset("THUMBNAIL_LEAVE");
+  }
 
-    /*
-     * Logical identity is independent of a transient YouTube DOM anchor.
-     * When a READY video is re-rendered under the stationary pointer, rebind
-     * its new anchor without tearing down the same target's card/requestId.
-     * No guessing for @handles or targets with uncertain IDs.
-     */
+  function onDiscovery(kind, change) {
+    if (disposed || !change) return;
     const removed = change.removed || [];
     const incoming = [...(change.updated || []), ...(change.added || [])];
-    if (selected?.kind === kind && snapshot.phase === "READY" &&
-        removed.some(entry => (kind === "VIDEO" ?
-          entry?.thumbnailLink : entry?.channelLink) === selected.element)) {
-      const key = pointerTracker.targetKey(selected);
-      if (key) {
+    const old = selected;
+
+    // Resolve the new bindings before deleting any old reference, so replacing
+    // a hovered DOM link with the SAME identified target never clears the card.
+    for (const entry of incoming) {
+      const candidate = toBinding(entry, kind);
+      if (!candidate) continue;
+      const oldBinding = bindings.get(candidate.element);
+      if (oldBinding && oldBinding.kind === candidate.kind &&
+          oldBinding.href === candidate.href &&
+          oldBinding.target?.targetId === candidate.target?.targetId &&
+          oldBinding.identityStatus === candidate.identityStatus) continue;
+      if (oldBinding) {
+        bindings.delete(oldBinding.element);
+        detach(oldBinding);
+      }
+      assign(candidate);
+    }
+
+    let rebound = false;
+    if (old && old.kind === kind && selected === old) {
+      const missing = removed.some(entry =>
+        (kind === "VIDEO" ? entry?.thumbnailLink : entry?.channelLink) === old.element
+      ) || bindings.get(old.element) !== old;
+      if (missing) {
         for (const entry of incoming) {
-          const next = toBinding(entry, kind);
-          if (!next || next.element === selected.element ||
-              pointerTracker.targetKey(next) !== key) continue;
+          const element = kind === "VIDEO" ? entry?.thumbnailLink : entry?.channelLink;
+          const candidate = bindings.get(element);
+          if (!valid(candidate)) continue;
+          const oldKey = tracker.targetKey(old);
+          if (!oldKey || oldKey !== tracker.targetKey(candidate)) continue;
           let hovered = false;
           try {
-            hovered = Boolean(next.element.matches?.(":hover") ||
-              (presence.focusInside && next.element.matches?.(":focus-within")));
-          } catch (_error) {
-            hovered = false;
-          }
+            hovered = Boolean(candidate.element.matches?.(":hover") ||
+              (selectedMode === "FOCUS" && candidate.element.matches?.(":focus-within")));
+          } catch (_error) { hovered = false; }
           if (!hovered) continue;
-          const original = selected;
-          bindings.delete(original.element);
-          detach(original);
-          const duplicate = bindings.get(next.element);
-          if (duplicate) {
-            bindings.delete(duplicate.element);
-            detach(duplicate);
-          }
-          attach(next);
-          selected = next;
-          changePresence("POINTER_ENTER");
-          // Keep the same requestId and READY mock card, but update its anchor.
-          publish("READY", "TARGET_REBOUND_SAME_ID");
+          activate(candidate, selectedMode || "POINTER",
+            "TARGET_REBOUND_SAME_ID", true);
+          rebound = true;
           break;
         }
       }
     }
 
-    for (const entry of removed) removeBinding(entry, kind);
-    for (const entry of change.updated || []) upsertBinding(entry, kind);
-    for (const entry of change.added || []) upsertBinding(entry, kind);
-  }
+    for (const entry of removed) {
+      const element = kind === "VIDEO" ? entry?.thumbnailLink : entry?.channelLink;
+      const binding = bindings.get(element);
+      if (!binding || binding.kind !== kind) continue;
+      bindings.delete(element);
+      detach(binding);
+    }
 
-  function dismiss(reason = "DISMISSED") {
-    if (!disposed && selected) {
-      // Esc/닫기 후 동일 링크 안에서 포인터만 조금 움직여 재오픈되는 현상 방지.
-      // 포인터가 실제 썸네일 위에 남아 있을 때만 같은 위치에서
-      // 닫힌 카드가 자동으로 재열리는 것을 억제한다.
-      // 카드 내부 닫기 버튼은 썸네일 밖에서 클릭되므로 억제하지 않는다.
-      suppressedAnchor =
-        presence.pointerInside && !presence.overlayPointerInside ? selected.element : null;
-      clearActive(reason, "DISMISSED");
+    if (old && old.kind === kind && selected === old &&
+        !valid(old) && !rebound) reset("ANCHOR_REMOVED");
+
+    // A YouTube SPA may insert a target underneath an already-stationary
+    // pointer; CSS :hover is an observation, not a trusted video ID.
+    if (!selected || snapshot.phase === "IDLE") {
+      for (const entry of incoming) {
+        const element = kind === "VIDEO" ? entry?.thumbnailLink : entry?.channelLink;
+        const candidate = bindings.get(element);
+        if (!valid(candidate)) continue;
+        try {
+          if (candidate.element.matches?.(":hover")) {
+            pointerRecoveries += 1;
+            activate(candidate, "POINTER", "DOM_HOVER_RECOVERY");
+            break;
+          }
+        } catch (_error) { /* stale anchor */ }
+      }
     }
   }
 
-  function handleKeyDown(event) {
-    if (event?.key === "Escape") dismiss("ESCAPE");
-    // 중요: preventDefault/stopPropagation 금지. YouTube 자체 Escape는 그대로 동작한다.
+  function handleEscape(event) {
+    if (event?.key === "Escape" && selected) reset("ESCAPE", "DISMISSED");
+    // Do not alter YouTube's own keyboard handling.
   }
 
   function handleVisibility() {
-    if (scope.document?.hidden) dismiss("DOCUMENT_HIDDEN");
+    if (doc?.hidden) reset("DOCUMENT_HIDDEN", "DISMISSED");
+  }
+
+  function dismiss(reason = "DISMISSED") {
+    if (selected) reset(reason, "DISMISSED");
   }
 
   function subscribe(listener) {
     if (disposed) throw new Error("Hover controller disposed");
-    if (typeof listener !== "function") throw new TypeError("listener must be a function");
-    stateSubscribers.add(listener);
-    try {
-      listener({ ...snapshot });
-    } catch (_error) {
-      // Consumer 오류와 상태 관리 분리.
-    }
-    return () => stateSubscribers.delete(listener);
-  }
-
-  /*
-   * 27·28번 후속 요청이 늦게 완료됐을 때, 응답의 ID/시퀀스가 현재 Hover와
-   * 일치하지 않으면 무시하는 용도. 여기서는 실제 응답·패널을 처리하지 않는다.
-   */
-  function isCurrentRequest(request) {
-    return Boolean(
-      !disposed && selected?.target && request &&
-      snapshot.phase === "READY" &&
-      request.requestId === requestId &&
-      request.targetType === selected.target.targetType &&
-      request.targetId === selected.target.targetId
-    );
+    if (typeof listener !== "function") throw new TypeError("listener");
+    subscribers.add(listener);
+    try { listener({...snapshot}); } catch (_error) { /* isolate */ }
+    return () => subscribers.delete(listener);
   }
 
   function getRuntimeStatus() {
     const list = [...bindings.values()];
     return {
-      connected,
-      disposed,
-      phase: snapshot.phase,
-      lastReason: snapshot.reason,
-      activationDelayMs: ENTER_DELAY_MS,
-      leaveGraceMs: LEAVE_GRACE_MS,
-      pointerRecoveries: pointerRecoveryCount,
+      connected, disposed,
+      phase: snapshot.phase, lastReason, requestId: sequence,
+      strategy: "STRICT_THUMBNAIL", activationDelayMs: 0, leaveGraceMs: 0,
+      selectedMode, activeTargetKey: tracker.targetKey(selected),
       pointerInside: presence.pointerInside,
       focusInside: presence.focusInside,
-      overlayPointerInside: presence.overlayPointerInside,
-      overlayFocusInside: presence.overlayFocusInside,
-      suppressedAnchorActive: Boolean(suppressedAnchor),
-      requestId,
-      boundVideoAnchors: list.filter(entry => entry.kind === "VIDEO").length,
-      boundChannelAnchors: list.filter(entry => entry.kind === "CHANNEL").length,
-      hoveredBoundAnchors: list.filter(entry => {
-        try { return Boolean(entry.element.matches?.(":hover")); }
+      overlayPointerInside: false, overlayFocusInside: false,
+      suppressedAnchorActive: false, pointerRecoveries,
+      boundVideoAnchors: list.filter(x => x.kind === "VIDEO").length,
+      boundChannelAnchors: list.filter(x => x.kind === "CHANNEL").length,
+      hoveredBoundAnchors: list.filter(x => {
+        try { return Boolean(x.element.matches?.(":hover")); }
         catch (_error) { return false; }
       }).length,
-      enterScheduled: enterTimer !== null,
-      leaveScheduled: exitTimer !== null,
-      stateSubscribers: stateSubscribers.size,
+      enterScheduled: false, leaveScheduled: false,
+      stateSubscribers: subscribers.size,
     };
+  }
+
+  function isCurrentRequest(request) {
+    return Boolean(!disposed && selected?.target &&
+      snapshot.phase === "READY" && request &&
+      request.requestId === sequence &&
+      request.targetType === selected.target.targetType &&
+      request.targetId === selected.target.targetId);
   }
 
   function dispose() {
     if (disposed) return;
-    clearActive("DISPOSED");
+    reset("DISPOSED");
     disposed = true;
-    for (const unsubscribe of unsubscribeSources) unsubscribe();
+    for (const off of unsubscribeSources) off();
     unsubscribeSources.length = 0;
     for (const binding of bindings.values()) detach(binding);
     bindings.clear();
-    scope.document?.removeEventListener?.("pointermove", handlePointerActivity, true);
-    scope.document?.removeEventListener?.("pointerover", handlePointerActivity, true);
-    scope.document?.removeEventListener?.("pointerout", handlePointerOut, true);
-    suppressedAnchor = null;
-    scope.document?.removeEventListener?.("keydown", handleKeyDown);
-    scope.document?.removeEventListener?.("visibilitychange", handleVisibility);
+    doc?.removeEventListener?.("pointermove", onPointerPresence, true);
+    doc?.removeEventListener?.("pointerover", onPointerPresence, true);
+    doc?.removeEventListener?.("pointerout", onPointerOut, true);
+    doc?.removeEventListener?.("keydown", handleEscape);
+    doc?.removeEventListener?.("visibilitychange", handleVisibility);
+    scope.removeEventListener?.("blur", dismissOnBlur);
     scope.removeEventListener?.("pagehide", dispose);
-    stateSubscribers.clear();
+    subscribers.clear();
     connected = false;
     if (scope.YUTOPIA_HOVER_CONTROLLER === api) delete scope.YUTOPIA_HOVER_CONTROLLER;
   }
 
+  function dismissOnBlur() { reset("WINDOW_BLUR"); }
+
   const api = Object.freeze({
-    subscribe,
-    getSnapshot: () => ({ ...snapshot }),
-    getRuntimeStatus,
-    overlayPointerEnter: () => setOverlayInteraction("POINTER", true),
-    overlayPointerLeave: () => setOverlayInteraction("POINTER", false),
-    overlayFocusIn: () => setOverlayInteraction("FOCUS", true),
-    overlayFocusOut: () => setOverlayInteraction("FOCUS", false),
-    dismiss,
-    isCurrentRequest,
-    dispose,
+    subscribe, getSnapshot: () => ({...snapshot}),
+    getRuntimeStatus, isCurrentRequest, dismiss, dispose,
+    // Preserved for compatibility; under strict thumbnail mode floating-card
+    // pointer/focus must NOT prolong its visibility beyond the thumbnail.
+    overlayPointerEnter() {}, overlayPointerLeave() {},
+    overlayFocusIn() {}, overlayFocusOut() {},
   });
   scope.YUTOPIA_HOVER_CONTROLLER = api;
 
-  if (
-    discovery &&
-    typeof discovery.subscribe === "function" &&
-    typeof discovery.subscribeChannels === "function"
-  ) {
-    // 초기 subscribe는 현재 후보를 즉시 replay하고 재스캔을 일으키지 않는다.
-    unsubscribeSources.push(discovery.subscribe(change => handleDiscovery("VIDEO", change)));
-    unsubscribeSources.push(discovery.subscribeChannels(change => handleDiscovery("CHANNEL", change)));
+  if (typeof discovery.subscribe === "function" &&
+      typeof discovery.subscribeChannels === "function") {
+    unsubscribeSources.push(discovery.subscribe(c => onDiscovery("VIDEO", c)));
+    unsubscribeSources.push(discovery.subscribeChannels(c => onDiscovery("CHANNEL", c)));
     connected = true;
-    scope.document?.addEventListener?.("pointermove", handlePointerActivity, true);
-    scope.document?.addEventListener?.("pointerover", handlePointerActivity, true);
-    scope.document?.addEventListener?.("pointerout", handlePointerOut, true);
-    scope.document?.addEventListener?.("keydown", handleKeyDown);
-    scope.document?.addEventListener?.("visibilitychange", handleVisibility);
+    doc?.addEventListener?.("pointermove", onPointerPresence, true);
+    doc?.addEventListener?.("pointerover", onPointerPresence, true);
+    doc?.addEventListener?.("pointerout", onPointerOut, true);
+    doc?.addEventListener?.("keydown", handleEscape);
+    doc?.addEventListener?.("visibilitychange", handleVisibility);
+    scope.addEventListener?.("blur", dismissOnBlur);
     scope.addEventListener?.("pagehide", dispose);
   }
 })(globalThis);
