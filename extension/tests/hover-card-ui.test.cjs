@@ -424,9 +424,10 @@ test("모든 안전 위치가 막히면 YouTube 클릭을 가로채지 않고 �
   const target=f.anchor({left:230,top:150,right:430,bottom:240,width:200,height:90});
   const left=f.anchor({left:0,top:0,right:230,bottom:400,width:230,height:400});
   const right=f.anchor({left:430,top:0,right:720,bottom:400,width:290,height:400});
-  f.doc.querySelectorAll=()=>[target,left,right];
+  const below=f.anchor({left:300,top:260,right:490,bottom:390,width:190,height:130});
+  f.doc.querySelectorAll=()=>[target,left,right,below];
   f.emit(videoState(VIDEO_A,1,target));
-  assert.equal(f.host(),null);
+  assert.ok(f.host()===null,"No safe layout should create no intercepting card");
   assert.equal(f.dismissReason,"NO_SAFE_HOVER_PLACEMENT");
 });
 
