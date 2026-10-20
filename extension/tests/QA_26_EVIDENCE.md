@@ -36,7 +36,7 @@
 | Windows Chrome | 실제 YouTube 홈/검색 카드 위치/조작, 다크/라이트/줌 | **NOT VERIFIED** |
 | CI·독립 리뷰 | GitHub 상태 검사·PR 리뷰 | **NOT VERIFIED** |
 
-**수행 방법:** GitHub PR 브랜치 파일의 원문을 읽고 V8 스크립트 평가 및 Node/DOM/URL/타이머 모의 어댑터를 사용했다. 결과를 Native Node CLI 149/149 PASS로 표기하지 않는다. 25번 Windows 사용자 PASS는 25번 SHA의 근거이며 26번 신규 카드를 검증한 것은 아니다.
+**수행 방법:** GitHub PR 브랜치 파일의 원문을 읽고 V8 스크립트 평가 및 Node/DOM/URL/타이머 모의 어댑터를 사용했다. 결과를 Native Node CLI 150/150 PASS로 표기하지 않는다. 25번 Windows 사용자 PASS는 25번 SHA의 근거이며 26번 신규 카드를 검증한 것은 아니다.
 
 ## 3. Node.js 및 선택 Chromium 실행 명령
 
@@ -78,7 +78,7 @@ globalThis.YUTOPIA_HOVER_CARD?.getRuntimeStatus();
 globalThis.YUTOPIA_HOVER_CONTROLLER?.getRuntimeStatus();
 ~~~
 
-13. Chrome 버전, 테스트 SHA, 149개 Node CLI 테스트 결과, UI 이상·스크린샷/재현 절차 및 미커밋 상태를 기록한다.
+13. Chrome 버전, 테스트 SHA, 150개 Node CLI 테스트 결과, UI 이상·스크린샷/재현 절차 및 미커밋 상태를 기록한다.
 
 ## 5. Gate
 
