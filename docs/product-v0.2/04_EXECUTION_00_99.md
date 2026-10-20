@@ -204,7 +204,7 @@
 | 2026-10-20 | PR #11 채널 ID·@handle 코드 frontend 병합 | Merge SHA 97611f144c8ae074d2e7f5b5f75031ef03d840c6, 출시 승인이 아님 |
 | 2026-10-20 | 25 Hover 상태 제어와 가상 타이머·중복 주입·키보드·경합 취소 테스트 작성 | 21~25 전체 격리 V8 모의 118/118 PASS. 이후 사용자 Windows PASS·테스트 SHA 및 Clean Worktree 보고 |
 | 2026-10-20 | PR #12 Hover 상태 제어 frontend 병합 | SHA 20edd746e25dc82296a220716bf57c8c66cc5b3, 실제 데이터·출시 승인 아님 |
-| 2026-10-20 | 26 실제 Shadow DOM Hover 카드 UI 및 합성 MOCK 모델 구현 | 기존 118 + 신규 31 = V8 모의 150/150 PASS. Native Node/Windows Chrome·시각 검수 미완료 |
+| 2026-10-20 | 26 실제 Shadow DOM Hover 카드 UI 및 합성 MOCK 모델 구현 | 기존 118 + 신규 32 = V8 모의 150/150 PASS. Native Node/Windows Chrome·시각 검수 미완료 |
 | 2026-10-16 | 10~19 Chrome 고객 UX 정보구조·상태·Side Panel·검수표 초안 | 목업·실브라우저 검수 대기 |
 
 ## 연관 정본
