@@ -64,7 +64,7 @@
 | **24** | 채널 대상 식별 | channelId/@handle 구별·불확실 시 유보 | `MERGED / V8_FIXTURE_TESTED / USER_REPORTED_WINDOWS_PASS / TESTED_SHA_MATCH` | [PR #11](https://github.com/Choi1999/YOUTOPIA/pull/11), `extension/channel-target-resolver.js`, [QA 24 기록](../../extension/tests/QA_24_EVIDENCE.md) |
 | **25** | Hover 상태 제어 | 타이머·마우스 카드 이동·연속/겹침 요청 취소 | `MERGED / V8_FIXTURE_TESTED / USER_REPORTED_WINDOWS_PASS / TESTED_SHA_AND_CLEAN` | [PR #12](https://github.com/Choi1999/YOUTOPIA/pull/12), `extension/hover-controller.js`, [QA 25 기록](../../extension/tests/QA_25_EVIDENCE.md) |
 | **26** | 경량 Hover 카드 UI | 합성 카드·카드 안 포인터 고정·빈 Host 투명·Safe Transit | `IN_PROGRESS / INTERACTIVE_CARD_PINNING / V8_MOCK_160_PASS / NATIVE_NODE_160_CHROMIUM_LIVE_RETEST_PENDING / PR13_READY_FOR_REVIEW` | `extension/hover-controller.js`, `extension/hover-card.js`, [QA 26 기록](../../extension/tests/QA_26_EVIDENCE.md) |
-| **27** | 확장 서비스 워커 메시지/캐시 | targetId·requestId 검증과 권한 최소화 | `NOT_STARTED` | `background tests` |
+| **27** | 확장 서비스 워커 메시지/캐시 | targetId·requestId 검증과 권한 최소화 | `IN_PROGRESS / YU27_CODE_READY / ISOLATED_NODE_17_PASS / ORIGINAL_160_AND_CHROMIUM_NOT_RERUN / WINDOWS_MV3_PENDING / PR_REVIEW_PENDING` | `extension/background.js`, `extension/preview-client.js`, `extension/shared.js`, [QA 27 기록](../../extension/tests/QA_27_EVIDENCE.md) |
 | **28** | Chrome Side Panel 연동 | 사용자 클릭 제스처로 열기·동일 대상 유지 | `NOT_STARTED` | `panel smoke` |
 | **29** | 실제 YouTube 홈 수동·자동 PoC | 선정 브라우저에서 카드 위치·패널·충돌 체크 | `NOT_STARTED` | `Chrome local QA` |
 
@@ -224,3 +224,4 @@
 | 2026-10-20 | PR #13 Strict Hover 단순화 및 실 DOM 재현 | anchor별 리스너·tracker/reducer·overlay/suppression 제거, 문서 이벤트 위임·단일 active binding·stable target key 적용. YouTube portal video-preview 좌표 복구 추가. Node 144/144, 오프라인 Chromium, 실 검색 DOM same-A/A-B-C 반복 PASS. 익명 Home feed·수동 확장 E2E는 PENDING |
 | 2026-10-20 | 사용자 Chrome Home/Search/YouTube Preview PASS 후 카드 내부 포인터 유지 UX 추가 승인 | PR #13 카드만 pointer-events:auto, Host/Surface pointer 투명, 카드가 덮는 B 선택 차단, A↔카드 160ms 한정 안전 경로, SPA 같은 ID 핀 유지. 신규 14건 포함 격리 V8 158/158 PASS. 최신 Windows Native Node/Chromium/Live/설치 MV3 QA 재검증 PENDING, 미병합 |
 | 2026-10-20 | PR #13 코드 리뷰: A 카드 고정 중 동영상 ID 중복 앵커의 원거리 SPA 재결합 오류 재현·수정 | 사용자 수동 Chrome 검증 통과 SHA 4193f 후속 변경. 활성 앵커의 마지막 화면 사각형을 저장하고 가까운 DOM 교체만 targetKey/requestId 유지. 격리 V8 모의 160/160 PASS, 최신 Native Node·Chromium·설치형 MV3 검증 PENDING. PR Ready for review·미병합 |
+| 2026-10-20 | YU-27 사용자 승인 후 독립 기능 브랜치 구현 | 메시지 ID/Request/발신자 검증, 대상별 STATIC_FIXTURE chrome.storage.session 캐시, stale 응답 폐기. 신규 Node/V8 Fixture 17/17 PASS (로컬 동일 Git blob SHA). 기존 160건·실제 Chromium MV3·Live YouTube/Windows Chrome 검증은 미실행·대기. 더보기/Side Panel 및 실제 API 연동하지 않음. |
