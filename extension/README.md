@@ -86,7 +86,7 @@
 - 앵커 기준 우측/좌측/아래/위/fallback 배치, 좁은 창 클램프, 다크 테마, Escape, SPA·스크롤 이후 대상 정리를 지원합니다. 배치 결과는 Controller 종료 이유와 별도로 기록합니다.
 - **최신 26번 Interactive Card는 카드 안으로 포인터를 이동해도 활성 타깃을 유지합니다.** 카드 자체는 pointer-events:auto이며 Host와 빈 Surface는 pointer-events:none입니다. 더보기·닫기 버튼은 여전히 비활성이고 Side Panel 연결은 27·28번 별도입니다.
 - Manifest 스크립트 순서: shared.js → target-resolver.js → channel-target-resolver.js → content.js → hover-controller.js → hover-card-model.js → hover-card.js.
-- 카드 UI 테스트 39건, Hover Controller 40건을 포함해 **전체 6개 Node 테스트 파일 158건(격리 V8 모의 PASS, Native Node 최신 재실행 필요)**입니다. [26번 QA 기록](tests/QA_26_EVIDENCE.md)의 명령을 사용하세요.
+- 카드 UI 테스트 39건, Hover Controller 42건을 포함해 **전체 6개 Node 테스트 파일 160건(격리 V8 모의 PASS, Native Node 최신 재실행 필요)**입니다. [26번 QA 기록](tests/QA_26_EVIDENCE.md)의 명령을 사용하세요.
 - 오프라인 Chromium은 같은 A 20회 및 A→B→C→A 20회, SPA anchor 교체를 통과했습니다. 실 YouTube 검색 DOM은 같은 A 10회 및 A→B→C 10회를 통과했고, 익명·무기록 Home은 영상 feed를 제공하지 않아 SKIP으로 남겼습니다. 실제 콘텐츠 값은 읽거나 출력하지 않았습니다.
 
 ### 간헐적으로 카드가 나타나지 않을 때
@@ -124,8 +124,16 @@ globalThis.YUTOPIA_HOVER_CARD?.getRuntimeStatus()
 - 카드 바깥의 빈 화면으로 이동하면 즉시 종료합니다. 썸네일과 카드 사이의 짧은 안전 경로에서만 최대 160ms 이동 유예를 주며, 이는 일반 Hover를 늦추는 타이머가 아닙니다.
 - 동일 ID의 SPA 앵커 교체 시 requestId와 Card 유지. 늦게 도착한 원래 썸네일 pointerout은 카드 고정 상태를 종료할 수 없습니다.
 - 카드의 더보기·닫기 버튼은 27~28번 후속 기능으로 현재 disabled. 실제 Side Panel/계정/댓글/API/수집 기능은 추가되지 않았습니다.
-- 이번 턴 기준 GitHub 소스의 격리 V8 모의 158/158 PASS. 기존 Windows Node 144/144 및 Chromium PASS는 이전 944b 커밋에서의 증거이므로 **최신 158건/오프라인 Chromium/설치형 MV3 Chrome QA 재검증이 필요합니다.**
+- 코드 리뷰 후 GitHub 소스의 격리 V8 모의 160/160 PASS (동일 ID의 멀리 떨어진 중복 썸네일로 잘못 SPA 재연결되는 현상 수정). 기존 Windows Node 144/144 및 Chromium PASS는 이전 944b 커밋에서의 증거이므로 **최신 160건/오프라인 Chromium/설치형 MV3 Chrome QA 재검증이 필요합니다.**
 - [새 UX 수용 기준·테스트](tests/QA_26_EVIDENCE.md)
+
+
+### PR #13 코드 리뷰 — SPA 동일 영상 중복 앵커 방지
+
+- 사용자 수동 Chrome Home/Search/A→Card→A/배경 영상 차단 PASS가 확인된 SHA `4193f369...`에서는 카드 고정 중 SPA가 원본 썸네일 DOM을 제거하면, 화면 다른 위치에 있던 같은 videoId·href 후보로 잘못 재결합할 수 있는 예외를 격리 V8에서 재현했다.
+- 컨트롤러가 처음 활성화한 썸네일의 마지막 유효 화면 위치를 보존하고, 카드에 포인터가 고정된 상황에서 새 앵커가 **그 근처에 있는 경우에만** 재결합한다. 멀리 떨어진 복제 영상은 fail-closed 처리한다.
+- 신규 Controller 테스트 2건 포함 **격리 V8 모의 160/160 PASS**; 실제 Windows Native Node/오프라인 Chromium/Chrome 설치형 MV3는 최신 SHA에서 재검증 필요. 과거 Windows Native 144/144, Chromium 및 사용자 Chrome 수동 검증 결과를 현재 HEAD로 소급하지 않는다.
+- PR은 **Ready for review / OPEN / 미병합**이며 Side Panel과 더보기 클릭 연결은 아직 27~28번 별도 범위이다.
 
 ## 현재 단계
 
@@ -135,6 +143,6 @@ globalThis.YUTOPIA_HOVER_CARD?.getRuntimeStatus()
 - **23:** 엄격 VIDEO target Resolver frontend 병합, 사용자 보고 기준 Node 46/46·Windows 검증 통과 및 동일 테스트 SHA 확인.
 - **24:** 채널 ID와 @handle 분리 코드 frontend 병합. 사용자 검증 PASS·테스트 SHA 일치 보고(독립 로그 미제출).
 - **25:** Hover 상태 제어 frontend 병합; V8 118/118 PASS 및 사용자 Windows 검증 PASS·테스트 SHA/Clean Worktree 보고.
-- **26:** 기존 Strict Thumbnail Hover는 Windows Node 144/144·Chromium·실 Search DOM·사용자 Chrome Home/Search PASS. 추가 승인된 Interactive Card(카드 위 고정·배경 영상 차단·160ms 짧은 간격 보호)는 **격리 V8 158/158 PASS**, 최신 Native Node/Chromium/실사이트 수동 재검증 PENDING. PR #13 Draft·미병합.
+- **26:** 기존 Strict Thumbnail Hover는 Windows Node 144/144·Chromium·실 Search DOM·사용자 Chrome Home/Search PASS. 추가 승인된 Interactive Card(카드 위 고정·배경 영상 차단·160ms 짧은 간격 보호)는 **격리 V8 160/160 PASS**, 최신 Native Node/Chromium/실사이트 수동 재검증 PENDING. PR #13 Ready for review·미병합.
 - **27~29:** 확장 메시지·Side Panel 분석 대상 고정·실사이트 최종 통합 E2E 미구현.
 - **실제 YouTube API/외부 AI/구독 결제:** 구현하지 않음.
