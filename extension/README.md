@@ -84,9 +84,9 @@
 - 25번 Hover의 READY 상태에서만 정규 VIDEO/CHANNEL ID를 사용해 **단일 Shadow DOM 카드**를 실제로 화면에 표시합니다. `@handle`만 있는 경우 채널 ID 미확정 안내만 제공하며 감성 차트·더보기는 표시하지 않습니다.
 - 가상 감성 막대(긍정/중립/부정), 가상 표본과 기간, 2개 가상 논점, 짧은 브리핑과 명확한 **DEMO · STATIC FIXTURE · 실제 분석 아님** 안내를 제공합니다. 실제 YouTube 제목, 댓글, 사용자 데이터나 API는 읽지 않습니다.
 - 앵커 기준 우측/좌측/아래/위/fallback 배치, 좁은 창 클램프, 다크 테마, Escape, SPA·스크롤 이후 대상 정리를 지원합니다. 배치 결과는 Controller 종료 이유와 별도로 기록합니다.
-- **카드는 click-through 읽기 전용이며 더보기·닫기는 비활성입니다.** 썸네일을 벗어나면 즉시 닫는 사용자 계약과 카드 내부 클릭은 양립하지 않으므로 Side Panel 진입은 27·28번에서 별도 설계합니다.
+- **최신 26번 Interactive Card는 카드 안으로 포인터를 이동해도 활성 타깃을 유지합니다.** 카드 자체는 pointer-events:auto이며 Host와 빈 Surface는 pointer-events:none입니다. 더보기·닫기 버튼은 여전히 비활성이고 Side Panel 연결은 27·28번 별도입니다.
 - Manifest 스크립트 순서: shared.js → target-resolver.js → channel-target-resolver.js → content.js → hover-controller.js → hover-card-model.js → hover-card.js.
-- 카드 UI 테스트 36건, 위임형 Strict Hover Controller 30건을 포함해 **전체 6개 Node 테스트 파일 144건**입니다. [26번 QA 기록](tests/QA_26_EVIDENCE.md)의 명령을 사용하세요.
+- 카드 UI 테스트 39건, Hover Controller 40건을 포함해 **전체 6개 Node 테스트 파일 158건(격리 V8 모의 PASS, Native Node 최신 재실행 필요)**입니다. [26번 QA 기록](tests/QA_26_EVIDENCE.md)의 명령을 사용하세요.
 - 오프라인 Chromium은 같은 A 20회 및 A→B→C→A 20회, SPA anchor 교체를 통과했습니다. 실 YouTube 검색 DOM은 같은 A 10회 및 A→B→C 10회를 통과했고, 익명·무기록 Home은 영상 feed를 제공하지 않아 SKIP으로 남겼습니다. 실제 콘텐츠 값은 읽거나 출력하지 않았습니다.
 
 ### 간헐적으로 카드가 나타나지 않을 때
@@ -99,23 +99,33 @@ globalThis.YUTOPIA_HOVER_CONTROLLER?.getRuntimeStatus()
 globalThis.YUTOPIA_HOVER_CARD?.getRuntimeStatus()
 ~~~
 
-- Controller의 strategy, lastReason, selectedMode, activeTargetKey, pointerInside, pointerRecoveries, perAnchorListeners와 카드의 lastHoverReason, lastRenderReason, layout을 확인합니다. strategy=DELEGATED_STRICT_THUMBNAIL, perAnchorListeners=0, activationDelayMs=0, leaveGraceMs=0이 정상입니다. 카드 배치 실패만으로 Hover를 닫지 않습니다.
+- Controller의 strategy, lastReason, selectedMode, activeTargetKey, pointerInside, pointerRecoveries, perAnchorListeners와 카드의 lastHoverReason, lastRenderReason, layout을 확인합니다. strategy=DELEGATED_INTERACTIVE_CARD, perAnchorListeners=0, activationDelayMs=0, leaveGraceMs=0, cardTransitGraceMs=160이 정상입니다. 카드 배치 실패만으로 Hover를 닫지 않습니다.
 - 위 도구는 현재 탭 메모리만 읽으며 결과를 전송하지 않습니다. 자세한 기록·실브라우저 검증 방법은 [26번 QA 지침](tests/QA_26_EVIDENCE.md)을 참고하세요.
 
-## 26번 Strict Thumbnail Hover 수정 (현재 우선 계약)
+## 26번 Strict Thumbnail Hover 수정 (944b 당시 기준 · 이력)
 
 - **진입:** 영상 썸네일에 포인터가 진입하면 즉시 해당 영상 READY 및 합성 카드를 표시한다. 문서 pointerover/pointermove와 발견된 anchor 사각형으로 YouTube portal `video-preview` 및 DOM 교체의 누락 이벤트를 복구한다. 0ms는 의도된 타이머가 없다는 뜻이며 브라우저 렌더링 시간 0ms 보증이 아니다.
 - **이탈:** 썸네일에서 포인터가 벗어나면 즉시 IDLE/카드 제거. 카드로 포인터를 옮겨도 유지하지 않는다. 같은 A를 50회, A→B→A를 반복해도 과거 타이머·억제 상태가 막지 않는다.
 - **카드:** 현재 mouse click-through 읽기 전용. 더보기/닫기는 disabled이며, 별도 클릭 상세 진입(27~28)은 후속 기능이다. 이전 카드 버튼 클릭 인터랙션은 의도적으로 중단했다.
-- **배치:** 안전한 배치 후보가 없어도 viewport-fallback으로 표시한다. Host와 Card 모두 pointer-events:none이며 기존 YouTube 썸네일의 Hover/클릭을 가로채지 않는다.
+- **배치(현재 개정):** viewport-fallback 표시를 유지한다. Host와 빈 Surface는 pointer-events:none, 실제 Shadow Card만 pointer-events:auto이므로 카드 뒤 영상은 의도적으로 선택을 차단하고 카드 밖 영역은 클릭을 허용한다.
 - **탐지:** Youtube DOM에서 제목 링크보다 실제 시각적 Thumbnail 링크를 우선한다. 광고·Shorts·유효하지 않은 대상 ID는 기존대로 제외한다.
 - **검증:** 26번 QA 문서 참조. Node 144/144, 오프라인 Chromium PASS, 실 YouTube 검색 DOM PASS. 익명 Home feed와 수동 Windows 확장 로드는 남은 검증이므로 PR #13은 Draft·미병합 유지.
 
 ## 이전 Hover 벤치마크 구조의 처리
 
-- Pointer Tracker, Presence Reducer, 160ms open, 200ms leave grace, overlay occupancy, safe corridor는 실제 Chrome 누락을 줄이지 못해 현재 런타임과 Manifest에서 제거했습니다.
+- 별도 Pointer Tracker/Presence Reducer와 기존 160ms open·200ms 일반 leave grace는 런타임에서 제외된 상태다. 새 Interactive Card는 **Trigger→Card 사이의 기하학적 짧은 간격에만 고정 160ms 이동 유예**를 사용하며 반복 pointermove는 해당 기한을 연장하지 않는다.
 - 필요한 경계 판정과 stable target key는 작은 위임형 Controller 안에 포함했습니다. 같은 VIDEO/CHANNEL ID의 hovered 새 SPA anchor로 교체되면 requestId를 유지하고, 다른 ID나 포인터 밖 교체는 종료합니다.
 - 새로운 NPM 런타임 패키지나 Chrome 권한을 추가하지 않았습니다. 과거 비교 자료는 [2026-10-20 Hover 벤치마킹 기록](../docs/product-v0.2/HOVER_INTERACTION_BENCHMARK_20261020.md)에 역사적 근거로만 남깁니다.
+
+## 26번 추가 승인 — Interactive Shadow Hover Card (최신 계약)
+
+- 썸네일 A에 Hover하면 기존처럼 즉시 A 카드가 표시됩니다. A→카드 내부로 이동하는 경우는 일반 이탈이 아니며, A 카드가 그대로 유지됩니다.
+- 카드의 포인터 이벤트가 먼저 처리되므로 카드 아래에 겹친 영상 B는 선택되지 않습니다. 카드에서 실제로 보이는 영상 C로 이동하면 C 카드로 즉시 전환됩니다.
+- 카드 바깥의 빈 화면으로 이동하면 즉시 종료합니다. 썸네일과 카드 사이의 짧은 안전 경로에서만 최대 160ms 이동 유예를 주며, 이는 일반 Hover를 늦추는 타이머가 아닙니다.
+- 동일 ID의 SPA 앵커 교체 시 requestId와 Card 유지. 늦게 도착한 원래 썸네일 pointerout은 카드 고정 상태를 종료할 수 없습니다.
+- 카드의 더보기·닫기 버튼은 27~28번 후속 기능으로 현재 disabled. 실제 Side Panel/계정/댓글/API/수집 기능은 추가되지 않았습니다.
+- 이번 턴 기준 GitHub 소스의 격리 V8 모의 158/158 PASS. 기존 Windows Node 144/144 및 Chromium PASS는 이전 944b 커밋에서의 증거이므로 **최신 158건/오프라인 Chromium/설치형 MV3 Chrome QA 재검증이 필요합니다.**
+- [새 UX 수용 기준·테스트](tests/QA_26_EVIDENCE.md)
 
 ## 현재 단계
 
@@ -125,6 +135,6 @@ globalThis.YUTOPIA_HOVER_CARD?.getRuntimeStatus()
 - **23:** 엄격 VIDEO target Resolver frontend 병합, 사용자 보고 기준 Node 46/46·Windows 검증 통과 및 동일 테스트 SHA 확인.
 - **24:** 채널 ID와 @handle 분리 코드 frontend 병합. 사용자 검증 PASS·테스트 SHA 일치 보고(독립 로그 미제출).
 - **25:** Hover 상태 제어 frontend 병합; V8 118/118 PASS 및 사용자 Windows 검증 PASS·테스트 SHA/Clean Worktree 보고.
-- **26:** 위임형 Strict Thumbnail Hover(진입 즉시 표시, 이탈 즉시 제거)와 click-through 정적 MOCK 카드. Node 144/144, 오프라인 Chromium PASS, 실 YouTube 검색 DOM 반복 PASS. 익명 Home feed·사용자 Chrome 수동 검증 대기.
+- **26:** 기존 Strict Thumbnail Hover는 Windows Node 144/144·Chromium·실 Search DOM·사용자 Chrome Home/Search PASS. 추가 승인된 Interactive Card(카드 위 고정·배경 영상 차단·160ms 짧은 간격 보호)는 **격리 V8 158/158 PASS**, 최신 Native Node/Chromium/실사이트 수동 재검증 PENDING. PR #13 Draft·미병합.
 - **27~29:** 확장 메시지·Side Panel 분석 대상 고정·실사이트 최종 통합 E2E 미구현.
 - **실제 YouTube API/외부 AI/구독 결제:** 구현하지 않음.
