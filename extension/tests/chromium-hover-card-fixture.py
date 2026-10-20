@@ -12,6 +12,7 @@ from playwright.sync_api import sync_playwright
 extension = Path(__file__).resolve().parents[1]
 modules = [
     "target-resolver.js", "channel-target-resolver.js", "content.js",
+    "hover-pointer-tracker.js", "hover-presence-reducer.js",
     "hover-controller.js", "hover-card-model.js", "hover-card.js",
 ]
 scripts = []
