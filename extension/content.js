@@ -143,12 +143,19 @@
         card: candidate.card,
         thumbnailLink: anchor,
         href: anchor.getAttribute("href"),
+        // 23번 계약: 유효성이 확인된 VIDEO만 상세 UI에 전달 가능하다.
+        // 기존 영상 DOM 후보 수와 21·22번의 탐지 계약은 변경하지 않는다.
+        target: scope.YUTOPIA_VIDEO_TARGET_RESOLVER?.resolveCandidate(candidate) ?? null,
       };
       next.set(anchor, entry);
       const previous = liveCandidates.get(anchor);
 
       if (!previous) added.push(entry);
-      else if (previous.href !== entry.href || previous.card !== entry.card) updated.push(entry);
+      else if (
+        previous.href !== entry.href ||
+        previous.card !== entry.card ||
+        previous.target?.targetId !== entry.target?.targetId
+      ) updated.push(entry);
 
       if (!seenLinks.has(anchor)) {
         seenLinks.add(anchor);
@@ -280,6 +287,7 @@
       observing: Boolean(observer),
       scanScheduled: pendingTimer !== null,
       trackedCandidates: liveCandidates.size,
+      identifiedCandidates: [...liveCandidates.values()].filter(entry => entry.target !== null).length,
       subscriberCount: subscribers.size,
     };
   }
