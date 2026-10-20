@@ -282,6 +282,140 @@ test("dispose는 위임 이벤트와 discovery 구독을 정리",()=>{
   assert.equal(f.win.count("blur"),0);assert.equal(f.videoSubs(),0);assert.equal(f.api(),undefined);
 });
 
+function floatingCard(f,rect={left:222,top:10,right:566,bottom:270,width:344,height:260}){
+  const host={isConnected:true,parentElement:null};
+  const card={isConnected:true,parentElement:host,getBoundingClientRect:()=>rect};
+  const child={parentElement:card};
+  f.api().setCardRegion(host,card);
+  function over(extra={}){
+    pointer(f,"pointerover",child,{clientX:250,clientY:60,
+      composedPath:()=>[child,card,host,f.doc],...extra});
+  }
+  function moveOn(extra={}){
+    pointer(f,"pointermove",child,{clientX:250,clientY:60,
+      composedPath:()=>[child,card,host,f.doc],...extra});
+  }
+  function out(next=null,x=800,y=600){
+    pointer(f,"pointerout",child,{relatedTarget:next,clientX:x,clientY:y,
+      composedPath:()=>[child,card,host,f.doc]});
+  }
+  return {host,card,child,over,moveOn,out};
+}
+
+test("썸네일 A→Shadow 카드 직접 진입 시 ACTIVE A 고정 및 requestId 유지",()=>{
+  const a=anchor(),f=fixture({videos:[video(a)]});
+  enter(f,a);
+  const id=f.api().getSnapshot().requestId;
+  const card=floatingCard(f);
+  leave(f,a,card.child,{clientX:211,clientY:60});
+  card.over();
+  expectVisible(f);
+  assert.equal(f.api().getSnapshot().requestId,id);
+  assert.equal(f.api().getRuntimeStatus().cardPointerInside,true);
+});
+
+test("카드가 B 썸네일을 덮더라도 B 이벤트 대신 카드 포인터가 우선",()=>{
+  const a=anchor(A),b=anchor(B,renderer(),{left:250,top:10,right:450,bottom:120,width:200,height:110});
+  const f=fixture({videos:[video(a,A),video(b,B)]});
+  enter(f,a);
+  const card=floatingCard(f);
+  f.doc.elementFromPoint=()=>b;
+  card.over({clientX:300,clientY:65});
+  const initial=f.api().getSnapshot().requestId;
+  for(let i=0;i<20;i++){
+    card.moveOn({clientX:330+i%15,clientY:80});
+    expectVisible(f,A);
+  }
+  assert.equal(f.api().getSnapshot().requestId,initial);
+});
+
+test("카드에서 실제 B 썸네일로 벗어나면 A 대신 B가 즉시 활성",()=>{
+  const a=anchor(A),b=anchor(B,renderer(),{left:650,top:20,right:840,bottom:125,width:190,height:105});
+  const f=fixture({videos:[video(a,A),video(b,B)]});
+  enter(f,a);const card=floatingCard(f);card.over();
+  card.out(b,700,65);expectVisible(f,B);
+  assert.equal(f.api().getRuntimeStatus().cardPointerInside,false);
+});
+
+test("카드 밖 빈 공간으로 나가면 즉시 IDLE",()=>{
+  const a=anchor(),f=fixture({videos:[video(a)]});
+  enter(f,a);const card=floatingCard(f);card.over();
+  card.out(null,850,650);expectHidden(f);
+  assert.equal(f.api().getSnapshot().reason,"CARD_LEAVE");
+});
+
+test("카드 위에서 오래된 A pointerout이 도착해도 카드가 닫히지 않음",()=>{
+  const a=anchor(A),b=anchor(B),f=fixture({videos:[video(a,A),video(b,B)]});
+  enter(f,a);const card=floatingCard(f);card.over();
+  leave(f,a,b,{clientX:300,clientY:50});expectVisible(f,A);
+});
+
+test("A→카드 간격 12px만 160ms 이하로 이동하면 카드 유지",()=>{
+  const a=anchor(),f=fixture({videos:[video(a)]});
+  enter(f,a);const card=floatingCard(f);
+  leave(f,a,{parentElement:null},{clientX:211,clientY:60});
+  assert.equal(f.api().getRuntimeStatus().cardTransitScheduled,true);
+  f.advance(100);expectVisible(f);
+  card.over();
+  assert.equal(f.api().getRuntimeStatus().cardTransitScheduled,false);
+  f.advance(200);expectVisible(f);
+});
+
+test("안전한 간격에 멈춰 있으면 160ms 경과 후 반드시 카드 종료",()=>{
+  const a=anchor(),f=fixture({videos:[video(a)]});
+  enter(f,a);floatingCard(f);
+  leave(f,a,{parentElement:null},{clientX:211,clientY:60});
+  f.advance(159);expectVisible(f);
+  f.advance(1);expectHidden(f);
+  assert.equal(f.api().getSnapshot().reason,"CARD_TRANSIT_EXPIRED");
+  assert.equal(f.timers.size,0);
+});
+
+test("안전 경로 안에서 pointermove를 반복해도 종료 시한이 연장되지 않음",()=>{
+  const a=anchor(),f=fixture({videos:[video(a)]});
+  enter(f,a);floatingCard(f);
+  leave(f,a,{parentElement:null},{clientX:211,clientY:60});
+  for(let i=0;i<5;i++){
+    f.advance(20);
+    move(f,{parentElement:null},{clientX:215,clientY:60});
+    expectVisible(f);
+  }
+  f.advance(60);expectHidden(f);
+});
+
+test("안전 경로 밖으로 포인터가 이동하면 160ms를 기다리지 않고 종료",()=>{
+  const a=anchor(),f=fixture({videos:[video(a)]});
+  enter(f,a);floatingCard(f);
+  leave(f,a,{parentElement:null},{clientX:211,clientY:60});
+  move(f,{parentElement:null},{clientX:750,clientY:500});
+  expectHidden(f);
+  assert.equal(f.timers.size,0);
+});
+
+test("같은 영상 A↔카드↔A 20회 반복해도 카드 누락·requestId 교체 없음",()=>{
+  const a=anchor(),f=fixture({videos:[video(a)]});
+  enter(f,a);const card=floatingCard(f),id=f.api().getSnapshot().requestId;
+  for(let i=0;i<20;i++){
+    leave(f,a,card.child,{clientX:211,clientY:60});
+    card.over();expectVisible(f);
+    card.out(a,209,60);
+    enter(f,a);expectVisible(f);
+    assert.equal(f.api().getSnapshot().requestId,id);
+  }
+});
+
+test("포인터가 카드 위에 있는 동안 SPA가 같은 ID anchor 교체해도 고정",()=>{
+  const a=anchor(A),b=anchor(A),old=video(a,A),next=video(b,A);
+  const f=fixture({videos:[old]});
+  enter(f,a);const card=floatingCard(f);card.over();
+  const id=f.api().getSnapshot().requestId;
+  a.isConnected=false;
+  f.videoChanges({removed:[old],updated:[],added:[next]});
+  expectVisible(f,A);
+  assert.equal(f.api().getSnapshot().requestId,id);
+  assert.equal(f.api().getSnapshot().anchor,b);
+});
+
 test("discovery가 없으면 controller를 초기화하지 않음",()=>{assert.equal(fixture({available:false}).api(),undefined);});
 
 test("controller는 일반 Hover 타이머 없이 카드 이동에만 제한된 유예 사용",()=>{
