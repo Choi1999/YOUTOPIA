@@ -1,5 +1,16 @@
 # YU-26 Interactive Hover Card QA — 2026-10-20
 
+## 사후 최신 상태 (PR #13 병합 이후 · 기존 기록 보존)
+
+- **GitHub 실제 상태:** [PR #13](https://github.com/Choi1999/YOUTOPIA/pull/13) Merged / Closed (2026-10-20 18:38:40 KST), `frontend` merge SHA `d7f271b5afa1fc6b0bf31c000da6aa73611a6dc0`, 최종 기능 SHA `1c5ce3a296a98285460c29a63752163bc0685a29`. 원격 `feature/yutopia-26-hover-card` 삭제됨.
+- **최종 SHA의 증거 수준:** 이전 대화에서 사용자 PowerShell 원본 로그를 확인했다는 인계 기록에 따라 Windows **Native Node 160/160 PASS**, **Chromium Fixture 2종 PASS**로 보고됨. 이번 문서 정리 시 테스트를 재실행하지 않았으며 GitHub CI PASS로 대체하지 않음.
+- **설치형 Chrome:** 사용자 보고상 A→카드→A와 카드 뒤 B 선택 차단이 최종 기능에서 유지됨. 모든 개별 수동 시나리오·장시간 성능·접근성은 포괄적으로 증명되지 않음.
+- **남은 게이트:** 최종 SHA 라이브 YouTube 자동 테스트 실행 로그 미제출; 인증/실데이터/Side Panel 목표 고정 기능은 YU-27~이후 별도 단계. YU-26은 STATIC_FIXTURE 기반 UI에 한정.
+- **이력 해석:** 아래 `PR13_OPEN_READY_FOR_REVIEW`, `PENDING` 표와 삭제된 원격 브랜치의 pull 명령은 **병합 전 스냅샷**으로만 유지한다. 현재 작업시에는 `frontend` HEAD에서 독립 브랜치를 생성한다.
+
+---
+
+
 > PR13_OPEN_READY_FOR_REVIEW / CARD_PINNING_DUPLICATE_GUARD / ISOLATED_V8_160_OF_160_PASS / NATIVE_CHROMIUM_LIVE_RETEST_PENDING / FRONTEND_UNCHANGED
 
 ## 최신 승인 요구 — 카드 안으로 이동 시 현재 영상 고정
