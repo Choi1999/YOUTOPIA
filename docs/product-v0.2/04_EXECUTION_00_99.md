@@ -19,7 +19,7 @@
 - **00:** 사용자가 제품 방향을 승인했고 `00_PRODUCT_DIRECTION.md` 초안이 작성됨.
 - **01~03:** 사용자 승인 방향과 프론트 소스를 반영한 문서 초안이 작성됨. UX 세부와 기술 스택·권한은 검토 필요.
 - **04:** 00~99 순서, 산출물, 현재 상태를 정의하는 본 문서(초안 작성 완료, 외부 검토 필요).
-- **05~09:** 제품 정의 세부/게이트 **문서 초안 작성**. **10~19:** YouTube 홈, Hover·Side Panel의 **UX 문서 초안 작성**, 시각·실브라우저 미검증. **20:** MV3 스켈레톤 PR #6 병합. **21:** PR #8 영상 후보 탐지 frontend 병합. **22:** PR #9 SPA/무한 스크롤 자동 재탐지 frontend 병합. Node CLI 25/25 및 Chromium 오프라인 PASS; Windows Chrome 수동 7/7 PASS는 사용자 보고(원본 로그·검증 SHA 미제출). **23:** PR #10 엄격 VIDEO ID Resolver frontend 병합, Node CLI 46/46·Windows 기능 검증은 사용자 보고(테스트 SHA 일치, 원본 로그 미제출). **24:** PR #11 채널 ID·@handle 식별 코드 frontend 병합, V8 78/78 PASS 및 Windows PASS·테스트 SHA 일치는 사용자 보고(원본 로그 미제출). **25:** PR #12 상태 제어 코드 frontend 병합, V8 118/118 PASS 및 Windows 수동 PASS/테스트 SHA·Clean Worktree는 사용자 보고(원본 로그 미제출). **26:** Shadow DOM 실제 카드 UI와 고정 합성 지표/브리핑·검증 테스트 개발, 전체 V8 152/152 PASS, 신규 Node CLI·Windows Chrome 시각 검수 전. **27~99:** 후속 기능 실제 구현·검증 완료 아님. 실행대장 자체의 작성은 실서비스 동작 증거가 아님.
+- **05~09:** 제품 정의 세부/게이트 **문서 초안 작성**. **10~19:** YouTube 홈, Hover·Side Panel의 **UX 문서 초안 작성**, 시각·실브라우저 미검증. **20:** MV3 스켈레톤 PR #6 병합. **21:** PR #8 영상 후보 탐지 frontend 병합. **22:** PR #9 SPA/무한 스크롤 자동 재탐지 frontend 병합. Node CLI 25/25 및 Chromium 오프라인 PASS; Windows Chrome 수동 7/7 PASS는 사용자 보고(원본 로그·검증 SHA 미제출). **23:** PR #10 엄격 VIDEO ID Resolver frontend 병합, Node CLI 46/46·Windows 기능 검증은 사용자 보고(테스트 SHA 일치, 원본 로그 미제출). **24:** PR #11 채널 ID·@handle 식별 코드 frontend 병합, V8 78/78 PASS 및 Windows PASS·테스트 SHA 일치는 사용자 보고(원본 로그 미제출). **25:** PR #12 상태 제어 코드 frontend 병합, V8 118/118 PASS 및 Windows 수동 PASS/테스트 SHA·Clean Worktree는 사용자 보고(원본 로그 미제출). **26:** Shadow DOM 실제 카드 UI와 고정 합성 지표/브리핑·검증 테스트 개발, 전체 V8 159/159 PASS. 이전 Head Native Node 152/152·Chromium 오프라인 PASS, 실제 Chrome 간헐적 미표시 보고 후 160ms·SPA 복구 패치 재검증 대기. **27~99:** 후속 기능 실제 구현·검증 완료 아님. 실행대장 자체의 작성은 실서비스 동작 증거가 아님.
 
 ## 00~99 상세 작업
 
@@ -63,7 +63,7 @@
 | **23** | 영상 대상 식별 | 확실한 videoId 추출 및 잘못된 링크 거부 | `MERGED / USER_REPORTED_NODE_AND_WINDOWS_PASS / TESTED_SHA_MATCH` | [PR #10](https://github.com/Choi1999/YOUTOPIA/pull/10), `extension/target-resolver.js`, [QA 23 기록](../../extension/tests/QA_23_EVIDENCE.md) |
 | **24** | 채널 대상 식별 | channelId/@handle 구별·불확실 시 유보 | `MERGED / V8_FIXTURE_TESTED / USER_REPORTED_WINDOWS_PASS / TESTED_SHA_MATCH` | [PR #11](https://github.com/Choi1999/YOUTOPIA/pull/11), `extension/channel-target-resolver.js`, [QA 24 기록](../../extension/tests/QA_24_EVIDENCE.md) |
 | **25** | Hover 상태 제어 | 타이머·마우스 카드 이동·연속/겹침 요청 취소 | `MERGED / V8_FIXTURE_TESTED / USER_REPORTED_WINDOWS_PASS / TESTED_SHA_AND_CLEAN` | [PR #12](https://github.com/Choi1999/YOUTOPIA/pull/12), `extension/hover-controller.js`, [QA 25 기록](../../extension/tests/QA_25_EVIDENCE.md) |
-| **26** | 경량 Hover 카드 UI | 고정 합성 데이터·출처 배지·더보기 안내 | `IN_PROGRESS / SHADOW_DOM_IMPLEMENTED / V8_152_TESTED / NATIVE_NODE_152_AND_CHROMIUM_RETEST_PENDING` | `extension/hover-card-model.js`, `extension/hover-card.js`, `extension/tests/hover-card-ui.test.cjs`, [QA 26 기록](../../extension/tests/QA_26_EVIDENCE.md) |
+| **26** | 경량 Hover 카드 UI | 고정 합성 데이터·출처 배지·더보기 안내 | `IN_PROGRESS / SHADOW_DOM_IMPLEMENTED / V8_159_TESTED / LATEST_NODE_AND_CHROMIUM_AND_LIVE_CHROME_QA_PENDING` | `extension/hover-card-model.js`, `extension/hover-card.js`, `extension/tests/hover-card-ui.test.cjs`, [QA 26 기록](../../extension/tests/QA_26_EVIDENCE.md) |
 | **27** | 확장 서비스 워커 메시지/캐시 | targetId·requestId 검증과 권한 최소화 | `NOT_STARTED` | `background tests` |
 | **28** | Chrome Side Panel 연동 | 사용자 클릭 제스처로 열기·동일 대상 유지 | `NOT_STARTED` | `panel smoke` |
 | **29** | 실제 YouTube 홈 수동·자동 PoC | 선정 브라우저에서 카드 위치·패널·충돌 체크 | `NOT_STARTED` | `Chrome local QA` |
@@ -204,7 +204,7 @@
 | 2026-10-20 | PR #11 채널 ID·@handle 코드 frontend 병합 | Merge SHA 97611f144c8ae074d2e7f5b5f75031ef03d840c6, 출시 승인이 아님 |
 | 2026-10-20 | 25 Hover 상태 제어와 가상 타이머·중복 주입·키보드·경합 취소 테스트 작성 | 21~25 전체 격리 V8 모의 118/118 PASS. 이후 사용자 Windows PASS·테스트 SHA 및 Clean Worktree 보고 |
 | 2026-10-20 | PR #12 Hover 상태 제어 frontend 병합 | SHA 20edd746e25dc82296a220716bf57c8c66cc5b3, 실제 데이터·출시 승인 아님 |
-| 2026-10-20 | 26 실제 Shadow DOM Hover 카드 UI 및 합성 MOCK 모델 구현 | 기존 118 + 신규 34 = V8 모의 152/152 PASS. 이전 HEAD의 Windows Native Node 150/150 PASS ×2 기록; Chromium UI 포인터 가림 수정 후 재실행·실사이트 Chrome 시각 검수 미완료 |
+| 2026-10-20 | 26 실제 Shadow DOM Hover 카드 UI 및 합성 MOCK 모델 구현 | 기존 118 + 신규 34 = V8 모의 152/152 PASS. 이후 Windows Native Node 152/152·Chromium 오프라인 PASS 사용자 로그. 실제 Chrome 간헐적 카드 미표시·400ms 지연 보고 후 수정 패치 준비 |
 | 2026-10-16 | 10~19 Chrome 고객 UX 정보구조·상태·Side Panel·검수표 초안 | 목업·실브라우저 검수 대기 |
 
 ## 연관 정본
@@ -215,3 +215,5 @@
 - [03 기존 데모 마이그레이션](./03_MIGRATION_AND_GATES.md)
 - [Chrome Side Panel API](https://developer.chrome.com/docs/extensions/reference/api/sidePanel)
 - [YouTube 파생 지표 조건](https://developers.google.com/youtube/terms/derived-metrics-policy)
+
+| 2026-10-20 | 26 실제 Chrome 간헐적 카드 미표시·400ms 지연 피드백 | 진입 지연 160ms 시험값, SPA 앵커 포인터 복구·진단, 신규 7건 회귀로 격리 V8 159/159 PASS; 최신 Native Node/Chromium/실사이트 재검증 대기 |
