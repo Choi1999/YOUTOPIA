@@ -73,6 +73,9 @@ with sync_playwright() as pw:
         assert page.locator("#youtube-fixture").inner_html() == fixture_before, "Original YouTube-like DOM changed"
 
         card = page.locator("#yutopia-extension-hover-card")
+        # Host.inner_text() excludes Shadow DOM contents in Chromium.
+        # Playwright CSS locators pierce open Shadow Roots.
+        card_content = card.locator(".card")
         status = page.evaluate("window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus()")
         assert status["connected"] and not status["visible"], status
 
@@ -90,9 +93,11 @@ with sync_playwright() as pw:
             timeout=5000,
         )
         assert card.count() == 1
-        assert "Ab0_-123xyz" in card.inner_text()
-        assert "DEMO" in card.inner_text()
-        assert "실제 YouTube 댓글" in card.inner_text()
+        assert page.evaluate("Boolean(document.querySelector('#yutopia-extension-hover-card')?.shadowRoot)"), "Shadow Root missing"
+        assert card_content.count() == 1, "Shadow Card subtree missing"
+        assert "Ab0_-123xyz" in card_content.inner_text()
+        assert "DEMO" in card_content.inner_text()
+        assert "실제 YouTube 댓글" in card_content.inner_text()
         assert card.locator(".bar").count() == 1
         geom = card.bounding_box()
         assert geom and geom["x"] >= 0 and geom["x"] + geom["width"] <= 1000
@@ -108,8 +113,8 @@ with sync_playwright() as pw:
             """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyZ'""",
             timeout=5000,
         )
-        assert "Ab0_-123xyZ" in card.inner_text()
-        assert "Ab0_-123xyz" not in card.inner_text()
+        assert "Ab0_-123xyZ" in card_content.inner_text()
+        assert "Ab0_-123xyz" not in card_content.inner_text()
 
         # Unresolved handle must not show a chart or expose a fabricated UC ID.
         page.locator("#video-b ytd-channel-name a").hover()
@@ -119,7 +124,7 @@ with sync_playwright() as pw:
         )
         assert card.locator(".bar").count() == 0
         assert card.locator(".more").count() == 0
-        assert "채널 ID 확인 필요" in card.inner_text()
+        assert "채널 ID 확인 필요" in card_content.inner_text()
 
         # Escape closes the card without interfering with site content.
         page.keyboard.press("Escape")
