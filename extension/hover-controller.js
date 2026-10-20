@@ -367,6 +367,9 @@
       return;
     }
 
+    // Delayed native pointerout from the old thumbnail cannot close/switch
+    // a card currently receiving actual pointer input.
+    if (cardPointerInside) return;
     const leaving = bindingFromNode(event.target);
     if (leaving && leaving !== active) return;
     if (inCard(event.relatedTarget)) {
@@ -453,7 +456,8 @@
       );
       const sameTarget = candidates.find(candidate =>
         previousKey && stableTargetKey(candidate) === previousKey &&
-        elementObserved(candidate, activeMode || "POINTER")
+        (elementObserved(candidate, activeMode || "POINTER") ||
+         (cardPointerInside && candidate.href === previousActive.href))
       );
       const rebound = sameElement || sameTarget;
       if (rebound) {
