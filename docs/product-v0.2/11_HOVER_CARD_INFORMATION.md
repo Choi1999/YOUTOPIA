@@ -58,8 +58,8 @@
 - 데모는 **정규 ID만 표시**한다. 영상 제목·실제 채널 이름은 아직 읽지 않으므로, 앞의 1번 UX 원칙인 실제 제목 2줄 표시와 픽셀 정합성은 향후 실제 데이터/UX 검토를 거쳐야 한다.
 - 차트 퍼센트·표본 N·주제 2개·브리핑은 고정 합성 예시이며, 실제 YouTube 댓글에 대한 분모·기간/모델 버전·마지막 분석 시각이 존재하지 않는다고 명시한다.
 - @handle만 있을 때는 CHANNEL ID 미확정 상태를 보여주고 퍼센트 차트·더보기는 제공하지 않는다.
-- 더보기 버튼을 클릭하면 '27~28번 연결 예정' 안내만 나타난다. 26번 단독으로 Chrome Side Panel의 선택 대상을 지정하거나 변경하지 않는다.
-- 구현 증거는 [26번 QA](../../extension/tests/QA_26_EVIDENCE.md)에서 확인한다. Node 144/144·오프라인 Chromium·실 검색 DOM 결과와 실제 Windows Chrome 시각 승인/접근성 승인은 별개다.
+- 더보기·닫기 버튼은 현재 26번 MOCK 카드에서 disabled이다. 카드 자체는 마우스를 받을 수 있으나 실제 클릭 동작과 Side Panel 대상 지정/전송은 27~28번 후속 작업으로 분리한다.
+- 구현 증거는 [26번 QA](../../extension/tests/QA_26_EVIDENCE.md)에서 확인한다. 이전 Native Node 144/144·오프라인 Chromium·실 Search DOM·사용자 Chrome Home/Search PASS와 현재 Interactive Card 격리 V8 모의 158/158 PASS를 구분한다. 최신 Windows Native Node/Chromium/실제 MV3 검증 및 접근성 승인은 별개다.
 
 ## 3. 표시 우선순위와 줄바꿈
 
