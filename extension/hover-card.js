@@ -297,7 +297,47 @@
     left = Math.min(Math.max(MARGIN, left), maxLeft);
 
     const maxTop = Math.max(MARGIN, vh - h - MARGIN);
-    const top = Math.min(Math.max(MARGIN, rect.top), maxTop);
+    let top = Math.min(Math.max(MARGIN, rect.top), maxTop);
+
+    /*
+     * 우측 카드가 옆 영상 썸네일을 가려 A→B 이동이 막히면 아래쪽으로 배치한다.
+     * 다른 링크의 제목이나 시청 데이터를 읽지 않고 표시 중인 썸네일의 위치만 검사한다.
+     * 패널 내부 스크롤·YouTube 클릭 이벤트는 가로채지 않는다.
+     */
+    function overlapsOtherThumbnail(x, y) {
+      if (typeof doc.querySelectorAll !== "function") return false;
+      let links;
+      try {
+        links = doc.querySelectorAll(
+          "a#thumbnail[href], a.yt-lockup-view-model__content-image[href]"
+        );
+      } catch (_error) {
+        return false;
+      }
+      let checked = 0;
+      for (const link of links) {
+        if (++checked > 180) break;
+        if (link === currentAnchor || !link?.isConnected ||
+            typeof link.getBoundingClientRect !== "function") continue;
+        const box = link.getBoundingClientRect();
+        if (!box || box.width <= 0 || box.height <= 0 || box.bottom <= 0 ||
+            box.top >= vh || box.right <= 0 || box.left >= vw) continue;
+        const coveredWidth = Math.max(0, Math.min(x + width, box.right) - Math.max(x, box.left));
+        const coveredHeight = Math.max(0, Math.min(y + h, box.bottom) - Math.max(y, box.top));
+        if (coveredWidth * coveredHeight > box.width * box.height * 0.18) return true;
+      }
+      return false;
+    }
+
+    const belowTop = rect.bottom + ANCHOR_GAP;
+    const belowLeft = Math.min(Math.max(MARGIN, rect.left), maxLeft);
+    if (overlapsOtherThumbnail(left, top) &&
+        belowTop + h <= vh - MARGIN &&
+        !overlapsOtherThumbnail(belowLeft, belowTop)) {
+      left = belowLeft;
+      top = belowTop;
+    }
+
     host.style.left = Math.round(left) + "px";
     host.style.top = Math.round(top) + "px";
     host.style.visibility = "visible";
