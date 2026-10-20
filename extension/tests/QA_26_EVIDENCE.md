@@ -1,6 +1,6 @@
 # YUTOPIA 26번 — 실제 Hover 카드 UI(합성 데이터) 검증 기록
 
-> **2026-10-20 / CARD_UI_CODE_READY / ISOLATED_V8_149_OF_149_PASS / NATIVE_NODE_AND_WINDOWS_CHROME_NOT_VERIFIED**
+> **2026-10-20 / CARD_UI_CODE_READY / ISOLATED_V8_150_OF_150_PASS / NATIVE_NODE_AND_WINDOWS_CHROME_NOT_VERIFIED**
 
 이 기록은 Chrome MV3 확장 개발자용 **MOCK Hover 카드 UI**를 설명한다. 실제 YouTube 데이터 분석, 운영 배포, 사용자 승인 UI 시안 완성 또는 Side Panel 대상 연동에 대한 증거가 아니다.
 
@@ -13,7 +13,7 @@
 - **상태 구분:** READY는 안정적인 VIDEO ID 또는 UC 형식 CHANNEL ID가 있을 때만 표시. CHANNEL @handle만 확인된 경우 UNRESOLVED 카드에 식별 필요 문구만 제공하며 가짜 감성 비율과 상세 CTA를 만들지 않는다.
 - **카드 구성:** YUTOPIA / DEMO 배지, 대상 영상·채널의 **정규 ID** (실제 제목 수집하지 않음), 합성 긍정·중립·부정 막대/범례, 2개 가상 논점, 1문장 합성 브리핑, 가상 댓글 표본·가상 분석 범위·'실제 갱신 시각 없음' 및 반복적인 STATIC FIXTURE 고지.
 - **데이터 경계:** targetId를 결정적 시드로 3개의 고정 MOCK 데이터 예시 중 하나를 사용한다. 실제 YouTube 댓글·제목/메타데이터·사용자/시청기록·LLM/API 결과를 읽거나 전송하지 않는다. 숫자는 실제 채널/영상과 관계없다.
-- **위치:** 활성 링크의 getBoundingClientRect를 이용해 우측 12px 우선 배치하고, 공간 부족 시 좌측 또는 가시 영역으로 제한한다(초기 최대 폭 344px). 좁은 브라우저/스크롤/리사이즈, 화면 밖 앵커는 안전하게 처리한다.
+- **위치:** 활성 링크의 getBoundingClientRect를 이용해 우측 12px 우선 배치하고, 공간 부족 시 좌측 또는 가시 영역으로 제한한다(초기 최대 폭 344px). 인접 영상 썸네일 링크를 크게 가리는 경우에는 아래쪽 가용 공간을 검토한다. 좁은 브라우저/스크롤/리사이즈, 화면 밖 앵커는 안전하게 처리한다.
 - **독립성:** 한 번에 하나의 YUTOPIA 카드 Host만 유지하며 Shadow DOM 내부에만 CSS를 삽입한다. YouTube 기존 DOM 내용/링크/이벤트 핸들러를 덮어쓰지 않는다.
 - **상호작용:** 카드 안 pointerenter/leave와 focusin/out을 25번 Overlay 유지 API로 연결, Escape/닫기/SPA 경합은 Controller와 동기화. 닫기는 즉시 종료.
 - **더보기:** 클릭하면 '27~28번에서 상세 Side Panel 연결'이라는 메시지만 표시한다. 27번 메시지·28번 사용자 클릭 Side Panel 대상 고정은 아직 구현되지 않았다. 임의로 Side Panel을 열어 대상이 연결됐다고 오인시키지 않는다.
@@ -28,8 +28,8 @@
 | 23 VIDEO ID 검증 | 21 | PASS, 격리 V8 |
 | 24 CHANNEL ID/@handle | 32 | PASS, 격리 V8 |
 | 25 Hover 상태 제어 | 40 | PASS, 격리 V8 (Manifest 순서 계약 신규 파일 대응) |
-| 26 Hover 카드 모델/DOM/CTA | 31 | PASS, 격리 V8 Mock DOM |
-| **전체** | **149** | **149/149 PASS — 실제 Node.js CLI/Chrome 실행 아님** |
+| 26 Hover 카드 모델/DOM/CTA·썸네일 겹침 보완 | 32 | PASS, 격리 V8 Mock DOM |
+| **전체** | **150** | **150/150 PASS — 실제 Node.js CLI/Chrome 실행 아님** |
 | JavaScript 구문 | 신규 모델/렌더러/테스트 | PASS, 격리 V8 파서 |
 | Native Node.js CLI | node --test 실행 | **NOT RUN** |
 | Chromium 오프라인 DOM | chromium-hover-card-fixture.py | **NOT RUN**, 선택 Fixture 코드만 저장 |
@@ -48,7 +48,7 @@ node --check extension/hover-card.js
 node --test extension/tests/content-discovery.test.cjs extension/tests/content-spa-observer.test.cjs extension/tests/video-target-resolver.test.cjs extension/tests/channel-target-resolver.test.cjs extension/tests/hover-controller.test.cjs extension/tests/hover-card-ui.test.cjs
 ~~~
 
-정상 기대값: 149 tests, 149 pass, 0 fail.
+정상 기대값: 150 tests, 150 pass, 0 fail.
 
 선택적인 오프라인 Chromium DOM 검증:
 
@@ -61,7 +61,7 @@ python extension/tests/chromium-hover-card-fixture.py
 ## 4. Windows Chrome 실제 시각 QA — 아직 미실행
 
 1. 기존 개발 폴더를 수정하지 않고 별도 clone/worktree로 feature/yutopia-26-hover-card 브랜치 복제.
-2. PowerShell에서 git rev-parse HEAD와 git status --short 확인, 위 Node 테스트 149건 PASS 및 구문 통과 기록.
+2. PowerShell에서 git rev-parse HEAD와 git status --short 확인, 위 Node 테스트 150건 PASS 및 구문 통과 기록.
 3. Chrome chrome://extensions에서 기존 YUTOPIA 검증 확장 일시 비활성화, 이번 브랜치 extension/ 폴더 로드. YouTube 홈 새로고침.
 4. YouTube 홈의 4개 이상 썸네일 중 A 위에 마우스를 잠깐(100ms) 올렸다 떼면 카드가 나타나지 않아야 한다.
 5. A 위 400ms가량 유지 시 앵커 옆 Hover 카드가 표시되어야 하며, ID가 A 링크의 /watch?v= 값과 같아야 한다. 긍정/중립/부정 차트와 DEMO·STATIC FIXTURE 고지 및 가상 표본/기간이 함께 보여야 한다.
