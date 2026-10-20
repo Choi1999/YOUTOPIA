@@ -145,10 +145,11 @@ function fixture({videos=[],channels=[],withDiscovery=true,withTimers=true}={}) 
   };
 }
 
-test("Manifest는 discovery 다음 hover-controller.js를 마지막으로 로드",()=>{
+test("Manifest는 discovery 다음 Hover Controller, 이후 26번 Card를 순서대로 로드",()=>{
   const scripts=manifest.content_scripts[0].js;
-  assert.equal(scripts.at(-1),"hover-controller.js");
   assert.ok(scripts.indexOf("content.js")<scripts.indexOf("hover-controller.js"));
+  assert.ok(scripts.indexOf("hover-controller.js")<scripts.indexOf("hover-card-model.js"));
+  assert.ok(scripts.indexOf("hover-card-model.js")<scripts.indexOf("hover-card.js"));
 });
 
 test("초기 VIDEO·CHANNEL 후보 리스너를 별도로 1회 등록",()=>{
