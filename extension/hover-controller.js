@@ -1,15 +1,18 @@
 /*
- * YUTOPIA Strict Thumbnail Hover Controller — YU-26
+ * YUTOPIA Interactive Thumbnail + Shadow Card Hover Controller — YU-26
  *
  * Contract:
- *   pointer on an identified thumbnail -> show that target immediately
- *   pointer outside the thumbnail      -> hide immediately
- *   A -> B -> C and repeated A reentry -> always publish the current target
+ *   identified thumbnail -> immediate card for that VIDEO/CHANNEL target
+ *   thumbnail -> own card -> original target and requestId stay pinned
+ *   pointer on card -> thumbnails visually behind the card are not selected
+ *   card / trigger exit -> immediate close, except bounded gap safe transit
+ *   direct A -> B and repeated A reentry -> current target always wins
  *
- * One delegated document listener set owns pointer state. There are no
- * per-anchor listeners, open/close timers, grace periods, overlay occupancy,
- * or persistent suppression. Discovery owns identity; this module only maps
- * the current physical pointer/focus boundary to one stable logical target.
+ * A single delegated document listener set owns target selection.
+ * No per-anchor listeners, generic open delay, generic leave grace, or
+ * suppression state. The only timer is a non-renewing 160ms travel window
+ * for the short trigger-to-card gap. Discovery owns identity; pinned SPA
+ * rebinds must also match the original thumbnail's last known footprint.
  */
 (function initializeYutopiaHoverController(scope) {
   "use strict";
