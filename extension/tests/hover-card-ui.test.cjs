@@ -315,7 +315,7 @@ test("HANDLE_UNRESOLVED는 거짓 비율이나 더보기 CTA를 만들지 않음
   f.emit(unresolvedState(1,f.anchor()));
   assert.equal(f.api.getRuntimeStatus().targetId,null);
   assert.match(f.cardText(),/채널 ID 확인 필요/);
-  assert.match(f.cardText(),/임의/ .source ? /정확한 채널 ID/ : /정확한 채널 ID/);
+  assert.match(f.cardText(),/정확한 채널 ID/);
   assert.equal(f.findClass("bar"),null);
   assert.equal(f.findClass("more"),null);
 });
@@ -327,7 +327,7 @@ test("불확실한 VIDEO ID로 READY를 위장하면 모델 거부로 렌더링�
 });
 
 test("기존 YouTube 문서는 Shadow Root 바깥에서 수정되지 않음",()=>{
-  const f=makeFixture(),original=JSON.stringify(f.doc.body.childNodes);
+  const f=makeFixture();
   f.emit(videoState(VIDEO_A,1,f.anchor()));
   assert.equal(f.doc.body.childNodes.filter(x=>x.id!=="yutopia-extension-hover-card").length,0);
   assert.equal(f.doc.body.childNodes.length,1);
