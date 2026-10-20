@@ -233,6 +233,99 @@
     return chosen;
   }
 
+  /*
+   * A Shadow DOM pointer event is retargeted to its host at document capture.
+   * Only the actual card may receive events. The surrounding host remains
+   * transparent, and event paths through this card have priority over
+   * coordinate-based recovery of YouTube thumbnails underneath it.
+   */
+  function inCard(node) {
+    if (!node || !cardHost || !cardElement || cardHost.isConnected === false) return false;
+    for (let current = node, i = 0; current && i < MAX_PATH_DEPTH; i += 1) {
+      if (current === cardElement || current === cardHost) return true;
+      current = current.parentElement || current.parentNode || current.host || null;
+    }
+    return false;
+  }
+
+  function eventInCard(event) {
+    if (!event || !cardElement || !cardHost) return false;
+    const path = event.composedPath?.();
+    if (Array.isArray(path) &&
+        (path.includes(cardElement) || path.includes(cardHost))) return true;
+    return inCard(event.target);
+  }
+
+  /*
+   * Short geometric travel between the trigger and its card, not a generic
+   * 200ms leave delay. This region cannot outlive one fixed timer, and it
+   * never wins over a real hovered, separately identified thumbnail.
+   */
+  function inSafeCardTransit(x, y) {
+    if (!active || !valid(active) || !cardElement?.isConnected ||
+        !Number.isFinite(x) || !Number.isFinite(y) ||
+        typeof active.element.getBoundingClientRect !== "function" ||
+        typeof cardElement.getBoundingClientRect !== "function") return false;
+    const source = active.element.getBoundingClientRect();
+    const target = cardElement.getBoundingClientRect();
+    if (!source || !target || source.width <= 0 || source.height <= 0 ||
+        target.width <= 0 || target.height <= 0) return false;
+    let a, b, start0, start1, end0, end1, along, across;
+    if (source.right <= target.left) {
+      a = source.right; b = target.left;
+      start0 = source.top; start1 = source.bottom;
+      end0 = target.top; end1 = target.bottom;
+      along = x; across = y;
+    } else if (target.right <= source.left) {
+      a = target.right; b = source.left;
+      start0 = target.top; start1 = target.bottom;
+      end0 = source.top; end1 = source.bottom;
+      along = x; across = y;
+    } else if (source.bottom <= target.top) {
+      a = source.bottom; b = target.top;
+      start0 = source.left; start1 = source.right;
+      end0 = target.left; end1 = target.right;
+      along = y; across = x;
+    } else if (target.bottom <= source.top) {
+      a = target.bottom; b = source.top;
+      start0 = target.left; start1 = target.right;
+      end0 = source.left; end1 = source.right;
+      along = y; across = x;
+    } else return false;
+
+    if (b - a > MAX_TRANSIT_GAP || along < a - 6 || along > b + 6) return false;
+    const t = b === a ? 0 : Math.max(0, Math.min(1, (along - a) / (b - a)));
+    const bottom = start0 + (end0 - start0) * t;
+    const top = start1 + (end1 - start1) * t;
+    return across >= Math.min(bottom, top) - 8 &&
+      across <= Math.max(bottom, top) + 8;
+  }
+
+  function beginSafeTransit(event) {
+    if (!active || activeMode !== "POINTER" ||
+        !inSafeCardTransit(event?.clientX, event?.clientY)) return false;
+    if (transitTimer !== null) return true;
+    if (typeof scope.setTimeout !== "function") return false;
+    const token = ++transitGeneration;
+    const original = active;
+    transitTimer = scope.setTimeout(() => {
+      if (disposed || token !== transitGeneration || active !== original) return;
+      transitTimer = null;
+      clear("CARD_TRANSIT_EXPIRED");
+    }, CARD_TRANSIT_MS);
+    return true;
+  }
+
+  function setCardRegion(hostNode, cardNode) {
+    if (disposed) return;
+    cardHost = hostNode || null;
+    cardElement = cardNode || null;
+    if (!cardNode) {
+      cardPointerInside = false;
+      stopTransit();
+    }
+  }
+
   function onPointerPresence(event) {
     if (disposed || event?.pointerType === "touch") return;
     const next = bindingFromEvent(event);
