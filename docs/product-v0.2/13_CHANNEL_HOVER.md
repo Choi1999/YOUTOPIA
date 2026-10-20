@@ -1,6 +1,6 @@
 # 13 — 채널 Hover 카드: 영상 분석과의 구분
 
-> **CHANNEL_UX_DRAFT / NOT IMPLEMENTED / CHANNEL_ID_NOT_VERIFIED**
+> **CHANNEL_UX_DRAFT / YU24_IDENTITY_CODE_READY / CHANNEL_HOVER_NOT_IMPLEMENTED / API_MAPPING_NOT_VERIFIED**
 >
 > 제품은 게임 채널뿐 아니라 **일반 YouTube 채널**을 지원합니다. 채널 아바타·이름 등과 관련된 링크에 Hover했을 때 **해당 채널의 분석 범위**를 보여줍니다. 고객이 실제 채널 전체를 분석한 것으로 오해하지 않도록 합니다.
 
@@ -30,6 +30,13 @@
   - `/channel/UC...`처럼 식별 가능한 채널 경로는 해당 ID 사용 후보.
   - `/@handle` 또는 별칭 링크는 확인된 매핑이 없다면 임의로 다른 채널 ID를 생성하지 않음.
   - 서버의 채널 식별/API 정책이 정해지기 전에는 합성/확실한 고정 테스트 채널만 시연.
+
+## 2.1 식별기 구현과 Hover 기능의 경계 (24번)
+
+- 24번 개발 브랜치에서는 `/channel/UC...`의 **형식만** 확인해 CHANNEL_ID 후보로 구분한다. 실제 채널 존재·소유권 검증이 아니다.
+- `/@handle`은 HANDLE_UNRESOLVED로 반환하며, 임의로 channelId/targetId를 생성하지 않는다. 서버/API가 정확한 매핑을 제공하기 전에는 채널 더보기 대상 ID로 사용하지 않는다.
+- 영상 썸네일의 VIDEO 후보와 채널명/아바타의 CHANNEL 후보를 별도 이벤트로 관리한다. 실제 Hover 카드·채널 Side Panel 동작은 아직 만들어지지 않았다.
+- 채널 ID/핸들 식별기의 V8 모의 Fixture 78/78 PASS와 실제 Chrome 테스트·데이터 사용권 승인은 **서로 다른 Gate**다. [24번 QA 기록](../../extension/tests/QA_24_EVIDENCE.md).
 
 ## 3. 채널 카드의 UI 정보 구조
 
@@ -75,4 +82,4 @@
 - [ ] 구독 범위 제한/정책 차단 시 다른 채널 데이터로 대체하지 않음.
 - [ ] 채널 더보기 클릭 이후 Side Panel이 CHANNEL 대상으로 열린다.
 
-**현재 상태:** 실제 Chrome/YouTube DOM 테스트 **NOT TESTED**.
+**현재 상태:** 채널 URL 식별기(24번)는 독립 개발 브랜치에서 코드·모의 테스트 완료. 실제 Chrome/YouTube 채널 DOM 확인, 핸들→채널 ID 매핑, 채널 Hover·더보기/Side Panel 기능은 모두 **NOT TESTED 또는 NOT IMPLEMENTED**.
