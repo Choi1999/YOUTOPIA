@@ -35,7 +35,7 @@
 
 - YouTube 홈(/)·검색(/results)의 일반 영상 썸네일 렌더러를 DOM에서 읽기 전용으로 탐지합니다.
 - 광고·Shorts·외부 도메인·빈 영상 링크를 제외하고, 중복 콘텐츠 스크립트 주입을 방지합니다.
-- 화면에 카드를 추가하거나 실제 YouTube 댓글·메타데이터를 수집하지 않습니다. **21·22번 영상 탐지와 SPA 자동 재탐지는 frontend에 병합**되어 있으며 23번 엄격한 videoId 검증은 별도 검토 브랜치에 준비됐습니다. Hover 표시(25~26)는 구현 전입니다.
+- 화면에 카드를 추가하거나 실제 YouTube 댓글·메타데이터를 수집하지 않습니다. **21·22·23번 영상 탐지·SPA 재탐지·엄격 VIDEO ID 검증은 frontend에 병합**됐습니다. 24번 CHANNEL/@handle 식별은 독립 검증 브랜치에서 개발 중입니다. Hover 표시(25~26)는 구현 전입니다.
 - **기본 테스트:** 저장소 루트에서 `node --test extension/tests/content-discovery.test.cjs` 실행(별도 npm 의존성 없음).
 - **선택 Chromium DOM Fixture:** `python extension/tests/chromium-dom-fixture.py` (Python Playwright와 Chromium 필요, 실제 확장 E2E 아님).
 - **검증·미완료 Gate:** [20·21 테스트 기록](tests/QA_20_21_EVIDENCE.md).
@@ -47,22 +47,32 @@
 - **Node 재실행:** `node --test extension/tests/content-discovery.test.cjs extension/tests/content-spa-observer.test.cjs` (기존 9건+신규 16건).
 - **선택 Chromium SPA Fixture:** `python extension/tests/chromium-spa-fixture.py` (Playwright 필요; 제출 시 미실행).
 - **검증 사실(2026-10-20 독립 재실행):** Node.js 22의 공식 테스트 러너 **25/25 PASS**, 저장소의 Chromium 오프라인 SPA Fixture **PASS**. [22번 QA 기록](tests/QA_22_EVIDENCE.md)에 Blob SHA 및 실행 범위를 기록했습니다. **Windows Chrome 기본 동작은 2026-10-20 사용자 수동 검증 7/7 PASS로 보고됐습니다. 단, 실행 로그·로컬 검증 SHA는 아직 첨부되지 않았습니다.**
-- [PR #8](https://github.com/Choi1999/YOUTOPIA/pull/8)(21번)과 [PR #9](https://github.com/Choi1999/YOUTOPIA/pull/9)(22번)는 frontend에 순차 병합됐습니다. 신규 23번 코드는 별도 브랜치에서 검수합니다.
+- [PR #8](https://github.com/Choi1999/YOUTOPIA/pull/8)(21번), [PR #9](https://github.com/Choi1999/YOUTOPIA/pull/9)(22번), [PR #10](https://github.com/Choi1999/YOUTOPIA/pull/10)(23번)은 frontend에 순차 병합됐습니다. 24번은 별도 브랜치에서 검수합니다.
 
-## 23번 VIDEO ID 정확성 검증 (개발 검수 중)
+## 23번 VIDEO ID 정확성 검증 (코드 병합 완료)
 
 - 대상이 분명한 YouTube /watch?v= 링크만 VIDEO target으로 승인하며, 11자 영숫자·하이픈·밑줄 형식만 허용합니다(보수적 MVP 가정).
 - 중복 v 매개변수·잘못된 문자/길이·비YouTube·비HTTPS·유사 도메인·썸네일/제목 영상 ID 불일치를 거부합니다.
-- Manifest는 shared.js → target-resolver.js → content.js 순서로 탐지 계약을 로드합니다.
+- Manifest는 shared.js → target-resolver.js → channel-target-resolver.js → content.js 순서로 탐지 계약을 로드합니다(채널 Resolver는 24번 작업 브랜치에 한정).
 - 기존 21·22번 후보 탐지의 candidate 수치는 보존하면서, VIDEO ID가 검증된 후보만 target을 제공하고 getRuntimeStatus().identifiedCandidates로 수를 구분합니다.
 - 재실행: `node --test extension/tests/content-discovery.test.cjs extension/tests/content-spa-observer.test.cjs extension/tests/video-target-resolver.test.cjs`.
-- 격리 V8 기반 모의 테스트 46/46 PASS, 실제 신규 Node CLI·Windows Chrome 재검증 미완료. [23번 QA 기록](tests/QA_23_EVIDENCE.md)을 참고하세요.
+- 격리 V8 46/46 PASS. Windows Chrome·Node.js 46/46 PASS와 테스트 Git SHA 일치는 **사용자가 제출한 검증 결과**입니다(원본 로그·로컬 미커밋 변경 여부 미확인). [23번 QA 기록](tests/QA_23_EVIDENCE.md)을 참고하세요.
+
+## 24번 CHANNEL ID와 @handle 구분 (코드 검수 중)
+
+- /channel/UC + 22자 URL은 **채널 ID 형식이 일치하는 후보**로 반환하지만 실제 채널 존재·소유권은 검증하지 않습니다.
+- /@handle 링크는 HANDLE_UNRESOLVED, channelId:null, targetId:null로 유지하며 실제 channelId를 임의로 만들지 않습니다. 비라틴 문자·별칭 경로는 안전한 기본값으로 유보합니다.
+- 영상 썸네일과 채널명/아바타를 다른 Map·구독 이벤트로 추적하며, 기존 22번 단일 MutationObserver를 재사용합니다.
+- 신규 테스트: `node --test extension/tests/channel-target-resolver.test.cjs`, 전체 회귀: `node --test extension/tests/*.test.cjs`.
+- 선택 Chromium DOM: `python extension/tests/chromium-channel-fixture.py` (신규 실행 미확인).
+- 현재 **격리 V8 모의 테스트 78/78 PASS**이며, Native Node CLI/Windows Chrome 24번 브랜치 검증은 아직 실행되지 않았습니다. [24번 QA 기록](tests/QA_24_EVIDENCE.md)을 참고하세요.
 
 ## 현재 단계
 
 - **20:** Chrome MV3 기본 뼈대 및 문서.
 - **21:** 영상 후보 탐지 코드 병합. Node 9/9, 오프라인 Chromium PASS 및 Windows 수동 PASS 사용자 보고.
 - **22:** SPA/무한 스크롤 변경 감지 코드 병합. Node CLI 25/25, Chromium 오프라인 PASS, Windows 수동 PASS 사용자 보고(원본 로그·SHA 미제출).
-- **23:** 엄격 VIDEO target Resolver 및 테스트 작성, 격리 V8 46/46 PASS, 신규 실브라우저 검증 대기.
-- **24~29:** 채널 ID 식별·Hover·카드·패널·실브라우저 통합 E2E 순차 구현 예정.
+- **23:** 엄격 VIDEO target Resolver frontend 병합, 사용자 보고 기준 Node 46/46·Windows 검증 통과 및 동일 테스트 SHA 확인.
+- **24:** 채널 URL·핸들 별도 식별 코드/32개 신규 Fixture 작성, 격리 V8 전체 78/78 PASS, 실제 Node/Windows QA 미실행.
+- **25~29:** Hover 제어·카드·Side Panel 대상 고정·실브라우저 통합 E2E 순차 구현 예정.
 - **실제 YouTube API/외부 AI/구독 결제:** 구현하지 않음.

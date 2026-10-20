@@ -28,6 +28,7 @@
       "js": [
         "shared.js",
         "target-resolver.js",
+        "channel-target-resolver.js",
         "content.js"
       ],
       "run_at": "document_idle"

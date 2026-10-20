@@ -49,7 +49,10 @@
 
   const seenLinks = new WeakSet();
   const subscribers = new Set();
+  // 24번 채널명/아바타 링크는 영상 썸네일과 별도 구독 스트림이다.
+  const channelSubscribers = new Set();
   let liveCandidates = new Map();
+  let liveChannelCandidates = new Map();
   let totalDiscovered = 0;
   let scanCount = 0;
   let observer = null;
@@ -167,6 +170,45 @@
       if (!next.has(anchor)) removed.push(previous);
     }
     liveCandidates = next;
+
+    /*
+     * 24번: 동일한 22번 재스캔 타이밍에서 채널 링크를 별도로 갱신한다.
+     * HANDLE은 임의 UC ID로 승격하지 않고 identityStatus로 구분한다.
+     * VIDEO의 기존 snapshot/candidates/subscribe 계약은 유지한다.
+     */
+    const channelAdded = [];
+    const channelRemoved = [];
+    const channelUpdated = [];
+    const nextChannels = new Map();
+    const channelCandidates =
+      scope.YUTOPIA_CHANNEL_TARGET_RESOLVER?.findCandidates(scope.document) ?? [];
+
+    for (const candidate of channelCandidates) {
+      const channelLink = candidate.channelLink;
+      const entry = {
+        card: candidate.card,
+        channelLink,
+        href: channelLink.getAttribute("href"),
+        identity: candidate.identity,
+      };
+      nextChannels.set(channelLink, entry);
+      const previous = liveChannelCandidates.get(channelLink);
+      if (!previous) {
+        channelAdded.push(entry);
+      } else if (
+        previous.card !== entry.card ||
+        previous.href !== entry.href ||
+        previous.identity?.channelId !== entry.identity?.channelId ||
+        previous.identity?.handle !== entry.identity?.handle ||
+        previous.identity?.resolutionStatus !== entry.identity?.resolutionStatus
+      ) {
+        channelUpdated.push(entry);
+      }
+    }
+    for (const [channelLink, previous] of liveChannelCandidates) {
+      if (!nextChannels.has(channelLink)) channelRemoved.push(previous);
+    }
+    liveChannelCandidates = nextChannels;
     totalDiscovered += newCandidates;
     scanCount += 1;
     snapshot = Object.freeze({
@@ -186,6 +228,20 @@
         }
       }
     }
+    if (channelAdded.length || channelRemoved.length || channelUpdated.length) {
+      for (const subscriber of [...channelSubscribers]) {
+        try {
+          subscriber({
+            added: channelAdded,
+            removed: channelRemoved,
+            updated: channelUpdated,
+            snapshot: { ...snapshot },
+          });
+        } catch (_error) {
+          // 채널 이벤트 소비자의 오류는 영상 탐지와 다른 구독자에 전파하지 않는다.
+        }
+      }
+    }
     return { ...snapshot };
   }
 
@@ -197,6 +253,7 @@
     if (!node || node.nodeType !== 1) return false;
     if (node.matches?.(CARD_SELECTOR) || node.closest?.(CARD_SELECTOR)) return true;
     if (node.matches?.("a[href], " + EXCLUDED_SELECTOR)) return true;
+    if (scope.YUTOPIA_CHANNEL_TARGET_RESOLVER?.isChannelNode(node)) return true;
     return Boolean(node.querySelector?.(CARD_SELECTOR));
   }
 
@@ -258,6 +315,27 @@
   }
 
   /*
+   * 채널명/아바타의 후보 이벤트는 기존 VIDEO와 별도 통로로 통지한다.
+   * 채널명 @handle은 HANDLE_UNRESOLVED로 남으며 상세 분석 대상 ID는 없다.
+   */
+  function subscribeChannels(listener) {
+    if (disposed) throw new Error("YUTOPIA discovery disposed");
+    if (typeof listener !== "function") throw new TypeError("listener must be a function");
+    channelSubscribers.add(listener);
+    try {
+      listener({
+        added: [...liveChannelCandidates.values()],
+        removed: [],
+        updated: [],
+        snapshot: { ...snapshot },
+      });
+    } catch (_error) {
+      // 소비자 초기화 오류가 다른 탐지 계약을 무효화하지 않는다.
+    }
+    return () => channelSubscribers.delete(listener);
+  }
+
+  /*
    * 개발 환경의 재주입/탭 종료를 위한 명시적 정리 함수.
    * observer, 타이머, 이벤트, DOM 참조 및 구독자를 해제한 뒤 재초기화 허용.
    */
@@ -275,7 +353,9 @@
     }
     scope.removeEventListener?.("popstate", handleNavigation);
     liveCandidates.clear();
+    liveChannelCandidates.clear();
     subscribers.clear();
+    channelSubscribers.clear();
     scope.__yutopiaContentInitialized = false;
     if (scope.YUTOPIA_VIDEO_DISCOVERY === api) delete scope.YUTOPIA_VIDEO_DISCOVERY;
   }
@@ -289,6 +369,15 @@
       trackedCandidates: liveCandidates.size,
       identifiedCandidates: [...liveCandidates.values()].filter(entry => entry.target !== null).length,
       subscriberCount: subscribers.size,
+      // 채널 ID와 handle은 별개이다. 형식 검증을 존재/소유권 인증으로 오해하지 않는다.
+      channelLinksTracked: liveChannelCandidates.size,
+      channelIdsFormatted: [...liveChannelCandidates.values()]
+        .filter(entry => entry.identity?.identityType === "CHANNEL_ID").length,
+      unresolvedHandles: [...liveChannelCandidates.values()]
+        .filter(entry => entry.identity?.resolutionStatus === "HANDLE_UNRESOLVED").length,
+      ambiguousChannelLinks: [...liveChannelCandidates.values()]
+        .filter(entry => entry.identity === null).length,
+      channelSubscriberCount: channelSubscribers.size,
     };
   }
 
@@ -319,6 +408,10 @@
     getSnapshot: () => ({ ...snapshot }),
     getRuntimeStatus,
     subscribe,
+    // 24번은 채널명 링크 식별을 추가할 뿐 Hover/패널/영상 데이터는 변경하지 않는다.
+    findChannelCandidates: () =>
+      scope.YUTOPIA_CHANNEL_TARGET_RESOLVER?.findCandidates(scope.document) ?? [],
+    subscribeChannels,
     dispose,
   });
 

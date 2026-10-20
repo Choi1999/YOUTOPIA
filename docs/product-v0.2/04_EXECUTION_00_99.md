@@ -9,7 +9,7 @@
 - **번호:** `00`부터 `99`까지 한 번씩 등장. 새 요구는 해당 단계 하위 기록으로 넣거나 별도 변경 기록.
 - **상태:** `NOT_STARTED` / `IN_PROGRESS` / `DOC_DRAFT` / `READY_FOR_REVIEW` / `VERIFIED` / `BLOCKED_EXTERNAL_GATE`. 정책 방향 승인과 코드 검증은 다른 의미.
 - **증거:** 파일 경로·commit SHA·실행한 테스트 명령과 결과를 남기지 않은 작업은 `VERIFIED`로 표시하지 않음.
-- **기준:** 현재 frontend 브랜치 `0a255f224e4213c577651fcc34b2b68c6532a069` 기준 문서·확장 초기 구조를 확인. 과거 P0-1 `344c1e2794c4f6144fa7506f65a17c392487c540`은 레거시 이력이며, 고객 시작점은 YouTube 홈의 여러 썸네일 Hover.
+- **기준:** 24번 브랜치 시작 시점 frontend HEAD `7f236feee061d1eac49a3ea4c0164951064a24a7`. 이전 기준 `0a255f224e4213c577651fcc34b2b68c6532a069`과 P0-1 `344c1e2794c4f6144fa7506f65a17c392487c540`은 역사적 참조. 고객 시작점은 YouTube 홈의 여러 썸네일 Hover.
 - **안전:** 이전 Codex 개발·브랜치·Figma/Notion을 임의 덮어쓰지 않음. 새 코드 작업은 독립 feature PR.
 - **외부:** 결제 실행, 실제 YouTube 수집/파생 감성, Chrome Web Store 공개, 배포/병합은 별도 정책·권한/담당 승인.
 - **진행:** 각 단계 완료 후 다음 번호로 진행. 이후 대화·작업 세션에서 이 대장을 기준으로 이어가기.
@@ -19,7 +19,7 @@
 - **00:** 사용자가 제품 방향을 승인했고 `00_PRODUCT_DIRECTION.md` 초안이 작성됨.
 - **01~03:** 사용자 승인 방향과 프론트 소스를 반영한 문서 초안이 작성됨. UX 세부와 기술 스택·권한은 검토 필요.
 - **04:** 00~99 순서, 산출물, 현재 상태를 정의하는 본 문서(초안 작성 완료, 외부 검토 필요).
-- **05~09:** 제품 정의 세부/게이트 **문서 초안 작성**. **10~19:** YouTube 홈, Hover·Side Panel의 **UX 문서 초안 작성**, 시각·실브라우저 미검증. **20:** MV3 스켈레톤 PR #6 병합. **21:** PR #8 영상 후보 탐지 frontend 병합. **22:** PR #9 SPA/무한 스크롤 자동 재탐지 frontend 병합. Node CLI 25/25 및 Chromium 오프라인 PASS; Windows Chrome 수동 7/7 PASS는 사용자 보고(원본 로그·검증 SHA 미제출). **23:** VIDEO ID Resolver 코드 및 격리 V8 테스트 46/46 PASS, 실브라우저·Node CLI 신규 검증 전. **24~99:** 후속 기능 실제 구현·검증 완료 아님. 실행대장 자체의 작성은 실서비스 동작 증거가 아님.
+- **05~09:** 제품 정의 세부/게이트 **문서 초안 작성**. **10~19:** YouTube 홈, Hover·Side Panel의 **UX 문서 초안 작성**, 시각·실브라우저 미검증. **20:** MV3 스켈레톤 PR #6 병합. **21:** PR #8 영상 후보 탐지 frontend 병합. **22:** PR #9 SPA/무한 스크롤 자동 재탐지 frontend 병합. Node CLI 25/25 및 Chromium 오프라인 PASS; Windows Chrome 수동 7/7 PASS는 사용자 보고(원본 로그·검증 SHA 미제출). **23:** PR #10 엄격 VIDEO ID Resolver frontend 병합, Node CLI 46/46·Windows 기능 검증은 사용자 보고(테스트 SHA 일치, 원본 로그 미제출). **24:** CHANNEL ID와 @handle 별도 식별 코드 개발, V8 모의 78/78 PASS, 실제 Node CLI/Windows 신규 검증 대기. **25~99:** 후속 기능 실제 구현·검증 완료 아님. 실행대장 자체의 작성은 실서비스 동작 증거가 아님.
 
 ## 00~99 상세 작업
 
@@ -60,8 +60,8 @@
 | **20** | Chrome MV3 확장 격리 스켈레톤 | 최소 권한·실제 API 없음·브라우저 검증 별도 | `SKELETON_MERGED / USER_REPORTED_CHROME_SMOKE_PASS` | `extension/`(manifest/background/content/sidepanel), [PR #6](https://github.com/Choi1999/YOUTOPIA/pull/6) |
 | **21** | YouTube 콘텐츠 스크립트 삽입 | 홈/검색에서 요소 감지·중복 설치 방지 | `MERGED / NODE_TESTED / USER_REPORTED_WINDOWS_PASS` | `extension/content.js`, [검증 기록](../../extension/tests/QA_20_21_EVIDENCE.md), `extension/tests/` |
 | **22** | 동적 화면 변경 관측 | YouTube SPA/무한 스크롤에서 안전한 해제·재바인딩 | `MERGED / NODE_CLI_TESTED / CHROMIUM_OFFLINE_TESTED / USER_REPORTED_WINDOWS_PASS` | `extension/content.js`, `extension/tests/content-spa-observer.test.cjs`, [QA 22 기록](../../extension/tests/QA_22_EVIDENCE.md) |
-| **23** | 영상 대상 식별 | 확실한 videoId 추출 및 잘못된 링크 거부 | `IN_PROGRESS / V8_FIXTURE_TESTED / NODE_AND_CHROME_QA_PENDING` | `extension/target-resolver.js`, `extension/tests/video-target-resolver.test.cjs`, [QA 23 기록](../../extension/tests/QA_23_EVIDENCE.md) |
-| **24** | 채널 대상 식별 | channelId/@handle 구별·불확실 시 유보 | `NOT_STARTED` | `channel resolver tests` |
+| **23** | 영상 대상 식별 | 확실한 videoId 추출 및 잘못된 링크 거부 | `MERGED / USER_REPORTED_NODE_AND_WINDOWS_PASS / TESTED_SHA_MATCH` | [PR #10](https://github.com/Choi1999/YOUTOPIA/pull/10), `extension/target-resolver.js`, [QA 23 기록](../../extension/tests/QA_23_EVIDENCE.md) |
+| **24** | 채널 대상 식별 | channelId/@handle 구별·불확실 시 유보 | `IN_PROGRESS / V8_FIXTURE_TESTED / NATIVE_AND_WINDOWS_QA_PENDING` | `extension/channel-target-resolver.js`, `extension/tests/channel-target-resolver.test.cjs`, [QA 24 기록](../../extension/tests/QA_24_EVIDENCE.md) |
 | **25** | Hover 상태 제어 | 타이머·마우스 카드 이동·연속/겹침 요청 취소 | `NOT_STARTED` | `hover controller tests` |
 | **26** | 경량 Hover 카드 UI | 캐시된 합성 데이터·출처 배지·더보기 | `NOT_STARTED` | `mock browser preview` |
 | **27** | 확장 서비스 워커 메시지/캐시 | targetId·requestId 검증과 권한 최소화 | `NOT_STARTED` | `background tests` |
@@ -198,7 +198,9 @@
 | 2026-10-19 | 21 홈·검색 영상 DOM 탐지 및 Fixture 9/9·Chromium DOM 검증 | 기능 코드 준비, 실제 Chrome 확장 Smoke/SPA 자동 갱신/영상 ID 검증은 미완료 |
 | 2026-10-20 | 22 SPA·무한 스크롤 재탐지 코드 및 V8 모의 25/25 검증, 별도 Linux Node.js CLI 25/25·오프라인 Chromium SPA Fixture PASS | 이후 Windows Chrome 7/7 수동 PASS 사용자 보고, 원본 로그·SHA 미제출 |
 | 2026-10-20 | PR #8 영상 탐지 → PR #9 SPA 자동 재탐지 frontend 순차 병합 | 사용자 승인하에 개발 브랜치 통합, 출시·데이터 사용권 아님 |
-| 2026-10-20 | 23 영상 ID 검증 설계·Resolver 및 테스트 작성 | V8 모의 46/46 PASS, 신규 Node CLI/Windows Chrome 검증 미완료 |
+| 2026-10-20 | 23 영상 ID 검증 설계·Resolver 및 테스트 작성 | V8 모의 46/46 PASS 이후 Windows/Node 46/46 PASS 사용자 보고 및 테스트 SHA 일치 확인 |
+| 2026-10-20 | PR #10 영상 ID 정확성 검증 frontend 병합 | SHA 7f236feee061d1eac49a3ea4c0164951064a24a7, 라이브 API 및 출시 승인 아님 |
+| 2026-10-20 | 24 채널 UC ID 형식과 @handle 미매핑 식별기 및 별도 DOM 이벤트 개발 | V8 모의 78/78 PASS, Native Node/Chromium/Windows QA는 미검증 |
 | 2026-10-16 | 10~19 Chrome 고객 UX 정보구조·상태·Side Panel·검수표 초안 | 목업·실브라우저 검수 대기 |
 
 ## 연관 정본
