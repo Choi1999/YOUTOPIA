@@ -206,3 +206,36 @@ test("모순된 card라도 후보 탐지는 유지하고 target만 null로 제�
   assert.equal(api.getRuntimeStatus().identifiedCandidates,0);
   assert.equal(events[0].added[0].target,null);
 });
+
+
+test("제목 링크가 다른 영상으로 바뀌면 같은 DOM 요소도 updated + target null", () => {
+  const thumb=anchor("/watch?v=" + ID),title=anchor("/watch?v=" + ID);
+  const c=candidate(thumb,[title]);
+  const doc={readyState:"complete",documentElement:{},querySelectorAll(){return [c.card]},addEventListener(){}};
+  const ctx=vm.createContext({URL,document:doc,location:{pathname:"/",origin:"https://www.youtube.com",href:"https://www.youtube.com/"},addEventListener(){}});
+  vm.runInContext(resolverSource,ctx);vm.runInContext(discoverySource,ctx);
+  const api=ctx.YUTOPIA_VIDEO_DISCOVERY,events=[];
+  api.subscribe(x=>events.push(x));
+  assert.equal(events[0].added[0].target.targetId,ID);
+  title.href="/watch?v=" + SECOND;
+  api.scan();
+  assert.equal(events.at(-1).updated.length,1);
+  assert.equal(events.at(-1).updated[0].target,null);
+  assert.equal(api.getRuntimeStatus().identifiedCandidates,0);
+});
+
+test("모순된 제목 링크가 복구되면 기존 DOM에서 VIDEO 식별 회복", () => {
+  const thumb=anchor("/watch?v=" + ID),title=anchor("/watch?v=" + SECOND);
+  const c=candidate(thumb,[title]);
+  const doc={readyState:"complete",documentElement:{},querySelectorAll(){return [c.card]},addEventListener(){}};
+  const ctx=vm.createContext({URL,document:doc,location:{pathname:"/",origin:"https://www.youtube.com",href:"https://www.youtube.com/"},addEventListener(){}});
+  vm.runInContext(resolverSource,ctx);vm.runInContext(discoverySource,ctx);
+  const api=ctx.YUTOPIA_VIDEO_DISCOVERY,events=[];
+  api.subscribe(x=>events.push(x));
+  assert.equal(events[0].added[0].target,null);
+  title.href="/watch?v=" + ID;
+  api.scan();
+  assert.equal(events.at(-1).updated.length,1);
+  assert.equal(events.at(-1).updated[0].target.targetId,ID);
+  assert.equal(api.getRuntimeStatus().identifiedCandidates,1);
+});
