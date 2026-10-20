@@ -565,6 +565,53 @@ test("READY에서 채널 anchor 제거 시 즉시 취소",()=>{
   assert.equal(a.count("focusin"),0);
 });
 
+test("SPA가 같은 영상 A의 hovered anchor만 교체하면 READY와 requestId 유지",()=>{
+  const old=anchor("old-A"),next=anchor("new-A");
+  next.matches=selector=>selector===":hover";
+  const entry=video(old,VIDEO_A),replacement=video(next,VIDEO_A);
+  const f=fixture({videos:[entry]});
+  old.fire("pointerenter");f.advance(160);
+  const initial=f.api().getSnapshot();
+  f.videoChanges({removed:[entry],added:[replacement],updated:[]});
+  const fresh=f.api().getSnapshot();
+  assert.equal(fresh.phase,"READY");
+  assert.equal(fresh.requestId,initial.requestId);
+  assert.equal(fresh.targetId,VIDEO_A);
+  assert.equal(fresh.anchor,next);
+  assert.equal(fresh.reason,"TARGET_REBOUND_SAME_ID");
+  assert.equal(old.count("pointerenter"),0);
+  assert.equal(next.count("pointerenter"),1);
+  old.fire("pointerleave");
+  assert.equal(f.api().getSnapshot().phase,"READY");
+  next.fire("pointerleave");f.advance(200);
+  assert.equal(f.api().getSnapshot().phase,"IDLE");
+});
+
+test("SPA에서 이전 A와 동일한 ID라도 새 링크가 hovered가 아니면 카드 정리",()=>{
+  const old=anchor("old-A"),next=anchor("new-A");
+  next.matches=()=>false;
+  const entry=video(old,VIDEO_A),replacement=video(next,VIDEO_A);
+  const f=fixture({videos:[entry]});
+  old.fire("pointerenter");f.advance(160);
+  f.videoChanges({removed:[entry],added:[replacement],updated:[]});
+  assert.equal(f.api().getSnapshot().phase,"IDLE");
+  assert.equal(f.api().getRuntimeStatus().boundVideoAnchors,1);
+});
+
+test("SPA의 새로운 B 영상이 hovered라면 이전 A 데이터 재사용 없이 새로운 요청",()=>{
+  const old=anchor("old-A"),next=anchor("new-B");
+  next.matches=selector=>selector===":hover";
+  const entry=video(old,VIDEO_A),replacement=video(next,VIDEO_B);
+  const f=fixture({videos:[entry]});
+  old.fire("pointerenter");f.advance(160);
+  const previousId=f.api().getSnapshot().requestId;
+  f.videoChanges({removed:[entry],added:[replacement],updated:[]});
+  assert.equal(f.api().getSnapshot().phase,"HOVER_PENDING");
+  assert.equal(f.api().getSnapshot().requestId,previousId+1);
+  f.advance(160);
+  assert.equal(f.api().getSnapshot().targetId,VIDEO_B);
+});
+
 test("SPA로 후보가 새로 추가되면 해당 anchor에만 이벤트 바인딩",()=>{
   const a=anchor("new video"),f=fixture();
   assert.equal(f.api().getRuntimeStatus().boundVideoAnchors,0);
