@@ -143,7 +143,8 @@ def exercise(page, label, thumbnail_timeout=30000):
             assert card_visible(page)
 
     status = page.evaluate(f"{controller}.getRuntimeStatus()")
-    assert status["strategy"] == "DELEGATED_STRICT_THUMBNAIL"
+    assert status["strategy"] == "DELEGATED_INTERACTIVE_CARD"
+    assert status["cardTransitGraceMs"] == 160
     assert status["perAnchorListeners"] == 0
     assert not status["enterScheduled"] and not status["leaveScheduled"]
     page.evaluate("""() => {
