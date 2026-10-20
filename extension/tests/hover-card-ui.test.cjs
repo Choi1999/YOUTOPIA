@@ -156,7 +156,12 @@ function makeFixture({vw=1200,vh=800,dark=false,cardHeight=260}={}) {
   let unsubscribeCount=0;
   let dismissReason=null;
   let overlayEnters=0,overlayLeaves=0,focusEnters=0,focusLeaves=0;
+  let cardRegion=null, cardRegistrations=0;
   const controller={
+    setCardRegion(host,card) {
+      cardRegion=host && card ? {host,card} : null;
+      cardRegistrations+=1;
+    },
     subscribe(fn) {subs.add(fn);fn(current);return()=>{subs.delete(fn);unsubscribeCount++;};},
     isCurrentRequest(req) {
       return current.phase==="READY" &&
@@ -202,6 +207,8 @@ function makeFixture({vw=1200,vh=800,dark=false,cardHeight=260}={}) {
     get unsubscribes(){return unsubscribeCount;},
     get subscribers(){return subs.size;},
     get overlayCalls(){return {overlayEnters,overlayLeaves,focusEnters,focusLeaves};},
+    get cardRegion(){return cardRegion;},
+    get cardRegistrations(){return cardRegistrations;},
     setViewport(w,h){ctx.innerWidth=w;ctx.innerHeight=h;},
     rerun(){vm.runInContext(cardSource,ctx);},
   };
@@ -254,6 +261,38 @@ test("READY VIDEO는 Shadow DOM으로 단일 카드와 타깃 ID를 표시",()=>
   assert.match(f.cardText(),/DEMO/);
   assert.match(f.cardText(),/실제 YouTube 댓글/);
   assert.equal(f.findClass("bar")?.attributes.get("role"),"img");
+});
+
+test("Card만 pointer-events:auto, Host·Surface는 투명하며 Controller에 등록",()=>{
+  const f=makeFixture();
+  f.emit(videoState(VIDEO_A,1,f.anchor()));
+  const card=f.findClass("card");
+  assert.equal(f.host()?.style.pointerEvents,"none");
+  assert.equal(f.surface()?.style.pointerEvents,"none");
+  assert.match(cardSource,/\.card \{ pointer-events: auto;/);
+  assert.equal(f.cardRegion?.host,f.host());
+  assert.equal(f.cardRegion?.card,card);
+  assert.ok(f.cardRegistrations>=1);
+});
+
+test("카드 종료시 Controller에서 hit region을 해제하여 오래된 Overlay 선택 방지",()=>{
+  const f=makeFixture();
+  f.emit(videoState(VIDEO_A,1,f.anchor()));
+  assert.ok(f.cardRegion);
+  f.emit({phase:"IDLE"});
+  assert.equal(f.host(),null);
+  assert.equal(f.cardRegion,null);
+});
+
+test("A→B 카드 내용 갱신 시 새 cardRoot로 Controller hit region 갱신",()=>{
+  const f=makeFixture();
+  f.emit(videoState(VIDEO_A,1,f.anchor()));
+  const oldCard=f.cardRegion?.card;
+  f.emit(videoState(VIDEO_B,2,f.anchor()));
+  assert.ok(f.cardRegion?.card);
+  assert.notEqual(f.cardRegion.card,oldCard);
+  assert.equal(f.cardRegion.host,f.host());
+  assert.equal(f.api.getRuntimeStatus().targetId,VIDEO_B);
 });
 
 test("가상 감성 차트에는 긍정/중립/부정 라벨과 비율이 모두 있음",()=>{
