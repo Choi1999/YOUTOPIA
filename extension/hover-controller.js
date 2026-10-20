@@ -242,7 +242,13 @@
 
     let result = null;
     let area = Infinity;
-    for (const binding of bindings.values()) {
+    // 전체 무한 스크롤 후보를 매 pointermove마다 순회하지 않고,
+    // 포인터가 올라간 YouTube 렌더러 내부 링크만 우선 검사한다.
+    const localLinks = renderer.querySelectorAll?.("a[href]");
+    const candidates = localLinks
+      ? Array.from(localLinks).map(node => bindings.get(node)).filter(Boolean)
+      : bindings.values(); // 단위 테스트/구형 렌더러 안전 fallback
+    for (const binding of candidates) {
       const element = binding.element;
       if (!element?.isConnected ||
           typeof element.getBoundingClientRect !== "function" ||
