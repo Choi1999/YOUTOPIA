@@ -80,12 +80,20 @@ with sync_playwright() as pw:
         status = page.evaluate("window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus()")
         assert status["connected"] and not status["visible"], status
 
-        # 100ms transit must not create card.
+        # Strict Hover: entry shows a preview immediately, without timers.
         page.locator("#video-a a#thumbnail").hover()
-        page.wait_for_timeout(100)
+        page.wait_for_function(
+            "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().visible",
+            timeout=5000,
+        )
+        assert page.evaluate(
+            "window.__fixtureScope.YUTOPIA_HOVER_CONTROLLER.getRuntimeStatus().activationDelayMs"
+        ) == 0
         page.mouse.move(950, 700)
-        page.wait_for_timeout(460)
-        assert card.count() == 0
+        page.wait_for_function(
+            "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().hostCount === 0",
+            timeout=5000,
+        )
 
         # VIDEO A card, MOCK data, real Shadow DOM from browser engine.
         page.locator("#video-a a#thumbnail").hover()
@@ -103,21 +111,24 @@ with sync_playwright() as pw:
         geom = card.bounding_box()
         assert geom and geom["x"] >= 0 and geom["x"] + geom["width"] <= 1000
 
-        # Functional CTA tells the truth: no Side Panel handoff yet.
-        card.locator(".more").click()
-        assert "27~28번" in card.locator(".more-status").inner_text()
+        # Cards are read-only and click-through in strict thumbnail mode.
+        # The future Side Panel CTA is not yet a pointer-interactive action.
+        assert card.locator(".more").is_disabled()
+        assert card.locator(".close").is_disabled()
+        assert page.evaluate("""() => {
+            const host=document.querySelector('#yutopia-extension-hover-card');
+            return host && getComputedStyle(host).pointerEvents === 'none';
+        }""")
         assert page.locator("#youtube-fixture").inner_html() == fixture_before
 
-        # 실사용 재진입: 같은 영상 A를 떠나 200ms 유예 후 닫고
-        # 다시 들어오면 매번 약 160ms 뒤 정상 카드가 열려야 한다.
-        # 카드 내부 더보기 버튼의 키보드 포커스도 해제해 포커스 유지와 구분한다.
-        card.locator(".more").evaluate("(button) => button.blur()")
+        # Repeated true thumbnail boundary crossing must always show/hide.
+        # No 160ms entrance or 200ms exit grace is expected.
         page.mouse.move(950, 700)
         page.wait_for_function(
             "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().hostCount === 0",
             timeout=5000,
         )
-        for cycle in range(3):
+        for cycle in range(10):
             page.locator("#video-a a#thumbnail").hover(timeout=5000)
             page.wait_for_function(
                 """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().visible &&
@@ -130,14 +141,13 @@ with sync_playwright() as pw:
                 timeout=5000,
             )
 
-        # 카드 내부 닫기 버튼 이후 원래 영상으로 돌아와도 suppressedAnchor
-        # 잔류로 인해 다음 진입이 막히지 않아야 한다.
+        # Escape closes immediately; physical exit and reentry restore the card.
         page.locator("#video-a a#thumbnail").hover(timeout=5000)
         page.wait_for_function(
             "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().visible",
             timeout=5000,
         )
-        card.locator(".close").click(timeout=5000)
+        page.keyboard.press("Escape")
         page.wait_for_function(
             "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().hostCount === 0",
             timeout=5000,
@@ -150,7 +160,8 @@ with sync_playwright() as pw:
             timeout=5000,
         )
 
-        # 회귀: 실제 사용자와 Playwright 모두 B 썸네일 중앙을 Hover할 수 있어야 한다.
+        # Regression: Chromium must immediately switch between A and B,
+        # and the preview must never intercept B's pointer center.
         # force=True로 Overlay를 우회하면 실제 UX 결함이 가려지므로 사용하지 않는다.
         neighbor = page.evaluate("""() => {
             const link = document.querySelector("#video-b a#thumbnail");
@@ -179,6 +190,20 @@ with sync_playwright() as pw:
         )
         assert "Ab0_-123xyZ" in card_content.inner_text()
         assert "Ab0_-123xyz" not in card_content.inner_text()
+
+        # Repeated A -> B -> A with no leave/entry delay or stale card.
+        for cycle in range(10):
+            page.locator("#video-a a#thumbnail").hover(timeout=5000)
+            page.wait_for_function(
+                """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyz'""",
+                timeout=5000,
+            )
+            page.locator("#video-b a#thumbnail").hover(timeout=5000)
+            page.wait_for_function(
+                """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyZ'""",
+                timeout=5000,
+            )
+            assert card.count() == 1
 
         # SPA가 포인터 아래 썸네일 노드를 교체해도 다음 mousemove 없이 복구해야 한다.
         # 이전 코드에는 새 anchor의 pointerenter 이벤트가 누락되어 IDLE에 머물 위험이 있었다.
