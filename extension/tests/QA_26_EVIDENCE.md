@@ -1,6 +1,6 @@
 # YUTOPIA 26번 — 실제 Hover 카드 UI(합성 데이터) 검증 기록
 
-> **2026-10-20 / CARD_UI_CODE_READY / ISOLATED_V8_150_OF_150_PASS / NATIVE_NODE_AND_WINDOWS_CHROME_NOT_VERIFIED**
+> **2026-10-20 / CARD_UI_CODE_READY / NATIVE_WINDOWS_NODE_150_OF_150_PASS / CHROMIUM_FIXTURE_RETEST_PENDING / LIVE_CHROME_QA_PENDING**
 
 이 기록은 Chrome MV3 확장 개발자용 **MOCK Hover 카드 UI**를 설명한다. 실제 YouTube 데이터 분석, 운영 배포, 사용자 승인 UI 시안 완성 또는 Side Panel 대상 연동에 대한 증거가 아니다.
 
@@ -31,13 +31,20 @@
 | 26 Hover 카드 모델/DOM/CTA·썸네일 겹침 보완 | 32 | PASS, 격리 V8 Mock DOM |
 | **전체** | **150** | **150/150 PASS — 실제 Node.js CLI/Chrome 실행 아님** |
 | JavaScript 구문 | 신규 모델/렌더러/테스트 | PASS, 격리 V8 파서 |
-| Native Node.js CLI | node --test 실행 | **NOT RUN** |
-| Chromium 오프라인 DOM | chromium-hover-card-fixture.py | **NOT RUN**, 선택 Fixture 코드만 저장 |
+| Native Node.js CLI | node --test 6개 파일 2회 실행 | **150/150 PASS × 2 — 사용자 제출 PowerShell 원본 로그** |
+| Chromium 오프라인 DOM | chromium-hover-card-fixture.py | **실행 중 Host.inner_text() 검증 실패; Shadow Root 내부 검사로 수정 커밋, 재실행 대기** |
 | Windows Chrome | 실제 YouTube 홈/검색 카드 위치/조작, 다크/라이트/줌 | **NOT VERIFIED** |
 | CI·독립 리뷰 | GitHub 상태 검사·PR 리뷰 | **NOT VERIFIED** |
 
-**수행 방법:** GitHub PR 브랜치 파일의 원문을 읽고 V8 스크립트 평가 및 Node/DOM/URL/타이머 모의 어댑터를 사용했다. 결과를 Native Node CLI 150/150 PASS로 표기하지 않는다. 25번 Windows 사용자 PASS는 25번 SHA의 근거이며 26번 신규 카드를 검증한 것은 아니다.
+**격리 V8 수행 방법:** GitHub PR 브랜치 파일을 이용한 모의 어댑터 테스트 150/150 PASS. **별도로** Windows PowerShell 원본 로그에서 실제 Node.js CLI 150/150 PASS를 2회 확인했다(해당 시점 검사 HEAD `84c9e5949c94fa4db6ac842f05f652b7f57d1e87`). Chromium Fixture 검증 성공이나 실제 YouTube Chrome 시각 검증 완료로는 취급하지 않는다.
 
+## 2.1 Windows 실행 로그·Chromium 실패 분석 (2026-10-20)
+
+- 사용자 로그의 HEAD: `84c9e5949c94fa4db6ac842f05f652b7f57d1e87`, `git status --short` 출력 없음. Node --test 6개 파일 **150/150 PASS를 두 번** 기록했고, hover-card-model.js / hover-card.js 구문 검사도 오류 없이 종료.
+- Python 가상환경에 playwright 1.64.0 및 Chromium 다운로드 후 `chromium-hover-card-fixture.py`를 실행했으나 이전 버전의 **93행** `assert "Ab0_-123xyz" in card.inner_text()`에서 `AssertionError`가 발생.
+- 원인: `<div id="yutopia-extension-hover-card">`는 **open Shadow Root 호스트**이고, 브라우저에서 호스트의 innerText에는 Shadow DOM 안의 텍스트가 포함되지 않는다. 독립 Chromium 최소 사례에서 Host.innerText는 빈 문자열, Host 안 `.card`의 innerText는 기대 문자열로 확인했다. **실제 카드 콘텐츠가 비어 있었다는 증거가 아니다.**
+- 대응: `card_content = card.locator(".card")`로 Shadow DOM 내부를 직접 선택하고, 검증 전에 Shadow Root와 `.card` 존재 여부를 별도로 검사하도록 **테스트 Fixture만 수정**. Content Script UI·모델·권한·Node 테스트는 변경하지 않았다.
+- 결과: **원인 분석·Fixture 소스 수정 완료 / 사용자 Windows Chromium 재실행 전**. 수정 이후의 Chromium PASS를 주장하지 않는다. 수정본을 `git pull --ff-only`로 받은 후 재검증 필요.
 ## 3. Node.js 및 선택 Chromium 실행 명령
 
 저장소 루트 기준:
@@ -83,7 +90,9 @@ globalThis.YUTOPIA_HOVER_CONTROLLER?.getRuntimeStatus();
 ## 5. Gate
 
 - 26번 코드/모의 검증: READY_FOR_REVIEW / ISOLATED_V8_TESTED.
-- Native Node 및 Windows Chrome 시각·접근성/이벤트 동작: PENDING.
+- Native Windows Node CLI 150/150: PASS × 2 (수정 이전 HEAD의 사용자 로그). 수정 커밋 이후 회귀 재확인은 PENDING.
+- Chromium 오프라인 Fixture: Shadow DOM 검증 대상 수정 후 **RETEST_PENDING**.
+- 실제 YouTube Windows Chrome 시각·접근성/이벤트 동작: PENDING.
 - Figma 픽셀 패리티: 별도 사람 검수 및 승인 필요.
 - 27번 메시지·28번 패널 대상 고정·29번 실제 Chrome 통합 QA: 아직 미구현.
 - 실제 YouTube API/감성 파생 정책/결제/배포: NOT_AUTHORIZED.
