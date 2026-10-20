@@ -31,7 +31,7 @@
     "  --ytp-soft: #2a3441; --ytp-accent: #9aaaff; --ytp-positive: #7bc1ad;",
     "  --ytp-neutral: #96a8c3; --ytp-negative: #e39690; }",
     "*, *::before, *::after { box-sizing: border-box; }",
-    ".card { color: var(--ytp-ink); background: var(--ytp-bg); border: 1px solid var(--ytp-line);",
+    ".card { pointer-events: auto; color: var(--ytp-ink); background: var(--ytp-bg); border: 1px solid var(--ytp-line);",
     "  border-radius: 16px; box-shadow: 0 16px 48px rgba(0,0,0,.22);",
     "  max-height: calc(100vh - 16px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }",
     ".header { display: flex; align-items: center; gap: 7px; padding: 13px 14px 9px; }",
@@ -108,7 +108,8 @@
     host.setAttribute("data-yutopia-demo", "true");
     host.style.position = "fixed";
     host.style.zIndex = "2147482500";
-    host.style.pointerEvents = "auto";
+    // 빈 Shadow Host 영역은 YouTube 링크의 포인터 이벤트를 차단하지 않는다.
+    host.style.pointerEvents = "none";
     host.style.visibility = "hidden";
     host.style.width = "344px";
     host.style.top = "0px";
@@ -237,6 +238,8 @@
         message.hidden = false;
         message.textContent = "상세 Side Panel 대상 전달은 27~28번에서 연결됩니다. 현재는 DEMO 카드만 제공합니다.";
         lastAction = "MORE_INFO";
+        // 클릭 안내로 카드 높이가 변하면 썸네일 겹침을 다시 검사한다.
+        queuePosition();
       });
       actions.appendChild(more);
       footer.appendChild(actions);
@@ -272,6 +275,7 @@
       removeHost();
       return;
     }
+
     const rect = currentAnchor.getBoundingClientRect();
     const vw = scope.innerWidth || doc.documentElement?.clientWidth || 0;
     const vh = scope.innerHeight || doc.documentElement?.clientHeight || 0;
@@ -286,60 +290,106 @@
       return;
     }
 
+    /*
+     * YU26 Chromium 회귀: A 카드가 B 썸네일의 중앙을 덮어 실제 Hover를
+     * 차단하는 문제를 방지한다. 기존 아래 배치 조건은 카드 자연 높이가
+     * 남은 뷰포트보다 크면 아무것도 하지 않았으므로, 카드 내부 스크롤
+     * 높이를 제한한 뒤 우측/좌측/아래/위 후보를 재평가한다.
+     *
+     * 다른 링크의 텍스트/시청 데이터는 읽지 않고 화면 좌표만 확인한다.
+     * 어떤 후보도 인접 썸네일 중앙을 보존하지 못하면 fail-closed로 숨긴다.
+     */
     const width = Math.max(0, Math.min(MAX_WIDTH, vw - MARGIN * 2));
     host.style.width = width + "px";
-    const h = host.getBoundingClientRect?.().height || 0;
-    const rightSide = rect.right + ANCHOR_GAP;
-    const leftSide = rect.left - width - ANCHOR_GAP;
-    let left = rightSide + width <= vw - MARGIN ? rightSide :
-      leftSide >= MARGIN ? leftSide : rect.left;
+    const cardRoot = surface?.childNodes?.[0] || null;
+    const fullHeight = Math.max(0, vh - MARGIN * 2);
+    if (cardRoot?.style) cardRoot.style.maxHeight = fullHeight + "px";
+    const naturalHeight = Math.min(
+      fullHeight, Math.max(0, host.getBoundingClientRect?.().height || 0)
+    );
     const maxLeft = Math.max(MARGIN, vw - width - MARGIN);
-    left = Math.min(Math.max(MARGIN, left), maxLeft);
+    const clampedLeft = Math.min(Math.max(MARGIN, rect.left), maxLeft);
+    const preferredTop = Math.min(
+      Math.max(MARGIN, rect.top), Math.max(MARGIN, vh - naturalHeight - MARGIN)
+    );
 
-    const maxTop = Math.max(MARGIN, vh - h - MARGIN);
-    let top = Math.min(Math.max(MARGIN, rect.top), maxTop);
-
-    /*
-     * 우측 카드가 옆 영상 썸네일을 가려 A→B 이동이 막히면 아래쪽으로 배치한다.
-     * 다른 링크의 제목이나 시청 데이터를 읽지 않고 표시 중인 썸네일의 위치만 검사한다.
-     * 패널 내부 스크롤·YouTube 클릭 이벤트는 가로채지 않는다.
-     */
-    function overlapsOtherThumbnail(x, y) {
-      if (typeof doc.querySelectorAll !== "function") return false;
-      let links;
+    let thumbnailLinks = [];
+    if (typeof doc.querySelectorAll === "function") {
       try {
-        links = doc.querySelectorAll(
+        thumbnailLinks = Array.from(doc.querySelectorAll(
           "a#thumbnail[href], a.yt-lockup-view-model__content-image[href]"
-        );
+        )).slice(0, 180);
       } catch (_error) {
-        return false;
+        thumbnailLinks = [];
       }
-      let checked = 0;
-      for (const link of links) {
-        if (++checked > 180) break;
+    }
+
+    function collisionScore(candidate) {
+      const {left, top, height} = candidate;
+      let score = 0;
+      let blocksCenter = false;
+      for (const link of thumbnailLinks) {
         if (link === currentAnchor || !link?.isConnected ||
             typeof link.getBoundingClientRect !== "function") continue;
         const box = link.getBoundingClientRect();
         if (!box || box.width <= 0 || box.height <= 0 || box.bottom <= 0 ||
             box.top >= vh || box.right <= 0 || box.left >= vw) continue;
-        const coveredWidth = Math.max(0, Math.min(x + width, box.right) - Math.max(x, box.left));
-        const coveredHeight = Math.max(0, Math.min(y + h, box.bottom) - Math.max(y, box.top));
-        if (coveredWidth * coveredHeight > box.width * box.height * 0.18) return true;
+        const overlapWidth = Math.max(
+          0, Math.min(left + width, box.right) - Math.max(left, box.left)
+        );
+        const overlapHeight = Math.max(
+          0, Math.min(top + height, box.bottom) - Math.max(top, box.top)
+        );
+        score += (overlapWidth * overlapHeight) / (box.width * box.height);
+        const middleX = (box.left + box.right) / 2;
+        const middleY = (box.top + box.bottom) / 2;
+        if (
+          middleX > left && middleX < left + width &&
+          middleY > top && middleY < top + height
+        ) blocksCenter = true;
       }
-      return false;
+      return {score, blocksCenter};
     }
 
-    const belowTop = rect.bottom + ANCHOR_GAP;
-    const belowLeft = Math.min(Math.max(MARGIN, rect.left), maxLeft);
-    if (overlapsOtherThumbnail(left, top) &&
-        belowTop + h <= vh - MARGIN &&
-        !overlapsOtherThumbnail(belowLeft, belowTop)) {
-      left = belowLeft;
-      top = belowTop;
+    const choices = [];
+    function offer(left, top, availableHeight, order) {
+      if (availableHeight < 140 || left < MARGIN || left + width > vw - MARGIN) return;
+      const height = Math.min(naturalHeight, availableHeight);
+      if (height <= 0) return;
+      const candidate = {left, top, height, maxHeight: availableHeight, order};
+      const collision = collisionScore(candidate);
+      if (!collision.blocksCenter) {
+        choices.push({...candidate, score: collision.score + order * 0.035});
+      }
     }
 
-    host.style.left = Math.round(left) + "px";
-    host.style.top = Math.round(top) + "px";
+    const right = rect.right + ANCHOR_GAP;
+    const left = rect.left - width - ANCHOR_GAP;
+    offer(right, preferredTop, fullHeight, 0);
+    offer(left, preferredTop, fullHeight, 1);
+
+    const below = rect.bottom + ANCHOR_GAP;
+    offer(clampedLeft, below, vh - MARGIN - below, 2);
+
+    const aboveSpace = rect.top - ANCHOR_GAP - MARGIN;
+    const aboveHeight = Math.min(naturalHeight, aboveSpace);
+    offer(clampedLeft, rect.top - ANCHOR_GAP - aboveHeight, aboveSpace, 3);
+
+    // 좁은 화면에서는 우/좌 후보가 동시에 영역 밖일 수 있다.
+    if (choices.length === 0 && thumbnailLinks.length === 0) {
+      offer(clampedLeft, preferredTop, fullHeight, 4);
+    }
+    if (choices.length === 0) {
+      controller?.dismiss("NO_SAFE_HOVER_PLACEMENT");
+      removeHost();
+      return;
+    }
+
+    choices.sort((a, b) => a.score - b.score || a.order - b.order);
+    const best = choices[0];
+    if (cardRoot?.style) cardRoot.style.maxHeight = best.maxHeight + "px";
+    host.style.left = Math.round(best.left) + "px";
+    host.style.top = Math.round(best.top) + "px";
     host.style.visibility = "visible";
   }
 
