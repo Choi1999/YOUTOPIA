@@ -19,7 +19,9 @@
 IDLE
   ├─ 확인된 썸네일 A pointerover/move ──> READY(A) ──> 카드 A 표시
   │                                          ├─ 썸네일 B ──> READY(B)
-  │                                          └─ 썸네일 밖 ──> IDLE
+  │                                          ├─ 원본 카드 안 ──> READY(A) 유지
+  │                                          ├─ 카드 이동 안전 간격 ──> 160ms 한정 보호
+  │                                          └─ 썸네일·카드·안전 간격 밖 ──> IDLE
   ├─ @handle 채널 링크 ─────────────────> UNRESOLVED
   └─ 키보드 focusin ────────────────────> READY / UNRESOLVED
 
