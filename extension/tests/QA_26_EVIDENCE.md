@@ -41,7 +41,7 @@ Set-Location "$env:USERPROFILE\YUTOPIA-Chrome-QA-26"
 git pull --ff-only origin feature/yutopia-26-hover-card
 git rev-parse HEAD
 git status --short
-node --test extension/tests/*.test.cjs
+node --test extension/tests/content-discovery.test.cjs extension/tests/content-spa-observer.test.cjs extension/tests/video-target-resolver.test.cjs extension/tests/channel-target-resolver.test.cjs extension/tests/hover-controller.test.cjs extension/tests/hover-card-ui.test.cjs
 
 $py = Join-Path $env:USERPROFILE "YUTOPIA-QA26-venv\Scripts\python.exe"
 & $py extension/tests/chromium-hover-fixture.py
@@ -91,7 +91,7 @@ Remove-Item Env:\RUN_LIVE_YOUTUBE -ErrorAction SilentlyContinue
 
 ```powershell
 Set-Location "$env:USERPROFILE\YUTOPIA-Chrome-QA-26"
-node --test extension/tests/*.test.cjs
+node --test extension/tests/content-discovery.test.cjs extension/tests/content-spa-observer.test.cjs extension/tests/video-target-resolver.test.cjs extension/tests/channel-target-resolver.test.cjs extension/tests/hover-controller.test.cjs extension/tests/hover-card-ui.test.cjs
 ```
 
 - 결과: **144/144 PASS**.
