@@ -19,7 +19,7 @@
 - **00:** 사용자가 제품 방향을 승인했고 `00_PRODUCT_DIRECTION.md` 초안이 작성됨.
 - **01~03:** 사용자 승인 방향과 프론트 소스를 반영한 문서 초안이 작성됨. UX 세부와 기술 스택·권한은 검토 필요.
 - **04:** 00~99 순서, 산출물, 현재 상태를 정의하는 본 문서(초안 작성 완료, 외부 검토 필요).
-- **05~09:** 제품 정의 세부/게이트 **문서 초안 작성**. **10~19:** YouTube 홈, Hover·Side Panel의 **UX 문서 초안 작성**, 시각·실브라우저 미검증. **20:** MV3 스켈레톤 PR #6 병합. **21:** PR #8 영상 후보 탐지 frontend 병합. **22:** PR #9 SPA/무한 스크롤 자동 재탐지 frontend 병합. Node CLI 25/25 및 Chromium 오프라인 PASS; Windows Chrome 수동 7/7 PASS는 사용자 보고(원본 로그·검증 SHA 미제출). **23:** PR #10 엄격 VIDEO ID Resolver frontend 병합, Node CLI 46/46·Windows 기능 검증은 사용자 보고(테스트 SHA 일치, 원본 로그 미제출). **24:** CHANNEL ID와 @handle 별도 식별 코드 개발, V8 모의 78/78 PASS, 실제 Node CLI/Windows 신규 검증 대기. **25~99:** 후속 기능 실제 구현·검증 완료 아님. 실행대장 자체의 작성은 실서비스 동작 증거가 아님.
+- **05~09:** 제품 정의 세부/게이트 **문서 초안 작성**. **10~19:** YouTube 홈, Hover·Side Panel의 **UX 문서 초안 작성**, 시각·실브라우저 미검증. **20:** MV3 스켈레톤 PR #6 병합. **21:** PR #8 영상 후보 탐지 frontend 병합. **22:** PR #9 SPA/무한 스크롤 자동 재탐지 frontend 병합. Node CLI 25/25 및 Chromium 오프라인 PASS; Windows Chrome 수동 7/7 PASS는 사용자 보고(원본 로그·검증 SHA 미제출). **23:** PR #10 엄격 VIDEO ID Resolver frontend 병합, Node CLI 46/46·Windows 기능 검증은 사용자 보고(테스트 SHA 일치, 원본 로그 미제출). **24:** PR #11 채널 ID·@handle 식별 코드 frontend 병합, V8 78/78 PASS 및 Windows PASS·테스트 SHA 일치는 사용자 보고(원본 로그 미제출). **25:** Hover 상태 제어 코드와 가상 타이머 테스트 작성, 전체 V8 모의 118/118 PASS, 실제 Node CLI·Windows Chrome 검증 대기. **26~99:** 후속 기능 실제 구현·검증 완료 아님. 실행대장 자체의 작성은 실서비스 동작 증거가 아님.
 
 ## 00~99 상세 작업
 
@@ -61,8 +61,8 @@
 | **21** | YouTube 콘텐츠 스크립트 삽입 | 홈/검색에서 요소 감지·중복 설치 방지 | `MERGED / NODE_TESTED / USER_REPORTED_WINDOWS_PASS` | `extension/content.js`, [검증 기록](../../extension/tests/QA_20_21_EVIDENCE.md), `extension/tests/` |
 | **22** | 동적 화면 변경 관측 | YouTube SPA/무한 스크롤에서 안전한 해제·재바인딩 | `MERGED / NODE_CLI_TESTED / CHROMIUM_OFFLINE_TESTED / USER_REPORTED_WINDOWS_PASS` | `extension/content.js`, `extension/tests/content-spa-observer.test.cjs`, [QA 22 기록](../../extension/tests/QA_22_EVIDENCE.md) |
 | **23** | 영상 대상 식별 | 확실한 videoId 추출 및 잘못된 링크 거부 | `MERGED / USER_REPORTED_NODE_AND_WINDOWS_PASS / TESTED_SHA_MATCH` | [PR #10](https://github.com/Choi1999/YOUTOPIA/pull/10), `extension/target-resolver.js`, [QA 23 기록](../../extension/tests/QA_23_EVIDENCE.md) |
-| **24** | 채널 대상 식별 | channelId/@handle 구별·불확실 시 유보 | `IN_PROGRESS / V8_FIXTURE_TESTED / NATIVE_AND_WINDOWS_QA_PENDING` | `extension/channel-target-resolver.js`, `extension/tests/channel-target-resolver.test.cjs`, [QA 24 기록](../../extension/tests/QA_24_EVIDENCE.md) |
-| **25** | Hover 상태 제어 | 타이머·마우스 카드 이동·연속/겹침 요청 취소 | `NOT_STARTED` | `hover controller tests` |
+| **24** | 채널 대상 식별 | channelId/@handle 구별·불확실 시 유보 | `MERGED / V8_FIXTURE_TESTED / USER_REPORTED_WINDOWS_PASS / TESTED_SHA_MATCH` | [PR #11](https://github.com/Choi1999/YOUTOPIA/pull/11), `extension/channel-target-resolver.js`, [QA 24 기록](../../extension/tests/QA_24_EVIDENCE.md) |
+| **25** | Hover 상태 제어 | 타이머·마우스 카드 이동·연속/겹침 요청 취소 | `IN_PROGRESS / V8_FIXTURE_TESTED / NODE_AND_WINDOWS_QA_PENDING` | `extension/hover-controller.js`, `extension/tests/hover-controller.test.cjs`, [QA 25 기록](../../extension/tests/QA_25_EVIDENCE.md) |
 | **26** | 경량 Hover 카드 UI | 캐시된 합성 데이터·출처 배지·더보기 | `NOT_STARTED` | `mock browser preview` |
 | **27** | 확장 서비스 워커 메시지/캐시 | targetId·requestId 검증과 권한 최소화 | `NOT_STARTED` | `background tests` |
 | **28** | Chrome Side Panel 연동 | 사용자 클릭 제스처로 열기·동일 대상 유지 | `NOT_STARTED` | `panel smoke` |
@@ -200,7 +200,9 @@
 | 2026-10-20 | PR #8 영상 탐지 → PR #9 SPA 자동 재탐지 frontend 순차 병합 | 사용자 승인하에 개발 브랜치 통합, 출시·데이터 사용권 아님 |
 | 2026-10-20 | 23 영상 ID 검증 설계·Resolver 및 테스트 작성 | V8 모의 46/46 PASS 이후 Windows/Node 46/46 PASS 사용자 보고 및 테스트 SHA 일치 확인 |
 | 2026-10-20 | PR #10 영상 ID 정확성 검증 frontend 병합 | SHA 7f236feee061d1eac49a3ea4c0164951064a24a7, 라이브 API 및 출시 승인 아님 |
-| 2026-10-20 | 24 채널 UC ID 형식과 @handle 미매핑 식별기 및 별도 DOM 이벤트 개발 | V8 모의 78/78 PASS, Native Node/Chromium/Windows QA는 미검증 |
+| 2026-10-20 | 24 채널 UC ID 형식과 @handle 미매핑 식별기 및 별도 DOM 이벤트 개발 | V8 모의 78/78 PASS 후 Windows 검증 PASS·테스트 SHA 일치 사용자 보고, 독립 로그 미제출 |
+| 2026-10-20 | PR #11 채널 ID·@handle 코드 frontend 병합 | Merge SHA 97611f144c8ae074d2e7f5b5f75031ef03d840c6, 출시 승인이 아님 |
+| 2026-10-20 | 25 Hover 상태 제어와 가상 타이머·중복 주입·키보드·경합 취소 테스트 작성 | 21~25 전체 격리 V8 모의 118/118 PASS, 26번 실제 카드/27~28번 메시지·패널 미구현 |
 | 2026-10-16 | 10~19 Chrome 고객 UX 정보구조·상태·Side Panel·검수표 초안 | 목업·실브라우저 검수 대기 |
 
 ## 연관 정본

@@ -1,6 +1,6 @@
 # 12 — Hover 열림·유지·닫힘·경합 방지 상태 계약
 
-> **INTERACTION_DRAFT / NOT IMPLEMENTED**
+> **INTERACTION_DRAFT / YU25_CONTROLLER_CODE_READY / YU26_CARD_NOT_IMPLEMENTED**
 >
 > **목적:** 사용자가 데스크톱 YouTube 홈에서 여러 영상 사이를 빠르게 움직여도 팝업이 과도하게 열리거나 깜빡이지 않도록 하고, 항상 **마지막으로 명확히 선택된 영상**의 내용만 보여주게 합니다.
 
@@ -58,6 +58,20 @@ IDLE
 - Card root는 한 개로 관리하고, 화면 요소가 재생성돼도 이벤트 핸들러가 중복 등록되지 않도록 함.
 - `focusin`/키보드로 접근할 수 있는 명시적인 진입 경로를 설계(포인터 전용 금지).
 
+## 4.1 25번 Controller와 26번 UI 상태의 구분
+
+25번 브랜치에는 실제 Hover 카드 없이 단일 Hover Controller가 추가됐다.
+
+- 포인터/포커스 진입 → HOVER_PENDING(400ms 후보) → READY(정규 VIDEO/CHANNEL targetId 확보), 또는 UNRESOLVED(@handle만 있어 targetId 없음).
+- READY는 26번 UI가 LOADING/VISIBLE로 전환할 수 있는 **준비 상태**이지 실제 카드가 표시됐다는 뜻이 아니다.
+- 정상 타깃에서 pointerleave/focusout → LEAVE_PENDING(200ms 후보) → IDLE. Overlay 이동용 API는 있으나 Overlay DOM은 26번 범위.
+- targetType + targetId + 증가하는 requestId를 검사하는 isCurrentRequest()를 제공한다. 실제 비동기 응답·패널은 이번 범위에 포함하지 않는다.
+- 무한 스크롤·SPA 앵커 변경, Escape·문서 숨김·pagehide 시 정리, 키보드 focusin/out 및 기존 YouTube 클릭 동작 보존을 처리한다.
+- 신규 40건 + 기존 회귀 78건 = **격리 V8 118/118 PASS**. Native Node CLI 및 Windows Chrome 신규 테스트는 대기 중.
+- **26번 시각 카드·27번 메시지·28번 더보기 Side Panel 대상 고정은 미구현**.
+
+증거: [25번 QA 기록](../../extension/tests/QA_25_EVIDENCE.md).
+
 ## 5. 수용 테스트
 
 - [ ] 영상 A 위에서 100ms만 머문 경우 카드가 무분별하게 나타나지 않음.
@@ -69,4 +83,4 @@ IDLE
 - [ ] Esc·Tab 등 키보드 조작으로 카드의 정보/닫기에 접근.
 - [ ] 브라우저 CPU/메모리 사용이 누적되어 지속 악화되지 않음.
 
-**테스트 상태:** Chrome 구현 전이므로 **NOT TESTED**.
+**테스트 상태:** 25번 상태 제어는 격리 V8 모의 테스트 통과. 실제 Chrome Hover 카드 표시·더보기/Side Panel은 **NOT TESTED / NOT IMPLEMENTED**.

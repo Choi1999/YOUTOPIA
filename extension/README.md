@@ -35,7 +35,7 @@
 
 - YouTube 홈(/)·검색(/results)의 일반 영상 썸네일 렌더러를 DOM에서 읽기 전용으로 탐지합니다.
 - 광고·Shorts·외부 도메인·빈 영상 링크를 제외하고, 중복 콘텐츠 스크립트 주입을 방지합니다.
-- 화면에 카드를 추가하거나 실제 YouTube 댓글·메타데이터를 수집하지 않습니다. **21·22·23번 영상 탐지·SPA 재탐지·엄격 VIDEO ID 검증은 frontend에 병합**됐습니다. 24번 CHANNEL/@handle 식별은 독립 검증 브랜치에서 개발 중입니다. Hover 표시(25~26)는 구현 전입니다.
+- 화면에 카드를 추가하거나 실제 YouTube 댓글·메타데이터를 수집하지 않습니다. **21~24번 영상·채널 식별과 SPA 탐지 코드는 frontend에 병합**됐습니다. 25번 Hover 상태 제어는 별도 검증 브랜치에서 개발 중이며 **26번 실제 Hover 카드 렌더링은 아직 구현하지 않았습니다**.
 - **기본 테스트:** 저장소 루트에서 `node --test extension/tests/content-discovery.test.cjs` 실행(별도 npm 의존성 없음).
 - **선택 Chromium DOM Fixture:** `python extension/tests/chromium-dom-fixture.py` (Python Playwright와 Chromium 필요, 실제 확장 E2E 아님).
 - **검증·미완료 Gate:** [20·21 테스트 기록](tests/QA_20_21_EVIDENCE.md).
@@ -65,7 +65,19 @@
 - 영상 썸네일과 채널명/아바타를 다른 Map·구독 이벤트로 추적하며, 기존 22번 단일 MutationObserver를 재사용합니다.
 - 신규 테스트: `node --test extension/tests/channel-target-resolver.test.cjs`, 전체 회귀: `node --test extension/tests/*.test.cjs`.
 - 선택 Chromium DOM: `python extension/tests/chromium-channel-fixture.py` (신규 실행 미확인).
-- 현재 **격리 V8 모의 테스트 78/78 PASS**이며, Native Node CLI/Windows Chrome 24번 브랜치 검증은 아직 실행되지 않았습니다. [24번 QA 기록](tests/QA_24_EVIDENCE.md)을 참고하세요.
+- 현재 **격리 V8 모의 테스트 78/78 PASS**이며, Windows 검증은 사용자가 통과했다고 보고하고 테스트 SHA가 PR #11과 일치함을 확인했습니다. 원본 콘솔 출력·미커밋 작업 트리 상태는 제출되지 않았습니다. [24번 QA 기록](tests/QA_24_EVIDENCE.md)을 참고하세요.
+
+## 25번 Hover 상태 제어 (실제 Card DOM 구현 전)
+
+- Manifest에 hover-controller.js를 content.js **다음**에 로드하도록 추가했습니다.
+- 기존 VIDEO/CHANNEL 탐지 스트림을 사용합니다. 단일 활성 Hover를 보장하며 400ms 진입 지연과 200ms 이탈 유예를 적용합니다. 두 시간은 승인된 UX 문서의 테스트용 후보값입니다.
+- A→B→C 빠른 이동과 DOM 요소 교체 시 이전 타이머 및 requestId를 무효화합니다. READY는 실제 카드가 화면에 표시된 것이 아니라 26번 UI가 표시할 수 있는 준비 상태입니다.
+- 영상/채널 ID가 검증되지 않으면 상세 대상을 제공하지 않습니다. @handle만 확인된 경우 UNRESOLVED/targetId:null로 유지합니다.
+- overlayPointerEnter/Leave 및 overlayFocusIn/Out 함수를 제공하지만 26번에서 구현할 Overlay 또는 Hover 카드 DOM은 아직 생성하지 않습니다.
+- 키보드 focusin/out, Escape·탭 숨김, 링크 삭제·SPA 이동, dispose(), 중복 주입을 처리하며 YouTube 클릭·재생을 차단하지 않습니다.
+- 신규 테스트: node --test extension/tests/hover-controller.test.cjs (40건). 전체 회귀: [25번 QA 기록](tests/QA_25_EVIDENCE.md)에 명시된 다섯 테스트 파일을 Node.js --test에 명시적으로 전달(118건).
+- 선택 오프라인 Chromium Fixture: python extension/tests/chromium-hover-fixture.py (작성만 완료, 실행 미확인). [25번 QA 기록](tests/QA_25_EVIDENCE.md).
+- **격리 V8 모의 118/118 PASS**. Native Node CLI 및 Windows Chrome 25번 실환경 검증은 아직 미실행입니다.
 
 ## 현재 단계
 
@@ -73,6 +85,7 @@
 - **21:** 영상 후보 탐지 코드 병합. Node 9/9, 오프라인 Chromium PASS 및 Windows 수동 PASS 사용자 보고.
 - **22:** SPA/무한 스크롤 변경 감지 코드 병합. Node CLI 25/25, Chromium 오프라인 PASS, Windows 수동 PASS 사용자 보고(원본 로그·SHA 미제출).
 - **23:** 엄격 VIDEO target Resolver frontend 병합, 사용자 보고 기준 Node 46/46·Windows 검증 통과 및 동일 테스트 SHA 확인.
-- **24:** 채널 URL·핸들 별도 식별 코드/32개 신규 Fixture 작성, 격리 V8 전체 78/78 PASS, 실제 Node/Windows QA 미실행.
-- **25~29:** Hover 제어·카드·Side Panel 대상 고정·실브라우저 통합 E2E 순차 구현 예정.
+- **24:** 채널 ID와 @handle 분리 코드 frontend 병합. 사용자 검증 PASS·테스트 SHA 일치 보고(독립 로그 미제출).
+- **25:** Hover 상태 제어 코드 준비·V8 모의 전체 118/118 PASS. 실제 Node CLI·Windows 신규 QA 대기.
+- **26~29:** 실제 Hover 카드·더보기 메시지·Side Panel 대상 고정·Chrome 통합 E2E 미구현.
 - **실제 YouTube API/외부 AI/구독 결제:** 구현하지 않음.
