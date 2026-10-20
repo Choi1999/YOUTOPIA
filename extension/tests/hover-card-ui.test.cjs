@@ -377,6 +377,17 @@ test("포커스가 같은 카드 내부로 이동하면 overlayFocusOut 미전�
   assert.equal(f.overlayCalls.focusLeaves,0);
 });
 
+test("우측 팝업이 다른 썸네일을 크게 가리면 아래로 배치",()=>{
+  const f=makeFixture();
+  const target=f.anchor({left:50,top:80,right:200,bottom:160,width:150,height:80});
+  const neighbor=f.anchor({left:220,top:75,right:430,bottom:175,width:210,height:100});
+  f.doc.querySelectorAll=()=>[target,neighbor];
+  f.emit(videoState(VIDEO_A,1,target));
+  assert.equal(parseFloat(f.host().style.top),172);
+  assert.equal(parseFloat(f.host().style.left),50);
+  assert.ok(f.api.getRuntimeStatus().visible);
+});
+
 test("앵커 우측 여백이 충분하면 카드가 오른쪽에 위치",()=>{
   const f=makeFixture();
   f.emit(videoState(VIDEO_A,1,f.anchor({left:50,top:80,right:200,bottom:160,width:150,height:80})));
