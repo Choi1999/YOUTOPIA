@@ -388,7 +388,9 @@
     if (existing) removeBinding(entry, existing.kind);
     if (!replacement || disposed) return;
 
-    replacement.onPointerEnter = () => queueEnter(replacement, "POINTER");
+    replacement.onPointerEnter = event => {
+      if (event?.pointerType !== "touch") queueEnter(replacement, "POINTER");
+    };
     replacement.onPointerLeave = () => leaveBinding(replacement, "POINTER");
     replacement.onFocusIn = () => queueEnter(replacement, "FOCUS");
     replacement.onFocusOut = () => leaveBinding(replacement, "FOCUS");
