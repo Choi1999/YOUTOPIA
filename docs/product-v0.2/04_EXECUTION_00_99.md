@@ -19,7 +19,7 @@
 - **00:** 사용자가 제품 방향을 승인했고 `00_PRODUCT_DIRECTION.md` 초안이 작성됨.
 - **01~03:** 사용자 승인 방향과 프론트 소스를 반영한 문서 초안이 작성됨. UX 세부와 기술 스택·권한은 검토 필요.
 - **04:** 00~99 순서, 산출물, 현재 상태를 정의하는 본 문서(초안 작성 완료, 외부 검토 필요).
-- **05~09:** 제품 정의 세부/게이트 **문서 초안 작성**. **10~19:** YouTube 홈, Hover·Side Panel의 **UX 문서 초안 작성**, 시각·실브라우저 미검증. **20:** MV3 스켈레톤 PR #6 병합. **21:** PR #8 영상 후보 탐지 frontend 병합. **22:** PR #9 SPA/무한 스크롤 자동 재탐지 frontend 병합. Node CLI 25/25 및 Chromium 오프라인 PASS; Windows Chrome 수동 7/7 PASS는 사용자 보고(원본 로그·검증 SHA 미제출). **23:** PR #10 엄격 VIDEO ID Resolver frontend 병합, Node CLI 46/46·Windows 기능 검증은 사용자 보고(테스트 SHA 일치, 원본 로그 미제출). **24:** PR #11 채널 ID·@handle 식별 코드 frontend 병합, V8 78/78 PASS 및 Windows PASS·테스트 SHA 일치는 사용자 보고(원본 로그 미제출). **25:** PR #12 상태 제어 코드 frontend 병합, V8 118/118 PASS 및 Windows 수동 PASS/테스트 SHA·Clean Worktree는 사용자 보고(원본 로그 미제출). **26:** Shadow DOM 실제 카드 UI와 고정 합성 지표/브리핑·검증 테스트 개발, 전체 V8 149/149 PASS, 신규 Node CLI·Windows Chrome 시각 검수 전. **27~99:** 후속 기능 실제 구현·검증 완료 아님. 실행대장 자체의 작성은 실서비스 동작 증거가 아님.
+- **05~09:** 제품 정의 세부/게이트 **문서 초안 작성**. **10~19:** YouTube 홈, Hover·Side Panel의 **UX 문서 초안 작성**, 시각·실브라우저 미검증. **20:** MV3 스켈레톤 PR #6 병합. **21:** PR #8 영상 후보 탐지 frontend 병합. **22:** PR #9 SPA/무한 스크롤 자동 재탐지 frontend 병합. Node CLI 25/25 및 Chromium 오프라인 PASS; Windows Chrome 수동 7/7 PASS는 사용자 보고(원본 로그·검증 SHA 미제출). **23:** PR #10 엄격 VIDEO ID Resolver frontend 병합, Node CLI 46/46·Windows 기능 검증은 사용자 보고(테스트 SHA 일치, 원본 로그 미제출). **24:** PR #11 채널 ID·@handle 식별 코드 frontend 병합, V8 78/78 PASS 및 Windows PASS·테스트 SHA 일치는 사용자 보고(원본 로그 미제출). **25:** PR #12 상태 제어 코드 frontend 병합, V8 118/118 PASS 및 Windows 수동 PASS/테스트 SHA·Clean Worktree는 사용자 보고(원본 로그 미제출). **26:** Shadow DOM 실제 카드 UI와 고정 합성 지표/브리핑·검증 테스트 개발, 전체 V8 150/150 PASS, 신규 Node CLI·Windows Chrome 시각 검수 전. **27~99:** 후속 기능 실제 구현·검증 완료 아님. 실행대장 자체의 작성은 실서비스 동작 증거가 아님.
 
 ## 00~99 상세 작업
 
@@ -204,7 +204,7 @@
 | 2026-10-20 | PR #11 채널 ID·@handle 코드 frontend 병합 | Merge SHA 97611f144c8ae074d2e7f5b5f75031ef03d840c6, 출시 승인이 아님 |
 | 2026-10-20 | 25 Hover 상태 제어와 가상 타이머·중복 주입·키보드·경합 취소 테스트 작성 | 21~25 전체 격리 V8 모의 118/118 PASS. 이후 사용자 Windows PASS·테스트 SHA 및 Clean Worktree 보고 |
 | 2026-10-20 | PR #12 Hover 상태 제어 frontend 병합 | SHA 20edd746e25dc82296a220716bf57c8c66cc5b3, 실제 데이터·출시 승인 아님 |
-| 2026-10-20 | 26 실제 Shadow DOM Hover 카드 UI 및 합성 MOCK 모델 구현 | 기존 118 + 신규 31 = V8 모의 149/149 PASS. Native Node/Windows Chrome·시각 검수 미완료 |
+| 2026-10-20 | 26 실제 Shadow DOM Hover 카드 UI 및 합성 MOCK 모델 구현 | 기존 118 + 신규 31 = V8 모의 150/150 PASS. Native Node/Windows Chrome·시각 검수 미완료 |
 | 2026-10-16 | 10~19 Chrome 고객 UX 정보구조·상태·Side Panel·검수표 초안 | 목업·실브라우저 검수 대기 |
 
 ## 연관 정본
