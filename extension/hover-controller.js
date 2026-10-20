@@ -96,8 +96,11 @@
 
   function activate(binding, mode, reason, preserveRequestId = false) {
     if (disposed || !valid(binding)) return;
+    const keepCardPointer = Boolean(cardPointerInside && preserveRequestId &&
+      active && stableTargetKey(active) !== null &&
+      stableTargetKey(active) === stableTargetKey(binding));
     stopTransit();
-    cardPointerInside = false;
+    cardPointerInside = keepCardPointer;
     const phase = binding.target ? "READY" : "UNRESOLVED";
     if (active === binding && snapshot.phase === phase) {
       activeMode = mode;
