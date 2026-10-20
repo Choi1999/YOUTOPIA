@@ -1,6 +1,6 @@
 # YUTOPIA 26번 — 실제 Hover 카드 UI(합성 데이터) 검증 기록
 
-> **2026-10-20 / CARD_UI_CODE_READY / V8_MOCK_173_OF_173_PASS / NATIVE_WINDOWS_NODE_152_PASS_PRIOR_HEAD / CHROMIUM_PREVIOUS_PASS / LIVE_CHROME_INTERMITTENT_HOVER_UNDER_FIX**
+> **2026-10-20 / CARD_UI_CODE_READY / V8_MOCK_204_OF_204_PASS / NATIVE_WINDOWS_NODE_152_PASS_PRIOR_HEAD / CHROMIUM_PREVIOUS_PASS / LIVE_CHROME_INTERMITTENT_HOVER_UNDER_FIX**
 
 이 기록은 Chrome MV3 확장 개발자용 **MOCK Hover 카드 UI**를 설명한다. 실제 YouTube 데이터 분석, 운영 배포, 사용자 승인 UI 시안 완성 또는 Side Panel 대상 연동에 대한 증거가 아니다.
 
@@ -27,16 +27,17 @@
 | 22 SPA 변경 관측 | 16 | PASS, 격리 V8 |
 | 23 VIDEO ID 검증 | 21 | PASS, 격리 V8 |
 | 24 CHANNEL ID/@handle | 32 | PASS, 격리 V8 |
-| 25 Hover 상태 제어 + 물리적 이탈·재진입 회귀 | 60 | PASS, 격리 V8 (Manifest 및 SPA/포인터 복구 포함) |
+| 25 Hover 상태 제어 + 논리 타깃/포인터·포커스 분리 | 63 | PASS, 격리 V8 (기존 리그레션 + SPA 앵커 재연결) |
 | 26 Hover 카드 모델/DOM/CTA·썸네일 클릭 가림·진단 | 35 | PASS, 격리 V8 Mock DOM |
-| **전체** | **173** | **173/173 PASS — 격리 V8 모의 실행 (최신 브랜치)** |
+| Benchmark Pointer Tracker + Presence Reducer | 28 | PASS, 격리 V8 (독립 모듈/논리 ID/이동 경로 기하) |
+| **전체** | **204** | **204/204 PASS — 격리 V8 모의 실행 (최신 브랜치)** |
 | JavaScript 구문 | 신규 모델/렌더러/테스트 | PASS, 격리 V8 파서 |
-| Native Node.js CLI | 이전 HEAD에서 node --test 6개 파일 | **152/152 PASS × 1 (사용자 Windows 로그). 최신 159개 변경 테스트 재실행 대기** |
+| Native Node.js CLI | 이전 HEAD에서 node --test 6개 파일 | **152/152 PASS × 1 (사용자 Windows 로그). 최신 204개/7파일은 미실행** |
 | Chromium 오프라인 DOM | chromium-hover-card-fixture.py | **이전 HEAD에서 CHROMIUM_HOVER_CARD_FIXTURE_PASS (사용자 Windows 로그); 최신 SPA 복구 Fixture는 재실행 대기** |
 | Windows Chrome | 실제 YouTube 홈/검색 카드 위치/조작, 다크/라이트/줌 | **NOT VERIFIED** |
 | CI·독립 리뷰 | GitHub 상태 검사·PR 리뷰 | **NOT VERIFIED** |
 
-**격리 V8 수행 방법:** GitHub PR 최신 브랜치 파일을 이용한 모의 어댑터 테스트 **173/173 PASS**. **별도로** Windows PowerShell 원본 로그에서 수정 이전 Native Node CLI 150/150 PASS ×2 및 이후 Node CLI 152/152 PASS ×1을 확인했다(해당 시점 검사 HEAD `84c9e5949c94fa4db6ac842f05f652b7f57d1e87`). Chromium Fixture 검증 성공이나 실제 YouTube Chrome 시각 검증 완료로는 취급하지 않는다.
+**격리 V8 수행 방법:** GitHub PR 최신 브랜치 파일을 이용한 모의 어댑터 테스트 **204/204 PASS**. **별도로** Windows PowerShell 원본 로그에서 수정 이전 Native Node CLI 150/150 PASS ×2 및 이후 Node CLI 152/152 PASS ×1을 확인했다(해당 시점 검사 HEAD `84c9e5949c94fa4db6ac842f05f652b7f57d1e87`). Chromium Fixture 검증 성공이나 실제 YouTube Chrome 시각 검증 완료로는 취급하지 않는다.
 
 ## 2.1 Windows 실행 로그·Chromium 실패 분석 (2026-10-20)
 
@@ -89,7 +90,7 @@ console.log({
 - **복구 범위:** 이벤트 composedPath 및 실제 YouTube 카드의 렌더러 내부/썸네일 경계 좌표를 검사해 미리보기 Overlay 등으로 원래 anchor 이벤트가 누락돼도 복구한다. 문서 전체 모든 후보를 매 mousemove 검사하지 않고 현재 렌더러의 링크만 검사한다. 새로운 개인정보·시청기록·외부 API 처리 없음.
 - **안전:** Shorts·광고·미확정 VIDEO/CHANNEL ID는 계속 거부. 닫힌 카드를 같은 위치에서 단순 움직임만으로 재열지 않음. focusin/out, 160ms 대기 및 카드 안 200ms 이탈 유예는 유지.
 - **테스트 보강:** 25번 단위 테스트 46→60건(같은 A 3회 재진입, 명시 닫기 후 suppression 해제, DOM 이벤트 누락, 문서 pointerout, Overlay 보존, 영상 A→B→A, 자식·터치 경계 등). 전체 21~26번 V8 모의 **173/173 PASS**. Chromium Fixture에 동일 영상 3회 이탈/재진입과 카드 닫기 후 복귀 추가.
-- **인수 결과:** 위 172건은 격리 V8 실행 결과이며, 최신 브랜치에서 **Native Windows Node CLI 및 Chromium 오프라인 Fixture·실사이트 YouTube Chrome 검증은 미실행**. 사용자 실환경 재현 원인이 이 코드 수정으로 전부 해결됐다는 최종 판정도 보류한다.
+- **인수 결과 (이전 단계):** 위 단계별 회귀는 격리 V8 실행 결과이며, 최신 브랜치에서 **Native Windows Node CLI 및 Chromium 오프라인 Fixture·실사이트 YouTube Chrome 검증은 미실행**. 사용자 실환경 재현 원인이 이 코드 수정으로 전부 해결됐다는 최종 판정도 보류한다.
 
 ### 2.4.1 재현 시 확인할 상태
 
@@ -103,6 +104,19 @@ console.log({
 ~~~
 
 `pointerInside`, `overlayPointerInside`, `suppressedAnchorActive`, `lastReason`, `lastHoverReason` 및 `boundVideoAnchors`를 비교한다. 종료 이후 `IDLE`인데 `pointerInside=true`면 상태 누수 의심, `NO_SAFE_HOVER_PLACEMENT`면 의도적 배치 거부, `identifiedCandidates=0`이면 식별 실패를 먼저 점검한다.
+## 2.5 외부 Hover 벤치마킹 승인 후 P0 구조 분리 (2026-10-20)
+
+승인 근거: [Hover Interaction 벤치마킹/적용 설계](../../docs/product-v0.2/HOVER_INTERACTION_BENCHMARK_20261020.md).
+
+- **Pointer Tracker 모듈 신규:** hover-pointer-tracker.js, DOM composedPath/ancestor 및 YouTube 렌더러 내부 좌표 히트 테스트, detached anchor 거부, 순수 targetKey(VIDEO/CHANNEL,id), 안전 이동 기하 safeTransitPoint 후보. 포인터·사용자 데이터는 저장·전송하지 않음.
+- **Presence Reducer 신규:** hover-presence-reducer.js, 원본 썸네일 pointer/focus와 카드 pointer/focus 4개 Flag를 불변 상태/행동으로 통합. 타이머/카드/DOM은 직접 제어하지 않음.
+- **Single Controller 유지:** hover-controller.js는 위 두 모듈을 사용해 활성 타깃·160ms 진입/200ms 종료·generation/requestId·상태 Publish를 중앙 관리한다.
+- **논리적 대상/DOM 분리:** 같은 VIDEO/CHANNEL ID인 hovered DOM 앵커가 SPA 중 교체되면 기존 READY와 requestId를 유지하고 anchor만 갱신한다. 다른 ID거나 Hover/Focus 재연결이 확인되지 않으면 기존처럼 정리. @handle은 추정 ID로 승격 금지.
+- **Manifest/Chromium 로딩 계약:** content.js 다음 tracker→reducer→controller→card-model→card UI. 새로운 Chrome 권한이나 NPM 의존성 없음.
+- **P1 보류:** 순수 safeTransitPoint만 제공. 카드 유지 시간을 늘리거나 바로 A→B 전환하는 DelayGroup은 실브라우저 검증 후 별도 실험.
+- **회귀:** 기존 21~24 78건 + Controller 63건 + Card UI 35건 + Tracker/Reducer 신규 28건 = **204/204 PASS**, 격리 V8 에뮬레이션. Native Node CLI 204건 및 Chromium 오프라인/실 YouTube 신규 결과는 아직 없음.
+- **Windows 수용:** 동일 영상 A 10회 진입/완전 종료/재진입 누락 0회, A→B→A, 카드 이동·닫기/ESC, SPA targetKey 보존, Shorts/광고 제외, YouTube 원래 클릭/미리보기 보존. 테스트 클론의 HEAD와 GitHub 최신 SHA 일치 및 clean worktree 확인 필수.
+
 ## 3. Node.js 및 선택 Chromium 실행 명령
 
 저장소 루트 기준:
@@ -110,10 +124,10 @@ console.log({
 ~~~sh
 node --check extension/hover-card-model.js
 node --check extension/hover-card.js
-node --test extension/tests/content-discovery.test.cjs extension/tests/content-spa-observer.test.cjs extension/tests/video-target-resolver.test.cjs extension/tests/channel-target-resolver.test.cjs extension/tests/hover-controller.test.cjs extension/tests/hover-card-ui.test.cjs
+node --test extension/tests/content-discovery.test.cjs extension/tests/content-spa-observer.test.cjs extension/tests/video-target-resolver.test.cjs extension/tests/channel-target-resolver.test.cjs extension/tests/hover-controller.test.cjs extension/tests/hover-card-ui.test.cjs extension/tests/hover-interaction-benchmark.test.cjs
 ~~~
 
-최신 코드 기대값: 173 tests, 173 pass, 0 fail.
+최신 코드 기대값: 204 tests, 204 pass, 0 fail.
 
 선택적인 오프라인 Chromium DOM 검증:
 
@@ -126,7 +140,7 @@ python extension/tests/chromium-hover-card-fixture.py
 ## 4. Windows Chrome 실제 시각 QA — 아직 미실행
 
 1. 기존 개발 폴더를 수정하지 않고 별도 clone/worktree로 feature/yutopia-26-hover-card 브랜치 복제.
-2. PowerShell에서 git rev-parse HEAD와 git status --short 확인, 수정된 Node 테스트 173건 PASS 및 구문 통과 기록.
+2. PowerShell에서 git rev-parse HEAD와 git status --short 확인, 수정된 Node 테스트 204건 PASS 및 구문 통과 기록.
 3. Chrome chrome://extensions에서 기존 YUTOPIA 검증 확장 일시 비활성화, 이번 브랜치 extension/ 폴더 로드. YouTube 홈 새로고침.
 4. YouTube 홈의 4개 이상 썸네일 중 A 위에 마우스를 잠깐(100ms) 올렸다 떼면 카드가 나타나지 않아야 한다.
 5. A 위 약 160ms 이상 머물 때 앵커 옆 Hover 카드가 표시되는지 확인한다(시험 설정 160ms, 브라우저 렌더링 오버헤드는 별도). ID가 A 링크의 /watch?v= 값과 같아야 한다. 긍정/중립/부정 차트와 DEMO·STATIC FIXTURE 고지 및 가상 표본/기간이 함께 보여야 한다.
@@ -143,12 +157,12 @@ globalThis.YUTOPIA_HOVER_CARD?.getRuntimeStatus();
 globalThis.YUTOPIA_HOVER_CONTROLLER?.getRuntimeStatus();
 ~~~
 
-13. Chrome 버전, 테스트 SHA, 173개 Node CLI 테스트 결과, UI 이상·스크린샷/재현 절차 및 미커밋 상태를 기록한다.
+13. Chrome 버전, 테스트 SHA, 204개 Node CLI 테스트 결과, UI 이상·스크린샷/재현 절차 및 미커밋 상태를 기록한다.
 
 ## 5. Gate
 
 - 26번 코드/모의 검증: READY_FOR_REVIEW / ISOLATED_V8_TESTED.
-- Native Windows Node CLI 152/152: PASS (이전 HEAD의 사용자 로그; 더 이전 150/150 × 2도 PASS). 최신 173/173 CLI 재실행은 PENDING.
+- Native Windows Node CLI 152/152: PASS (이전 HEAD의 사용자 로그; 더 이전 150/150 × 2도 PASS). 최신 204/204 CLI 재실행은 PENDING.
 - Chromium 오프라인 Fixture: A→B 포인터 차단 수정본 **PASS(이전 HEAD 사용자 로그)**. 최신 SPA 앵커 교체 회귀를 추가했으며 수정본 **RETEST_PENDING**.
 - 실제 YouTube Windows Chrome 시각·접근성/이벤트 동작: PENDING.
 - Figma 픽셀 패리티: 별도 사람 검수 및 승인 필요.
