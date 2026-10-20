@@ -3,7 +3,7 @@
  *
  * 목적:
  *   - 마지막으로 확실히 진입한 VIDEO / CHANNEL 앵커만 활성 상태로 유지한다.
- *   - 400ms 진입 지연, 200ms 이탈 유예, 빠른 A→B→C 이동 및 비동기 응답을 차단한다.
+ *   - 160ms 진입 지연, 200ms 이탈 유예, 빠른 A→B→C 이동 및 비동기 응답을 차단한다.
  *   - VIDEO의 정규 targetId와 CHANNEL의 명시적인 UC ID만 상세 분석 가능 대상으로 전달한다.
  *   - @handle은 HANDLE_UNRESOLVED 표시 후보일 뿐 channelId로 추측하지 않는다.
  *   - 같은 브라우저 탭에서 하나의 Hover 상태만 허용한다.
@@ -22,7 +22,7 @@
 
   if (scope.YUTOPIA_HOVER_CONTROLLER) return;
 
-  const ENTER_DELAY_MS = 400; // 12번 UX 문서의 후보 값, 추후 사용성 검증 필요
+  const ENTER_DELAY_MS = 160; // 26번 Windows QA 피드백: 400ms 체감 지연 축소 (시험값)
   const LEAVE_GRACE_MS = 200; // 카드로 이동하는 포인터 유예, UX 후보 범위 150~250ms
   const discovery = scope.YUTOPIA_VIDEO_DISCOVERY;
   const channelResolver = scope.YUTOPIA_CHANNEL_TARGET_RESOLVER;
@@ -43,6 +43,10 @@
   let lastReadyPhase = null;
   let disposed = false;
   let connected = false;
+  // YouTube SPA 링크 교체 시 이미 포인터가 위치하면 pointerenter가 생략될 수 있다.
+  // 좌표/대상은 현재 탭 메모리에서만 처리하고 저장·전송하지 않는다.
+  let suppressedAnchor = null;
+  let pointerRecoveryCount = 0;
 
   let snapshot = Object.freeze({
     phase: "IDLE",
@@ -108,8 +112,9 @@
     publish(finalPhase, reason);
   }
 
-  function queueEnter(binding, mode) {
+  function queueEnter(binding, mode, source = null) {
     if (disposed || bindings.get(binding.element) !== binding) return;
+    if (mode === "POINTER") suppressedAnchor = null;
 
     if (selected === binding) {
       if (mode === "POINTER") pointerInside = true;
@@ -131,7 +136,8 @@
     overlayPointerInside = false;
     overlayFocusInside = false;
     lastReadyPhase = null;
-    publish("HOVER_PENDING", mode === "POINTER" ? "POINTER_ENTER" : "FOCUS_IN");
+    publish("HOVER_PENDING", source ||
+      (mode === "POINTER" ? "POINTER_ENTER" : "FOCUS_IN"));
 
     const token = generation;
     if (typeof scope.setTimeout !== "function") {
@@ -180,6 +186,38 @@
     if (mode === "POINTER") pointerInside = false;
     if (mode === "FOCUS") focusInside = false;
     beginLeave(mode === "POINTER" ? "POINTER_LEAVE" : "FOCUS_OUT");
+  }
+
+  /*
+   * 실제 사용 환경에서 YouTube 카드 DOM이 포인터 아래에서 재생성되면
+   * 신규 anchor에는 pointerenter가 발생하지 않을 수 있다.
+   * document pointermove의 composedPath/상위 DOM에서 이미 등록된
+   * anchor만 확인해 복구한다. 개별 영상/채널 데이터나 좌표는 저장하지 않는다.
+   */
+  function handlePointerMove(event) {
+    if (disposed || event?.pointerType === "touch") return;
+    let binding = null;
+    const path = event?.composedPath?.();
+    if (Array.isArray(path)) {
+      for (const element of path.slice(0, 24)) {
+        binding = bindings.get(element);
+        if (binding) break;
+      }
+    }
+    if (!binding) {
+      let element = event?.target;
+      for (let i = 0; element && i < 24; i += 1) {
+        binding = bindings.get(element);
+        if (binding) break;
+        element = element.parentElement || element.parentNode || null;
+      }
+    }
+    if (suppressedAnchor && binding?.element !== suppressedAnchor) {
+      suppressedAnchor = null;
+    }
+    if (!binding || binding === selected || binding.element === suppressedAnchor) return;
+    pointerRecoveryCount += 1;
+    queueEnter(binding, "POINTER", "POINTER_MOVE_RECOVERY");
   }
 
   /*
@@ -253,6 +291,7 @@
     if (!existing || existing.kind !== kind) return;
     bindings.delete(element);
     detach(existing);
+    if (suppressedAnchor === element) suppressedAnchor = null;
     if (selected === existing) clearActive("ANCHOR_REMOVED");
   }
 
@@ -291,6 +330,13 @@
     if (keepPointer || keepFocus) {
       queueEnter(replacement, keepPointer ? "POINTER" : "FOCUS");
       if (keepFocus && keepPointer) focusInside = true;
+    } else if (
+      replacement.element !== suppressedAnchor &&
+      replacement.element.matches?.(":hover")
+    ) {
+      // DOM이 포인터 아래에서 교체돼도 사용자의 다음 마우스 이동을 기다리지 않는다.
+      pointerRecoveryCount += 1;
+      queueEnter(replacement, "POINTER", "DOM_HOVER_RECOVERY");
     }
   }
 
@@ -306,7 +352,11 @@
   }
 
   function dismiss(reason = "DISMISSED") {
-    if (!disposed && selected) clearActive(reason, "DISMISSED");
+    if (!disposed && selected) {
+      // Esc/닫기 후 동일 링크 안에서 포인터만 조금 움직여 재오픈되는 현상 방지.
+      suppressedAnchor = selected.element;
+      clearActive(reason, "DISMISSED");
+    }
   }
 
   function handleKeyDown(event) {
@@ -350,6 +400,10 @@
       connected,
       disposed,
       phase: snapshot.phase,
+      lastReason: snapshot.reason,
+      activationDelayMs: ENTER_DELAY_MS,
+      leaveGraceMs: LEAVE_GRACE_MS,
+      pointerRecoveries: pointerRecoveryCount,
       requestId,
       boundVideoAnchors: list.filter(entry => entry.kind === "VIDEO").length,
       boundChannelAnchors: list.filter(entry => entry.kind === "CHANNEL").length,
@@ -367,6 +421,8 @@
     unsubscribeSources.length = 0;
     for (const binding of bindings.values()) detach(binding);
     bindings.clear();
+    scope.document?.removeEventListener?.("pointermove", handlePointerMove, true);
+    suppressedAnchor = null;
     scope.document?.removeEventListener?.("keydown", handleKeyDown);
     scope.document?.removeEventListener?.("visibilitychange", handleVisibility);
     scope.removeEventListener?.("pagehide", dispose);
@@ -398,6 +454,7 @@
     unsubscribeSources.push(discovery.subscribe(change => handleDiscovery("VIDEO", change)));
     unsubscribeSources.push(discovery.subscribeChannels(change => handleDiscovery("CHANNEL", change)));
     connected = true;
+    scope.document?.addEventListener?.("pointermove", handlePointerMove, true);
     scope.document?.addEventListener?.("keydown", handleKeyDown);
     scope.document?.addEventListener?.("visibilitychange", handleVisibility);
     scope.addEventListener?.("pagehide", dispose);
