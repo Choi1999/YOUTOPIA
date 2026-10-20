@@ -87,6 +87,9 @@
   let moving = false;
   let frame = null;
   let lastAction = null;
+  // 카드가 보이지 않을 때도 마지막 Hover 상태/닫힘 이유를 개발자에게 제공한다.
+  let lastHoverPhase = "IDLE";
+  let lastHoverReason = "INITIAL";
 
   function el(tag, className, text) {
     const node = doc.createElement(tag);
@@ -413,6 +416,8 @@
    */
   function onHoverState(state) {
     if (disposed) return;
+    lastHoverPhase = state.phase || "IDLE";
+    lastHoverReason = state.reason || "UNKNOWN";
     if (state.phase === "LEAVE_PENDING") {
       if (host && currentState?.requestId === state.requestId &&
           currentState?.anchor === state.anchor) {
@@ -472,6 +477,8 @@
       visible: Boolean(host?.isConnected && host?.style.visibility === "visible"),
       hostCount: host?.isConnected ? 1 : 0,
       phase: currentState?.phase ?? "IDLE",
+      lastHoverPhase,
+      lastHoverReason,
       requestId: currentState?.requestId ?? null,
       targetType: currentState?.targetType ?? null,
       targetId: currentState?.targetId ?? null,
