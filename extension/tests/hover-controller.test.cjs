@@ -269,6 +269,17 @@ test("명시적 닫기 후 링크의 실제 pointerleave는 suppression을 해�
   assert.equal(f.api().getSnapshot().phase,"READY");
 });
 
+test("카드 안 닫기 버튼을 누른 뒤 같은 영상으로 돌아오면 지체 없이 재활성화",()=>{
+  const a=anchor("A"),f=fixture({videos:[video(a)]});
+  a.fire("pointerenter");f.advance(160);
+  a.fire("pointerleave");f.api().overlayPointerEnter();
+  f.api().dismiss("CARD_CLOSE");
+  assert.equal(f.api().getRuntimeStatus().suppressedAnchorActive,false);
+  f.doc.fire("pointerover",{target:a,pointerType:"mouse"});
+  assert.equal(f.api().getSnapshot().phase,"HOVER_PENDING");
+  f.advance(160);assert.equal(f.api().getSnapshot().phase,"READY");
+});
+
 test("명시적 닫기 후 anchor pointerleave가 누락돼도 문서 pointerout으로 해제",()=>{
   const a=anchor("A"),f=fixture({videos:[video(a)]});
   a.fire("pointerenter");f.advance(160);f.api().dismiss("CARD_CLOSE");
