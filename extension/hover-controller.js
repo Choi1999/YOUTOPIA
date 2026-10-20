@@ -437,7 +437,7 @@
       // 포인터가 실제 썸네일 위에 남아 있을 때만 같은 위치에서
       // 닫힌 카드가 자동으로 재열리는 것을 억제한다.
       // 카드 내부 닫기 버튼은 썸네일 밖에서 클릭되므로 억제하지 않는다.
-      suppressedAnchor = pointerInside ? selected.element : null;
+      suppressedAnchor = pointerInside && !overlayPointerInside ? selected.element : null;
       clearActive(reason, "DISMISSED");
     }
   }
