@@ -1,6 +1,6 @@
 # YU-26 Interactive Hover Card QA — 2026-10-20
 
-> PR13_OPEN_DRAFT / CARD_PINNING_CODE_READY / ISOLATED_V8_158_OF_158_PASS / NATIVE_CHROMIUM_LIVE_RETEST_PENDING / FRONTEND_UNCHANGED
+> PR13_OPEN_READY_FOR_REVIEW / CARD_PINNING_DUPLICATE_GUARD / ISOLATED_V8_160_OF_160_PASS / NATIVE_CHROMIUM_LIVE_RETEST_PENDING / FRONTEND_UNCHANGED
 
 ## 최신 승인 요구 — 카드 안으로 이동 시 현재 영상 고정
 
@@ -15,24 +15,34 @@
 7. MOCK/DEMO/STATIC FIXTURE 외 실제 YouTube 제목·본문·댓글 수집·표시하지 않음. Shorts/광고/불확실한 ID는 계속 제외.
 8. 더보기/닫기 버튼은 현재 disabled이며 Side Panel 연결은 27~28번 범위로 남긴다.
 
+## PR 리뷰 — 재현된 SPA 중복 영상 재결합 결함 수정
+
+- **리뷰 기준 SHA:** `4193f369110af80762f5d31348f2e3425f3f07da` (사용자가 Chrome 수동 Hover·카드 유지 PASS를 확인한 버전).
+- **재현 내용:** A 카드를 포인터로 고정한 동안 SPA가 원래 A 썸네일 DOM을 제거할 때, 같은 videoId와 href를 가진 **화면 다른 위치의 별도 A 복사 썸네일**이 잘못 활성화되는 `TARGET_REBOUND` 사례를 실제 컨트롤러 소스로 격리 V8에서 재현했다.
+- **수정 내용:** 기존 활성 썸네일의 마지막 유효 화면 사각형을 DOM 제거 전 저장하고, 카드 고정 도중 같은 ID·href 재연결에는 그 위치와 충분히 가까운 새 썸네일만 허용한다. 멀리 떨어진 중복 후보나 측정 불가능한 대상이면 fail-closed 종료한다. 일반 Hover 선택은 이 위치 제한을 받지 않는다.
+- **추가 테스트 2건:** 멀리 떨어진 동일 ID 후보 거부, 먼 후보와 가까운 정상 교체가 함께 있을 때 정상 교체만 선택.
+- **결과:** 이번 리뷰 수정 후 격리 V8 모의 6개 스위트 **160/160 PASS**. 기존 사용자 Native Node 144/144 및 Chromium PASS는 이전 SHA의 증거이며 **현재 Windows Native Node·Chromium 실행은 미확인**이다.
+- **병합과 분리:** PR #13은 Ready for review / 미병합. `frontend/main/dev/backend/Figma` 변경 금지 유지.
+
 ## 코드 변경과 검증 범위
 
 - hover-controller.js: setCardRegion(host,card), 카드 이벤트 우선 판정, cardPointerInside, card transit 160ms 타이머, 일반 열림·종료 지연은 0ms, SPA 및 오래된 이벤트 처리.
 - hover-card.js: Host/Surface는 포인터 투명, Shadow .card만 pointer-events:auto. 생성/제거 시 컨트롤러 카드 영역 등록/해제.
-- hover-controller.test.cjs: 추가 11건. A↔카드↔A 20회, 카드가 덮은 B 선택 차단, 직접 카드→노출된 영상 전환, 안전 간격 유예·만료·기한 불연장, SPA 교체·이전 이벤트 경합.
+- hover-controller.test.cjs: 기존 Interactive Card 추가 11건 + 코드 리뷰 추가 2건. A↔카드↔A 20회, B 선택 차단, 직접 노출 영상 전환, 안전 이동 간격, SPA 교체·이전 이벤트 경합과 **동일 영상 ID의 먼 중복 썸네일 재결합 차단**.
 - hover-card-ui.test.cjs: 추가 3건. 카드 영역 등록·교체·해제 및 pointer-events 값.
 - chromium-hover-card-fixture.py: 실제 Chromium에서 단계별 A→카드→A, B 가림/노출, Card→노출 C, 반복 영상 전환 검증하도록 수정.
 - chromium-live-youtube-hover.py: 새로운 strategy 확인값을 반영. 실제 라이브 테스트 최신 재실행은 아직 없음.
 
 | 검증 | 결과 |
 |---|---|
-| 이번 수정 JS 구문·V8 모의 Node/DOM/URL | **158/158 PASS** |
+| 이번 코드 리뷰 후 JS 구문·격리 V8 모의 Node/DOM/URL | **160/160 PASS** |
 | 944b Native Windows Node (이전 코드) | **144/144 PASS — 사용자 PowerShell 로그** |
 | 944b 오프라인 Chromium 2개 (이전 코드) | **둘 다 PASS — 사용자 PowerShell 로그** |
 | 944b 실 YouTube 검색 DOM (이전 코드) | **PASS; Home 익명 추천 없음으로 SKIP** |
-| 최신 Interactive Card Native Node 158건 | **PENDING** |
+| 코드 리뷰 후 Native Windows Node 160건 | **PENDING — 최신 SHA 원본 실행 로그 미확인** |
 | 최신 Interactive Card Chromium 오프라인·실 YouTube | **PENDING** |
-| 최신 Interactive Card 설치형 MV3 Chrome 확장 수동 검증 | **PENDING** |
+| 코드 리뷰 전 4193f의 Chrome MV3 A→Card→A / 배경 B 차단 | **사용자 보고 PASS** |
+| 중복 썸네일 재결합 방지 코드 리뷰 수정 후 Chrome MV3 | **PENDING — 새로운 SHA 확인 필요** |
 
 ### Windows 재검증
 
@@ -52,9 +62,9 @@ $env:RUN_LIVE_YOUTUBE = "1"
 Remove-Item Env:\RUN_LIVE_YOUTUBE -ErrorAction SilentlyContinue
 ~~~
 
-필수 게이트: Native Node 158 PASS/0 FAIL 및 Chromium Fixture 두 개 PASS, 사용자 Chrome 로그인 Home/Search A→카드→A 20회, 카드 아래 B 선택 차단, 카드→노출된 C 정상 전환, 다른 썸네일 직접 이동, 빈 공간 이탈 시 카드 종료와 재진입 반복 20회. 한 번이라도 누락·깜빡임·잘못된 대상 발생 시 FAIL. 이전 944b PASS를 현재 변경의 PASS로 소급하지 않는다.
+필수 게이트: Native Node 160 PASS/0 FAIL 및 Chromium Fixture 두 개 PASS, 사용자 Chrome 로그인 Home/Search A→카드→A 20회, 카드 아래 B 선택 차단, 카드→노출된 C 정상 전환, 다른 썸네일 직접 이동, 빈 공간 이탈 시 카드 종료와 재진입 반복 20회. 한 번이라도 누락·깜빡임·잘못된 대상 발생 시 FAIL. 이전 944b PASS를 현재 변경의 PASS로 소급하지 않는다.
 
-**PR #13은 OPEN / Draft / 미병합 상태 유지. frontend/main/dev/backend/Figma 변경 금지.**
+**PR #13은 OPEN / Ready for review / 미병합 상태 유지. frontend/main/dev/backend/Figma 변경 금지.**
 
 ---
 
