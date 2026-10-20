@@ -311,6 +311,23 @@ test("명시적 닫기 후 링크 내부 이동만으로는 카드가 바로 재
   assert.equal(f.api().getRuntimeStatus().suppressedAnchorActive,true);
 });
 
+test("동일 영상 이탈 유예 중 native pointerenter 없이 pointerover만 돌아와도 READY 복원",()=>{
+  const a=anchor("A"),f=fixture({videos:[video(a)]});
+  a.fire("pointerenter");f.advance(160);
+  const before=f.api().getSnapshot().requestId;
+  a.fire("pointerleave");
+  assert.equal(f.api().getSnapshot().phase,"LEAVE_PENDING");
+  f.advance(100);
+  f.doc.fire("pointerover",{target:a,pointerType:"mouse"});
+  assert.equal(f.api().getSnapshot().phase,"READY");
+  assert.equal(f.api().getSnapshot().reason,"ANCHOR_RETURNED");
+  assert.equal(f.api().getSnapshot().requestId,before);
+  assert.equal(f.api().getRuntimeStatus().pointerInside,true);
+  f.advance(150);
+  assert.equal(f.api().getSnapshot().phase,"READY");
+  assert.equal(f.api().getRuntimeStatus().leaveScheduled,false);
+});
+
 test("anchor 내부 자식 간 pointerout은 전체 썸네일 이탈로 취급하지 않음",()=>{
   const a=anchor("A"),one={parentElement:a},two={parentElement:a};
   const f=fixture({videos:[video(a)]});
