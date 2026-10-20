@@ -52,6 +52,9 @@
    */
   function parseIdentity(href) {
     if (typeof href !== "string" || !href || href.trim() !== href) return null;
+    // URL()이 /./ 및 /../를 정규화하기 전에 원문 경로 우회/인코딩을 거부한다.
+    const rawPath = href.split(/[?#]/)[0];
+    if (/(?:^|\/)\.{1,2}(?:\/|$)/.test(rawPath) || /%(?:2e|2f|5c)/i.test(rawPath)) return null;
     let url;
     try {
       url = new URL(href, typeof scope.location?.href === "string" ? scope.location.href : ORIGIN + "/");
