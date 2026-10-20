@@ -319,6 +319,20 @@
     binding.element.removeEventListener("focusout", binding.onFocusOut);
   }
 
+  function attach(binding) {
+    binding.onPointerEnter = event => {
+      if (event?.pointerType !== "touch") queueEnter(binding, "POINTER");
+    };
+    binding.onPointerLeave = () => leaveBinding(binding, "POINTER");
+    binding.onFocusIn = () => queueEnter(binding, "FOCUS");
+    binding.onFocusOut = () => leaveBinding(binding, "FOCUS");
+    bindings.set(binding.element, binding);
+    binding.element.addEventListener("pointerenter", binding.onPointerEnter);
+    binding.element.addEventListener("pointerleave", binding.onPointerLeave);
+    binding.element.addEventListener("focusin", binding.onFocusIn);
+    binding.element.addEventListener("focusout", binding.onFocusOut);
+  }
+
   function removeBinding(entry, kind) {
     const element = kind === "VIDEO" ? entry?.thumbnailLink : entry?.channelLink;
     const existing = bindings.get(element);
@@ -350,18 +364,7 @@
     if (existing) removeBinding(entry, existing.kind);
     if (!replacement || disposed) return;
 
-    replacement.onPointerEnter = event => {
-      if (event?.pointerType !== "touch") queueEnter(replacement, "POINTER");
-    };
-    replacement.onPointerLeave = () => leaveBinding(replacement, "POINTER");
-    replacement.onFocusIn = () => queueEnter(replacement, "FOCUS");
-    replacement.onFocusOut = () => leaveBinding(replacement, "FOCUS");
-
-    bindings.set(replacement.element, replacement);
-    replacement.element.addEventListener("pointerenter", replacement.onPointerEnter);
-    replacement.element.addEventListener("pointerleave", replacement.onPointerLeave);
-    replacement.element.addEventListener("focusin", replacement.onFocusIn);
-    replacement.element.addEventListener("focusout", replacement.onFocusOut);
+    attach(replacement);
 
     if (keepPointer || keepFocus) {
       queueEnter(replacement, keepPointer ? "POINTER" : "FOCUS");
@@ -382,7 +385,51 @@
    */
   function handleDiscovery(kind, change) {
     if (disposed || !change) return;
-    for (const entry of change.removed || []) removeBinding(entry, kind);
+
+    /*
+     * Logical identity is independent of a transient YouTube DOM anchor.
+     * When a READY video is re-rendered under the stationary pointer, rebind
+     * its new anchor without tearing down the same target's card/requestId.
+     * No guessing for @handles or targets with uncertain IDs.
+     */
+    const removed = change.removed || [];
+    const incoming = [...(change.updated || []), ...(change.added || [])];
+    if (selected?.kind === kind && snapshot.phase === "READY" &&
+        removed.some(entry => (kind === "VIDEO" ?
+          entry?.thumbnailLink : entry?.channelLink) === selected.element)) {
+      const key = pointerTracker.targetKey(selected);
+      if (key) {
+        for (const entry of incoming) {
+          const next = toBinding(entry, kind);
+          if (!next || next.element === selected.element ||
+              pointerTracker.targetKey(next) !== key) continue;
+          let hovered = false;
+          try {
+            hovered = Boolean(next.element.matches?.(":hover") ||
+              (presence.focusInside && next.element.matches?.(":focus-within")));
+          } catch (_error) {
+            hovered = false;
+          }
+          if (!hovered) continue;
+          const original = selected;
+          bindings.delete(original.element);
+          detach(original);
+          const duplicate = bindings.get(next.element);
+          if (duplicate) {
+            bindings.delete(duplicate.element);
+            detach(duplicate);
+          }
+          attach(next);
+          selected = next;
+          changePresence("POINTER_ENTER");
+          // Keep the same requestId and READY mock card, but update its anchor.
+          publish("READY", "TARGET_REBOUND_SAME_ID");
+          break;
+        }
+      }
+    }
+
+    for (const entry of removed) removeBinding(entry, kind);
     for (const entry of change.updated || []) upsertBinding(entry, kind);
     for (const entry of change.added || []) upsertBinding(entry, kind);
   }
