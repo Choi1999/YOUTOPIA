@@ -1,6 +1,6 @@
 # 12 — Hover 열림·유지·닫힘·경합 방지 상태 계약
 
-> **INTERACTION_DRAFT / YU25_CONTROLLER_CODE_READY / YU26_CARD_NOT_IMPLEMENTED**
+> **INTERACTION_DRAFT / YU26_MOCK_CARD_IMPLEMENTED / BENCHMARK_P0_CODE_READY / LIVE_CHROME_QA_PENDING**
 >
 > **목적:** 사용자가 데스크톱 YouTube 홈에서 여러 영상 사이를 빠르게 움직여도 팝업이 과도하게 열리거나 깜빡이지 않도록 하고, 항상 **마지막으로 명확히 선택된 영상**의 내용만 보여주게 합니다.
 
@@ -82,6 +82,15 @@ IDLE
 - 26번 진입 지연·DOM 복구 검증은 별도의 Node/Chromium/실사이트 게이트를 가진다. 기존 25번 PR #12 병합 코드와 최신 26번 브랜치 상태를 혼동하지 않는다.
 
 검증 근거: [26번 QA 기록](../../extension/tests/QA_26_EVIDENCE.md).
+
+## 4.3 외부 Hover 벤치마킹 승인 후 P0 분리 구조
+
+- Pointer Tracker(hover-pointer-tracker.js): composedPath/DOM 상위요소 및 YouTube 렌더러 내부 boundingRect로 물리적 포인터 대상 판정. 카드/타이머에는 접근하지 않는다.
+- Presence Reducer(hover-presence-reducer.js): 썸네일·카드의 pointer/focus occupancy 4개를 불변 상태로 변경. Hover Controller가 선택 ID·160ms 진입/200ms 종료 유예·requestId·Phase를 유일하게 소유한다.
+- 동일 VIDEO/CHANNEL ID의 hovered 새 SPA 앵커 교체는 기존 READY 및 requestId를 보존하면서 anchor만 교체한다. 다른 ID 또는 Hover/Focus 미확인 새 앵커는 정리/재식별한다.
+- safeTransitPoint 순수 경로 기하 함수는 구현했지만 실제 종료 타이머 연장에는 연결하지 않았다. FloatingDelayGroup 연속 Hover 가속 또한 P1 실브라우저 검수 후 판단한다.
+- 현재 기존 DOM·Resolver 78건 + Controller 63건 + Card UI 35건 + Tracker/Reducer 28건 = **V8 모의 204/204 PASS**. 최신 Native Node/Chromium/실 YouTube Chrome 검증은 대기 중.
+- 근거: [벤치마킹 적용 상세](./HOVER_INTERACTION_BENCHMARK_20261020.md).
 
 ## 5. 수용 테스트
 
