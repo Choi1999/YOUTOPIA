@@ -137,6 +137,28 @@ with sync_playwright() as pw:
         assert "Ab0_-123xyZ" in card_content.inner_text()
         assert "Ab0_-123xyz" not in card_content.inner_text()
 
+        # SPA가 포인터 아래 썸네일 노드를 교체해도 다음 mousemove 없이 복구해야 한다.
+        # 이전 코드에는 새 anchor의 pointerenter 이벤트가 누락되어 IDLE에 머물 위험이 있었다.
+        before_request = page.evaluate(
+            "window.__fixtureScope.YUTOPIA_HOVER_CONTROLLER.getSnapshot().requestId"
+        )
+        page.evaluate("""() => {
+            const oldLink = document.querySelector('#video-b a#thumbnail');
+            oldLink.replaceWith(oldLink.cloneNode(true));
+        }""")
+        page.wait_for_function(
+            """previous => {
+                const controller = window.__fixtureScope.YUTOPIA_HOVER_CONTROLLER;
+                const state = controller.getSnapshot();
+                return state.requestId > previous && state.phase === 'READY' &&
+                    state.targetId === 'Ab0_-123xyZ' &&
+                    window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().visible;
+            }""",
+            arg=before_request,
+            timeout=5000,
+        )
+        assert "Ab0_-123xyZ" in card_content.inner_text()
+
         # Unresolved handle must not show a chart or expose a fabricated UC ID.
         page.locator("#video-b ytd-channel-name a").hover()
         page.wait_for_function(
