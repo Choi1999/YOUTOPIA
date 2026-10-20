@@ -328,13 +328,25 @@
 
   function onPointerPresence(event) {
     if (disposed || event?.pointerType === "touch") return;
+    if (eventInCard(event)) {
+      if (active && activeMode === "POINTER") {
+        cardPointerInside = true;
+        stopTransit();
+      }
+      return; // never select a thumbnail behind the interactive card
+    }
     const next = bindingFromEvent(event);
     if (next) {
       if (active !== next || activeMode !== "POINTER") {
         if (event.type === "pointermove") pointerRecoveries += 1;
         activate(next, "POINTER", active ? "THUMBNAIL_SWITCH" : "THUMBNAIL_ENTER");
+      } else if (transitTimer !== null || cardPointerInside) {
+        cardPointerInside = false;
+        stopTransit();
       }
     } else if (active && activeMode === "POINTER") {
+      cardPointerInside = false;
+      if (beginSafeTransit(event)) return;
       clear("THUMBNAIL_LEAVE");
     }
   }
@@ -342,11 +354,30 @@
   function onPointerOut(event) {
     if (disposed || event?.pointerType === "touch" ||
         !active || activeMode !== "POINTER") return;
+    if (eventInCard(event)) {
+      if (inCard(event.relatedTarget)) return;
+      cardPointerInside = false;
+      const next = bindingFromNode(event.relatedTarget);
+      if (next) {
+        if (next !== active) activate(next, "POINTER", "THUMBNAIL_SWITCH");
+        return;
+      }
+      if (beginSafeTransit(event)) return;
+      clear("CARD_LEAVE");
+      return;
+    }
+
     const leaving = bindingFromNode(event.target);
     if (leaving && leaving !== active) return;
+    if (inCard(event.relatedTarget)) {
+      cardPointerInside = true;
+      stopTransit();
+      return;
+    }
     const next = bindingFromNode(event.relatedTarget);
     if (next) {
       if (next !== active) activate(next, "POINTER", "THUMBNAIL_SWITCH");
+      else stopTransit();
       return;
     }
     const recovered = event.relatedTarget && bindingFromEvent({
@@ -360,16 +391,22 @@
       if (recovered !== active) activate(recovered, "POINTER", "THUMBNAIL_SWITCH");
       return;
     }
+    if (beginSafeTransit(event)) return;
     clear("THUMBNAIL_LEAVE");
   }
 
   function onFocusIn(event) {
+    if (eventInCard(event)) {
+      if (active) stopTransit();
+      return;
+    }
     const next = bindingFromNode(event?.target);
     if (next) activate(next, "FOCUS", "FOCUS_ENTER");
   }
 
   function onFocusOut(event) {
     if (!active || activeMode !== "FOCUS") return;
+    if (inCard(event?.relatedTarget)) return;
     const next = bindingFromNode(event?.relatedTarget);
     if (next === active) return;
     if (next) activate(next, "FOCUS", "FOCUS_SWITCH");
