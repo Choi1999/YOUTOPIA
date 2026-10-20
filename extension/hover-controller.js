@@ -1,5 +1,5 @@
 /*
- * YUTOPIA Hover State Controller — 작업 25
+ * YUTOPIA Hover State Controller — 작업 25·26 / Interaction benchmark
  *
  * 목적:
  *   - 마지막으로 확실히 진입한 VIDEO / CHANNEL 앵커만 활성 상태로 유지한다.
@@ -14,7 +14,7 @@
  * 안전: DOM 내용/클릭/YouTube 프리뷰/Side Panel/외부 통신/시청 데이터를 수정하지 않는다.
  *
  * 의도적 미구현:
- *   - 26번 시각 카드·MOCK 데이터 렌더링, 27번 메시지, 28번 더보기 패널 열기.
+ *   - 카드 렌더링은 별도 26번 모듈, 27번 메시지/28번 패널 열기는 미구현.
  *   - READY는 표시 가능한 안정 상태이지 실제 카드가 VISIBLE이라는 뜻이 아니다.
  */
 (function initializeYutopiaHoverController(scope) {
@@ -26,15 +26,19 @@
   const LEAVE_GRACE_MS = 200; // 카드로 이동하는 포인터 유예, UX 후보 범위 150~250ms
   const discovery = scope.YUTOPIA_VIDEO_DISCOVERY;
   const channelResolver = scope.YUTOPIA_CHANNEL_TARGET_RESOLVER;
+  const pointerTracker = scope.YUTOPIA_HOVER_POINTER_TRACKER;
+  const presenceReducer = scope.YUTOPIA_HOVER_PRESENCE_REDUCER;
+  if (!pointerTracker || !presenceReducer) return;
 
   const bindings = new Map();
   const stateSubscribers = new Set();
   const unsubscribeSources = [];
   let selected = null;
-  let pointerInside = false;
-  let focusInside = false;
-  let overlayPointerInside = false;
-  let overlayFocusInside = false;
+  // Only this reducer changes pointer/focus occupancy. DOM events are observations.
+  let presence = presenceReducer.initial();
+  function changePresence(action) {
+    presence = presenceReducer.reduce(presence, action);
+  }
   let enterTimer = null;
   let exitTimer = null;
   let generation = 0;
@@ -104,10 +108,7 @@
     clearExitTimer();
     generation += 1;
     selected = null;
-    pointerInside = false;
-    focusInside = false;
-    overlayPointerInside = false;
-    overlayFocusInside = false;
+    presence = presenceReducer.initial();
     lastReadyPhase = null;
     publish(finalPhase, reason);
   }
@@ -117,8 +118,7 @@
     if (mode === "POINTER") suppressedAnchor = null;
 
     if (selected === binding) {
-      if (mode === "POINTER") pointerInside = true;
-      if (mode === "FOCUS") focusInside = true;
+      changePresence(mode === "POINTER" ? "POINTER_ENTER" : "FOCUS_ENTER");
       if (exitTimer !== null) {
         clearExitTimer();
         publish(lastReadyPhase || "READY", "ANCHOR_RETURNED");
@@ -131,10 +131,8 @@
     generation += 1;
     requestId += 1;
     selected = binding;
-    pointerInside = mode === "POINTER";
-    focusInside = mode === "FOCUS";
-    overlayPointerInside = false;
-    overlayFocusInside = false;
+    presence = presenceReducer.reduce(presenceReducer.initial(),
+      mode === "POINTER" ? "POINTER_ENTER" : "FOCUS_ENTER");
     lastReadyPhase = null;
     publish("HOVER_PENDING", source ||
       (mode === "POINTER" ? "POINTER_ENTER" : "FOCUS_IN"));
@@ -155,7 +153,7 @@
 
   function beginLeave(reason) {
     if (disposed || !selected) return;
-    if (pointerInside || focusInside || overlayPointerInside || overlayFocusInside) return;
+    if (presenceReducer.occupied(presence)) return;
     if (enterTimer !== null) {
       // 짧게 스쳐 지나간 대상에서는 분석 상태가 생성되지 않는다.
       clearActive("LEFT_BEFORE_DELAY");
@@ -175,7 +173,7 @@
         disposed || token !== generation || exitToken !== exitGeneration || selected !== anchor
       ) return;
       exitTimer = null;
-      if (!pointerInside && !focusInside && !overlayPointerInside && !overlayFocusInside) {
+      if (!presenceReducer.occupied(presence)) {
         clearActive("GRACE_EXPIRED");
       }
     }, LEAVE_GRACE_MS);
@@ -189,8 +187,7 @@
       suppressedAnchor = null;
     }
     if (selected !== binding) return;
-    if (mode === "POINTER") pointerInside = false;
-    if (mode === "FOCUS") focusInside = false;
+    changePresence(mode === "POINTER" ? "POINTER_LEAVE" : "FOCUS_LEAVE");
     beginLeave(mode === "POINTER" ? "POINTER_LEAVE" : "FOCUS_OUT");
   }
 
@@ -204,65 +201,13 @@
    *
    * 현재 탭 안의 DOM과 좌표만 잠깐 읽고 사용자 정보를 저장/전송하지 않는다.
    */
+  // Pointer Tracker owns hit-testing; Controller owns exactly one active state.
   function isWithin(node, root) {
-    if (!node || !root) return false;
-    for (let n = node, i = 0; n && i < 30; i += 1) {
-      if (n === root) return true;
-      n = n.parentElement || n.parentNode || n.host || null;
-    }
-    return false;
+    return pointerTracker.contains(root, node);
   }
 
   function findPointerBinding(event) {
-    if (!event || event.pointerType === "touch") return null;
-    const path = event.composedPath?.();
-    if (Array.isArray(path)) {
-      for (const node of path.slice(0, 30)) {
-        const binding = bindings.get(node);
-        if (binding) return binding;
-      }
-    }
-    let node = event.target;
-    for (let i = 0; node && i < 30; i += 1) {
-      const binding = bindings.get(node);
-      if (binding) return binding;
-      node = node.parentElement || node.parentNode || node.host || null;
-    }
-
-    // YouTube의 썸네일 미리보기 Overlay가 anchor와 형제 요소로 뜨는 경우,
-    // 같은 renderer 내부이면서 anchor의 화면 직사각형 안에 있을 때만 복구.
-    const x = event.clientX;
-    const y = event.clientY;
-    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
-    const top = scope.document?.elementFromPoint?.(x, y) || event.target;
-    if (!top || typeof top.closest !== "function") return null;
-    const selector = "ytd-rich-item-renderer, ytd-video-renderer, yt-lockup-view-model";
-    const renderer = top.closest(selector);
-    if (!renderer) return null;
-
-    let result = null;
-    let area = Infinity;
-    // 전체 무한 스크롤 후보를 매 pointermove마다 순회하지 않고,
-    // 포인터가 올라간 YouTube 렌더러 내부 링크만 우선 검사한다.
-    const localLinks = renderer.querySelectorAll?.("a[href]");
-    const candidates = localLinks
-      ? Array.from(localLinks).map(node => bindings.get(node)).filter(Boolean)
-      : bindings.values(); // 단위 테스트/구형 렌더러 안전 fallback
-    for (const binding of candidates) {
-      const element = binding.element;
-      if (!element?.isConnected ||
-          typeof element.getBoundingClientRect !== "function" ||
-          element.closest?.(selector) !== renderer) continue;
-      const rect = element.getBoundingClientRect();
-      if (!rect || rect.width <= 0 || rect.height <= 0 ||
-          x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) continue;
-      const size = rect.width * rect.height;
-      if (size < area) {
-        result = binding;
-        area = size;
-      }
-    }
-    return result;
+    return pointerTracker.resolve(event, bindings, scope.document);
   }
 
   function handlePointerActivity(event) {
@@ -271,7 +216,7 @@
 
     // per-anchor pointerleave가 YouTube 재배치나 Preview에 의해 누락됐을
     // 때 문서 이벤트에서 이탈을 보정한다. 카드 이동에는 200ms 유예 유지.
-    if (selected && pointerInside && binding !== selected) {
+    if (selected && presence.pointerInside && binding !== selected) {
       leaveBinding(selected, "POINTER");
     }
     if (suppressedAnchor && binding?.element !== suppressedAnchor) {
@@ -280,7 +225,7 @@
     if (binding && binding === selected) {
       // native pointerenter가 누락된 채 같은 anchor로 돌아오더라도
       // LEAVE_PENDING의 200ms 종료 타이머를 취소하고 READY를 복원한다.
-      if (!pointerInside) {
+      if (!presence.pointerInside) {
         pointerRecoveryCount += 1;
         queueEnter(binding, "POINTER", "SAME_ANCHOR_REENTRY_RECOVERY");
       }
@@ -300,7 +245,7 @@
         !isWithin(next, suppressedAnchor)) {
       suppressedAnchor = null;
     }
-    if (selected && pointerInside &&
+    if (selected && presence.pointerInside &&
         isWithin(event?.target, selected.element) &&
         !isWithin(next, selected.element)) {
       leaveBinding(selected, "POINTER");
@@ -313,9 +258,11 @@
    */
   function setOverlayInteraction(kind, active) {
     if (disposed || !selected) return;
-    if (kind === "POINTER") overlayPointerInside = Boolean(active);
-    else if (kind === "FOCUS") overlayFocusInside = Boolean(active);
-    else return;
+    if (kind === "POINTER") {
+      changePresence(active ? "OVERLAY_POINTER_ENTER" : "OVERLAY_POINTER_LEAVE");
+    } else if (kind === "FOCUS") {
+      changePresence(active ? "OVERLAY_FOCUS_ENTER" : "OVERLAY_FOCUS_LEAVE");
+    } else return;
 
     if (active && exitTimer !== null) {
       clearExitTimer();
@@ -398,8 +345,8 @@
     if (same) return;
 
     const stillHovered = existing && selected === existing;
-    const keepPointer = Boolean(stillHovered && pointerInside);
-    const keepFocus = Boolean(stillHovered && focusInside);
+    const keepPointer = Boolean(stillHovered && presence.pointerInside);
+    const keepFocus = Boolean(stillHovered && presence.focusInside);
     if (existing) removeBinding(entry, existing.kind);
     if (!replacement || disposed) return;
 
@@ -418,7 +365,7 @@
 
     if (keepPointer || keepFocus) {
       queueEnter(replacement, keepPointer ? "POINTER" : "FOCUS");
-      if (keepFocus && keepPointer) focusInside = true;
+      if (keepFocus && keepPointer) changePresence("FOCUS_ENTER");
     } else if (
       replacement.element !== suppressedAnchor &&
       replacement.element.matches?.(":hover")
@@ -446,7 +393,8 @@
       // 포인터가 실제 썸네일 위에 남아 있을 때만 같은 위치에서
       // 닫힌 카드가 자동으로 재열리는 것을 억제한다.
       // 카드 내부 닫기 버튼은 썸네일 밖에서 클릭되므로 억제하지 않는다.
-      suppressedAnchor = pointerInside && !overlayPointerInside ? selected.element : null;
+      suppressedAnchor =
+        presence.pointerInside && !presence.overlayPointerInside ? selected.element : null;
       clearActive(reason, "DISMISSED");
     }
   }
@@ -496,10 +444,10 @@
       activationDelayMs: ENTER_DELAY_MS,
       leaveGraceMs: LEAVE_GRACE_MS,
       pointerRecoveries: pointerRecoveryCount,
-      pointerInside,
-      focusInside,
-      overlayPointerInside,
-      overlayFocusInside,
+      pointerInside: presence.pointerInside,
+      focusInside: presence.focusInside,
+      overlayPointerInside: presence.overlayPointerInside,
+      overlayFocusInside: presence.overlayFocusInside,
       suppressedAnchorActive: Boolean(suppressedAnchor),
       requestId,
       boundVideoAnchors: list.filter(entry => entry.kind === "VIDEO").length,
