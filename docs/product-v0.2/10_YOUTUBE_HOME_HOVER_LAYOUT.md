@@ -1,8 +1,8 @@
 # 10 — 데스크톱 YouTube 홈의 다중 썸네일 + Hover 미리보기 기준 화면
 
-> **UX_WIREFRAME_DRAFT / NOT IMPLEMENTED / 소스·수치 MOCK ONLY**
+> **UX_WIREFRAME_DRAFT / YU26_SHADOW_CARD_CODE_READY / CHROME_VISUAL_NOT_TESTED / MOCK ONLY**
 >
-> **고객이 실제로 보는 첫 화면은 YUTOPIA 홈페이지가 아니라 데스크톱 Chrome의 `youtube.com` 홈입니다.** 여러 썸네일 중 하나에 마우스를 올릴 때 YUTOPIA가 콘텐츠 옆에 작은 분석 카드를 표시합니다. 현재 이 파일은 **UI 구조·배치 가이드**이며 브라우저 확장 구현이나 Figma 승인 시안이 아닙니다.
+> **고객이 실제로 보는 첫 화면은 YUTOPIA 홈페이지가 아니라 데스크톱 Chrome의 `youtube.com` 홈입니다.** 여러 썸네일 중 하나에 마우스를 올릴 때 YUTOPIA가 콘텐츠 옆에 작은 분석 카드를 표시합니다. 현재 이 파일은 **UI 구조·배치 가이드**입니다. 별도 26번 브랜치에서 Shadow DOM 개발 카드를 만들었지만, Figma 시안 픽셀 정합성 또는 실제 Chrome 동작이 승인됐다는 뜻은 아닙니다.
 
 [01 Hover/Side Panel](./01_HOVER_SIDE_PANEL_UX.md) · [06 고객 사용자 여정](./06_CUSTOMER_JOURNEY_CASES.md) · [04 실행대장](./04_EXECUTION_00_99.md)
 
@@ -66,6 +66,13 @@ YouTube 홈 / 브라우저 콘텐츠 (개념 배치)
    - 사용자 클릭으로 Chrome Side Panel을 여는 명확한 CTA.
    - 카드/Side Panel에 동일한 영상/채널 ID가 사용돼야 함.
 
+## 2.1 작업 26 개발 UI와 실사용 UI의 경계
+
+- 26번 브랜치는 위 와이어프레임의 데이터 영역을 Shadow DOM 카드로 구현하고, 고정 가상 분포·2개 가상 논점·1문장 예시 브리핑 및 DEMO/STATIC FIXTURE를 명시한다.
+- 실제 YouTube 제목·댓글·통계는 아직 읽지 않는다. 따라서 대상 표시는 검증된 VIDEO/CHANNEL ID이며, 채널 핸들이 아직 매핑되지 않으면 차트를 표시하지 않는다.
+- 26번 더보기는 아직 실제 Side Panel로 분석 대상을 전송하지 않고 다음 단계 안내만 제공한다. 27~28번에서 연결한다.
+- 브라우저 모의 V8 149/149 PASS와 실제 YouTube 홈 UX-01~22 수용 체크는 별개다. 실제 Chrome 다크/라이트, 포인터 이동, 오른쪽 경계, 기본 UI 간섭 검수를 완료하기 전까지 시안 완성으로 선언하지 않는다.
+
 ## 3. 위치 계산 규칙 (후속 코드 구현 가이드)
 
 - **우선 위치:** 활성 썸네일의 우측, 간격 **8~12px (제안)**.
@@ -117,4 +124,4 @@ YouTube 홈 / 브라우저 콘텐츠 (개념 배치)
 - [ ] 소스·분석 댓글 수·기간·시각과 파생 지표 고지가 유지.
 - [ ] 실제 YouTube API/외부 LLM 없는 **mock 시연**으로 구현 가능.
 
-**상태:** 검증 항목 전부 **NOT TESTED**. 시각 원형을 만들어 실제 Chrome 홈에서 UI 위치 검수하기 전에는 UX 확정이라고 표시하지 않음.
+**상태:** 26번 Shadow DOM UI 코드 및 격리 V8 모의 149/149 PASS. 위 체크리스트의 실제 YouTube Chrome 수동·시각 검증은 **NOT TESTED**. 픽셀 정합성/접근성 확정 아님.
