@@ -86,8 +86,8 @@
 - 앵커 기준 우측/좌측 자동 배치, 좁은 창·세로 화면 클램프, 다크 테마, 카드로 마우스·키보드 이동, 닫기/Escape, SPA·스크롤 이후 대상 정리를 지원합니다.
 - **더보기 버튼은 현재 연결 예정 안내만 표시합니다.** Side Panel 대상 전달, 캐시/서비스 워커 메시지, 실제 감성 데이터는 27·28번 이후 별도 작업입니다.
 - Manifest 스크립트 순서: shared.js → target-resolver.js → channel-target-resolver.js → content.js → hover-controller.js → hover-card-model.js → hover-card.js.
-- 신규 테스트: `node --test extension/tests/hover-card-ui.test.cjs` (35건). 전체 6개 테스트 파일은 [26번 QA 기록](tests/QA_26_EVIDENCE.md)의 명시 명령을 사용하세요(159건).
-- 선택 오프라인 Chromium: `python extension/tests/chromium-hover-card-fixture.py` (실행 미확인). **현재 격리 V8 159/159 PASS**입니다. 이전 HEAD에서 Windows Native Node CLI 152/152 PASS와 Chromium 오프라인 Fixture PASS를 사용자 로그로 확인했습니다. 그러나 실제 YouTube Chrome에서 느린/간헐적 미표시가 보고돼 진입 대기 160ms, SPA 앵커 Hover 복구 및 상태 진단을 추가했습니다. 최신 159건 Node CLI·수정된 Chromium Fixture·실제 Chrome 재검증은 대기 중입니다.
+- 신규 카드 UI 테스트: `node --test extension/tests/hover-card-ui.test.cjs` (35건). 25번 Hover 컨트롤러 회귀는 59건으로 확대했습니다. 전체 6개 테스트 파일은 [26번 QA 기록](tests/QA_26_EVIDENCE.md)의 명시 명령을 사용하세요(172건).
+- 선택 오프라인 Chromium: `python extension/tests/chromium-hover-card-fixture.py` (실행 미확인). **현재 격리 V8 172/172 PASS**입니다. 이전 HEAD에서 Windows Native Node CLI 152/152 PASS와 Chromium 오프라인 Fixture PASS를 사용자 로그로 확인했습니다. 실제 YouTube Chrome에서 동일 영상 이탈→재진입 시 누락·지연이 재보고되어 문서 pointerover/pointerout 경계·suppression 해제·Overlay 좌표 복구를 보강했습니다. 최신 172건 Node CLI·수정된 Chromium Fixture·실제 Chrome 재검증은 대기 중입니다.
 
 ### 간헐적으로 카드가 나타나지 않을 때
 
@@ -99,7 +99,7 @@ globalThis.YUTOPIA_HOVER_CONTROLLER?.getRuntimeStatus()
 globalThis.YUTOPIA_HOVER_CARD?.getRuntimeStatus()
 ~~~
 
-- Controller의 `lastReason`, `hoveredBoundAnchors`, `pointerRecoveries`, `activationDelayMs`와 Card의 `lastHoverReason`를 확인합니다. `NO_SAFE_HOVER_PLACEMENT`는 인접 썸네일 차단을 방지하기 위한 숨김입니다.
+- Controller의 `lastReason`, `pointerInside`, `overlayPointerInside`, `suppressedAnchorActive`, `hoveredBoundAnchors`, `pointerRecoveries`, `activationDelayMs`와 Card의 `lastHoverReason`을 확인합니다. 같은 영상 복귀가 늦는다면 이탈 후 suppressed 상태가 해제되는지 검증합니다. `NO_SAFE_HOVER_PLACEMENT`는 인접 썸네일 차단을 방지하기 위한 숨김입니다.
 - 위 도구는 현재 탭 메모리만 읽으며 결과를 전송하지 않습니다. 자세한 기록·실브라우저 검증 방법은 [26번 QA 지침](tests/QA_26_EVIDENCE.md)을 참고하세요.
 
 ## 현재 단계
@@ -110,6 +110,6 @@ globalThis.YUTOPIA_HOVER_CARD?.getRuntimeStatus()
 - **23:** 엄격 VIDEO target Resolver frontend 병합, 사용자 보고 기준 Node 46/46·Windows 검증 통과 및 동일 테스트 SHA 확인.
 - **24:** 채널 ID와 @handle 분리 코드 frontend 병합. 사용자 검증 PASS·테스트 SHA 일치 보고(독립 로그 미제출).
 - **25:** Hover 상태 제어 frontend 병합; V8 118/118 PASS 및 사용자 Windows 검증 PASS·테스트 SHA/Clean Worktree 보고.
-- **26:** Shadow DOM 합성 카드 UI 구현 및 실제 Chrome 간헐적 Hover 누락 대응. V8 모의 전체 159/159 PASS, 이전 HEAD에서 Windows Node 152/152·Chromium 오프라인 PASS. 최신 159건·실사이트 Chrome 재검증 대기.
+- **26:** Shadow DOM 합성 카드 UI 구현 및 실제 Chrome 간헐적 Hover 누락 대응. V8 모의 전체 172/172 PASS, 이전 HEAD에서 Windows Node 152/152·Chromium 오프라인 PASS. 최신 172건·실사이트 Chrome 재검증 대기.
 - **27~29:** 확장 메시지·Side Panel 분석 대상 고정·실사이트 최종 통합 E2E 미구현.
 - **실제 YouTube API/외부 AI/구독 결제:** 구현하지 않음.
