@@ -124,6 +124,6 @@ YouTube 홈 / 브라우저 콘텐츠 (개념 배치)
 - [ ] 소스·분석 댓글 수·기간·시각과 파생 지표 고지가 유지.
 - [ ] 실제 YouTube API/외부 LLM 없는 **mock 시연**으로 구현 가능.
 
-**상태:** 26번 Shadow DOM UI 코드, Node 144/144, 오프라인 Chromium, 실 YouTube 검색 DOM 반복 PASS. 실제 Home feed와 Chrome 확장 수동·시각 검증은 **PENDING**. 픽셀 정합성/접근성 확정 아님.
+**상태:** 이전 SHA 944b는 Native Node 144/144·Chromium·Search DOM·사용자 Home/Search 수동 PASS. 이번 Interactive Card 개선은 격리 V8 모의 158/158 PASS이나 실제 Windows Native Node/Chromium/설치형 MV3 재검증 **PENDING**. 픽셀 정합성/접근성 별도.
 
-**현재 Strict Hover 시험 계약(2026-10-20):** 썸네일 진입 즉시 카드 표시, 이탈 즉시 제거. Stage26 카드의 더보기·닫기 버튼은 비활성인 읽기 전용 click-through이며, 카드 배치 실패만으로 선택 대상을 해제하지 않는다. 새로운 Node/Chromium/실사이트 검증은 대기 중.
+**현재 승인된 Interactive Card 계약(2026-10-20):** 썸네일 진입 즉시 카드 표시, 썸네일→카드 이동 시 기존 타깃 유지, 카드가 덮는 배경 썸네일은 입력 차단, 카드→빈 영역 이탈 시 즉시 종료. Host의 카드 바깥 영역은 포인터 투명이고, 짧은 12px 이동 간격만 최대 160ms 보호한다. 더보기·닫기 버튼은 아직 비활성, Side Panel은 후속 작업. 최신 격리 V8 모의 158/158 PASS, Native Node/Chromium/MV3 재검증 PENDING.
