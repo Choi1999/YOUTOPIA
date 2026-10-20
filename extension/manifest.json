@@ -32,6 +32,7 @@
         "content.js",
         "hover-controller.js",
         "hover-card-model.js",
+        "preview-client.js",
         "hover-card.js"
       ],
       "run_at": "document_idle"
