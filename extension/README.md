@@ -75,7 +75,7 @@
 - 영상/채널 ID가 검증되지 않으면 상세 대상을 제공하지 않습니다. @handle만 확인된 경우 UNRESOLVED/targetId:null로 유지합니다.
 - overlayPointerEnter/Leave 및 overlayFocusIn/Out 함수를 제공하지만 26번에서 구현할 Overlay 또는 Hover 카드 DOM은 아직 생성하지 않습니다.
 - 키보드 focusin/out, Escape·탭 숨김, 링크 삭제·SPA 이동, dispose(), 중복 주입을 처리하며 YouTube 클릭·재생을 차단하지 않습니다.
-- 신규 테스트: node --test extension/tests/hover-controller.test.cjs (40건). 전체 회귀: node --test extension/tests/*.test.cjs (118건).
+- 신규 테스트: node --test extension/tests/hover-controller.test.cjs (40건). 전체 회귀: [25번 QA 기록](tests/QA_25_EVIDENCE.md)에 명시된 다섯 테스트 파일을 Node.js --test에 명시적으로 전달(118건).
 - 선택 오프라인 Chromium Fixture: python extension/tests/chromium-hover-fixture.py (작성만 완료, 실행 미확인). [25번 QA 기록](tests/QA_25_EVIDENCE.md).
 - **격리 V8 모의 118/118 PASS**. Native Node CLI 및 Windows Chrome 25번 실환경 검증은 아직 미실행입니다.
 
