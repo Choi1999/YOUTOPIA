@@ -61,7 +61,7 @@
     if (url.origin !== ORIGIN || url.username || url.password) return null;
 
     const parts = url.pathname.split("/").filter(Boolean);
-    if (parts.length < 1 || parts.length > 3) return null;
+    if (parts.length < 1 || parts.length > 3 || url.pathname.includes("//")) return null;
     if (parts.length === 3 && !ALLOWED_TABS.has(parts[2])) return null;
 
     // 명시적인 percent-encoding/경로 트릭은 안전한 기본값인 거부를 선택한다.
@@ -201,12 +201,19 @@
    * HANDLE_UNRESOLVED에서는 절대 임의 channelId를 제공하지 않는다.
    */
   function toIdentifiedTarget(identity) {
-    if (!identity || identity.identityType !== "CHANNEL_ID") return null;
-    return identity.channelId ? Object.freeze({
+    if (
+      !identity ||
+      identity.targetType !== "CHANNEL" ||
+      identity.identityType !== "CHANNEL_ID" ||
+      identity.resolutionStatus !== "ID_FORMAT_VALID" ||
+      !CHANNEL_ID_PATTERN.test(identity.channelId) ||
+      identity.targetId !== identity.channelId
+    ) return null;
+    return Object.freeze({
       targetType: "CHANNEL",
       targetId: identity.channelId,
       source: "YOUTUBE",
-    }) : null;
+    });
   }
 
   scope.YUTOPIA_CHANNEL_TARGET_RESOLVER = Object.freeze({
