@@ -232,6 +232,28 @@ with sync_playwright() as pw:
                window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyz'""",
             timeout=5000,
         )
+        # Clicking through A's Shadow card must not reach the covered B
+        # thumbnail. This is a synthetic DOM click-count probe, not navigation.
+        page.evaluate("""() => {
+            window.__blockedBClicks = 0;
+            document.querySelector('#video-b a#thumbnail').addEventListener(
+                'click', event => {
+                    event.preventDefault();
+                    window.__blockedBClicks += 1;
+                }
+            );
+        }""")
+        page.mouse.click(
+            (neighbor["linkRect"]["left"] + neighbor["linkRect"]["right"]) / 2,
+            (neighbor["linkRect"]["top"] + neighbor["linkRect"]["bottom"]) / 2,
+        )
+        assert page.evaluate("window.__blockedBClicks") == 0, (
+            "Card click passed through to covered B"
+        )
+        assert page.evaluate(
+            "window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId"
+        ) == "Ab0_-123xyz"
+
         # Card → uncovered C should directly switch targets, while B
         # covered by the same card must remain unselectable.
         c_available = page.evaluate("""() => {
