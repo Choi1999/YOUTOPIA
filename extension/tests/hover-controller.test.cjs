@@ -12,6 +12,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 
+const trackerSource = fs.readFileSync(path.join(__dirname, "..", "hover-pointer-tracker.js"), "utf8");
+const presenceSource = fs.readFileSync(path.join(__dirname, "..", "hover-presence-reducer.js"), "utf8");
 const hoverSource = fs.readFileSync(path.join(__dirname, "..", "hover-controller.js"), "utf8");
 const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "manifest.json"), "utf8"));
 const VIDEO_A = "Ab0_-123xyz";
@@ -121,7 +123,11 @@ function fixture({videos=[],channels=[],withDiscovery=true,withTimers=true}={}) 
     contextValues.clearTimeout=id=>{timers.delete(id);};
   }
   const ctx=vm.createContext(contextValues);
-  const run=()=>vm.runInContext(hoverSource,ctx,{filename:"hover-controller.js"});
+  const run=()=>{
+    vm.runInContext(trackerSource,ctx,{filename:"hover-pointer-tracker.js"});
+    vm.runInContext(presenceSource,ctx,{filename:"hover-presence-reducer.js"});
+    vm.runInContext(hoverSource,ctx,{filename:"hover-controller.js"});
+  };
   run();
   function advance(ms) {
     const until=clock+ms;
@@ -147,7 +153,9 @@ function fixture({videos=[],channels=[],withDiscovery=true,withTimers=true}={}) 
 
 test("Manifest는 discovery 다음 Hover Controller, 이후 26번 Card를 순서대로 로드",()=>{
   const scripts=manifest.content_scripts[0].js;
-  assert.ok(scripts.indexOf("content.js")<scripts.indexOf("hover-controller.js"));
+  assert.ok(scripts.indexOf("content.js")<scripts.indexOf("hover-pointer-tracker.js"));
+  assert.ok(scripts.indexOf("hover-pointer-tracker.js")<scripts.indexOf("hover-presence-reducer.js"));
+  assert.ok(scripts.indexOf("hover-presence-reducer.js")<scripts.indexOf("hover-controller.js"));
   assert.ok(scripts.indexOf("hover-controller.js")<scripts.indexOf("hover-card-model.js"));
   assert.ok(scripts.indexOf("hover-card-model.js")<scripts.indexOf("hover-card.js"));
 });
