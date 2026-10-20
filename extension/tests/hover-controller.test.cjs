@@ -420,6 +420,33 @@ test("포인터가 카드 위에 있는 동안 SPA가 같은 ID anchor 교체해
   expectVisible(f,A);
 });
 
+test("카드 고정 중 같은 영상 ID의 멀리 있는 중복 썸네일로 잘못 재결합하지 않음",()=>{
+  const a=anchor(A),old=video(a,A);
+  const duplicate=anchor(A,renderer(),{left:800,top:20,right:1000,bottom:130,width:200,height:110});
+  const f=fixture({videos:[old]});
+  enter(f,a);const card=floatingCard(f);card.over();
+  assert.equal(f.api().getRuntimeStatus().cardPointerInside,true);
+  a.isConnected=false;
+  f.videoChanges({removed:[old],updated:[],added:[video(duplicate,A)]});
+  expectHidden(f);
+  assert.equal(f.api().getSnapshot().reason,"ANCHOR_REMOVED");
+});
+
+test("카드 고정 중 동일 ID의 먼 중복 후보를 무시하고 가까운 교체만 재결합",()=>{
+  const a=anchor(A),old=video(a,A);
+  const far=anchor(A,renderer(),{left:800,top:20,right:1000,bottom:130,width:200,height:110});
+  const local=anchor(A,renderer(),{left:18,top:16,right:218,bottom:126,width:200,height:110});
+  const f=fixture({videos:[old]});
+  enter(f,a);const card=floatingCard(f);card.over();
+  const request=f.api().getSnapshot().requestId;
+  a.isConnected=false;
+  f.videoChanges({removed:[old],updated:[],added:[video(far,A),video(local,A)]});
+  expectVisible(f,A);
+  assert.equal(f.api().getSnapshot().anchor,local);
+  assert.equal(f.api().getSnapshot().requestId,request);
+  assert.equal(f.api().getRuntimeStatus().cardPointerInside,true);
+});
+
 test("discovery가 없으면 controller를 초기화하지 않음",()=>{assert.equal(fixture({available:false}).api(),undefined);});
 
 test("controller는 일반 Hover 타이머 없이 카드 이동에만 제한된 유예 사용",()=>{
