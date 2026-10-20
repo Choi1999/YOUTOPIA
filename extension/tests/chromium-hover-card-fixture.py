@@ -107,8 +107,29 @@ with sync_playwright() as pw:
         assert "27~28번" in card.locator(".more-status").inner_text()
         assert page.locator("#youtube-fixture").inner_html() == fixture_before
 
-        # Changing target replaces A, never leaves its numbers/id in B.
-        page.locator("#video-b a#thumbnail").hover()
+        # 회귀: 실제 사용자와 Playwright 모두 B 썸네일 중앙을 Hover할 수 있어야 한다.
+        # force=True로 Overlay를 우회하면 실제 UX 결함이 가려지므로 사용하지 않는다.
+        neighbor = page.evaluate("""() => {
+            const link = document.querySelector("#video-b a#thumbnail");
+            const rect = link.getBoundingClientRect();
+            const x = (rect.left + rect.right) / 2;
+            const y = (rect.top + rect.bottom) / 2;
+            const top = document.elementFromPoint(x, y);
+            const popup = document.querySelector("#yutopia-extension-hover-card");
+            return {
+                canHover: Boolean(top && (top === link || link.contains(top))),
+                topElement: top?.tagName || null,
+                topId: top?.id || null,
+                linkRect: {left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom},
+                popupRect: popup ? (() => {
+                    const r = popup.getBoundingClientRect();
+                    return {left:r.left,top:r.top,right:r.right,bottom:r.bottom};
+                })() : null
+            };
+        }""")
+        assert neighbor["canHover"], f"Video B center is blocked by YUTOPIA card: {neighbor}"
+        # Playwright가 자체적으로 click/hover 경로를 검증하도록 일반 Hover 유지.
+        page.locator("#video-b a#thumbnail").hover(timeout=5000)
         page.wait_for_function(
             """window.__fixtureScope.YUTOPIA_HOVER_CARD.getRuntimeStatus().targetId === 'Ab0_-123xyZ'""",
             timeout=5000,
