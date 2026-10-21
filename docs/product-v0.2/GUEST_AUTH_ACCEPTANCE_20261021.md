@@ -56,6 +56,19 @@
 
 **보안 참조:** [OWASP OAuth2 Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/OAuth2_Cheat_Sheet.html), [Chrome Identity API](https://developer.chrome.com/docs/extensions/reference/api/identity). 이는 안전한 구현 결정을 위한 근거이고 실제 YOUTOPIA 보안 검증 PASS의 증거가 아니다.
 
+### 2.1 AUTH-SURFACE-01: 확장 고객 인증 / 웹 관리자·QA 로그인 독립 인수 (미실행)
+
+| Test ID | 검증 | PASS 기준 |
+|---|---|---|
+| AUTH-SURFACE-QA-01 | 운영 고객 Chrome 확장 메뉴·Hover·Panel 전수 확인 | **고객 서비스 로그인/계정 진입만**, 플랫폼 관리자·DEV/QA 로그인 버튼/폼/라우트/토글 **0건** |
+| AUTH-SURFACE-QA-02 | 확장 고객 로그인 누름 | 고객 공통 웹 로그인으로 안전 이동하고 완료 후 선택 영상으로 복귀; 확장 자체에 복제한 비밀번호 입력 폼 없음 |
+| AUTH-SURFACE-QA-03 | 같은 고객 인증으로 개인 고객·조직 구성원·조직 관리자 접근 | 조직 관련 관리자 기능은 조직 관리자 웹 화면에서 **서버 RBAC 재검증** 후에만 사용 가능 |
+| AUTH-SURFACE-QA-04 | 고객 확장 세션으로 플랫폼 Admin Web / 정책 관리자 라우트 직접 호출 | 고객 세션·클라이언트 role 필드만으로 관리자 API·화면 접근 **차단** |
+| AUTH-SURFACE-QA-05 | 운영 고객 확장 빌드와 DEV/QA 환경 차이 검토 | 운영 확장 내 합성 분석·QA 실패 상태·관리자 기능 **없음**. 내부 QA 웹 및 승인된 테스트 환경에만 존재 |
+| AUTH-SURFACE-QA-06 | 운영자 계정이 고객 분석을 일반 고객 경험으로 이용 | 운영 권한이 확장에 노출되지 않으며 고객 권한/데이터 접근은 별도 서버 검사 |
+ 
+**상태:** 6/6 `NOT_RUN`. 해당 화면 소속 승인 및 Figma 후보의 편집 가능 구조 검증은 실제 Chrome 사용자 권한/서버 보안 실행 증거를 대체하지 않는다. 관리자와 QA가 완전히 다른 IdP를 써야 한다는 인프라 결론은 미확정이다.
+
 ## 3. FE/BE/INT 각 Gate 소유
 
 | 단계 | 구현할 범위 | 인수 Gate |
