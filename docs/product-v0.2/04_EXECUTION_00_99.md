@@ -103,7 +103,7 @@
 | ID | 수행 작업 | 해당 작업의 완료 기준 | 상태 | 주요 산출물 |
 |---|---|---|---|---|
 | **50** | 기본/구독 상품 기능 경계 | 기간·범위·저장·비교 기준 가설 | `NOT_STARTED` | `product matrix` |
-| **51** | 고객 인증/비로그인 경계 | 정책 승인한 로그인/세션/guest 방식 | `NOT_STARTED` | `auth decision` |
+| **51** | 고객 인증/비로그인 경계 | Guest 기본 Hover/Side Panel → 개인 행동 시 로그인 → 원래 영상 복귀. 실제 인증/서버는 별도 구현 | `NOT_STARTED / GUEST_AUTH_UX_DIRECTION_APPROVED / SERVER_AUTH_PENDING` | [로그인 위치·복귀 UX](./GUEST_AUTH_CONTEXT_RESTORE_UX_20261021.md) · [Auth QA](./GUEST_AUTH_ACCEPTANCE_20261021.md) |
 | **52** | 구독 접근 권한 모델 | role·plan·organization 분리 | `NOT_STARTED` | `entitlement schema` |
 | **53** | 유료 기능 안내 UX | 막힌 기능 설명·자동 청구 금지 | `NOT_STARTED` | `upgrade UI` |
 | **54** | 사용량·조회 제한 계약 | 캐시·쿼터·중복·갱신 규칙 | `NOT_STARTED` | `usage contract` |
@@ -121,7 +121,7 @@
 | **61** | 고객 로그인·계정 화면 | 실제 세션 경로와 데모 격리 | `NOT_STARTED` | `customer auth` |
 | **62** | 저장한 영상/채널 목록 | 안전한 대상 ID·고객 소유권 | `NOT_STARTED` | `saved items` |
 | **63** | 관측 프로젝트/목록 | 게임 전용 용어 제거·범용 채널/영상 중심 | `NOT_STARTED` | `workspace list` |
-| **64** | 상세 분석으로 이동 | Hover→Side Panel→웹 대상/세션 일치 | `NOT_STARTED` | `deep-link contract` |
+| **64** | 상세 분석으로 이동 | Hover→Side Panel→웹 대상/세션 일치, 로그인 후 동일 선택 대상으로 안전 복귀 | `NOT_STARTED / AUTH_RETURN_UX_DESIGNED / INTEGRATION_PENDING` | [AuthReturnIntent 설계](./GUEST_AUTH_CONTEXT_RESTORE_UX_20261021.md) |
 | **65** | 기간·채널 비교 화면 | 선정 범위와 권한 고지 | `NOT_STARTED` | `comparison UI` |
 | **66** | 고객용 근거·신뢰 설명 | 제한·삭제·HOLD와 요약의 연결 | `NOT_STARTED` | `evidence UI` |
 | **67** | 팀 협업(구독 후보) | 조직 내부 관리자·멤버 승인/감사 | `NOT_STARTED` | `team UX` |
@@ -213,6 +213,7 @@
 - [01 Hover·Side Panel](./01_HOVER_SIDE_PANEL_UX.md)
 - [02 고객 역할·구독](./02_ROLES_AND_SUBSCRIPTION.md)
 - [03 기존 데모 마이그레이션](./03_MIGRATION_AND_GATES.md)
+- [Guest-first 로그인·대상 복귀 UX](./GUEST_AUTH_CONTEXT_RESTORE_UX_20261021.md)
 - [Chrome Side Panel API](https://developer.chrome.com/docs/extensions/reference/api/sidePanel)
 - [YouTube 파생 지표 조건](https://developers.google.com/youtube/terms/derived-metrics-policy)
 
