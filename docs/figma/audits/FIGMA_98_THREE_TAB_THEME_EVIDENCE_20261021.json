@@ -1,0 +1,300 @@
+{
+  "title": "YOUTOPIA Figma 98 three-tab panel and semantic token parity evidence",
+  "dateKST": "2026-10-21",
+  "figmaKey": "00Q6HNjuv02u7Ex4yUzZer",
+  "baselinePullRequest": 24,
+  "baselineMergedFrontendSha": "8b4b5a552fd4f47cf9b1492f32d9c98dc6dcb417",
+  "figmaPage": "1253:2",
+  "figmaPageUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1253-2",
+  "state": "DESIGN_CANDIDATES_CREATED; STRUCTURAL_LINKS_PASS; STATIC_SCREENSHOT_QA_PASS; PRESENT_E2E_NOT_RUN",
+  "productDecision": {
+    "topTabs": [
+      "요약",
+      "주제",
+      "추이"
+    ],
+    "basisLocation": "Contextual link within each tab opens 98-14; BACK returns to caller; evidence not a fourth top tab",
+    "oldFramePreserved": {
+      "id": "1276:217",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1276-217",
+      "purpose": "Original 4-tab reference with separate Flow start"
+    },
+    "missingTrends": "No comparative windows; show honest unavailable message rather than fabricated growth percentages",
+    "syntheticData": "Design sample only. No real YouTube comments/data collection; release customer UI requires authorized provider"
+  },
+  "candidates": [
+    {
+      "name": "98-11 Summary Light",
+      "frame": "1375:2",
+      "panel": "1375:186",
+      "mode": "light",
+      "textNodes": 29,
+      "styledTexts": 15,
+      "unboundSolidFills": 0,
+      "reactions": 5,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1375-2"
+    },
+    {
+      "name": "98-12 Topics Light",
+      "frame": "1376:2",
+      "panel": "1376:186",
+      "mode": "light",
+      "textNodes": 37,
+      "styledTexts": 19,
+      "unboundSolidFills": 0,
+      "reactions": 5,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1376-2"
+    },
+    {
+      "name": "98-13 Trend-unavailable Light",
+      "frame": "1379:2",
+      "panel": "1379:186",
+      "mode": "light",
+      "textNodes": 36,
+      "styledTexts": 21,
+      "unboundSolidFills": 0,
+      "reactions": 5,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1379-2"
+    },
+    {
+      "name": "98-14 Contextual Evidence Light",
+      "frame": "1380:2",
+      "panel": "1380:186",
+      "mode": "light",
+      "textNodes": 39,
+      "styledTexts": 22,
+      "unboundSolidFills": 0,
+      "reactions": 3,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1380-2"
+    },
+    {
+      "name": "98-15 Summary Dark QA",
+      "frame": "1386:2",
+      "panel": "1386:2",
+      "mode": "dark",
+      "textNodes": 29,
+      "styledTexts": 15,
+      "unboundSolidFills": 0,
+      "reactions": 0,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1386-2"
+    },
+    {
+      "name": "98-16 Topics Dark QA",
+      "frame": "1389:2",
+      "panel": "1389:2",
+      "mode": "dark",
+      "textNodes": 37,
+      "styledTexts": 19,
+      "unboundSolidFills": 0,
+      "reactions": 0,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1389-2"
+    },
+    {
+      "name": "98-17 Trend-unavailable Dark QA",
+      "frame": "1389:78",
+      "panel": "1389:78",
+      "mode": "dark",
+      "textNodes": 36,
+      "styledTexts": 21,
+      "unboundSolidFills": 0,
+      "reactions": 0,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1389-78"
+    },
+    {
+      "name": "98-18 Contextual Evidence Dark QA",
+      "frame": "1389:147",
+      "panel": "1389:147",
+      "mode": "dark",
+      "textNodes": 39,
+      "styledTexts": 22,
+      "unboundSolidFills": 0,
+      "reactions": 0,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1389-147"
+    }
+  ],
+  "actions": [
+    {
+      "source": "1276:215",
+      "original": "1276:217",
+      "destination": "1375:2",
+      "trigger": "ON_CLICK",
+      "reason": "Hover More→3-tab Summary"
+    },
+    {
+      "source": "1375:237",
+      "destination": "1376:2",
+      "trigger": "ON_CLICK",
+      "reason": "Summary→Topics"
+    },
+    {
+      "source": "1375:239",
+      "destination": "1379:2",
+      "trigger": "ON_CLICK",
+      "reason": "Summary→Trends"
+    },
+    {
+      "source": "1376:202",
+      "destination": "1375:2",
+      "trigger": "ON_CLICK",
+      "reason": "Topics→Summary"
+    },
+    {
+      "source": "1376:206",
+      "destination": "1379:2",
+      "trigger": "ON_CLICK",
+      "reason": "Topics→Trends"
+    },
+    {
+      "source": "1379:202",
+      "destination": "1375:2",
+      "trigger": "ON_CLICK",
+      "reason": "Trends→Summary"
+    },
+    {
+      "source": "1379:204",
+      "destination": "1376:2",
+      "trigger": "ON_CLICK",
+      "reason": "Trends→Topics"
+    },
+    {
+      "source": "1375:241",
+      "destination": "1380:2",
+      "trigger": "ON_CLICK",
+      "reason": "Summary→Evidence detail"
+    },
+    {
+      "source": "1376:241",
+      "destination": "1380:2",
+      "trigger": "ON_CLICK",
+      "reason": "Topics→Evidence detail"
+    },
+    {
+      "source": "1379:241",
+      "destination": "1380:2",
+      "trigger": "ON_CLICK",
+      "reason": "Trends→Evidence detail"
+    },
+    {
+      "source": "1380:244",
+      "destination": null,
+      "trigger": "ON_CLICK",
+      "action": "BACK",
+      "reason": "Evidence detail→previous tab"
+    }
+  ],
+  "staticAudit": {
+    "topLevelFrames": 18,
+    "flowStartingPoints": 10,
+    "prototypeReactions": 30,
+    "nodeNavigationActions": 29,
+    "backActions": 1,
+    "invalidDestinationCount": 0,
+    "all18FramesReachableAcrossNamedFlows": true,
+    "mainPath": "1253:3 → 1276:2 → 1375:2 → 1376:2/1379:2 → 1380:2 → BACK"
+  },
+  "tokenAudit": {
+    "lightPanels": 4,
+    "darkVisualSpecimens": 4,
+    "totalTextNodes": 141,
+    "textStyleReferences": 77,
+    "unboundSolidFillCountIn8Panels": 0,
+    "variableCollection": "YUTOPIA/의미 토큰",
+    "lightModeId": "1157:0",
+    "darkModeId": "18:1",
+    "contrastRatios": [
+      {
+        "theme": "LIGHT",
+        "foreground": "text/primary",
+        "background": "bg/surface",
+        "ratio": 15.64,
+        "WCAG_AA_text": true
+      },
+      {
+        "theme": "LIGHT",
+        "foreground": "text/secondary",
+        "background": "bg/surface",
+        "ratio": 7.79,
+        "WCAG_AA_text": true
+      },
+      {
+        "theme": "LIGHT",
+        "foreground": "text/muted",
+        "background": "bg/subtle",
+        "ratio": 4.68,
+        "WCAG_AA_text": true
+      },
+      {
+        "theme": "LIGHT",
+        "foreground": "accent/primary",
+        "background": "bg/surface",
+        "ratio": 6.1,
+        "WCAG_AA_text": true
+      },
+      {
+        "theme": "LIGHT",
+        "foreground": "accent/primary",
+        "background": "bg/subtle",
+        "ratio": 5.43,
+        "WCAG_AA_text": true
+      },
+      {
+        "theme": "DARK",
+        "foreground": "text/primary",
+        "background": "bg/surface",
+        "ratio": 17.44,
+        "WCAG_AA_text": true
+      },
+      {
+        "theme": "DARK",
+        "foreground": "text/secondary",
+        "background": "bg/surface",
+        "ratio": 8.85,
+        "WCAG_AA_text": true
+      },
+      {
+        "theme": "DARK",
+        "foreground": "text/muted",
+        "background": "bg/subtle",
+        "ratio": 5.07,
+        "WCAG_AA_text": true
+      },
+      {
+        "theme": "DARK",
+        "foreground": "accent/primary",
+        "background": "bg/surface",
+        "ratio": 5.19,
+        "WCAG_AA_text": true
+      },
+      {
+        "theme": "DARK",
+        "foreground": "accent/primary",
+        "background": "bg/subtle",
+        "ratio": 5.11,
+        "WCAG_AA_text": true
+      }
+    ],
+    "contrastStudy": "WCAG standard formula on semantic RGB token pairs; not whole-screen WCAG audit"
+  },
+  "researchAndCodeUsage": {
+    "references": [
+      "EX-001 vidIQ UX quick summary",
+      "EX-002 Outlier data unavailable UX",
+      "EX-003 Brand24 topic-sentiment-time design",
+      "EX-012 internal Figma 98 baseline"
+    ],
+    "actualExternalSourceCodeCopied": false,
+    "reactChanged": false,
+    "extensionChanged": false,
+    "serverChanged": false
+  },
+  "notVerified": [
+    "Figma Present interactive click/Hover playtest",
+    "Keyboard and ScreenReader focus",
+    "Responsive zoom breakpoints",
+    "Dark-mode content full runtime parity",
+    "Organization/Customer/QA UI full 80-83 parity",
+    "Actual Chrome MV3 Side Panel target locking",
+    "Authorized YouTube data and sentiment model",
+    "M9 product integration"
+  ]
+}
