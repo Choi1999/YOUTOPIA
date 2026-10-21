@@ -1,0 +1,16 @@
+{
+  "contractVersion": "admin-v1-candidate",
+  "kind": "OPS_STATUS",
+  "sourceType": "STATIC_FIXTURE",
+  "isSynthetic": true,
+  "environment": "QA_FIXTURE",
+  "status": "UNCONNECTED",
+  "observedAt": null,
+  "jobCounts": {
+    "queued": null,
+    "running": null,
+    "failed": null
+  },
+  "quotaRemaining": null,
+  "reasonCode": "BACKEND_NOT_CONNECTED"
+}
