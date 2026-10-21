@@ -1,0 +1,560 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://youtopia.invalid/contracts/analysis-v1-candidate/analysis.schema.json",
+  "title": "YOUTOPIA Analysis Contract v1 Candidate",
+  "description": "Review candidate, not approved consumer/provider API and not a live data authorization; validated separately by FE and BE.",
+  "$defs": {
+    "AnalysisTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "targetType",
+        "targetId"
+      ],
+      "properties": {
+        "source": {
+          "const": "YOUTUBE"
+        },
+        "targetType": {
+          "enum": [
+            "VIDEO",
+            "CHANNEL"
+          ]
+        },
+        "targetId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "targetType": {
+                "const": "VIDEO"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "targetId": {
+                "pattern": "^[A-Za-z0-9_-]{11}$"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "targetType": {
+                "const": "CHANNEL"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "targetId": {
+                "pattern": "^UC[A-Za-z0-9_-]{22}$"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ObservationScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "windowStart",
+        "windowEnd",
+        "locale"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "ONE_VIDEO",
+            "SELECTED_CHANNEL_VIDEOS"
+          ]
+        },
+        "windowStart": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "windowEnd": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "locale": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 16
+        }
+      }
+    },
+    "SampleCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rawCount",
+        "eligibleCount",
+        "excludedCount",
+        "classifiedCount",
+        "unclassifiedCount"
+      ],
+      "properties": {
+        "rawCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "eligibleCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "excludedCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "classifiedCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "unclassifiedCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "description": "When counts are known: raw=eligible+excluded and eligible=classified+unclassified; null means unknown, never zero."
+    },
+    "SentimentCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "positive",
+        "neutral",
+        "negative"
+      ],
+      "properties": {
+        "positive": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "neutral": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "negative": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "DiscussionTopic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "topicId",
+        "mentionCount",
+        "classifiedTopicCount",
+        "negativeTopicCount"
+      ],
+      "properties": {
+        "topicId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{1,63}$"
+        },
+        "mentionCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "classifiedTopicCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "negativeTopicCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "AnalysisSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "snapshotId",
+        "target",
+        "scope",
+        "status",
+        "sourceType",
+        "isSynthetic",
+        "visibility",
+        "tenantId",
+        "observedAt",
+        "analyzedAt",
+        "sample",
+        "sentiment",
+        "topics",
+        "analysisVersion",
+        "topicTaxonomyVersion"
+      ],
+      "properties": {
+        "contractVersion": {
+          "const": "analysis-v1-candidate"
+        },
+        "snapshotId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "target": {
+          "$ref": "#/$defs/AnalysisTarget"
+        },
+        "scope": {
+          "$ref": "#/$defs/ObservationScope"
+        },
+        "status": {
+          "enum": [
+            "READY",
+            "PARTIAL",
+            "STALE",
+            "NO_DATA",
+            "COMMENTS_DISABLED",
+            "ENTITLEMENT_LIMITED",
+            "POLICY_BLOCKED",
+            "ERROR"
+          ]
+        },
+        "sourceType": {
+          "enum": [
+            "STATIC_FIXTURE",
+            "APPROVED_PROVIDER"
+          ]
+        },
+        "isSynthetic": {
+          "type": "boolean"
+        },
+        "visibility": {
+          "enum": [
+            "PUBLIC_REUSABLE",
+            "TENANT_PRIVATE"
+          ]
+        },
+        "tenantId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "observedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "analyzedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "sample": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SampleCounts"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sentiment": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SentimentCounts"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "topics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DiscussionTopic"
+          },
+          "maxItems": 100
+        },
+        "analysisVersion": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "topicTaxonomyVersion": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      },
+      "description": "A snapshot is evidence-bounded. Invalid/missing samples may not be rendered as an actual sentiment percentage."
+    },
+    "AnalysisJob": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "jobId",
+        "target",
+        "idempotencyKey",
+        "state",
+        "attempt",
+        "retryable",
+        "requestedAt"
+      ],
+      "properties": {
+        "contractVersion": {
+          "const": "analysis-v1-candidate"
+        },
+        "jobId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "$ref": "#/$defs/AnalysisTarget"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "enum": [
+            "QUEUED",
+            "RUNNING",
+            "PARTIAL",
+            "FAILED",
+            "SUCCEEDED",
+            "CANCELLED"
+          ]
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "requestedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "TrendBin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "windowStart",
+        "windowEnd",
+        "eligibleCount",
+        "topicMentionCount",
+        "sentimentClassifiedTopicCount",
+        "negativeTopicCount"
+      ],
+      "properties": {
+        "windowStart": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "windowEnd": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "eligibleCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "topicMentionCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "sentimentClassifiedTopicCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "negativeTopicCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "TopicTrend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "target",
+        "topicId",
+        "state",
+        "comparability",
+        "analysisVersion",
+        "topicTaxonomyVersion",
+        "bins"
+      ],
+      "properties": {
+        "contractVersion": {
+          "const": "analysis-v1-candidate"
+        },
+        "target": {
+          "$ref": "#/$defs/AnalysisTarget"
+        },
+        "topicId": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{1,63}$"
+        },
+        "state": {
+          "enum": [
+            "READY",
+            "TREND_UNAVAILABLE"
+          ]
+        },
+        "comparability": {
+          "enum": [
+            "COMPARABLE",
+            "CONDITIONAL",
+            "UNCOMPARABLE"
+          ]
+        },
+        "analysisVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "topicTaxonomyVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bins": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TrendBin"
+          },
+          "maxItems": 366
+        }
+      }
+    },
+    "ErrorEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "code",
+        "retryable"
+      ],
+      "properties": {
+        "contractVersion": {
+          "const": "analysis-v1-candidate"
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "traceId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "UserEntitlement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "subjectId",
+        "organizationId",
+        "role",
+        "plan",
+        "features",
+        "revision"
+      ],
+      "properties": {
+        "contractVersion": {
+          "const": "analysis-v1-candidate"
+        },
+        "subjectId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "organizationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "role": {
+          "enum": [
+            "CUSTOMER",
+            "ORG_MEMBER",
+            "ORG_ADMIN",
+            "PLATFORM_ADMIN",
+            "DEV_QA"
+          ]
+        },
+        "plan": {
+          "type": "string",
+          "minLength": 1
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "description": "Server authoritative; client display state is not authorization."
+    }
+  }
+}

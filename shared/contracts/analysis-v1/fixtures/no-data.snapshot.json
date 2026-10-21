@@ -1,0 +1,27 @@
+{
+  "contractVersion": "analysis-v1-candidate",
+  "snapshotId": "synthetic-no_data-001",
+  "target": {
+    "source": "YOUTUBE",
+    "targetType": "VIDEO",
+    "targetId": "Ab0_-123xyz"
+  },
+  "scope": {
+    "mode": "ONE_VIDEO",
+    "windowStart": "2026-10-01T00:00:00+09:00",
+    "windowEnd": "2026-10-08T00:00:00+09:00",
+    "locale": "ko-KR"
+  },
+  "status": "NO_DATA",
+  "sourceType": "STATIC_FIXTURE",
+  "isSynthetic": true,
+  "visibility": "PUBLIC_REUSABLE",
+  "tenantId": null,
+  "observedAt": null,
+  "analyzedAt": null,
+  "sample": null,
+  "sentiment": null,
+  "topics": [],
+  "analysisVersion": null,
+  "topicTaxonomyVersion": null
+}
