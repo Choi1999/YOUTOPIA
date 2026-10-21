@@ -1,6 +1,6 @@
 # YOUTOPIA — Guest-first 로그인 UX 신규 Figma 후보 8화면 제작·검증 인계
 
-> 2026-10-21 KST · **FIGMA_EDITABLE_CANDIDATES_CREATED / VISUAL_APPROVAL_PENDING / PRODUCTION_AUTH_NOT_IMPLEMENTED**
+> 2026-10-21 KST · **FIGMA_EDITABLE_CANDIDATES_CREATED / SURFACE_RESPONSIBILITY_RECLASSIFIED / USER_VISUAL_APPROVAL_PENDING / PRODUCTION_AUTH_NOT_IMPLEMENTED**
 >
 > 기반: [병합된 PR #20](https://github.com/Choi1999/YOUTOPIA/pull/20)과 [로그인 UX 정본](./GUEST_AUTH_CONTEXT_RESTORE_UX_20261021.md), [인증 UX·보안 테스트 36건](./GUEST_AUTH_ACCEPTANCE_20261021.md), [기존 Figma 승인 인계](./FIGMA_ROLE_UI_APPROVED_HANDOFF_20261016.md).
 >
@@ -31,6 +31,23 @@
 
 AUTH-F01~F03는 첫 번째 가로 행, AUTH-F04~F06 두 번째, AUTH-F07~F08 세 번째 행에 배치했다. F01 카드 안의 감성 퍼센트·댓글 수는 **디자인 설명용 합성 숫자**이며 실제 YouTube 데이터가 아니다.
 
+## 2.1. 2026-10-21 추가 승인: 확장은 고객 로그인만, 관리·QA 로그인은 웹 전용
+
+**사용자가 승인한 분리 결정:** Chrome 확장은 고객 경험 전용이다. 운영자·정책 관리자·DEV/QA의 로그인 버튼, 별도 로그인 양식, 권한 제어 및 개발 시뮬레이션 화면은 확장에 포함하지 않는다. 고객 로그인도 확장 내부에 독립 이메일/비밀번호 폼을 만들 필요 없이, 확장의 작은 진입점 또는 저장 등 계정 필요 행동에서 **고객 공통 웹 인증으로 연결**한다. 인증 완료 후 Side Panel은 이전의 고정 영상/행동으로 안전하게 복귀한다. 개인 고객·조직 구성원·조직 관리자는 공통 고객 인증으로 들어가되, 조직 관리자용 웹 기능은 서버에서 역할을 다시 검증한다.
+
+| 구분 | 화면 ID | 실제 제품 소속 | 상태 |
+|---|---|---|---|
+| Chrome 확장 | AUTH-F01, F02, F03, F05, F06 | Guest Hover·기본 Panel·로그인 진입·로그인 후 복귀/취소 | **소속 결정 승인**, 시각 후보 |
+| 고객 인증 웹 | AUTH-F04 | 개인·조직 고객 공통 로그인 페이지 | **소속 결정 승인**, 시각 후보 |
+| 관리자 웹 | AUTH-F07 | YOUTOPIA 플랫폼 운영·정책 Admin 전용 웹 진입 | **확장에서 완전 제외**, 시각 후보 |
+| 내부 웹 | AUTH-F08 | DEV/QA 격리 시험 환경 전용 진입 | **확장에서 완전 제외**, 시각 후보 |
+
+- **Figma 실제 변경:** 기존 [100번 후보 보드](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1320-3)에 [AUTH SURFACE RESPONSIBILITY MAP](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1334-15) 추가. 세 영역 **CHROME EXTENSION / CUSTOMER WEB / INTERNAL WEB**으로 제품 책임을 시각적으로 제시.
+- 8개 시안 프레임의 기존 **노드 ID 유지**. 각 프레임 이름·제목·설명에 CHROME EXTENSION / CUSTOMER WEB / ADMIN WEB ONLY / INTERNAL WEB ONLY를 표시. F04와 F05·F06이 한 줄에 있는 보드 레이아웃은 화면 연결 흐름을 표현하는 것으로, **F04가 확장 안에 있다는 뜻은 아니다**.
+- **변경 후 이미지 검수:** 전체 Figma 후보 보드 스크린샷을 새로 확인. 상단 표면 분리, 8개 시안 헤더와 긴 설명의 줄바꿈 및 겹침 없음(보드 축소 렌더링 기준). 실제 Chrome 인터랙션·접근성·테마별 검증은 수행하지 않음.
+- **정본 영향:** 98번 Chrome UX 및 80~83 역할별 기존 승인 페이지를 수정하지 않음. 편집 가능한 후보 page 100에만 변경 반영.
+- **마일스톤:** M2에서 확장 고객 로그인 진입/복귀의 MOCK UX를 검증. M6에서 서버의 고객 로그인·조직 RBAC·플랫폼 운영/QA 웹 인증 경계 구현. M9에서 FE/BE 공통 인증·권한·선택 대상 복귀 통합 인수.
+
 ## 3. 수행된 실제 검수 증거와 제한
 
 - Figma 디자인 페이지 `1320:2`에 대해 읽기 전용 구조 검증 수행.
@@ -60,4 +77,4 @@ AUTH-F01~F03는 첫 번째 가로 행, AUTH-F04~F06 두 번째, AUTH-F07~F08 세
 - [PR #20 Guest Auth UX 병합 증거](https://github.com/Choi1999/YOUTOPIA/pull/20): 사용자 승인 방향을 `frontend`에 문서 반영, merge SHA `14407fbc6a94b2c1b7500781752e8e59b8cdb8c4`.
 - 실제 사용자 인터랙션/시스템 구현 증거는 후속 해당 기능 PR에서 `FIGMA_NODE → UI_SOURCE_FILE → GIT_COMMIT → TEST_LOG → APPROVAL`로 연결한다.
 
-**현 단계 최종 판정:** `FIGMA_CANDIDATE_8_8_CREATED`, `EDITABLE_LAYER_STRUCTURE_CHECKED`, `LIGHT_PREVIEW_VISUALLY_REVIEWED`, `USER_VISUAL_APPROVAL_PENDING`, `RUNTIME_NOT_IMPLEMENTED`. 이 문서 자체는 Figma·GitHub 제품 코드 변경이 아니다.
+**현 단계 최종 판정:** `FIGMA_CANDIDATE_8_8_CREATED`, `SURFACE_RESPONSIBILITY_APPROVED`, `RECLASSIFIED_IN_FIGMA`, `EDITABLE_LAYER_STRUCTURE_CHECKED`, `LIGHT_PREVIEW_VISUALLY_REVIEWED`, `USER_VISUAL_APPROVAL_PENDING`, `RUNTIME_NOT_IMPLEMENTED`. 이 문서 자체는 Figma·GitHub 제품 코드 변경이 아니다.
