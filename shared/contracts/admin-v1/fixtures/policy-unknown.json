@@ -1,0 +1,15 @@
+{
+  "contractVersion": "admin-v1-candidate",
+  "kind": "POLICY_OVERVIEW",
+  "sourceType": "STATIC_FIXTURE",
+  "isSynthetic": true,
+  "policyId": "YOUTUBE_DERIVED_METRICS",
+  "approvalStatus": "UNKNOWN",
+  "policyRevision": null,
+  "approvalEvidenceRef": null,
+  "scope": "YOUTUBE",
+  "reviewedAt": null,
+  "expiresAt": null,
+  "retentionRule": null,
+  "reasonCode": "NO_VERIFIED_APPROVAL"
+}
