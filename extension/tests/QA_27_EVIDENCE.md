@@ -5,7 +5,7 @@
 - **사용자 제출 PowerShell 로그:** `C:\Users\diser\YUTOPIA-Chrome-QA-27`에서 `7be47b664e3a1765ae1e931712966e21249f9f76`를 Clone했고 `git status --short`에는 변경사항 출력이 없었다.
 - **실행 명령:** `node --test extension/tests/*.test.cjs`. 총 **177 tests / 176 pass / 1 fail / 0 skipped**. YU-27 신규 메시지/캐시 테스트 17건은 모두 PASS.
 - **실패:** `extension/tests/hover-card-ui.test.cjs:217`의 Manifest script load 순서 검증. 기존 테스트는 마지막 3개 스크립트를 `hover-controller.js → hover-card-model.js → hover-card.js`로 고정했고, 신규 `preview-client.js`가 model과 renderer 사이에 삽입되어 `list.at(-2)`가 `preview-client.js`가 되는 계약 회귀.
-- **수정:** `extension/manifest.json` 마지막 4개를 `hover-controller.js → preview-client.js → hover-card-model.js → hover-card.js`로 조정. `extension/tests/hover-card-ui.test.cjs`는 마지막 4개를 정확히 검증하도록 강화. model → renderer 연속 배치와 client → controller 의존성을 모두 유지. 변경 커밋 `634d0160fd0868c14e907cad248330db1c2817b5`.
+- **수정:** `extension/manifest.json` 마지막 4개를 `hover-controller.js → preview-client.js → hover-card-model.js → hover-card.js`로 조정. `extension/tests/hover-card-ui.test.cjs`는 마지막 4개를 정확히 검증하도록 강화. model → renderer 연속 배치와 controller → client 로딩 의존성을 모두 유지. 변경 커밋 `634d0160fd0868c14e907cad248330db1c2817b5`.
 - **정적 Readback:** GitHub에 저장된 Manifest와 기존·신규 Node 테스트의 script order assertion이 모두 일치함을 확인. 이는 Windows Native Node의 최신 **177/177 PASS 증거가 아님**.
 - **현재 Gate:** `WINDOWS_NODE_176_OF_177_INITIAL_FAIL / LOAD_ORDER_FIX_COMMITTED / WINDOWS_177_RETEST_PENDING`. 수정 후 Windows 회귀 재실행과 설치형 Chrome/Chromium 검증을 수행해야 한다.
 
@@ -25,12 +25,12 @@ node --test extension/tests/*.test.cjs
 ---
 
 
-> CODE_READY / LOCAL_NODE_17_OF_17_PASS / ORIGINAL_160_NOT_RERUN / CHROMIUM_MV3_NOT_CONFIRMED / LIVE_YOUTUBE_NOT_RUN / PR_REVIEW_REQUIRED
+> CODE_READY / LOCAL_NODE_17_OF_17_PASS / WINDOWS_NODE_176_OF_177_INITIAL_FAIL / LOAD_ORDER_FIX_COMMITTED / WINDOWS_RETEST_PENDING / CHROMIUM_MV3_NOT_CONFIRMED / LIVE_YOUTUBE_NOT_RUN / PR_REVIEW_REQUIRED
 
 ## 범위 및 보호 계약
 
 - frontend merge HEAD d7f271b5afa1fc6b0bf31c000da6aa73611a6dc0 기반 독립 feature/yutopia-27-worker-messaging 브랜치.
-- YU-26 Hover Controller/Card 코드·기존 160건 테스트 무변경. 기존 Hover 카드와 disabled 더보기/닫기 유지.
+- YU-26 Hover Controller/Card 런타임 코드 무변경. 기존 160건 테스트 중 1건의 Manifest 순서 단언을 신규 client 도입에 맞게 확장했으며 기존 Hover 카드와 disabled 더보기/닫기는 유지.
 - shared.js: 버전 1 VIDEO/CHANNEL ID·정수 requestId·정확한 메시지 필드 검증.
 - preview-client.js: READY 상태만 송신, 중복 송신 회피. isCurrentRequest가 일치하는 응답만 내부 진단값으로 수용. 카드 UI/Side Panel 조작 없음.
 - background.js: 발신 확장 ID, 최상위 frame, YouTube origin, tab.id/documentId 검증. stale request 및 동일 requestId 대상 충돌 차단. 메시지와 저장소 갱신 순차 처리.
@@ -56,7 +56,7 @@ node --test extension/tests/worker-message-cache.test.cjs
 
 ## 미실행/미확인
 
-- 기존 Node 160건 + 신규 17건 전체 회귀: NOT RUN. GitHub 전체 저장소를 이 로컬 환경으로 직접 가져올 수 없었음.
+- Linux 격리 환경에서는 기존 Node 160건 + 신규 17건의 전체 회귀 NOT RUN. 사용자 Windows에서는 이전 SHA `7be47b664e3a`로 전체 177건을 실행해 176 PASS/1 FAIL을 확보했으며, Manifest 순서 수정 후 전체 재실행은 PENDING.
 - Chromium Hover Fixture 2종, 라이브 YouTube 최종 SHA 자동 검증: NOT RUN.
 - 로컬 Chromium/Playwright로 YouTube URL interception 시험을 시도했으나 브라우저가 net::ERR_BLOCKED_BY_ADMINISTRATOR 반환. 별도 임시 MV3 Worker 점검 또한 성공 증거를 확보하지 못함. 브라우저 PASS로 표기 금지.
 - Windows 설치형 Chrome, 장시간 사용, 접근성: PENDING.
