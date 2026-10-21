@@ -113,3 +113,27 @@
 **M9 인수:** FE Admin 2뷰에 실제 권한 있는 서버 상태가 표시되는지, Policy Gate/감사 로그의 무결성, QA 테스트 SHA·환경·원본 결과/실제 Chrome 설치형 사용 사례가 증거로 연결되는지 확인. 공개 출시/유료 결제는 별도 Gate.
 
 > **현재 판정:** \`EX-ADM-001~004\`, \`EX-DATA-001~002\`, \`EX-POL-001~003\`, \`EX-QA-001~002\`, \`EX-OPS-001\` 외부 근거 조사 완료. **외부 소스/도구 직접 설치·복제·실서비스 사용 0건.** Figma 기존 디자인·제품 코드 수정 0건.
+
+
+## 7. 2026-10-21 승인 방향의 실제 Figma 후보 반영 (원 조사 단계 이후 추가)
+
+**채택 상태 전이(유형 한정):** 사용자 승인으로 제품 표면과 정보 구조를 확정하고 Figma 82에 **관리자 최소 2뷰 × Light/Dark 4개 신규 후보**, Figma 83에 **별도 QA 웹 보류·테스트 실행 증거 우선 시트**를 작성했다. 이는 **DESIGN_IN_FIGMA_CANDIDATE**이며 외부 코드 직접 사용·BE/FE API 구현·운영 인가는 아니다. 내부 디자인 시스템의 색상 변수와 텍스트 스타일을 사용했으며 외부 시각 자산/CSS/소스를 복사하지 않았다.
+
+| 조사 ID | 연결한 실제 새 Figma Node | YOUTOPIA에서 가져온 *패턴* | CODE_INTEGRATED |
+|---|---|---|---|
+| EX-ADM-001 Grafana | [1485:31 운영 미연동 상태](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-31) | 측정값/갱신시각이 없으면 가짜 0 KPI를 만들지 않음 | **NO** |
+| EX-ADM-002 Temporal | [1485:34 Job 목록](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-34), [1485:35 상세](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-35) | Run ID·상태·실패 원인·실행 이력의 drilldown | **NO** |
+| EX-ADM-003 Prefect | 1485:34 / 1485:35 | Python Flow/Task 상태 등 BE Job 계약 비교 후보 | **NO** |
+| EX-ADM-004 Sentry | [1485:35](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-35) | 장애 정보는 해당 Run 상세에서 진단 | **NO** |
+| EX-DATA-001 Great Expectations | 1485:35 | 품질 실패·검증 보고를 특정 Run과 연결 | **NO** |
+| EX-POL-001 OPA | [1485:70 감사 이벤트](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-70) | Decision ID·역할·작업·시각 구조 | **NO** |
+| EX-POL-002 OWASP | [1485:88 정책 경계](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-88) | 서버에서 인가·정책 판정, 브라우저 화면의 역할 토글로 승격 금지 | **NO** |
+| EX-POL-003 YouTube Policy | [1485:75 사용권](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-75), [1485:78 파생 범위](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-78) | 실제 승인 증거 없을 때 '허용'으로 위장하지 않음 | **NO** |
+| EX-QA-001 Playwright | [1488:14 QA 아키텍처 시트](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1488-14) | 기존 실행기·Trace/Report 먼저, 별도 QA 웹은 조건부 | **새 도입 없음** |
+| EX-QA-002 GitHub Artifacts | 1488:14 | Tested SHA/환경·로그·스크린샷·Trace 증거 영속화 | **NO** |
+| EX-OPS-001 OpenTelemetry | [1485:31](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-31) | 실제 로그·메트릭·Trace를 구분하고 측정 전 수치 미표시 | **NO** |
+
+**실제 내부 검증:** 신규 관리자 후보 4개 / Light·Dark 업무 2종 / 텍스트 스타일 104/104 / 단색 토큰 182/182 / Figma 이동 4/4 목적지 유효 / 원본 82-01·02 보존. QA 시트 17/17 텍스트 스타일·28/28 단색 토큰, 실행 반응 0건. Figma 렌더 스크린샷 5개 확인. **Figma Present 모드 조작과 BE/FE 서버 구현 및 실제 YouTube 데이터 이용 승인도 여전히 NOT_RUN/NOT_IMPLEMENTED.**
+
+영구 노드 기록 및 BE/FE 계약 제안:
+[ADMIN_MINIMAL_TWO_VIEWS_FIGMA_EVIDENCE_20261021.json](../figma/audits/ADMIN_MINIMAL_TWO_VIEWS_FIGMA_EVIDENCE_20261021.json) · [Admin M9 Two-view FE/BE Method](../product-v0.2/ADMIN_M9_TWO_VIEW_FE_BE_METHOD_20261021.md).
