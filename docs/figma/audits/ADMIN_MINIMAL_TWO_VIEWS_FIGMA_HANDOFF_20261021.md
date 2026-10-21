@@ -9,7 +9,7 @@
 
 ## 1. 실제 Figma 제작
 
-| 기능/성격 | Light | Dark | 고객에게 표시해야 하는 정보 |
+| 기능/성격 | Light | Dark | 관리자·QA 검토자가 확인할 정보 |
 |---|---|---|---|
 | 플랫폼 운영 현황 | [82-03 / 1485:14](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-14) | [82-05 / 1486:14](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1486-14) | 실제 Job 목록, 상태·갱신 시각, 실패 사유, Run별 품질·Trace 상세 |
 | 플랫폼 정책·감사 | [82-04 / 1485:49](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-49) | [82-06 / 1486:49](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1486-49) | 승인된 사용권·파생 분석 범위·보존·삭제, 실제 정책/접근 감사 기록 |
