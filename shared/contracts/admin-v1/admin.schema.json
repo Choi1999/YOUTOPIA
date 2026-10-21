@@ -700,6 +700,28 @@
               }
             }
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "sourceType": {
+                "const": "STATIC_FIXTURE"
+              }
+            },
+            "required": [
+              "sourceType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "approvalStatus": {
+                "enum": [
+                  "UNKNOWN",
+                  "BLOCKED"
+                ]
+              }
+            }
+          }
         }
       ]
     },
@@ -855,6 +877,25 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 256
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "sourceType": {
+                "const": "STATIC_FIXTURE"
+              }
+            },
+            "required": [
+              "sourceType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "allow": {
+                "const": false
               }
             }
           }
