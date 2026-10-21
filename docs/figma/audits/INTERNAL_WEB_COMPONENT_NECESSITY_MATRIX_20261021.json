@@ -1,0 +1,355 @@
+{
+  "title": "YOUTOPIA internal platform admin and DEV/QA web element necessity audit",
+  "observedAtKST": "2026-10-21",
+  "assessmentStatus": "READ_ONLY_SOURCE_AND_DESIGN_AUDIT / RECOMMENDATIONS_NOT_YET_APPROVED / RUNTIME_ADMIN_NOT_IMPLEMENTED",
+  "sourceFigma": {
+    "fileKey": "00Q6HNjuv02u7Ex4yUzZer",
+    "platformPage": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1283-4",
+    "qaPage": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1283-5",
+    "organizationAdminReference": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1286-72",
+    "screenCount": 4,
+    "screenSource": "Original 82/83, not 18 theme QA clones; Figma Plugin API text, Figma Reaction, Frame clip and coordinates"
+  },
+  "sourceGitHub": {
+    "repository": "Choi1999/YOUTOPIA",
+    "frontendCommit": "fc352d303299bead743a73bb05bc14db9ca79fad",
+    "routeDefinitions": "frontend/src/app/routeDefinitions.ts",
+    "appRoutes": "frontend/src/app/AppRoutes.tsx",
+    "backendBranch": "backend (same SHA as dev 99e7b3857ae6e31460b2c8e2af48592d5bfbb90a, only initial README)",
+    "productDirection": "docs/product-v0.2/00_PRODUCT_DIRECTION.md",
+    "roleAccess": "docs/product-v0.2/07_SURFACE_ACCESS_MATRIX.md",
+    "method": "docs/product-v0.2/FE_BE_PRODUCT_INTEGRATION_METHOD_V3_20261021.md"
+  },
+  "objectiveFigmaCounters": {
+    "screens": 4,
+    "navbarInstances": 21,
+    "functionalPrototypeNav": 4,
+    "placeholderMetrics": 12,
+    "nonInteractiveTaskRows": 16,
+    "inactiveVisualCTAs": 4,
+    "duplicateNoticeGroups": 4,
+    "outOfBoundsDuplicateNotices": 4
+  },
+  "screens": [
+    {
+      "id": "82-01",
+      "title": "Platform Operations",
+      "figma": "1286:144",
+      "type": "PLATFORM_ADMIN",
+      "navItems": 6,
+      "interactiveNavItems": 1,
+      "interactiveMenu": "정책·감사",
+      "prototypeDestination": "1286:218",
+      "metricCards": 3,
+      "descriptiveTaskRows": 4,
+      "interactiveTaskRows": 0,
+      "inactiveCTA": "운영 서버 연결 전 · 내부 시안",
+      "notices": 2,
+      "duplicateOutOfBoundsY": [
+        877,
+        958
+      ],
+      "originalHeight": 900,
+      "screenshotChecked": true,
+      "figmaUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1286-144",
+      "prototypeDestinationUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1286-218"
+    },
+    {
+      "id": "82-02",
+      "title": "Policy Audit",
+      "figma": "1286:218",
+      "type": "PLATFORM_POLICY_ADMIN",
+      "navItems": 5,
+      "interactiveNavItems": 1,
+      "interactiveMenu": "운영 현황",
+      "prototypeDestination": "1286:144",
+      "metricCards": 3,
+      "descriptiveTaskRows": 4,
+      "interactiveTaskRows": 0,
+      "inactiveCTA": "정책 검토 필요 · 실연동 중단",
+      "notices": 2,
+      "duplicateOutOfBoundsY": [
+        877,
+        958
+      ],
+      "originalHeight": 900,
+      "screenshotChecked": true,
+      "figmaUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1286-218",
+      "prototypeDestinationUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1286-144"
+    },
+    {
+      "id": "83-01",
+      "title": "State Simulator",
+      "figma": "1286:290",
+      "type": "QA_ENGINEER",
+      "navItems": 5,
+      "interactiveNavItems": 1,
+      "interactiveMenu": "회귀 테스트",
+      "prototypeDestination": "1286:362",
+      "metricCards": 3,
+      "descriptiveTaskRows": 4,
+      "interactiveTaskRows": 0,
+      "inactiveCTA": "QA · 실행 대기 · 실제 테스트 없음",
+      "notices": 2,
+      "duplicateOutOfBoundsY": [
+        877,
+        958
+      ],
+      "originalHeight": 900,
+      "screenshotChecked": true,
+      "figmaUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1286-290",
+      "prototypeDestinationUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1286-362"
+    },
+    {
+      "id": "83-02",
+      "title": "Regression Ledger",
+      "figma": "1286:362",
+      "type": "QA_ENGINEER",
+      "navItems": 5,
+      "interactiveNavItems": 1,
+      "interactiveMenu": "상태 시뮬레이터",
+      "prototypeDestination": "1286:290",
+      "metricCards": 3,
+      "descriptiveTaskRows": 4,
+      "interactiveTaskRows": 0,
+      "inactiveCTA": "모두 미검증 · 테스트 계획",
+      "notices": 2,
+      "duplicateOutOfBoundsY": [
+        877,
+        958
+      ],
+      "originalHeight": 900,
+      "screenshotChecked": true,
+      "figmaUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1286-362",
+      "prototypeDestinationUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1286-290"
+    }
+  ],
+  "adminMenuDecisions": [
+    {
+      "id": "ADMIN-01",
+      "menu": "운영 현황",
+      "seenOn": [
+        "82-01",
+        "82-02"
+      ],
+      "decision": "KEEP_M9_CORE",
+      "destination": "Admin / Operations",
+      "reason": "Operational status and incident triage are required to verify real FE-BE-integrated jobs; only real timestamped server data"
+    },
+    {
+      "id": "ADMIN-02",
+      "menu": "수집 작업",
+      "seenOn": [
+        "82-01",
+        "82-02"
+      ],
+      "decision": "MERGE_INTO_CORE",
+      "destination": "Admin / Operations > Jobs",
+      "reason": "Job failure, partial, retry, quotas need details; no independent section until load warrants it"
+    },
+    {
+      "id": "ADMIN-03",
+      "menu": "데이터 품질",
+      "seenOn": [
+        "82-01",
+        "82-02"
+      ],
+      "decision": "MERGE_INTO_CORE",
+      "destination": "Admin / Operations > Data quality",
+      "reason": "EDA/provenance quality report should be a filter or detail linked to a collection run"
+    },
+    {
+      "id": "ADMIN-04",
+      "menu": "정책·감사",
+      "seenOn": [
+        "82-01",
+        "82-02"
+      ],
+      "decision": "KEEP_M9_CORE",
+      "destination": "Admin / Policy & Audit",
+      "reason": "Data rights, policy block, deletion/retention evidence, actor/time/target audit are product integration gates"
+    },
+    {
+      "id": "ADMIN-05",
+      "menu": "구독 운영",
+      "seenOn": [
+        "82-01"
+      ],
+      "decision": "DEFER",
+      "destination": "Future billing/entitlements operations",
+      "reason": "Actual billing and refunds explicitly outside M9; entitlement introspection can be in account support later"
+    },
+    {
+      "id": "ADMIN-06",
+      "menu": "지원 요청",
+      "seenOn": [
+        "82-01"
+      ],
+      "decision": "CONDITIONAL",
+      "destination": "External support tool / links if real incidents demand it",
+      "reason": "No evidence of active support queue, SLA, customer support backend; do not build a duplicate support system"
+    },
+    {
+      "id": "ADMIN-07",
+      "menu": "접근 이력",
+      "seenOn": [
+        "82-02"
+      ],
+      "decision": "MERGE_INTO_CORE",
+      "destination": "Admin / Policy & Audit > Access events",
+      "reason": "Access logs are a subset of audit events, not a separate top-level workflow"
+    }
+  ],
+  "qaMenuDecisions": [
+    {
+      "id": "QA-01",
+      "menu": "상태 시뮬레이터",
+      "decision": "TEST_HARNESS_NOT_PRODUCTION_PAGE",
+      "destination": "Local/integration fixture runner (separate QA environment)",
+      "reason": "Forced QUEUED/RUNNING/PARTIAL/FAILED and evidence unavailable states belong in automated fixtures, not in customer or production operation UI"
+    },
+    {
+      "id": "QA-02",
+      "menu": "Hover 검증",
+      "decision": "AUTOMATED_TEST",
+      "destination": "Installed Chrome MV3 + Playwright/manual E2E",
+      "reason": "Actual YouTube hover pointer races cannot be validated by a web admin page"
+    },
+    {
+      "id": "QA-03",
+      "menu": "권한 차단",
+      "decision": "AUTOMATED_TEST",
+      "destination": "BE contract/authorization negative tests",
+      "reason": "403/BOLA/tenant isolation must be server enforced and independently tested, not by UI role toggle"
+    },
+    {
+      "id": "QA-04",
+      "menu": "회귀 테스트",
+      "decision": "AUTOMATED_TEST",
+      "destination": "Node/Playwright test runner with reproducible SHA",
+      "reason": "Test execution and PASS/FAIL evidence should come from runner results, not manually toggled dashboard"
+    },
+    {
+      "id": "QA-05",
+      "menu": "테스트 기록",
+      "decision": "OPTIONAL_READ_ONLY_INDEX",
+      "destination": "Test artifact viewer/review index (if non-developers need it)",
+      "reason": "Playwright HTML/trace and CI/local test artifacts already support reviews; a custom results database is not an M9 prerequisite"
+    }
+  ],
+  "crossCuttingIssues": [
+    {
+      "id": "UI-001",
+      "severity": "HIGH",
+      "finding": "82 sidebar inventory differs between 82-01 (includes subscriptions/support) and 82-02 (includes access history) but only operations↔policy are linked",
+      "recommendation": "Stable navigation with two main pages; move subsidiary modules into panels/filter or defer"
+    },
+    {
+      "id": "UI-002",
+      "severity": "HIGH",
+      "finding": "4 duplicate Access Boundary Notice instances each followed by an identical separate Role access boundary frame at y=877..958 in a clipped 900px screen",
+      "recommendation": "Keep one reusable Notice component; eliminate duplicate clipped frame in a separately approved design change"
+    },
+    {
+      "id": "UI-003",
+      "severity": "MEDIUM",
+      "finding": "Four prominent State CTA frames contain status text but have 0 Figma reactions",
+      "recommendation": "Use neutral read-only status badge, or implement real actionable control only when backed by an audited server action"
+    },
+    {
+      "id": "UI-004",
+      "severity": "HIGH",
+      "finding": "All 12 metric cards show non-live placeholders; all 16 task rows are descriptive with zero interactions",
+      "recommendation": "Display measured values with source/lastUpdated or one honest unavailable banner; transform task rows to real resources when available"
+    },
+    {
+      "id": "UI-005",
+      "severity": "HIGH",
+      "finding": "QA simulation controls are only descriptive and can be mistaken for a working QA console",
+      "recommendation": "QA requires reproducible fixtures and negative tests; Figma prototypes/QA website not equivalent to executable tests"
+    },
+    {
+      "id": "UI-006",
+      "severity": "HIGH",
+      "finding": "Frontend routeDefinitions and AppRoutes only expose customer/demo YU-01..12 and no /admin or /qa routes; backend initial README",
+      "recommendation": "Classify Figma 82/83 as proposals, do not say operational product exists"
+    },
+    {
+      "id": "UI-007",
+      "severity": "MEDIUM",
+      "finding": "83-02 footer describes Chrome extension as initial skeleton only, while YU-26 Hover implementation is merged",
+      "recommendation": "Refresh stale QA copy based on source state, or omit temporary implementation-status boilerplate"
+    },
+    {
+      "id": "UI-008",
+      "severity": "MEDIUM",
+      "finding": "Admin and QA role strings repeated in topbar/hero/sidebar",
+      "recommendation": "One role/environment indicator in topbar, with permission detail on demand"
+    }
+  ],
+  "productMilestoneBoundary": {
+    "finalMilestone": "M9 PRODUCT_INTEGRATED, not public release or payment launch",
+    "mustHaveActions": [
+      "read actual system/analysis Job status and failures",
+      "read approved data policy and deletion/retention evidence",
+      "verify server-authoritative access and audit events",
+      "trace test result to exact commit/environment and logs"
+    ],
+    "mayBeImplementedWithoutCustomWeb": [
+      "QA and regression test execution",
+      "Playwright/Chrome Hover trace inspection",
+      "access-denial/BOLA tests",
+      "metrics/logs dashboards through existing observability stack",
+      "support ticket management",
+      "billing/refund workflow until approved"
+    ],
+    "keepAdminSurface": "2 lean web views only: Operations and Policy & Audit; extra sections and actions by observed need",
+    "deferQaSurface": "No dedicated QA application required at M9 if local/CI test runner + immutable artifact index covers testers; optional internal read-only results viewer",
+    "orgAdminSurface": "81-02 remains separate customer organization management; never a platform operations admin"
+  },
+  "suggestedAcceptanceGates": [
+    "ADMIN-AC-01 Operations displays only server-measured job/health/quota data with source/time and unknown!=zero",
+    "ADMIN-AC-02 Policy gate refuses unapproved derived metrics and shows approval/version/retention/deletion evidence",
+    "ADMIN-AC-03 Every admin request enforces server session and role/tenant scope; secrets and raw comments redacted",
+    "ADMIN-AC-04 Any job retry is explicit, idempotent, restricted by role and audit-logged; no silent 'force success'",
+    "ADMIN-AC-05 82 sidebar destinations represent actual routes and stable navigation; no clickable-looking disabled dead ends",
+    "ADMIN-AC-06 One and only one permission notice per screen, no clipped duplicate or unbounded text",
+    "QA-AC-01 Tests produce PASS/FAIL with tested SHA, environment, command, raw evidence, and retry history",
+    "QA-AC-02 Synthetic states isolated from customer/production DB and role-toggle attack surfaces",
+    "QA-AC-03 Installed Chrome MV3 Hover/SidePanel and BE auth negative tests run separately from Figma",
+    "QA-AC-04 If an internal QA viewer is later built, it consumes test-run artifacts read-only; does not fabricate test results"
+  ],
+  "externalReferences": [
+    {
+      "name": "Playwright HTML Reporter",
+      "url": "https://playwright.dev/docs/test-reporters",
+      "observed": "HTML/JSON reports from test execution",
+      "state": "RESEARCHED_NO_CODE_USE"
+    },
+    {
+      "name": "Playwright Trace Viewer",
+      "url": "https://playwright.dev/docs/trace-viewer-intro",
+      "observed": "Step-by-step replay of test traces",
+      "state": "RESEARCHED_NO_CODE_USE"
+    },
+    {
+      "name": "GitHub workflow artifacts",
+      "url": "https://docs.github.com/en/actions/concepts/workflows-and-actions/workflow-artifacts",
+      "observed": "Persist test reports/logs/screenshots after CI runs",
+      "state": "RESEARCHED_NO_CODE_USE"
+    },
+    {
+      "name": "OpenTelemetry Signals",
+      "url": "https://opentelemetry.io/docs/concepts/signals/",
+      "observed": "Metrics, traces, logs for system observability",
+      "state": "RESEARCHED_NO_CODE_USE"
+    },
+    {
+      "name": "Grafana dashboard overview",
+      "url": "https://grafana.com/docs/grafana/latest/fundamentals/dashboards-overview/",
+      "observed": "Dashboards query data sources to render monitoring panels",
+      "state": "RESEARCHED_NO_CODE_USE"
+    }
+  ],
+  "changeScope": "Audit artifacts only. No Figma nodes or product code modified. Proposed menu consolidation requires separate approval."
+}
