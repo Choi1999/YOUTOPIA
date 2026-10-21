@@ -16,15 +16,15 @@
 
 | File | Git blob SHA |
 |---|---|
-| admin.schema.json | 74f25db44821b4083eb65d83deeff26e03608abc |
+| admin.schema.json | 9923dfa4225dee981f25dc544ee3b691428d5dd4 |
 | fixtures/ops-unconnected.json | 088bd55938cd75f8686df9e113e2bf25a3830db9 |
 | fixtures/policy-unknown.json | 838754e71a4dc96158fe2164d63ad987c0f1e71a |
 | fixtures/job-failed.synthetic.json | 51696dc84a1133fdaae1c0cf0ca47f5db7923eb5 |
 | fixtures/policy-denied.synthetic.json | 8499c6e0a6225460effbd1775865b6df7d3f029c |
 | fixtures/audit-denied.synthetic.json | 0af213861fbe011cbb13e0c28b0b4039c72802e5 |
 | fixtures/error-forbidden.synthetic.json | bf5ba899ca17ee80f199434e9805c2ece30f1a19 |
-| tests/semantic-smoke.test.cjs | dd58a57a083fd6def086b9e6c43b613221de3584 |
-| README.md | 176e0a27370f1f8de8b9e619d8170fa2198d4a23 |
+| tests/semantic-smoke.test.cjs | 26d918535b4862a862295cccca2af2d8142c00b6 |
+| README.md | ea99c5e2abea251eaa6ba4bc9000b0ea42b92cd9 |
 
 ## Independent current-turn static checks
 
@@ -57,3 +57,14 @@ The V8 partial validator does not establish full JSON Schema engine conformance.
 - After FE/BE approval use the same schema commit SHA and standard validator in FE/BE pipelines, separately record Node test and real integration evidence.
 
 **Current gate:** ADMIN_CONTRACT_CANDIDATE_PREPARED / INDEPENDENT_STATIC_CHECK_COMPLETED / FE_BE_SIGNOFF_PENDING / BACKEND_NOT_IMPLEMENTED / NODE_TEST_NOT_RUN.
+
+
+## 2026-10-21 additional security review — strengthened synthetic approval denial
+
+The initial schema accepted a syntactically complete synthetic policy approval or allow=true decision if a forged approval evidence reference and version were supplied. **Schema-level guards were added** to both PolicyOverview and PolicyDecisionRecord: `sourceType=STATIC_FIXTURE` forbids `approvalStatus=APPROVED` and requires `allow=false`, even if all evidence fields appear populated.
+
+- Post-change schema Git blob: `9923dfa4225dee981f25dc544ee3b691428d5dd4`.
+- Updated Node smoke source Git blob: `26d918535b4862a862295cccca2af2d8142c00b6`; existing 7 test cases now try fake approval with fabricated evidence and policy revisions.
+- New current-turn **independent custom V8 subset validator**: 6/6 positive fixture shapes accepted; **7/7 malformed fixture mutations rejected**, including full synthetic fake approval references (2 cases), extra secret field, tenant null, fabricated 0, wrong source flag and invalid HTTP status.
+- Same exact Node test source evaluated in V8 with isolated minimal Node `require` / `fs` / `path` / `test` / `assert` shims: **7/7 assertions PASS in V8 emulation only**. This is **not a native Node execution** and is not reported as `NODE_TEST_PASS`.
+- Actual native Node test command, standards-compliant JSON Schema Draft 2020-12 validator, FE/BE independent signoff, and deployed backend/authorization tests remain **NOT_RUN / NOT_IMPLEMENTED**. No CI checks or associated GitHub Actions runs found for original PR head.
