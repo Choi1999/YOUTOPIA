@@ -41,7 +41,7 @@
 - Chrome 확장은 고객만, Customer Org Admin은 해당 조직 관리만, Platform Admin은 서버가 허용한 운영 조회만. DEV/QA는 격리된 Fixture·테스트 실행 권한만.
 - 고객/조직/관리/QA 자원의 경계는 API 호출마다 BE 세션·리소스 범위·Role로 검사한다. 단순 UI에서 메뉴를 숨기는 것은 인가 구현이 아니다.
 - GLOBAL_METADATA는 tenantId=null, TENANT_PRIVATE는 서버에서 검증된 tenantId 필수. 타 테넌트 리소스 유추/접근 차단.
-- sourceType=STATIC_FIXTURE와 isSynthetic=true는 동치여야 한다. APPROVED_PROVIDER는 인증·법적 권리·출처와 실제 정책이 준비될 때만 구현할 수 있으며 Fixture 문자열을 바꾸는 것으로 승인할 수 없다.
+- sourceType=STATIC_FIXTURE와 isSynthetic=true는 동치여야 한다. **PolicyOverview APPROVED와 PolicyDecisionRecord allow=true는 합성 Fixture에서 스키마 자체가 거부**하며, 근거 참조·버전·검토 시각을 가짜로 채워 넣어도 예외가 없다. APPROVED_PROVIDER는 인증·법적 권리·출처와 실제 정책이 준비될 때만 구현할 수 있으며 Fixture 문자열을 바꾸는 것으로 승인할 수 없다.
 - 라이브 YouTube 댓글 수집·감성/주제 파생 분석·보관은 별도의 공식 정책 검토와 실제 이용 허가 전까지 활성화 금지.
 - 운영 Job 강제 성공/무제한 Retry/권리 허용/사용자 정보 추출 쓰기 API는 이 계약에 포함하지 않는다.
 
