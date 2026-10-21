@@ -1,0 +1,261 @@
+{
+  "auditId": "ADM-M9-LEAN-CANDIDATES-20261021",
+  "dateKst": "2026-10-21",
+  "repository": "Choi1999/YOUTOPIA",
+  "baselineFrontendSha": "8d6fa7b80590df98a810906edd7bd8c7797330d9",
+  "decision": "User approved Admin Operations+Policy two views and QA execution evidence instead of mandatory custom QA web",
+  "figmaFileKey": "00Q6HNjuv02u7Ex4yUzZer",
+  "productScope": "Two admin features, each Light+Dark; QA tooling decision note only. Figma 82/83 original approved frames and old Theme QA frames preserved.",
+  "status": "UI_DESIGN_CANDIDATES_CREATED / FIGMA_STATIC_QA_PASS / USER_PIXEL_APPROVAL_PENDING / FIGMA_PRESENT_NOT_RUN / NO_RUNTIME_CODE",
+  "adminCandidates": [
+    {
+      "name": "82-03 LEAN ADMIN Operations Light",
+      "nodeId": "1485:14",
+      "theme": "LIGHT",
+      "textNodes": 24,
+      "styledText": 24,
+      "boundSolids": 42,
+      "missingSolid": 0,
+      "interactions": 1,
+      "next": "1485:49",
+      "parts": {
+        "notConnected": "1485:31",
+        "jobList": "1485:34",
+        "jobHeaders": "1485:40",
+        "jobDetail": "1485:35",
+        "singleGuardrail": "1485:46",
+        "nav": "1485:21"
+      },
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-14"
+    },
+    {
+      "name": "82-04 LEAN ADMIN Policy Light",
+      "nodeId": "1485:49",
+      "theme": "LIGHT",
+      "textNodes": 28,
+      "styledText": 28,
+      "boundSolids": 49,
+      "missingSolid": 0,
+      "interactions": 1,
+      "next": "1485:14",
+      "parts": {
+        "notConnected": "1485:66",
+        "policy": "1485:69",
+        "sourceRights": "1485:75",
+        "derivedRights": "1485:78",
+        "retention": "1485:81",
+        "audit": "1485:70",
+        "singleGuardrail": "1485:88",
+        "nav": "1485:54"
+      },
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-49"
+    },
+    {
+      "name": "82-05 LEAN ADMIN Operations Dark",
+      "nodeId": "1486:14",
+      "theme": "DARK",
+      "textNodes": 24,
+      "styledText": 24,
+      "boundSolids": 42,
+      "missingSolid": 0,
+      "interactions": 1,
+      "next": "1486:49",
+      "parts": {
+        "notConnected": "1486:31",
+        "jobList": "1486:34",
+        "jobDetail": "1486:41",
+        "singleGuardrail": "1486:46",
+        "nav": "1486:21"
+      },
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1486-14"
+    },
+    {
+      "name": "82-06 LEAN ADMIN Policy Dark",
+      "nodeId": "1486:49",
+      "theme": "DARK",
+      "textNodes": 28,
+      "styledText": 28,
+      "boundSolids": 49,
+      "missingSolid": 0,
+      "interactions": 1,
+      "next": "1486:14",
+      "parts": {
+        "notConnected": "1486:66",
+        "policy": "1486:69",
+        "sourceRights": "1486:72",
+        "derivedRights": "1486:75",
+        "retention": "1486:78",
+        "audit": "1486:81",
+        "singleGuardrail": "1486:88",
+        "nav": "1486:54"
+      },
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1486-49"
+    }
+  ],
+  "qaNote": {
+    "id": "1488:14",
+    "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1488-14",
+    "type": "INTERNAL_QA_TOOLING_ARCHITECTURE_NOTE_NOT_PRODUCTION_UI",
+    "textNodes": 17,
+    "styledText": 17,
+    "boundSolidPaints": 28,
+    "unboundSolidPaints": 0,
+    "reactions": 0
+  },
+  "sourcePreservation": {
+    "adminOriginals": [
+      "1286:144",
+      "1286:218"
+    ],
+    "roleThemeQaIndex": "1408:114",
+    "devQaOriginals": [
+      "1286:290",
+      "1286:362"
+    ],
+    "qaThemeIndex": "1408:155",
+    "organizationAdmin": "1286:72",
+    "page00Registry": "1367:2",
+    "noOriginalDeleteRenameMove": true,
+    "page82FlowStarts": [
+      "1286:144",
+      "1408:114",
+      "1485:14",
+      "1486:14"
+    ],
+    "devQaPage83FlowStartsUnchanged": true
+  },
+  "staticVerification": {
+    "adminCandidateFrames": 4,
+    "totalAdminTextNodes": 104,
+    "fullyStyledAdminTextNodes": 104,
+    "totalBoundSolidFillsAndStrokes": 182,
+    "unboundSolidFillsAndStrokes": 0,
+    "interactiveActions": 4,
+    "validDestinations": 4,
+    "invalidDestinations": 0,
+    "offscreenTopLevelSections": 0,
+    "onlyTwoNavigationChoicesPerScreen": true,
+    "noFakeKpiCount": true,
+    "noUnimplementedRetryButton": true,
+    "noDuplicatePermissionNoticeInCandidates": true,
+    "qaNoteTextStyled": 17,
+    "qaNoteSolidBound": 28,
+    "qaNoteActions": 0,
+    "visualScreenshotChecked": [
+      "1485:14",
+      "1485:49",
+      "1486:14",
+      "1486:49",
+      "1488:14"
+    ]
+  },
+  "externalAdoptionEvidence": [
+    {
+      "id": "EX-ADM-001",
+      "external": "Grafana",
+      "part": "State summary with source/time and job-drilldown; not full metrics engine",
+      "figmaNode": "1485:31",
+      "state": "DESIGN_IN_FIGMA_ONLY",
+      "figmaUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-31"
+    },
+    {
+      "id": "EX-ADM-002",
+      "external": "Temporal Web",
+      "part": "Run list -> execution history/details, no new workflow engine",
+      "figmaNode": "1485:40",
+      "state": "DESIGN_IN_FIGMA_ONLY",
+      "figmaUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-40"
+    },
+    {
+      "id": "EX-ADM-003",
+      "external": "Prefect",
+      "part": "Python Job statuses and history as BE architecture candidate",
+      "figmaNode": "1485:34",
+      "state": "CONCEPT_ONLY",
+      "figmaUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-34"
+    },
+    {
+      "id": "EX-ADM-004",
+      "external": "Sentry",
+      "part": "Failure drill-down and trace references",
+      "figmaNode": "1485:35",
+      "state": "DESIGN_IN_FIGMA_ONLY",
+      "figmaUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-35"
+    },
+    {
+      "id": "EX-DATA-001",
+      "external": "Great Expectations",
+      "part": "Data quality tied to each run",
+      "figmaNode": "1485:35",
+      "state": "CONCEPT_ONLY",
+      "figmaUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-35"
+    },
+    {
+      "id": "EX-POL-001",
+      "external": "OPA Decision Logs",
+      "part": "Policy decision evidence and actor/timestamp audit events",
+      "figmaNode": "1485:70",
+      "state": "DESIGN_IN_FIGMA_ONLY",
+      "figmaUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-70"
+    },
+    {
+      "id": "EX-POL-002",
+      "external": "OWASP",
+      "part": "Server authoritative RBAC and privacy guardrail",
+      "figmaNode": "1485:88",
+      "state": "SECURITY_REQUIREMENT",
+      "figmaUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-88"
+    },
+    {
+      "id": "EX-POL-003",
+      "external": "YouTube Policy",
+      "part": "Unknown derived metrics rights and retention fail-closed",
+      "figmaNode": "1485:78",
+      "state": "POLICY_REQUIREMENT_NOT_APPROVED",
+      "figmaUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-78"
+    },
+    {
+      "id": "EX-QA-001",
+      "external": "Playwright Report/Trace",
+      "part": "Test execution and trace artifacts, no custom QA web",
+      "figmaNode": "1488:14",
+      "state": "DECISION_NOTE_ONLY",
+      "figmaUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1488-14"
+    },
+    {
+      "id": "EX-QA-002",
+      "external": "GitHub Artifacts",
+      "part": "Persistent tested SHA/trace/log evidence",
+      "figmaNode": "1488:14",
+      "state": "CONCEPT_ONLY",
+      "figmaUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1488-14"
+    },
+    {
+      "id": "EX-OPS-001",
+      "external": "OpenTelemetry",
+      "part": "Metrics/trace ID actual source instead of fake UI statistics",
+      "figmaNode": "1485:31",
+      "state": "INSTRUMENTATION_CANDIDATE",
+      "figmaUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-31"
+    }
+  ],
+  "outstanding": [
+    "Customer final visual/pixel sign-off on Figma candidates",
+    "Figma Present actual mouse/keyboards tests",
+    "Zoom 100/125/150 and WCAG full UI",
+    "FE Admin web routes not implemented",
+    "BE backend API/DB/job/policy/audit runtime not implemented",
+    "Real YouTube derived sentiment policy acceptance not confirmed",
+    "Chrome MV3 integration YU-27/YU-28 not verified",
+    "DEV/QA read-only web only if repeated reviewer demand demonstrated"
+  ],
+  "outOfScope": [
+    "Real billing and refunds",
+    "Support desk rollout",
+    "QA forced-state control on customer or production data",
+    "External code/assets directly copied",
+    "Figma current originals removed",
+    "Changing frontend/backend/shared runtime",
+    "M9 Product Integrated falsely declared"
+  ]
+}
