@@ -37,8 +37,8 @@ DEV/QA runner → Node / Playwright / Chrome MV3 / BE contract tests
             → optional read-only QA Run index only if required
 ~~~
 
-- 현재 \`backend\` 원격 브랜치는 \`dev\` Initial README와 동일한 것으로 검사됐다. **Job/DB/Admin/Auth 서버는 구현됐다는 증거가 없다.** 기술 스택(Python/FastAPI 등)은 후보이며 BE 담당·전담 ADR 승인 전 확정하지 않는다.
-- 기존 \`shared/contracts/analysis-v1/analysis.schema.json\`의 \`AnalysisJob\`, \`ErrorEnvelope\`, \`UserEntitlement\`는 **공통 계약 후보**다. 운영 전용 읽기 타입·API 경로는 별도 BE/FE 리뷰 후 정해야 하며, 기존 스키마를 자동 대체·승격하지 않는다.
+- 현재 `backend` 원격 브랜치는 `dev` Initial README와 동일한 것으로 검사됐다. **Job/DB/Admin/Auth 서버는 구현됐다는 증거가 없다.** 기술 스택(Python/FastAPI 등)은 후보이며 BE 담당·전담 ADR 승인 전 확정하지 않는다.
+- 기존 `shared/contracts/analysis-v1/analysis.schema.json`의 `AnalysisJob`, `ErrorEnvelope`, `UserEntitlement`는 **공통 계약 후보**다. 운영 전용 읽기 타입·API 경로는 별도 BE/FE 리뷰 후 정해야 하며, 기존 스키마를 자동 대체·승격하지 않는다.
 - 실제 YouTube 댓글/분석 파생 지표는 승인 정책 Gate가 없으면 수집·저장·제공을 시작하지 않는다. D0 합성 자료만으로 HTTP·UI 상태·산술/권한 회귀를 준비할 수 있다.
 
 ## 3. 제안하는 BE→FE 계약 (아직 구현 전)
@@ -47,30 +47,30 @@ DEV/QA runner → Node / Playwright / Chrome MV3 / BE contract tests
 
 | 계약 후보 | 최소 데이터 | 미확보/권한/오류 규칙 |
 |---|---|---|
-| \`OpsStatus\` | \`environment\`, \`source\`, \`capturedAt\`, \`health\`, \`runningJobs?\`, \`failedJobs?\`, \`quotaRemaining?\`, \`connectionStatus\` | 카운트 미측정은 **null/UNKNOWN**. 가짜 0·성공률·실시간 그래프 금지 |
-| \`OpsJobListItem\` | \`runId\`, \`targetRef\`, \`scope\`, \`state\`, \`requestedAt\`, \`updatedAt\`, \`attempt\`, \`reasonCode?\` | 1행은 진짜 Job 1개. 불명확한 데이터에는 Mock badge가 아닌 비가용 UI |
-| \`OpsJobDetail\` | list item + \`eventHistory\`, \`failureSummary?\`, \`dataCoverage?\`, \`qualityReportRef?\`, \`traceRef?\` | 권한·사용 목적이 확인된 메타데이터만, raw comment/token 숨김 |
-| \`DataCoverage\` | raw/eligible/excluded/classified/unclassified, window, sourceVersion, validationResults | 분모가 다른 지표들을 혼합하지 않음. unknown과 0 분리 |
+| `OpsStatus` | `environment`, `source`, `capturedAt`, `health`, `runningJobs?`, `failedJobs?`, `quotaRemaining?`, `connectionStatus` | 카운트 미측정은 **null/UNKNOWN**. 가짜 0·성공률·실시간 그래프 금지 |
+| `OpsJobListItem` | `runId`, `targetRef`, `scope`, `state`, `requestedAt`, `updatedAt`, `attempt`, `reasonCode?` | 1행은 진짜 Job 1개. 불명확한 데이터에는 Mock badge가 아닌 비가용 UI |
+| `OpsJobDetail` | list item + `eventHistory`, `failureSummary?`, `dataCoverage?`, `qualityReportRef?`, `traceRef?` | 권한·사용 목적이 확인된 메타데이터만, raw comment/token 숨김 |
+| `DataCoverage` | raw/eligible/excluded/classified/unclassified, window, sourceVersion, validationResults | 분모가 다른 지표들을 혼합하지 않음. unknown과 0 분리 |
 
-읽기 경로(예시이며 실제 API가 아님): \`GET /internal/v1/ops/status\`, \`GET /internal/v1/jobs\`, \`GET /internal/v1/jobs/{runId}\`. Job 조회는 상태/기간/환경 필터 및 서버측 페이지네이션이 필요하다. **Job Retry 쓰기 작업은 최초 구현에서 제외**하고, 추후 멱등성·권한·감사/재시도 부하가 검증됐을 때 독립 설계로 추가한다.
+읽기 경로(예시이며 실제 API가 아님): `GET /internal/v1/ops/status`, `GET /internal/v1/jobs`, `GET /internal/v1/jobs/{runId}`. Job 조회는 상태/기간/환경 필터 및 서버측 페이지네이션이 필요하다. **Job Retry 쓰기 작업은 최초 구현에서 제외**하고, 추후 멱등성·권한·감사/재시도 부하가 검증됐을 때 독립 설계로 추가한다.
 
 ### 3.2 Policy & Audit view
 
 | 계약 후보 | 최소 데이터 | 중요한 정책 의미 |
 |---|---|---|
-| \`PolicyOverview\` | \`policyId\`, \`revision\`, \`approvalStatus\`, \`scope\`, \`sourceRef\`, \`obtainedAt\`, \`expiresAt?\`, \`retentionRule?\` | 외부 승인 근거가 없으면 \`UNKNOWN\` 또는 \`BLOCKED\`, 허가된 것으로 간주 금지 |
-| \`PolicyDecisionRecord\` | \`decisionId\`, \`occurredAt\`, \`actorRole\`, \`resourceRef\`, \`action\`, \`allow\`, \`reasonCode\`, \`policyRevision\`, \`traceId?\` | 실제 서버의 정책 평가 기록과 1:1 연결, 클라이언트 조작 불가 |
-| \`AuditEvent\` | \`eventId\`, \`occurredAt\`, \`actorRef\`, \`action\`, \`targetRef\`, \`outcome\`, \`reasonCode?\`, \`policyRevision?\` | Append-only 또는 동등한 변조 방지, 개인정보/Secrets 최소화·보존 |
-| \`RetentionEvent\` | \`eventId\`, \`resourceRef\`, \`retentionRule\`, \`deletedAt?\`, \`reason\`, \`evidenceRef\` | 삭제/비공개/동의 회수 시 stale 캐시·접근 무효화 검증 |
+| `PolicyOverview` | `policyId`, `revision`, `approvalStatus`, `scope`, `sourceRef`, `obtainedAt`, `expiresAt?`, `retentionRule?` | 외부 승인 근거가 없으면 `UNKNOWN` 또는 `BLOCKED`, 허가된 것으로 간주 금지 |
+| `PolicyDecisionRecord` | `decisionId`, `occurredAt`, `actorRole`, `resourceRef`, `action`, `allow`, `reasonCode`, `policyRevision`, `traceId?` | 실제 서버의 정책 평가 기록과 1:1 연결, 클라이언트 조작 불가 |
+| `AuditEvent` | `eventId`, `occurredAt`, `actorRef`, `action`, `targetRef`, `outcome`, `reasonCode?`, `policyRevision?` | Append-only 또는 동등한 변조 방지, 개인정보/Secrets 최소화·보존 |
+| `RetentionEvent` | `eventId`, `resourceRef`, `retentionRule`, `deletedAt?`, `reason`, `evidenceRef` | 삭제/비공개/동의 회수 시 stale 캐시·접근 무효화 검증 |
 
-읽기 경로 후보: \`GET /internal/v1/policies\`, \`GET /internal/v1/audit-events\`. \`ALLOW\`/승인 상태는 **정당한 출처의 승인 범위에 맞아야 하며 관리자 UI에서 임의로 켤 수 없다**. YouTube 파생 지표 정책과 운영 사용권/저장 정책은 별개 법적·기술적 Gate다.
+읽기 경로 후보: `GET /internal/v1/policies`, `GET /internal/v1/audit-events`. `ALLOW`/승인 상태는 **정당한 출처의 승인 범위에 맞아야 하며 관리자 UI에서 임의로 켤 수 없다**. YouTube 파생 지표 정책과 운영 사용권/저장 정책은 별개 법적·기술적 Gate다.
 
 ### 3.3 공통 보안/상태 계약
 
 - Admin API의 매 요청마다 유효한 세션·role·scoped resource entitlement를 **BE에서 판정**. 401 인증 실패, 403 인가 실패(자원 존재 정보 노출 여부는 보안 정책으로 결정); 역할 문자열·브라우저 탭 ID는 권한 증명 아님.
 - 운영 정책/감사 로그/개인정보의 최소 접근을 기본값으로 한다. Trace는 접근통제/마스킹, 실제 YouTube 원문·이메일·토큰·재수집 규칙 우회 경로를 기본 제공하지 않는다.
 - 권한 제거·사용자 전환·세션 만료·삭제 이벤트 시 FE의 이전 리소스 캐시와 메모리 표시를 무효화한다.
-- 응답에는 서버가 확정한 \`observedAt\`/소스/분모/상태를 제공. \`data missing\`은 측정치 0이 아니다.
+- 응답에는 서버가 확정한 `observedAt`/소스/분모/상태를 제공. `data missing`은 측정치 0이 아니다.
 - QA 강제 상태는 운영 DB·고객/플랫폼 관리자 UI에서 허용하지 않고 격리된 test fixture에서 재현한다.
 
 ## 4. 화면 최소화 원칙과 외부 사례 연결
@@ -102,7 +102,7 @@ DEV/QA runner → Node / Playwright / Chrome MV3 / BE contract tests
 |---|---|---|
 | ADM-UX-01 | Figma 82-03 ↔ 82-04 Light, 82-05 ↔ 82-06 Dark 실제 Present 클릭 | 두 메뉴 정상 이동, 원래 Admin 82-01/02와 혼동 없음 |
 | ADM-UX-02 | 서버 Job 미연결·미측정·오류 | 0건/정상/실시간 등의 허위 메트릭 없음 |
-| ADM-UX-03 | 유효 Job 목록 조회→Run 선택→실패/품질/Trace | 목록·상세의 \`runId\`, \`observedAt\`, 오류 사유 1:1 일치 |
+| ADM-UX-03 | 유효 Job 목록 조회→Run 선택→실패/품질/Trace | 목록·상세의 `runId`, `observedAt`, 오류 사유 1:1 일치 |
 | ADM-UX-04 | Admin Policy/Deny/Delete/Audit 조회 | 실제 정책 버전·승인 근거·삭제 이벤트와 UI 일치 |
 | ADM-UX-05 | 고객/조직/QA 세션으로 Admin API 요청 | 401/403 등 안전하게 차단, 민감정보 누출 0 |
 | ADM-UX-06 | 원본 대비 메뉴와 Notice/CTA 검사 | 핵심 2메뉴, 중복 Notice 0, 실행 없는 명령 버튼 0 |
@@ -122,4 +122,4 @@ DEV/QA runner → Node / Playwright / Chrome MV3 / BE contract tests
 5. QA 웹을 만들 정도로 내부 비개발 검토 수요가 있는지.
 6. Figma UI 색/텍스트/시각 레이아웃의 최종 사용자 승인.
 
-**현재 판정:** \`ADMIN_2_VIEW_DESIGN_DIRECTION_APPROVED\`, \`FIGMA_4_THEME_SCREENS_CREATED\`, \`QA_TOOLCHAIN_FIRST_APPROVED\`, \`BE_API_CONTRACT_CANDIDATE\`, \`PRESENT_NOT_RUN\`, \`RUNTIME_NOT_IMPLEMENTED\`.
+**현재 판정:** `ADMIN_2_VIEW_DESIGN_DIRECTION_APPROVED`, `FIGMA_4_THEME_SCREENS_CREATED`, `QA_TOOLCHAIN_FIRST_APPROVED`, `BE_API_CONTRACT_CANDIDATE`, `PRESENT_NOT_RUN`, `RUNTIME_NOT_IMPLEMENTED`.
