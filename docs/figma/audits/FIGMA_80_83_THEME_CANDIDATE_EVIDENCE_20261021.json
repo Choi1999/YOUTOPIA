@@ -1,0 +1,395 @@
+{
+  "title": "YOUTOPIA 80–83 Light/Dark role surface candidate evidence",
+  "dateKST": "2026-10-21",
+  "figmaFileKey": "00Q6HNjuv02u7Ex4yUzZer",
+  "baseline": {
+    "pr25": "https://github.com/Choi1999/YOUTOPIA/pull/25",
+    "frontendMergedSha": "9ab677d4aa2e742fa00ed433409278ac28010db1"
+  },
+  "scope": "Only existing Figma pages 80–83 and a four-row disposition update on page 00. Preserve approved originals, create separate theme-QA-only copies.",
+  "status": "CANDIDATES_CREATED_AND_STATICALLY_VERIFIED / FIGMA_PRESENT_NOT_RUN / NO_PRODUCT_CODE_CHANGE / USER_VISUAL_APPROVAL_PENDING",
+  "groups": [
+    {
+      "number": "80",
+      "page": "1283:2",
+      "type": "CUSTOMER_WEB",
+      "originals": [
+        "1285:2",
+        "1285:72",
+        "1285:145"
+      ],
+      "qaIndex": "1408:20",
+      "existingRoleIndex": "1359:8",
+      "candidates": [
+        {
+          "screen": "80-01 Guest",
+          "original": "1285:2",
+          "light": "1404:10",
+          "dark": "1401:8",
+          "lightStyled": 23,
+          "darkStyled": 23,
+          "texts": 43,
+          "solid": 79,
+          "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1404-10",
+          "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1401-8"
+        },
+        {
+          "screen": "80-02 Individual Basic",
+          "original": "1285:72",
+          "light": "1404:83",
+          "dark": "1404:159",
+          "lightStyled": 22,
+          "darkStyled": 22,
+          "texts": 43,
+          "solid": 81,
+          "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1404-83",
+          "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1404-159"
+        },
+        {
+          "screen": "80-03 Individual Subscriber",
+          "original": "1285:145",
+          "light": "1404:235",
+          "dark": "1404:308",
+          "lightStyled": 23,
+          "darkStyled": 23,
+          "texts": 43,
+          "solid": 79,
+          "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1404-235",
+          "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1404-308"
+        }
+      ],
+      "pageUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1283-2",
+      "qaIndexUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1408-20"
+    },
+    {
+      "number": "81",
+      "page": "1283:3",
+      "type": "ORGANIZATION_WEB",
+      "originals": [
+        "1286:2",
+        "1286:72"
+      ],
+      "qaIndex": "1408:73",
+      "existingRoleIndex": "1359:30",
+      "candidates": [
+        {
+          "screen": "81-01 Member",
+          "original": "1286:2",
+          "light": "1405:6",
+          "dark": "1405:79",
+          "lightStyled": 24,
+          "darkStyled": 24,
+          "texts": 43,
+          "solid": 79,
+          "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1405-6",
+          "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1405-79"
+        },
+        {
+          "screen": "81-02 Organization Admin",
+          "original": "1286:72",
+          "light": "1405:152",
+          "dark": "1405:227",
+          "lightStyled": 25,
+          "darkStyled": 25,
+          "texts": 44,
+          "solid": 81,
+          "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1405-152",
+          "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1405-227"
+        }
+      ],
+      "pageUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1283-3",
+      "qaIndexUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1408-73"
+    },
+    {
+      "number": "82",
+      "page": "1283:4",
+      "type": "PLATFORM_ADMIN_WEB",
+      "originals": [
+        "1286:144",
+        "1286:218"
+      ],
+      "qaIndex": "1408:114",
+      "existingRoleIndex": "1286:144",
+      "candidates": [
+        {
+          "screen": "82-01 Operations",
+          "original": "1286:144",
+          "light": "1406:83",
+          "dark": "1406:6",
+          "lightStyled": 26,
+          "darkStyled": 26,
+          "texts": 45,
+          "solid": 82,
+          "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1406-83",
+          "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1406-6"
+        },
+        {
+          "screen": "82-02 Policy Audit",
+          "original": "1286:218",
+          "light": "1406:235",
+          "dark": "1406:160",
+          "lightStyled": 25,
+          "darkStyled": 25,
+          "texts": 44,
+          "solid": 80,
+          "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1406-235",
+          "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1406-160"
+        }
+      ],
+      "pageUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1283-4",
+      "qaIndexUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1408-114"
+    },
+    {
+      "number": "83",
+      "page": "1283:5",
+      "type": "INTERNAL_QA_WEB",
+      "originals": [
+        "1286:290",
+        "1286:362"
+      ],
+      "qaIndex": "1408:155",
+      "existingRoleIndex": "1286:290",
+      "candidates": [
+        {
+          "screen": "83-01 Simulator",
+          "original": "1286:290",
+          "light": "1407:81",
+          "dark": "1407:6",
+          "lightStyled": 25,
+          "darkStyled": 25,
+          "texts": 44,
+          "solid": 80,
+          "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1407-81",
+          "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1407-6"
+        },
+        {
+          "screen": "83-02 Regression",
+          "original": "1286:362",
+          "light": "1407:231",
+          "dark": "1407:156",
+          "lightStyled": 25,
+          "darkStyled": 25,
+          "texts": 44,
+          "solid": 80,
+          "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1407-231",
+          "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1407-156"
+        }
+      ],
+      "pageUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1283-5",
+      "qaIndexUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1408-155"
+    }
+  ],
+  "counts": {
+    "originals": 9,
+    "lightCandidates": 9,
+    "darkCandidates": 9,
+    "styledTextNodes": 436,
+    "totalTextNodes": 786,
+    "boundSolidPaints": 1442,
+    "unboundSolidPaints": 0,
+    "prototypeThemeIndexLinks": 18,
+    "invalidThemeNodeDestination": 0,
+    "flowStartsPerPage": 2,
+    "inheritedCandidateReactions": 0,
+    "instanceNoticeOverrideTexts": 36,
+    "totalNewVisualScreens": 18,
+    "roleReviewIndexes": 4
+  },
+  "tokenVariables": {
+    "collection": "YUTOPIA/의미 토큰",
+    "lightMode": "1157:0",
+    "darkMode": "18:1",
+    "semantics": [
+      "bg/app",
+      "bg/surface",
+      "bg/subtle",
+      "border/default",
+      "text/primary",
+      "text/secondary",
+      "text/muted",
+      "accent/primary",
+      "status/warning",
+      "status/normal",
+      "status/error"
+    ]
+  },
+  "tokenContrast": {
+    "method": "Figma semantic variable Light/Dark RGB values, WCAG contrast formula; token pairs only, not full UI accessibility audit",
+    "pairs": [
+      {
+        "theme": "LIGHT",
+        "foreground": "text/primary",
+        "background": "bg/surface",
+        "contrastRatio": 15.64,
+        "passesWCAGNormalTextAA": true
+      },
+      {
+        "theme": "LIGHT",
+        "foreground": "text/secondary",
+        "background": "bg/surface",
+        "contrastRatio": 7.79,
+        "passesWCAGNormalTextAA": true
+      },
+      {
+        "theme": "LIGHT",
+        "foreground": "text/muted",
+        "background": "bg/subtle",
+        "contrastRatio": 4.68,
+        "passesWCAGNormalTextAA": true
+      },
+      {
+        "theme": "LIGHT",
+        "foreground": "accent/primary",
+        "background": "bg/surface",
+        "contrastRatio": 6.1,
+        "passesWCAGNormalTextAA": true
+      },
+      {
+        "theme": "LIGHT",
+        "foreground": "status/warning",
+        "background": "bg/surface",
+        "contrastRatio": 5.13,
+        "passesWCAGNormalTextAA": true
+      },
+      {
+        "theme": "LIGHT",
+        "foreground": "status/warning",
+        "background": "bg/subtle",
+        "contrastRatio": 4.57,
+        "passesWCAGNormalTextAA": true
+      },
+      {
+        "theme": "LIGHT",
+        "foreground": "status/normal",
+        "background": "bg/surface",
+        "contrastRatio": 4.66,
+        "passesWCAGNormalTextAA": true
+      },
+      {
+        "theme": "LIGHT",
+        "foreground": "status/error",
+        "background": "bg/surface",
+        "contrastRatio": 5.04,
+        "passesWCAGNormalTextAA": true
+      },
+      {
+        "theme": "DARK",
+        "foreground": "text/primary",
+        "background": "bg/surface",
+        "contrastRatio": 17.44,
+        "passesWCAGNormalTextAA": true
+      },
+      {
+        "theme": "DARK",
+        "foreground": "text/secondary",
+        "background": "bg/surface",
+        "contrastRatio": 8.85,
+        "passesWCAGNormalTextAA": true
+      },
+      {
+        "theme": "DARK",
+        "foreground": "text/muted",
+        "background": "bg/subtle",
+        "contrastRatio": 5.07,
+        "passesWCAGNormalTextAA": true
+      },
+      {
+        "theme": "DARK",
+        "foreground": "accent/primary",
+        "background": "bg/surface",
+        "contrastRatio": 5.19,
+        "passesWCAGNormalTextAA": true
+      },
+      {
+        "theme": "DARK",
+        "foreground": "status/warning",
+        "background": "bg/surface",
+        "contrastRatio": 8.45,
+        "passesWCAGNormalTextAA": true
+      },
+      {
+        "theme": "DARK",
+        "foreground": "status/warning",
+        "background": "bg/subtle",
+        "contrastRatio": 8.32,
+        "passesWCAGNormalTextAA": true
+      },
+      {
+        "theme": "DARK",
+        "foreground": "status/normal",
+        "background": "bg/surface",
+        "contrastRatio": 7.82,
+        "passesWCAGNormalTextAA": true
+      },
+      {
+        "theme": "DARK",
+        "foreground": "status/error",
+        "background": "bg/surface",
+        "contrastRatio": 5.27,
+        "passesWCAGNormalTextAA": true
+      }
+    ]
+  },
+  "structuralChecks": [
+    "Original 9 role frames still exist on same Figma page with original IDs and interactions",
+    "18 QA candidate frames exist (nine Light and nine Dark) with 0 inherited prototype reactions",
+    "1,442 solid fills and strokes in candidate frames all bound to meaning tokens, including local Access Boundary Notice instance overrides",
+    "436 of 786 text layers bound to exact matching pre-existing Inter styles; 350 unstyled text layers remain for future exact design-system variant treatment",
+    "18 theme index ON_CLICK NODE connections target existing QA candidate frames; invalid destinations 0",
+    "Four pages keep original role Flow plus one independent Theme QA Flow each (2 starts per page)",
+    "Guest/customer, organization membership, Platform Admin and DEV/QA separate web-role surfaces preserved; no Chrome login/admin mixing",
+    "00 Page Registry roles 80-83 statuses updated; Dark and Light original 00 starter frames untouched"
+  ],
+  "visualScreenshotChecks": [
+    {
+      "screen": "80-01 Guest Dark",
+      "node": "1401:8",
+      "result": "reviewed; selected accent 17% overlay adjusted to improve readability"
+    },
+    {
+      "screen": "80-02 Individual Dark",
+      "node": "1404:159",
+      "result": "reviewed; semantic sentiment colors; no overlapping panels observed at preview size"
+    },
+    {
+      "screen": "81-02 Organization Admin Dark",
+      "node": "1405:227",
+      "result": "reviewed; independent team-admin role remains"
+    },
+    {
+      "screen": "82-01 Platform Operations Light",
+      "node": "1406:83",
+      "result": "reviewed; platform admin retains separate web surface"
+    },
+    {
+      "screen": "83-01 QA Simulator Light",
+      "node": "1407:81",
+      "result": "reviewed; QA-only status labels retained"
+    },
+    {
+      "screen": "80 Theme QA Review Index",
+      "node": "1408:20",
+      "result": "reviewed; six candidate links shown"
+    },
+    {
+      "screen": "83 Theme QA Review Index",
+      "node": "1408:155",
+      "result": "reviewed; four candidate links shown"
+    }
+  ],
+  "notExecuted": [
+    "Figma Present actual click-through and browser back interactions",
+    "Screen-reader keyboard and focus accessibility of all frames",
+    "Color contrast of every actual layered element including alpha/transparency and dynamic states",
+    "Responsive desktop zoom and narrow viewports",
+    "Validation of 80-83 original unbound colors/text styles; source frames intentionally unchanged",
+    "Real Chrome Extension/Youtube MV3 work, platform-admin login or QA runtime",
+    "Frontend/Backend M9 integrated application acceptance"
+  ],
+  "sourceReuse": {
+    "externalCodeCopied": false,
+    "internalDesignSystemVariablesUsed": true,
+    "internalFigmaMasterComponentPreserved": true,
+    "roleNoticeInstancesOverriddenLocally": true
+  }
+}
