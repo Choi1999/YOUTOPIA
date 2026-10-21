@@ -88,7 +88,7 @@
 | 전체 80~83/98 문자·색상 토큰 바인딩·동일한 Light/Dark 구현 | **NOT_DONE** (QA 후속 작업) |
 | 90~92 과거 게임 Pilot의 크로스 페이지 11개 참조 정리 | **NOT_DONE** (보존함) |
 
-**선행 결정·연구 증거:** [P-13 Customer-only Chrome / Admin web](../../product-v0.2/GUEST_AUTH_CONTEXT_RESTORE_UX_20261021.md), [FE/BE M0~M9](../../product-v0.2/FE_BE_PRODUCT_INTEGRATION_METHOD_V3_20261021.md), [외부 UX 조사](../../product-v0.2/CUSTOMER_FIRST_UX_BENCHMARK_20261021.md) (후자는 별도 PR #17 Draft, 아직 제품 정본 확정 전).
+**선행 결정·연구 증거:** [P-13 Customer-only Chrome / Admin web](../../product-v0.2/GUEST_AUTH_CONTEXT_RESTORE_UX_20261021.md), [FE/BE M0~M9](../../product-v0.2/FE_BE_PRODUCT_INTEGRATION_METHOD_V3_20261021.md), [외부 UX 조사 PR #17](https://github.com/Choi1999/YOUTOPIA/blob/docs/yutopia-customer-first-ux-20261021/docs/product-v0.2/CUSTOMER_FIRST_UX_BENCHMARK_20261021.md) (후자는 별도 PR #17 Draft, 아직 제품 정본 확정 전).
 
 ## 8. 다음 구현 순서 (작업 진행 중이 아니라 계획)
 
