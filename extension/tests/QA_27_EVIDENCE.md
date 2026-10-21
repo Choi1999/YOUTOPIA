@@ -1,5 +1,21 @@
 # YU-27 Worker Messaging & Synthetic Session Cache — QA 증거
 
+## 2026-10-21 Windows Chromium Fixture 2종 통과 (최신)
+
+- 사용자 제공 PowerShell 원본 로그 기준 저장소 `C:\Users\diser\YUTOPIA-Chrome-QA-27`에서 `git status --short`의 변경사항 출력이 없었고, `git pull --ff-only origin feature/yutopia-27-worker-messaging`는 `73573b3..668d45e` Fast-forward 됐다.
+- **검증한 HEAD:** `668d45ec160c8b8aab40f4dab8bf10e2d964dbb2`.
+- **실행 명령:** `& $py extension/tests/chromium-hover-fixture.py`; `& $py extension/tests/chromium-hover-card-fixture.py` (기존 `YUTOPIA-QA26-venv`의 Python, 부재 시 `python` 대체).
+- **실제 출력:** `CHROMIUM_HOVER_FIXTURE_PASS` 및 `CHROMIUM_HOVER_CARD_FIXTURE_PASS`. 총 **Chromium Fixture 2/2 PASS**.
+- Hover Fixture: `strategy=DELEGATED_INTERACTIVE_CARD`, `activationDelayMs=0`, `leaveGraceMs=0`, `cardTransitGraceMs=160`; 정리 단계에서는 `disposed=true`, `boundVideoAnchors=0`, `boundChannelAnchors=0`로 종료.
+- Card Fixture: 초기 `visible=false, hostCount=0`; 테스트 종료 후 `disposed=true, visible=false, hostCount=0, lastHoverReason=ESCAPE` 확인. 별도 테스트의 중간 시나리오 판정은 스크립트가 출력한 최종 PASS에 근거한다.
+- 같은 기능 코드에 대한 이전 Windows Native Node **177/177 PASS** (테스트 SHA `73573b3f01b1e0f9376a29ecfa93e2aa70abb877`)도 유지. 현재 `668d45e`까지의 변경은 문서 파일 2개뿐이어서 테스트된 실행 코드와 동일.
+- **범위 제한:** 이 두 Fixture는 오프라인 Chromium의 Controller 및 Shadow DOM만 검증하며 YU-27 신규 `preview-client.js`↔MV3 Service Worker↔`chrome.storage.session` 실제 설치형 통신은 실행하지 않는다. 실제 Chrome에서의 YouTube live DOM/서비스 워커 재시작/콘솔 오류/접근성·장시간 테스트도 **PENDING**.
+- **현재 Gate:** `WINDOWS_NODE_177_OF_177_PASS / CHROMIUM_HOVER_FIXTURE_PASS / CHROMIUM_HOVER_CARD_FIXTURE_PASS / INSTALLED_CHROME_MV3_PENDING / LIVE_YOUTUBE_FINAL_PENDING`. PR #15 Draft 및 미병합 유지.
+- 이하의 `CHROMIUM_OFFLINE_PENDING` 등 문구는 해당 검사 전의 **과거 단계 기록**이다.
+
+---
+
+
 ## 2026-10-21 Windows 전체 Native Node 재검증 — 177/177 PASS (최신)
 
 - **사용자 제공 실제 PowerShell 로그** (`붙여넣은 텍스트(1)(20261021-041740).txt`): `C:\Users\diser\YUTOPIA-Chrome-QA-27`에서 `git pull --ff-only origin feature/yutopia-27-worker-messaging`가 `7be47b6..73573b3` Fast-forward 성공.
@@ -39,7 +55,7 @@ node --test extension/tests/*.test.cjs
 ---
 
 
-> CODE_READY / LOCAL_NODE_17_OF_17_PASS / WINDOWS_NATIVE_NODE_177_OF_177_PASS / CHROMIUM_OFFLINE_PENDING / CHROMIUM_MV3_NOT_CONFIRMED / LIVE_YOUTUBE_NOT_RUN / PR_REVIEW_REQUIRED
+> CODE_READY / WINDOWS_NATIVE_NODE_177_OF_177_PASS / CHROMIUM_HOVER_2_OF_2_PASS / CHROME_MV3_MESSAGING_PENDING / LIVE_YOUTUBE_FINAL_PENDING / PR_REVIEW_REQUIRED
 
 ## 범위 및 보호 계약
 
