@@ -22,7 +22,7 @@ Chrome 핵심 화면은 [98번 페이지](https://www.figma.com/design/00Q6HNjuv
 
 | 화면 | 역할·목적 | Figma |
 |---|---|---|
-| 80-01 | Guest · 비로그인 접근 범위는 미결정 | [1285:2](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1285-2) |
+| 80-01 | Guest · 기본 Hover/Side Panel 로그인 미강제 UX 방향 승인(2026-10-21), 실제 범위·서버 인증 미구현 | [1285:2](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1285-2) |
 | 80-02 | 개인 기본 이용자 · 단일 영상 요약 | [1285:72](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1285-72) |
 | 80-03 | 개인 구독 이용자 · 다중 영상/채널 비교 후보 | [1285:145](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1285-145) |
 | 81-01 | 조직 구성원 · 배정된 업무·허용된 자료·공유 보고서 | [1286:2](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1286-2) |
@@ -50,7 +50,7 @@ Chrome 핵심 화면은 [98번 페이지](https://www.figma.com/design/00Q6HNjuv
 - Chrome YouTube 홈/영상 또는 채널 Hover → 요약 카드 → 더보기 → 대상 고정 Side Panel.
 - 개인 기본 이용 → 단건 요약·채널 범위·내 계정. 비교/장기 분석을 선택했을 때에만 구독 안내.
 - 개인 구독 이용 → 심층 분석·복수 영상/채널 비교 → 저장·보고서 후보의 고객 웹 워크스페이스.
-- 비로그인 Hover 제공 여부는 ENT-01 결정 전 **미확정**. 화면상의 Guest 시안은 제공 약속이 아니다.
+- **2026-10-21 ENT-01 / P-07 Guest-first 방향 승인:** 허용된 영상·채널 기본 Hover/Side Panel은 로그인 없이 시작, 저장·비교·추적·협업은 필요한 순간에 로그인한다. 하지만 실제 Guest 조회량·데이터 이용권·정책 Gate·서버 인증은 미확정이며 정적 Guest 시안이 실제 운영 제공 증거는 아니다. 자세한 흐름은 [Guest 로그인·선택 복귀 설계](./GUEST_AUTH_CONTEXT_RESTORE_UX_20261021.md) 참조.
 
 **고객 조직**
 - 팀 구성원 → 내 작업 → 본인에게 허가된 분석·이슈 → 허가된 공유 보고서.
