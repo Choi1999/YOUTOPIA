@@ -22,6 +22,7 @@
 | P-10 | 사용자에게 분석 범위·불확실성 표시 수준 | **APPROVED_DIRECTION** | 표본/기간/원천·갱신 시각 고정 UX |
 | P-11 | 개인 기능 선택 순간 맥락형 로그인 + 원래 선택 영상/작업으로 복귀 | **APPROVED_DIRECTION (2026-10-21)** | [Guest Auth UX](./GUEST_AUTH_CONTEXT_RESTORE_UX_20261021.md), 일회성 Return Intent·다중 탭·취소 QA 후보 |
 | P-12 | 고객 개인/조직과 플랫폼 Admin·DEV/QA 인증 경계 분리 | **APPROVED_DIRECTION (2026-10-21)** | 고객 계정 공통 + 서버 역할, 별도 운영 인증; 인증 공급자/MFA는 미결정 |
+| P-13 | Chrome 확장 인증 Surface는 **일반 고객 로그인만**, 플랫폼 Admin·DEV/QA 인증은 웹 전용 | **APPROVED_DIRECTION (2026-10-21)** | [Auth Surface 결정](./GUEST_AUTH_CONTEXT_RESTORE_UX_20261021.md#21-2026-10-21-추가-승인-제품별-인증-surface-경계-auth-surface-01), [Figma Auth 경계 맵](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1334-15), 서버 역할·세션/SSO 기술은 M6에서 별도 결정 |
 
 ## 2. 기술·브라우저 결정
 
