@@ -1,0 +1,50 @@
+{
+  "contractVersion": "admin-v1-candidate",
+  "kind": "OPS_JOB_DETAIL",
+  "job": {
+    "runId": "SYNTH-RUN-001",
+    "sourceType": "STATIC_FIXTURE",
+    "isSynthetic": true,
+    "scope": {
+      "classification": "TENANT_PRIVATE",
+      "tenantId": "SYNTH-TENANT-A"
+    },
+    "targetRef": "SYNTH-VIDEO-001",
+    "state": "FAILED",
+    "attempt": 1,
+    "requestedAt": "2026-10-21T12:00:00Z",
+    "updatedAt": "2026-10-21T12:02:00Z",
+    "reasonCode": "FIXTURE_WORKER_STOP"
+  },
+  "eventHistory": [
+    {
+      "eventId": "SYNTH-EVT-001",
+      "state": "QUEUED",
+      "occurredAt": "2026-10-21T12:00:00Z",
+      "reasonCode": null
+    },
+    {
+      "eventId": "SYNTH-EVT-002",
+      "state": "RUNNING",
+      "occurredAt": "2026-10-21T12:00:30Z",
+      "reasonCode": null
+    },
+    {
+      "eventId": "SYNTH-EVT-003",
+      "state": "FAILED",
+      "occurredAt": "2026-10-21T12:02:00Z",
+      "reasonCode": "FIXTURE_WORKER_STOP"
+    }
+  ],
+  "coverage": {
+    "rawCount": 100,
+    "eligibleCount": 80,
+    "excludedCount": 20,
+    "classifiedCount": 60,
+    "unclassifiedCount": 20,
+    "windowStart": "2026-10-20T12:00:00Z",
+    "windowEnd": "2026-10-21T12:00:00Z",
+    "validationVersion": "SYNTHETIC_QA_V1"
+  },
+  "traceRef": null
+}
