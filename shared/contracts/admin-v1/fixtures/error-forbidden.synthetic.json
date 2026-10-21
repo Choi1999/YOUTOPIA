@@ -1,0 +1,8 @@
+{
+  "contractVersion": "admin-v1-candidate",
+  "kind": "ERROR",
+  "httpStatus": 403,
+  "code": "PLATFORM_ROLE_REQUIRED",
+  "retryable": false,
+  "traceId": null
+}
