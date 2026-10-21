@@ -1,0 +1,633 @@
+{
+  "auditTitle": "Figma 00-99 prototype and page registry post-approval change evidence",
+  "snapshotDateKst": "2026-10-21",
+  "baselineRepoSha": "36e1769ef577b0ef9226090296a0ea206740a131",
+  "baselineAudit": "docs/figma/audits/FIGMA_00_99_PAGE_INVENTORY_20261021.json",
+  "figmaFileKey": "00Q6HNjuv02u7Ex4yUzZer",
+  "scope": "29 existing pages 00–99 only; numbered page 100 unchanged, separate Auth candidate",
+  "mode": "Figma Plugin API edited targeted prototype reactions/flowStartingPoints, non-destructive review index frames, copy only, page 00 registry; no deleted/renamed pages, no FE/BE code modified",
+  "before": {
+    "pages": 29,
+    "layerNodes": 42254,
+    "reactions": 484,
+    "nodeActions": 381,
+    "urlActions": 103,
+    "flowStartingPoints": 25
+  },
+  "after": {
+    "pages": 29,
+    "layerNodes": 42410,
+    "reactions": 494,
+    "nodeActions": 391,
+    "urlActions": 103,
+    "flowStartingPoints": 31
+  },
+  "newTopFrames": [
+    "1359:8",
+    "1359:30",
+    "1367:2"
+  ],
+  "changes": [
+    {
+      "id": "FPA-02",
+      "scope": "98 Chrome UX",
+      "type": "prototype_rewire",
+      "modified": [
+        {
+          "source": "1255:73",
+          "oldTarget": "1253:4",
+          "newTarget": "1276:2",
+          "trigger": "ON_HOVER"
+        },
+        {
+          "source": "1276:215",
+          "oldTarget": "1253:5",
+          "newTarget": "1276:217",
+          "trigger": "ON_CLICK"
+        }
+      ],
+      "flows": 5,
+      "validation": "All 10 top-level frames reachable across 5 reviewer starting flows; active Home→Latest Hover→Latest Panel→Home path; zero invalid NODE destinations",
+      "status": "STRUCTURE_PASS;_PRESENT_NOT_RUN"
+    },
+    {
+      "id": "FPA-03-80",
+      "scope": "80 Customer Web",
+      "type": "non-destructive-prototype-index",
+      "newFrame": "1359:8",
+      "links": [
+        [
+          "1359:13",
+          "1285:2"
+        ],
+        [
+          "1359:17",
+          "1285:72"
+        ],
+        [
+          "1359:21",
+          "1285:145"
+        ],
+        [
+          "1285:140",
+          "1285:145"
+        ]
+      ],
+      "validation": "4/4 frames reachable from customer role index, review-only navigation marked demo, no authorization implied",
+      "status": "STRUCTURE_PASS;_AUTH_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "FPA-03-81",
+      "scope": "81 Organization Web",
+      "type": "non-destructive-role-index",
+      "newFrame": "1359:30",
+      "links": [
+        [
+          "1359:35",
+          "1286:2"
+        ],
+        [
+          "1359:39",
+          "1286:72"
+        ]
+      ],
+      "validation": "3/3 frames reachable; member→admin privilege escalation not linked",
+      "status": "STRUCTURE_PASS;_ROLE_GUARD_UNIMPLEMENTED"
+    },
+    {
+      "id": "FPA-03-82",
+      "scope": "82 Platform Admin Web",
+      "type": "in-role-navigation",
+      "links": [
+        [
+          "1286:156",
+          "1286:218"
+        ],
+        [
+          "1286:224",
+          "1286:144"
+        ]
+      ],
+      "validation": "2/2 frames reachable with named Flow start",
+      "status": "STRUCTURE_PASS;_SERVER_AUTH_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "FPA-03-83",
+      "scope": "83 Internal QA Web",
+      "type": "in-role-navigation",
+      "links": [
+        [
+          "1286:302",
+          "1286:362"
+        ],
+        [
+          "1286:368",
+          "1286:290"
+        ]
+      ],
+      "validation": "2/2 frames reachable with named Flow start",
+      "status": "STRUCTURE_PASS;_QA_ENV_NOT_IMPLEMENTED"
+    },
+    {
+      "id": "FPA-04",
+      "scope": "93 React Web Demo",
+      "type": "named-flow-start-and-copy",
+      "flows": [
+        {
+          "nodeId": "1159:11",
+          "name": "REACT WEB DEMO · 고객 로그인 Dark"
+        },
+        {
+          "nodeId": "1159:50",
+          "name": "REACT WEB DEMO · 고객 로그인 Light"
+        }
+      ],
+      "textNodeIds": [
+        "1159:15",
+        "1159:16",
+        "1159:28",
+        "1159:54",
+        "1159:55",
+        "1159:67"
+      ],
+      "validation": "All 24 YU-01..12 Light/Dark feature screens reachable from two starts; two Product Journey decorative frames remain isolated",
+      "status": "STRUCTURE_PASS;_REACT_APP_NOT_RETTESTED"
+    },
+    {
+      "id": "FPA-06",
+      "scope": "80 Guest copy",
+      "type": "policy-wording",
+      "textNodeIds": [
+        "1285:28",
+        "1285:32",
+        "1285:51",
+        "1285:60",
+        "1285:62"
+      ],
+      "validation": "Guest-first copy replaces undecided/forced-login claims; actual guest data limits still unsettled",
+      "status": "SCREENSHOT_REVIEWED"
+    },
+    {
+      "id": "FPA-01",
+      "scope": "00 Starting Page",
+      "type": "page-registry-review-sheet",
+      "newFrame": "1367:2",
+      "pageGroups": [
+        "00-14",
+        "80-83",
+        "90-94",
+        "95-99"
+      ],
+      "totalEntries": 29,
+      "validation": "All 29 existing page names and purpose categories in separate token-bound editable Registry frame at x=3090, leaving Dark/Light start frames unchanged",
+      "status": "VISUAL_REVIEW_PASS;_REGISTRY_LINK_NAV_NOT_REQUESTED"
+    }
+  ],
+  "remainingGates": [
+    "Figma Present actual interactive journey manual test NOT RUN",
+    "98-10 Topic/Trend/Evidence tabs and AuthReturnIntent Figma states NOT WIRED; 4-tab vs 3-tab information architecture unresolved",
+    "80/81 role-switch review indexes are not real login, subscription or permissions; screenshots not proof of authorization",
+    "93 game-specific demo content outside YU-01 login and old project data still remains",
+    "80-83/98 broader text style/token and Light/Dark parity remediation NOT DONE",
+    "92 cross-page legacy Pilot 11 references remain intentionally unchanged",
+    "YU-27 installed Chrome MV3 and YU-28 Side Panel runtime integration NOT VERIFIED",
+    "100 Auth candidate page outside numbered scope remains STATIC and PR #21 Draft"
+  ],
+  "pages": [
+    {
+      "number": "00",
+      "title": "시작하기 · Dark / Light",
+      "id": "343:1690",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=343-1690",
+      "role": "guide/onboarding",
+      "totalNodes": 149,
+      "topLevelContainers": 5,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "GUIDE_WITH_PAGE_REGISTRY",
+      "dataSource": "post-change exact Figma Plugin API readback"
+    },
+    {
+      "number": "01",
+      "title": "디자인 원칙 · Dark / Light",
+      "id": "343:1691",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=343-1691",
+      "role": "guide/principles",
+      "totalNodes": 38,
+      "topLevelContainers": 4,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "GUIDE_STATIC_EXPECTED",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "02",
+      "title": "기초 스타일 · Dark / Light",
+      "id": "343:1692",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=343-1692",
+      "role": "guide/tokens",
+      "totalNodes": 1432,
+      "topLevelContainers": 4,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "GUIDE_STATIC_EXPECTED",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "03",
+      "title": "컴포넌트 · Dark / Light",
+      "id": "343:1693",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=343-1693",
+      "role": "guide/components",
+      "totalNodes": 1528,
+      "topLevelContainers": 4,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "GUIDE_STATIC_EXPECTED",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "04",
+      "title": "데이터 시각화 · Dark / Light",
+      "id": "343:1694",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=343-1694",
+      "role": "guide/dataviz",
+      "totalNodes": 642,
+      "topLevelContainers": 4,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "GUIDE_STATIC_EXPECTED",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "05",
+      "title": "상태 표시 · Dark / Light",
+      "id": "343:1695",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=343-1695",
+      "role": "guide/status",
+      "totalNodes": 144,
+      "topLevelContainers": 4,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "GUIDE_STATIC_EXPECTED",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "06",
+      "title": "접근성 · Dark / Light",
+      "id": "343:1696",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=343-1696",
+      "role": "guide/a11y",
+      "totalNodes": 308,
+      "topLevelContainers": 4,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "GUIDE_STATIC_EXPECTED",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "07",
+      "title": "콘텐츠 작성 기준 · Dark / Light",
+      "id": "343:1697",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=343-1697",
+      "role": "guide/content",
+      "totalNodes": 66,
+      "topLevelContainers": 4,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "GUIDE_STATIC_EXPECTED",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "08",
+      "title": "개발 참고 · Dark / Light",
+      "id": "362:2",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=362-2",
+      "role": "guide/development",
+      "totalNodes": 78,
+      "topLevelContainers": 4,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "GUIDE_STATIC_EXPECTED",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "09",
+      "title": "레이아웃·운영 가이드 · Dark / Light",
+      "id": "418:19",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=418-19",
+      "role": "guide/layout",
+      "totalNodes": 576,
+      "topLevelContainers": 4,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "GUIDE_STATIC_EXPECTED",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "10",
+      "title": "Compact Desktop · 1440px · Dark / Light",
+      "id": "424:2",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=424-2",
+      "role": "guide/responsive-legacy",
+      "totalNodes": 4848,
+      "topLevelContainers": 4,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "GUIDE_STATIC_EXPECTED",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "11",
+      "title": "Small Desktop · 1280px · Dark / Light",
+      "id": "476:2",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=476-2",
+      "role": "guide/responsive-legacy",
+      "totalNodes": 4690,
+      "topLevelContainers": 4,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "GUIDE_STATIC_EXPECTED",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "12",
+      "title": "Narrow Layout · 1024px · Dark / Light",
+      "id": "487:2",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=487-2",
+      "role": "guide/responsive-legacy",
+      "totalNodes": 4458,
+      "topLevelContainers": 4,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "GUIDE_STATIC_EXPECTED",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "13",
+      "title": "YUTOPIA · 공통 컴포넌트 원본",
+      "id": "1177:10",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1177-10",
+      "role": "component/master",
+      "totalNodes": 1830,
+      "topLevelContainers": 6,
+      "reactions": 10,
+      "nodeActions": 0,
+      "urlActions": 10,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "URL_LINKS_ONLY",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "14",
+      "title": "YUTOPIA · Light·Dark 테마 검수",
+      "id": "1177:11",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1177-11",
+      "role": "guide/themeQA",
+      "totalNodes": 130,
+      "topLevelContainers": 2,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "GUIDE_STATIC_EXPECTED",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "80",
+      "title": "YUTOPIA · 고객 웹 워크스페이스·구독 · v0.3",
+      "id": "1283:2",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1283-2",
+      "role": "product/role-customer",
+      "totalNodes": 237,
+      "topLevelContainers": 4,
+      "reactions": 4,
+      "nodeActions": 4,
+      "urlActions": 0,
+      "flowStartingPoints": 1,
+      "prototypeStatus": "ROLE_REVIEW_NAV_WIRED_NOT_AUTH",
+      "dataSource": "post-change exact Figma Plugin API readback"
+    },
+    {
+      "number": "81",
+      "title": "YUTOPIA · 고객 조직 UI · v0.3",
+      "id": "1283:3",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1283-3",
+      "role": "product/role-organization",
+      "totalNodes": 160,
+      "topLevelContainers": 3,
+      "reactions": 2,
+      "nodeActions": 2,
+      "urlActions": 0,
+      "flowStartingPoints": 1,
+      "prototypeStatus": "ORG_ROLE_REVIEW_NAV_WIRED_NO_PRIVILEGE_ESCALATION",
+      "dataSource": "post-change exact Figma Plugin API readback"
+    },
+    {
+      "number": "82",
+      "title": "YUTOPIA · 플랫폼 관리자 UI · v0.3",
+      "id": "1283:4",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1283-4",
+      "role": "product/role-platform-admin",
+      "totalNodes": 152,
+      "topLevelContainers": 2,
+      "reactions": 2,
+      "nodeActions": 2,
+      "urlActions": 0,
+      "flowStartingPoints": 1,
+      "prototypeStatus": "ADMIN_INTERNAL_PAGE_NAV_WIRED_NOT_AUTH",
+      "dataSource": "post-change exact Figma Plugin API readback"
+    },
+    {
+      "number": "83",
+      "title": "YUTOPIA · 개발·QA 전용 UI · v0.3",
+      "id": "1283:5",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1283-5",
+      "role": "product/role-qa",
+      "totalNodes": 150,
+      "topLevelContainers": 2,
+      "reactions": 2,
+      "nodeActions": 2,
+      "urlActions": 0,
+      "flowStartingPoints": 1,
+      "prototypeStatus": "QA_INTERNAL_PAGE_NAV_WIRED_NOT_RUNTIME",
+      "dataSource": "post-change exact Figma Plugin API readback"
+    },
+    {
+      "number": "90",
+      "title": "YUTOPIA · 의사결정 확장 · Pilot 참조",
+      "id": "0:1",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=0-1",
+      "role": "legacy/pilot-prototype",
+      "totalNodes": 9837,
+      "topLevelContainers": 11,
+      "reactions": 98,
+      "nodeActions": 80,
+      "urlActions": 18,
+      "flowStartingPoints": 10,
+      "prototypeStatus": "LEGACY_INTERACTIVE_REFERENCE",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "91",
+      "title": "YUTOPIA · 반복 관측·주간 검토",
+      "id": "858:10",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=858-10",
+      "role": "legacy/weekly-prototype",
+      "totalNodes": 948,
+      "topLevelContainers": 6,
+      "reactions": 34,
+      "nodeActions": 16,
+      "urlActions": 18,
+      "flowStartingPoints": 1,
+      "prototypeStatus": "LEGACY_INTERACTIVE_REFERENCE",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "92",
+      "title": "YUTOPIA · 운영·권한·품질 설계",
+      "id": "1136:3886",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1136-3886",
+      "role": "legacy/operations-prototype",
+      "totalNodes": 2804,
+      "topLevelContainers": 7,
+      "reactions": 29,
+      "nodeActions": 11,
+      "urlActions": 18,
+      "flowStartingPoints": 1,
+      "prototypeStatus": "CROSS_PAGE_NODE_DEPENDENCIES",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "93",
+      "title": "YUTOPIA · 핵심 서비스 UX · Dark Light",
+      "id": "1159:10",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1159-10",
+      "role": "demo/react-ui-prototype",
+      "totalNodes": 2588,
+      "topLevelContainers": 26,
+      "reactions": 246,
+      "nodeActions": 228,
+      "urlActions": 18,
+      "flowStartingPoints": 2,
+      "prototypeStatus": "REACT_DEMO_TWO_STARTS_24_OF_24_PRODUCT_SCREENS_REACHABLE",
+      "dataSource": "post-change exact Figma Plugin API readback"
+    },
+    {
+      "number": "94",
+      "title": "YUTOPIA · 공개 진입·출처 안내",
+      "id": "1177:12",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1177-12",
+      "role": "product/public-entry",
+      "totalNodes": 277,
+      "topLevelContainers": 5,
+      "reactions": 21,
+      "nodeActions": 0,
+      "urlActions": 21,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "URL_LINKS_ONLY",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "95",
+      "title": "발표 · 디자인 시스템 [보존]",
+      "id": "1044:10",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1044-10",
+      "role": "archive/presentation-style",
+      "totalNodes": 49,
+      "topLevelContainers": 1,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "ARCHIVED_STATIC",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "96",
+      "title": "발표 · 본편·데모·부록 [보존]",
+      "id": "1044:11",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1044-11",
+      "role": "archive/presentation-prototype",
+      "totalNodes": 1759,
+      "topLevelContainers": 5,
+      "reactions": 34,
+      "nodeActions": 34,
+      "urlActions": 0,
+      "flowStartingPoints": 8,
+      "prototypeStatus": "ARCHIVED_PRESENTATION_INTERACTIVE",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "97",
+      "title": "발표 · 근거 자산 [보존]",
+      "id": "1044:12",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1044-12",
+      "role": "archive/presentation-evidence",
+      "totalNodes": 61,
+      "topLevelContainers": 1,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "ARCHIVED_STATIC",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    },
+    {
+      "number": "98",
+      "title": "YUTOPIA · Chrome Hover + Side Panel · 고객 UX v0.2",
+      "id": "1253:2",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1253-2",
+      "role": "product/chrome-ux",
+      "totalNodes": 2203,
+      "topLevelContainers": 10,
+      "reactions": 12,
+      "nodeActions": 12,
+      "urlActions": 0,
+      "flowStartingPoints": 5,
+      "prototypeStatus": "LATEST_HOME_TO_HOVER_TO_PANEL_WIRED;_TABS_NOT_WIRED",
+      "dataSource": "post-change exact Figma Plugin API readback"
+    },
+    {
+      "number": "99",
+      "title": "사용 중단 · 참조 보존",
+      "id": "343:1698",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=343-1698",
+      "role": "archive/deprecated",
+      "totalNodes": 268,
+      "topLevelContainers": 2,
+      "reactions": 0,
+      "nodeActions": 0,
+      "urlActions": 0,
+      "flowStartingPoints": 0,
+      "prototypeStatus": "ARCHIVED_STATIC",
+      "dataSource": "unchanged from 2026-10-21 baseline audit, no edit this turn"
+    }
+  ]
+}
