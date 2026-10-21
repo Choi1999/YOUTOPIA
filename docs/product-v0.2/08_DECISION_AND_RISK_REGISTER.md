@@ -4,7 +4,7 @@
 >
 > **결정이 필요한 부분과 지금 진행 가능한 부분을 구분합니다.** UI mock·입문 문서·테스트는 승인 전에도 진행할 수 있지만, 실제 API 파생 지표 계산·구독 결제·공개 출시에는 각각 명시적인 외부/관리자 승인이 필요합니다.
 
-[00 제품 방향](./00_PRODUCT_DIRECTION.md) · [04 실행대장](./04_EXECUTION_00_99.md) · [07 접근 권한](./07_SURFACE_ACCESS_MATRIX.md)
+[00 제품 방향](./00_PRODUCT_DIRECTION.md) · [04 실행대장](./04_EXECUTION_00_99.md) · [07 접근 권한](./07_SURFACE_ACCESS_MATRIX.md) · [Guest Auth UX](./GUEST_AUTH_CONTEXT_RESTORE_UX_20261021.md)
 
 ## 1. 기능·UI 의사결정
 
@@ -16,10 +16,12 @@
 | P-04 | 같은 카드 위로 마우스 이동 시 유지 시간 | **DRAFT** | 포인터 연속 이동·flicker 테스트 |
 | P-05 | Side Panel 고정 대상·창/탭 맥락 | **APPROVED_DIRECTION** | 클릭한 영상/채널 고정 PoC |
 | P-06 | 채널 @handle → 정확한 채널 ID 변환 | **UNRESOLVED** | mock channelId, 불확실 시 보류 |
-| P-07 | 로그아웃·비구독 상태에서 기본 Hover 노출 | **UNRESOLVED** | guest 기본/권한 차단 mock |
+| P-07 | 비로그인/로그아웃 기본 Hover·Side Panel의 제공 방향 | **APPROVED_DIRECTION (2026-10-21)** | 허용된 공개 기본 요약 우선, 실데이터·한도·남용 방지·서버 인가는 별도 결정 |
 | P-08 | 기본 무료 범위·유료 확장 한도/요금 | **UNRESOLVED** | 실제 가격 미표시 mock gating |
 | P-09 | 계정·구독·고객 조직 협업 우선순위 | **UNRESOLVED** | Role/Entitlement 분리 모델 |
 | P-10 | 사용자에게 분석 범위·불확실성 표시 수준 | **APPROVED_DIRECTION** | 표본/기간/원천·갱신 시각 고정 UX |
+| P-11 | 개인 기능 선택 순간 맥락형 로그인 + 원래 선택 영상/작업으로 복귀 | **APPROVED_DIRECTION (2026-10-21)** | [Guest Auth UX](./GUEST_AUTH_CONTEXT_RESTORE_UX_20261021.md), 일회성 Return Intent·다중 탭·취소 QA 후보 |
+| P-12 | 고객 개인/조직과 플랫폼 Admin·DEV/QA 인증 경계 분리 | **APPROVED_DIRECTION (2026-10-21)** | 고객 계정 공통 + 서버 역할, 별도 운영 인증; 인증 공급자/MFA는 미결정 |
 
 ## 2. 기술·브라우저 결정
 
@@ -39,6 +41,11 @@
 - **T-05 Chrome 확장 권한**
   - **위험:** 과도한 host permission·광범위 권한으로 보안/스토어 심사 문제.
   - **대응:** 최소 필요 권한과 `youtube.com` 대상만 먼저 검증, 고객 브라우징 이력 수집 금지.
+
+- **T-06 로그인 후 분석 선택 맥락 복귀**
+  - **승인된 UX:** Guest 기본 분석 유지, 저장·비교·협업 시에만 로그인. 성공 후 클릭 당시 선택 대상과 원래 업무로 복귀.
+  - **기술 미결정:** 인증 공급자, Chrome Auth Redirect, server session, 일회성 Return Intent의 저장·만료·탭 고정. 인증/OAuth 토큰을 YouTube DOM/URL에 노출하지 않고, 임의 반환 URL·오래된 선택·다중 탭 경합을 차단해야 한다.
+  - **근거:** [Chrome Identity API](https://developer.chrome.com/docs/extensions/reference/api/identity), [OWASP OAuth 2.0](https://cheatsheetseries.owasp.org/cheatsheets/OAuth2_Cheat_Sheet.html), [Auth Acceptance](./GUEST_AUTH_ACCEPTANCE_20261021.md).
 
 ## 3. 외부 정책·보안 게이트
 

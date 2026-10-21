@@ -150,6 +150,18 @@
 - **추적할 내부 작업:** FE-002 / FE-020 / PR #17
 - **현재 채택 상태:** **DESIGN_SELECTED**
 - **적용하지 말아야 할 부분/제약:** 코드/실 Chrome 반영·새 Figma 시안은 아직 없음
+
+### EX-013 · Chrome Identity API + OWASP OAuth2 — 고객 로그인과 안전한 Context Return
+
+- **영역/출처:** FE 인증 UX + BE 신원·세션 보안 설계. 공식 API https://developer.chrome.com/docs/extensions/reference/api/identity , 보안 지침 https://cheatsheetseries.owasp.org/cheatsheets/OAuth2_Cheat_Sheet.html , Chrome 확장 품질 권고 https://developer.chrome.com/docs/webstore/best-practices
+- **고정 근거:** 공식 문서 URL 및 조회일 2026-10-21 (문서 사이트는 Git commit이 아닌 URL+조회일로 기록); Chrome Identity API에서 사용자 상호작용이 시작한 launchWebAuthFlow / getRedirectURL 동작 확인, OWASP의 Authorization Code + PKCE·transaction state·OIDC nonce·redirect/issuer 검사 지침 확인.
+- **라이선스:** API·보안 구현 가이드 조사(코드·이미지·상용 UI 원본 복제 없음). 기술 문서는 소프트웨어 라이선스와 구별한다.
+- **실제 확인한 원칙:** 최초 확장 진입 시 대화형 Auth Flow 자동 시작 금지; 사용자 동의 의도를 설명하는 UI에서만 인증 시작. OAuth public client의 authorization-code interception/replay 및 open redirect 방지에 PKCE/state/nonce/issuer 검증.
+- **YOUTOPIA 적용 결정:** Guest-first 기본 Hover/Side Panel → 저장·비교 등 필요 순간 로그인 → 일회용 AuthReturnIntent로 클릭 당시 선택 대상과 작업 복귀, 서비스 로그인과 YouTube 채널 OAuth 동의를 분리.
+- **설계 근거·소유 작업:** [Guest Auth Context-Return UX](../product-v0.2/GUEST_AUTH_CONTEXT_RESTORE_UX_20261021.md) · [Auth Acceptance](../product-v0.2/GUEST_AUTH_ACCEPTANCE_20261021.md); M1 Auth 계약 후보 / M2 UX Mock / M6 실제 인증 / M9 통합 검증.
+- **현재 상태:** **DESIGN_SELECTED / CODE_INTEGRATED=NO / SECURITY_QA_NOT_RUN**. OAuth 공급자, Chrome identity permission, 서버 세션, 실제 인증 API는 아직 구현되지 않음.
+- **제약:** Google 로그인을 서비스 인증의 유일한 방식으로 결정한 것이 아니며, Chrome Identity API를 쓰기로 확정한 것도 아님. 실제 Auth 기술과 사용자 선택 의도 보존은 FE·BE 보안 ADR/검증 필요.
+
 ## 3. 실제 적용/사용 확인 테이블 (초기값은 NONE)
 
 | 참조 | 계획된 내부 위치 | 실제 구현 commit/파일 | 테스트 SHA·실측 | 현재 판정 |
@@ -160,6 +172,7 @@
 | EX-007~009 | BE-051, EDA-02~09 | **NONE** | **NOT_RUN** | 라이브러리 실험 전 |
 | EX-010 | BE-032 Kafka 대안 | **NONE** | **NOT_RUN** | 초기 미채택 |
 | EX-011 | M4~M9 데이터 승인 Gate | 실제 승인 **NONE** | **POLICY_PENDING** | 실데이터 분석 차단 |
+| EX-013 | M1/M2/M6 Guest-login·Context Return 설계 | **NONE** | OAuth·Session·실 Chrome E2E **NOT_RUN** | 공식 API·보안 지침 설계 참고 |
 
 ## 4. 실제 사용 시 제출해야 하는 기계/사람 증거
 
