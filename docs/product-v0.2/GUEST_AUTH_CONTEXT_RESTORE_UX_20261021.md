@@ -36,6 +36,23 @@
 
 실제 FE 소스 검토: LoginPage.tsx는 React 메모리 Demo 계정 로그인, SSO 미연결이며 기존 게임 중심 브랜딩이 남아 있다. extension/sidepanel.html은 MOCK placeholder, extension/manifest.json은 identity 권한 없음. 이번에는 소스/권한을 변경하지 않는다.
 
+### 2.1 2026-10-21 추가 승인: 제품별 인증 Surface 경계 (AUTH-SURFACE-01)
+
+**Chrome 확장 프로그램에는 고객 전용 로그인 진입점만 둔다.** 플랫폼 관리자, 정책 관리자, DEV/QA 전용 로그인 화면·버튼·메뉴·인증 플로우는 **운영 고객 Chrome 확장 빌드에서 제외**한다.
+
+| 배포/실행 표면 | 로그인과 사용자 범위 | 권한 판정 및 화면 기능 |
+|---|---|---|
+| **Customer Chrome Extension** | Guest 기본 분석, 일반 고객 로그인 진입·로그아웃/세션 표시, 로그인 후 동일 선택 영상 복귀 | 확장 안에 별도의 관리자/QA 로그인도, 독립 비밀번호 입력 폼도 만들지 않는다. 필요한 경우 고객 **웹 로그인**으로 안전하게 이동 후 고정 대상 복귀 |
+| **Customer Web** | 개인 고객·조직 구성원·조직 관리자 **공통 고객 로그인** | 개인 저장/비교/추적/보고. 조직 관리자 메뉴는 서버에서 조직별 역할/리소스 소유권 검증 후 표시 |
+| **Platform Admin Web** | 플랫폼 운영·정책 관리자 전용 웹 인증 진입 | 관리자 권한, 추가 인증/감사 및 독립 라우트·서버 권한 경계. Customer Chrome의 관리 권한/토글 부여 금지 |
+| **Internal DEV/QA Web** | 개발·QA 테스트 전용 별도 환경/웹 진입 | 합성 Fixture, 오류·인가 부정 테스트 등. 운영 고객 Chrome UI에서 시험 권한·버튼·합성 분석 제공 금지 |
+
+**분리 수준:** 로그인 화면과 역할·세션·인가·데이터 접근 영역을 논리적으로 구분한다. 반드시 서로 다른 인증 서버나 ID 공급자를 세 개 운영한다는 결정은 아니다. 공통 신원 공급자를 사용하더라도 실제 서버 권한과 세션 강도·접근 게이트가 분리돼야 한다.
+
+**주의:** 플랫폼 관리자 자신이 일반 고객으로 서비스 기능을 사용하는 것은 가능한 제품 설계이나, 고객 확장을 통한 관리자 권한·관리자 로그인 진입은 허용하지 않는다. 실제 Chrome Identity/OIDC 공급자, 서버 세션 방식 및 고객 웹/운영 웹의 배포 경계는 M6에서 보안 ADR로 선택한다.
+
+**Figma 시각 후보:** [100번 Auth UI 검토 보드](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1320-3)와 [인증 표면 구분표](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1334-15). AUTH-F01/F02/F03/F05/F06=Extension, AUTH-F04=Customer Web, AUTH-F07=Platform Admin Web, AUTH-F08=Internal QA Web. 시각 후보의 최종 화면 승인·런타임 QA는 아직 수행되지 않았으며, 기존 98/80~83 Figma 정본은 보존한다.
+
 ## 3. 핵심 여정 — Guest → 로그인 → 선택 영상으로 복귀
 
 ~~~text
