@@ -149,6 +149,9 @@ test("policy without source approval remains UNKNOWN", () => {
   validatePolicyOverview(policy);
   const falseApproval = clone(policy);
   falseApproval.approvalStatus = "APPROVED";
+  falseApproval.approvalEvidenceRef = "SYNTH-FORGED-APPROVAL";
+  falseApproval.policyRevision = "SYNTH-V1";
+  falseApproval.reviewedAt = "2026-10-21T12:00:00Z";
   assert.throws(() => validatePolicyOverview(falseApproval));
 });
 
@@ -171,6 +174,8 @@ test("policy decision cannot grant approval through synthetic fixture", () => {
   validatePolicyDecision(denied);
   const fakeApproved = clone(denied);
   fakeApproved.allow = true;
+  fakeApproved.approvalEvidenceRef = "SYNTH-FORGED-DECISION";
+  fakeApproved.policyRevision = "SYNTH-V1";
   assert.throws(() => validatePolicyDecision(fakeApproved));
 });
 
