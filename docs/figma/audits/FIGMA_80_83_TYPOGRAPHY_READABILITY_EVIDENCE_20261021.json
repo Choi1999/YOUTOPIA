@@ -1,0 +1,272 @@
+{
+  "auditId": "FPA-80-83-TYPO-READABILITY-20261021",
+  "dateKST": "2026-10-21",
+  "figmaFileKey": "00Q6HNjuv02u7Ex4yUzZer",
+  "figmaScope": "80-83 role UI candidates (18 Light/Dark frames) only; original 9 frames unchanged",
+  "baselineGitHub": {
+    "base": "frontend",
+    "mergeSha": "ec92e449d62161a9bb72c732602303949b969e45",
+    "pr": 26
+  },
+  "status": "FIGMA_STYLES_AND_CONTRAST_STATIC_QA_PASS / FIGMA_PRESENT_NOT_RUN / PRODUCT_CODE_UNCHANGED",
+  "sharedTextStyles": {
+    "newNamedStyles": 9,
+    "createdThisTurn": 9,
+    "counts": 9,
+    "matchedFontWeightSizeLineHeightGroups": 9,
+    "details": [
+      {
+        "designStyle": "라벨/강조 · 12",
+        "font": "Inter Semi Bold",
+        "size": 12,
+        "lineHeightPx": 17,
+        "applied": 96,
+        "styleId": "S:f62732e8f2ac4350e43dccb4546fd2a94e69d998,",
+        "exactFigmaStyleName": "YUTOPIA/역할 UI v0.3/라벨/강조 · 12"
+      },
+      {
+        "designStyle": "라벨/보조 · 12",
+        "font": "Inter Medium",
+        "size": 12,
+        "lineHeightPx": 17,
+        "applied": 74,
+        "styleId": "S:c64a7204a0d5f64089954925b39df57d78df6cf5,",
+        "exactFigmaStyleName": "YUTOPIA/역할 UI v0.3/라벨/보조 · 12"
+      },
+      {
+        "designStyle": "데이터/핵심 값 · 23",
+        "font": "Inter Bold",
+        "size": 23,
+        "lineHeightPx": 33,
+        "applied": 54,
+        "styleId": "S:24510e1f7e02e29fa82ac68518571c4af63c79d5,",
+        "exactFigmaStyleName": "YUTOPIA/역할 UI v0.3/데이터/핵심 값 · 23"
+      },
+      {
+        "designStyle": "제목/카드 · 18",
+        "font": "Inter Semi Bold",
+        "size": 18,
+        "lineHeightPx": 26,
+        "applied": 36,
+        "styleId": "S:bd459e5067be4d95a720902da318d3425b25d6b9,",
+        "exactFigmaStyleName": "YUTOPIA/역할 UI v0.3/제목/카드 · 18"
+      },
+      {
+        "designStyle": "브랜드/역할 로고 · 21",
+        "font": "Inter Bold",
+        "size": 21,
+        "lineHeightPx": 30,
+        "applied": 18,
+        "styleId": "S:cf84f4e817fc21af44ec63d9f921f2cb2f6785fa,",
+        "exactFigmaStyleName": "YUTOPIA/역할 UI v0.3/브랜드/역할 로고 · 21"
+      },
+      {
+        "designStyle": "메타/영역 설명 · 11",
+        "font": "Inter Medium",
+        "size": 11,
+        "lineHeightPx": 16,
+        "applied": 18,
+        "styleId": "S:8d080112ae2b247d48baef88ed4f4bb53dd84d8e,",
+        "exactFigmaStyleName": "YUTOPIA/역할 UI v0.3/메타/영역 설명 · 11"
+      },
+      {
+        "designStyle": "내비게이션/경로 · 14",
+        "font": "Inter Medium",
+        "size": 14,
+        "lineHeightPx": 20,
+        "applied": 18,
+        "styleId": "S:54bfb76ebb4c48b361b8cecaeed1f0df665eae9b,",
+        "exactFigmaStyleName": "YUTOPIA/역할 UI v0.3/내비게이션/경로 · 14"
+      },
+      {
+        "designStyle": "제목/히어로 · 25",
+        "font": "Inter Bold",
+        "size": 25,
+        "lineHeightPx": 36,
+        "applied": 18,
+        "styleId": "S:d1e435652e796a34c705ca0f892766cacdcffe5a,",
+        "exactFigmaStyleName": "YUTOPIA/역할 UI v0.3/제목/히어로 · 25"
+      },
+      {
+        "designStyle": "고지/본문 · 13",
+        "font": "Inter Regular",
+        "size": 13,
+        "lineHeightPx": 18,
+        "applied": 18,
+        "styleId": "S:da72464c054505cf0e66891c3fe2551ac1131a39,",
+        "exactFigmaStyleName": "YUTOPIA/역할 UI v0.3/고지/본문 · 13"
+      }
+    ],
+    "appliedPreviously": 436,
+    "linkedThisTurn": 350,
+    "totalStyledAfter": 786,
+    "totalText": 786,
+    "unstyledRemaining": 0,
+    "detectedFontOrGeometryDrift": 0
+  },
+  "smallTextHistogram": {
+    "11": 36,
+    "12": 332,
+    "13": 274,
+    "14": 18,
+    "18": 36,
+    "21": 18,
+    "23": 54,
+    "25": 18
+  },
+  "contrastCorrection": {
+    "rootCause": "Selected navigation and CTA backgrounds were fully opaque and used the same semantic accent/warning token as their child text (contrast 1:1); Guest Dark pilot used translucent 17% accent and measured 4.25:1",
+    "repairedFullyOpaqueCases": 34,
+    "repairedFormerGuestDarkCases": 2,
+    "repairedTotal": 36,
+    "fixedBackgroundToken": "bg/subtle",
+    "textTokensRemain": [
+      "accent/primary",
+      "status/warning"
+    ],
+    "contrastAuditNodes": 36,
+    "contrastRangeAfter": [
+      4.57,
+      8.32
+    ],
+    "contrastUniqueRatios": [
+      4.57,
+      5.11,
+      5.43,
+      8.32
+    ],
+    "contrastFailUnder4_5After": 0,
+    "method": "Computed WCAG contrast from Figma plugin API actual Solid paint RGB for child TEXT and containing FRAME, after all corrected backgrounds are fully opaque"
+  },
+  "scopeChecks": {
+    "candidateScreens": 18,
+    "originalRoleFramesPreserved": 9,
+    "meaningTokenBoundSolidFillsAndStrokes": 1442,
+    "unboundSolidAfter": 0,
+    "validStaticThemeNavigationLinks": 18,
+    "invalidDestinationLinks": 0,
+    "framesWithAccidentallyCopiedInteractions": 0,
+    "sourceMasterComponentEdited": false,
+    "roleFlowStartsPerPage": 2,
+    "page00RegistryUpdated": true
+  },
+  "groups": [
+    {
+      "page": 80,
+      "pageId": "1283:2",
+      "origins": [
+        "1285:2",
+        "1285:72",
+        "1285:145"
+      ],
+      "candidates": [
+        "1404:10",
+        "1401:8",
+        "1404:83",
+        "1404:159",
+        "1404:235",
+        "1404:308"
+      ],
+      "textCount": 258,
+      "colors": 478,
+      "themeIndex": "1408:20",
+      "validLinks": 6,
+      "repairedInvisibleTextRegions": 12,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1408-20"
+    },
+    {
+      "page": 81,
+      "pageId": "1283:3",
+      "origins": [
+        "1286:2",
+        "1286:72"
+      ],
+      "candidates": [
+        "1405:6",
+        "1405:79",
+        "1405:152",
+        "1405:227"
+      ],
+      "textCount": 174,
+      "colors": 320,
+      "themeIndex": "1408:73",
+      "validLinks": 4,
+      "repairedInvisibleTextRegions": 8,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1408-73"
+    },
+    {
+      "page": 82,
+      "pageId": "1283:4",
+      "origins": [
+        "1286:144",
+        "1286:218"
+      ],
+      "candidates": [
+        "1406:83",
+        "1406:6",
+        "1406:235",
+        "1406:160"
+      ],
+      "textCount": 178,
+      "colors": 324,
+      "themeIndex": "1408:114",
+      "validLinks": 4,
+      "repairedInvisibleTextRegions": 8,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1408-114"
+    },
+    {
+      "page": 83,
+      "pageId": "1283:5",
+      "origins": [
+        "1286:290",
+        "1286:362"
+      ],
+      "candidates": [
+        "1407:81",
+        "1407:6",
+        "1407:231",
+        "1407:156"
+      ],
+      "textCount": 176,
+      "colors": 320,
+      "themeIndex": "1408:155",
+      "validLinks": 4,
+      "repairedInvisibleTextRegions": 8,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1408-155"
+    }
+  ],
+  "visualSpotcheck": {
+    "screens": [
+      {
+        "id": "1404:10",
+        "name": "Guest Light with readable selected nav and CTA"
+      },
+      {
+        "id": "1401:8",
+        "name": "Guest Dark with readable selected nav and CTA"
+      },
+      {
+        "id": "1405:227",
+        "name": "Organization Admin Dark"
+      },
+      {
+        "id": "1406:83",
+        "name": "Platform Admin Light"
+      },
+      {
+        "id": "1407:81",
+        "name": "QA Simulator Light with warning identity"
+      }
+    ],
+    "method": "Figma get_screenshot rendered and visually inspected; screenshot URL is short lived, stable Figma node IDs persisted"
+  },
+  "remainingTesting": [
+    "Actual Figma Present mode real mouse click, back, hover (NOT_RUN)",
+    "Keyboard/assistive-technology accessible operation of Figma prototype (NOT_RUN)",
+    "100/125/150% browser zoom and width reflow (NOT_RUN)",
+    "11px and 12px text usability with real users (36 11px nodes and 332 12px nodes across the 18 QA screens)",
+    "All element background/foreground composites, focus indicators, icon-only controls, and whole-app WCAG (NOT_RUN)",
+    "Figma Auth page100 visual approval and Chrome MV3/BE actual integration (NOT_RUN)"
+  ],
+  "provenance": "Existing YUTOPIA Figma semantic color variables and internal styles; 9 new original in-file role text styles. No external code/fonts/assets copied."
+}
