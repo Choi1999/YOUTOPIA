@@ -1,0 +1,1069 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:youtopia:contracts:admin-v1-candidate",
+  "title": "YOUTOPIA Admin Two-View Read Contract v1 Candidate",
+  "description": "DRAFT ONLY; unapproved API and no live authorization; fail-closed synthetic fixtures for Operations and Policy/Audit.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/OpsStatus"
+    },
+    {
+      "$ref": "#/$defs/OpsJobDetail"
+    },
+    {
+      "$ref": "#/$defs/PolicyOverview"
+    },
+    {
+      "$ref": "#/$defs/PolicyDecisionRecord"
+    },
+    {
+      "$ref": "#/$defs/AuditEvent"
+    },
+    {
+      "$ref": "#/$defs/ErrorEnvelope"
+    }
+  ],
+  "$defs": {
+    "ResourceScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification",
+        "tenantId"
+      ],
+      "properties": {
+        "classification": {
+          "enum": [
+            "GLOBAL_METADATA",
+            "TENANT_PRIVATE"
+          ]
+        },
+        "tenantId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "classification": {
+                "const": "GLOBAL_METADATA"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "tenantId": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "classification": {
+                "const": "TENANT_PRIVATE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "tenantId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              }
+            }
+          }
+        }
+      ]
+    },
+    "JobCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "queued",
+        "running",
+        "failed"
+      ],
+      "properties": {
+        "queued": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "running": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "failed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "DataCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rawCount",
+        "eligibleCount",
+        "excludedCount",
+        "classifiedCount",
+        "unclassifiedCount",
+        "windowStart",
+        "windowEnd",
+        "validationVersion"
+      ],
+      "properties": {
+        "rawCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "eligibleCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "excludedCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "classifiedCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "unclassifiedCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "windowStart": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "windowEnd": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "validationVersion": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        }
+      }
+    },
+    "OpsJobListItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runId",
+        "sourceType",
+        "isSynthetic",
+        "scope",
+        "targetRef",
+        "state",
+        "attempt",
+        "requestedAt",
+        "updatedAt",
+        "reasonCode"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "sourceType": {
+          "enum": [
+            "STATIC_FIXTURE",
+            "APPROVED_PROVIDER"
+          ]
+        },
+        "isSynthetic": {
+          "type": "boolean"
+        },
+        "scope": {
+          "$ref": "#/$defs/ResourceScope"
+        },
+        "targetRef": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "state": {
+          "enum": [
+            "QUEUED",
+            "RUNNING",
+            "PARTIAL",
+            "FAILED",
+            "SUCCEEDED",
+            "CANCELLED"
+          ]
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "requestedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reasonCode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "sourceType": {
+                "const": "STATIC_FIXTURE"
+              }
+            },
+            "required": [
+              "sourceType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "isSynthetic": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "sourceType": {
+                "const": "APPROVED_PROVIDER"
+              }
+            },
+            "required": [
+              "sourceType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "isSynthetic": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "OpsJobEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eventId",
+        "state",
+        "occurredAt",
+        "reasonCode"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "state": {
+          "enum": [
+            "QUEUED",
+            "RUNNING",
+            "PARTIAL",
+            "FAILED",
+            "SUCCEEDED",
+            "CANCELLED"
+          ]
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reasonCode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        }
+      }
+    },
+    "OpsStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "kind",
+        "sourceType",
+        "isSynthetic",
+        "environment",
+        "status",
+        "observedAt",
+        "jobCounts",
+        "quotaRemaining",
+        "reasonCode"
+      ],
+      "properties": {
+        "contractVersion": {
+          "const": "admin-v1-candidate"
+        },
+        "kind": {
+          "const": "OPS_STATUS"
+        },
+        "sourceType": {
+          "enum": [
+            "STATIC_FIXTURE",
+            "APPROVED_PROVIDER"
+          ]
+        },
+        "isSynthetic": {
+          "type": "boolean"
+        },
+        "environment": {
+          "enum": [
+            "QA_FIXTURE",
+            "DEVELOPMENT",
+            "STAGING",
+            "PRODUCTION"
+          ]
+        },
+        "status": {
+          "enum": [
+            "UNCONNECTED",
+            "UNKNOWN",
+            "HEALTHY",
+            "DEGRADED",
+            "UNAVAILABLE"
+          ]
+        },
+        "observedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "jobCounts": {
+          "$ref": "#/$defs/JobCounts"
+        },
+        "quotaRemaining": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "reasonCode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "sourceType": {
+                "const": "STATIC_FIXTURE"
+              }
+            },
+            "required": [
+              "sourceType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "isSynthetic": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "sourceType": {
+                "const": "APPROVED_PROVIDER"
+              }
+            },
+            "required": [
+              "sourceType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "isSynthetic": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "UNCONNECTED"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "observedAt": {
+                "type": "null"
+              },
+              "quotaRemaining": {
+                "type": "null"
+              },
+              "jobCounts": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "queued",
+                  "running",
+                  "failed"
+                ],
+                "properties": {
+                  "queued": {
+                    "type": "null"
+                  },
+                  "running": {
+                    "type": "null"
+                  },
+                  "failed": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "OpsJobDetail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "kind",
+        "job",
+        "eventHistory",
+        "coverage",
+        "traceRef"
+      ],
+      "properties": {
+        "contractVersion": {
+          "const": "admin-v1-candidate"
+        },
+        "kind": {
+          "const": "OPS_JOB_DETAIL"
+        },
+        "job": {
+          "$ref": "#/$defs/OpsJobListItem"
+        },
+        "eventHistory": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OpsJobEvent"
+          },
+          "maxItems": 1000
+        },
+        "coverage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DataCoverage"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "traceRef": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        }
+      }
+    },
+    "PolicyOverview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "kind",
+        "sourceType",
+        "isSynthetic",
+        "policyId",
+        "approvalStatus",
+        "policyRevision",
+        "approvalEvidenceRef",
+        "scope",
+        "reviewedAt",
+        "expiresAt",
+        "retentionRule",
+        "reasonCode"
+      ],
+      "properties": {
+        "contractVersion": {
+          "const": "admin-v1-candidate"
+        },
+        "kind": {
+          "const": "POLICY_OVERVIEW"
+        },
+        "sourceType": {
+          "enum": [
+            "STATIC_FIXTURE",
+            "APPROVED_PROVIDER"
+          ]
+        },
+        "isSynthetic": {
+          "type": "boolean"
+        },
+        "policyId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "approvalStatus": {
+          "enum": [
+            "UNKNOWN",
+            "BLOCKED",
+            "APPROVED"
+          ]
+        },
+        "policyRevision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        },
+        "approvalEvidenceRef": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "reviewedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "retentionRule": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        },
+        "reasonCode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "sourceType": {
+                "const": "STATIC_FIXTURE"
+              }
+            },
+            "required": [
+              "sourceType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "isSynthetic": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "sourceType": {
+                "const": "APPROVED_PROVIDER"
+              }
+            },
+            "required": [
+              "sourceType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "isSynthetic": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "approvalStatus": {
+                "const": "APPROVED"
+              }
+            },
+            "required": [
+              "approvalStatus"
+            ]
+          },
+          "then": {
+            "properties": {
+              "approvalEvidenceRef": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "policyRevision": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "reviewedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "sourceType": {
+                "const": "STATIC_FIXTURE"
+              }
+            },
+            "required": [
+              "sourceType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "approvalStatus": {
+                "enum": [
+                  "UNKNOWN",
+                  "BLOCKED"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "PolicyDecisionRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "kind",
+        "sourceType",
+        "isSynthetic",
+        "decisionId",
+        "occurredAt",
+        "actorRole",
+        "resourceRef",
+        "action",
+        "allow",
+        "reasonCode",
+        "policyRevision",
+        "approvalEvidenceRef",
+        "traceId"
+      ],
+      "properties": {
+        "contractVersion": {
+          "const": "admin-v1-candidate"
+        },
+        "kind": {
+          "const": "POLICY_DECISION"
+        },
+        "sourceType": {
+          "enum": [
+            "STATIC_FIXTURE",
+            "APPROVED_PROVIDER"
+          ]
+        },
+        "isSynthetic": {
+          "type": "boolean"
+        },
+        "decisionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "actorRole": {
+          "enum": [
+            "PLATFORM_ADMIN",
+            "POLICY_ADMIN",
+            "SYSTEM_POLICY_EVALUATOR"
+          ]
+        },
+        "resourceRef": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "allow": {
+          "type": "boolean"
+        },
+        "reasonCode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "policyRevision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        },
+        "approvalEvidenceRef": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        },
+        "traceId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "sourceType": {
+                "const": "STATIC_FIXTURE"
+              }
+            },
+            "required": [
+              "sourceType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "isSynthetic": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "sourceType": {
+                "const": "APPROVED_PROVIDER"
+              }
+            },
+            "required": [
+              "sourceType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "isSynthetic": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "allow": {
+                "const": true
+              }
+            },
+            "required": [
+              "allow"
+            ]
+          },
+          "then": {
+            "properties": {
+              "approvalEvidenceRef": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "policyRevision": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "sourceType": {
+                "const": "STATIC_FIXTURE"
+              }
+            },
+            "required": [
+              "sourceType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "allow": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "AuditEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "kind",
+        "sourceType",
+        "isSynthetic",
+        "eventId",
+        "occurredAt",
+        "actorRef",
+        "action",
+        "targetRef",
+        "outcome",
+        "reasonCode",
+        "policyRevision"
+      ],
+      "properties": {
+        "contractVersion": {
+          "const": "admin-v1-candidate"
+        },
+        "kind": {
+          "const": "AUDIT_EVENT"
+        },
+        "sourceType": {
+          "enum": [
+            "STATIC_FIXTURE",
+            "APPROVED_PROVIDER"
+          ]
+        },
+        "isSynthetic": {
+          "type": "boolean"
+        },
+        "eventId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "actorRef": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "targetRef": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "outcome": {
+          "enum": [
+            "ALLOW",
+            "DENY",
+            "ERROR"
+          ]
+        },
+        "reasonCode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "policyRevision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "sourceType": {
+                "const": "STATIC_FIXTURE"
+              }
+            },
+            "required": [
+              "sourceType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "isSynthetic": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "sourceType": {
+                "const": "APPROVED_PROVIDER"
+              }
+            },
+            "required": [
+              "sourceType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "isSynthetic": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ErrorEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "kind",
+        "httpStatus",
+        "code",
+        "retryable"
+      ],
+      "properties": {
+        "contractVersion": {
+          "const": "admin-v1-candidate"
+        },
+        "kind": {
+          "const": "ERROR"
+        },
+        "httpStatus": {
+          "enum": [
+            401,
+            403,
+            404,
+            409,
+            429,
+            500,
+            503
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "traceId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 512
+        }
+      }
+    }
+  }
+}

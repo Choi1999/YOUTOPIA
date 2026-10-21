@@ -1,0 +1,16 @@
+{
+  "contractVersion": "admin-v1-candidate",
+  "kind": "POLICY_DECISION",
+  "sourceType": "STATIC_FIXTURE",
+  "isSynthetic": true,
+  "decisionId": "SYNTH-DEC-001",
+  "occurredAt": "2026-10-21T12:03:00Z",
+  "actorRole": "SYSTEM_POLICY_EVALUATOR",
+  "resourceRef": "YOUTUBE_DERIVED_METRICS",
+  "action": "COLLECT_DERIVED_SENTIMENT",
+  "allow": false,
+  "reasonCode": "APPROVAL_UNKNOWN",
+  "policyRevision": null,
+  "approvalEvidenceRef": null,
+  "traceId": "SYNTH-TRACE-001"
+}

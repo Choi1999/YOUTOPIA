@@ -1,0 +1,14 @@
+{
+  "contractVersion": "admin-v1-candidate",
+  "kind": "AUDIT_EVENT",
+  "sourceType": "STATIC_FIXTURE",
+  "isSynthetic": true,
+  "eventId": "SYNTH-AUDIT-001",
+  "occurredAt": "2026-10-21T12:04:00Z",
+  "actorRef": "SYNTH-ROLE-CUSTOMER",
+  "action": "READ_INTERNAL_ADMIN",
+  "targetRef": "SYNTH-OPS",
+  "outcome": "DENY",
+  "reasonCode": "PLATFORM_ROLE_REQUIRED",
+  "policyRevision": null
+}
