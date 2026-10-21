@@ -1,5 +1,30 @@
 # YU-27 Worker Messaging & Synthetic Session Cache — QA 증거
 
+## 2026-10-21 Windows Native Node 전체 실행 — 초기 FAIL 및 수정
+
+- **사용자 제출 PowerShell 로그:** `C:\Users\diser\YUTOPIA-Chrome-QA-27`에서 `7be47b664e3a1765ae1e931712966e21249f9f76`를 Clone했고 `git status --short`에는 변경사항 출력이 없었다.
+- **실행 명령:** `node --test extension/tests/*.test.cjs`. 총 **177 tests / 176 pass / 1 fail / 0 skipped**. YU-27 신규 메시지/캐시 테스트 17건은 모두 PASS.
+- **실패:** `extension/tests/hover-card-ui.test.cjs:217`의 Manifest script load 순서 검증. 기존 테스트는 마지막 3개 스크립트를 `hover-controller.js → hover-card-model.js → hover-card.js`로 고정했고, 신규 `preview-client.js`가 model과 renderer 사이에 삽입되어 `list.at(-2)`가 `preview-client.js`가 되는 계약 회귀.
+- **수정:** `extension/manifest.json` 마지막 4개를 `hover-controller.js → preview-client.js → hover-card-model.js → hover-card.js`로 조정. `extension/tests/hover-card-ui.test.cjs`는 마지막 4개를 정확히 검증하도록 강화. model → renderer 연속 배치와 client → controller 의존성을 모두 유지. 변경 커밋 `634d0160fd0868c14e907cad248330db1c2817b5`.
+- **정적 Readback:** GitHub에 저장된 Manifest와 기존·신규 Node 테스트의 script order assertion이 모두 일치함을 확인. 이는 Windows Native Node의 최신 **177/177 PASS 증거가 아님**.
+- **현재 Gate:** `WINDOWS_NODE_176_OF_177_INITIAL_FAIL / LOAD_ORDER_FIX_COMMITTED / WINDOWS_177_RETEST_PENDING`. 수정 후 Windows 회귀 재실행과 설치형 Chrome/Chromium 검증을 수행해야 한다.
+
+### 이미 Clone한 QA-27 폴더에서 최신화 후 재검증
+
+~~~powershell
+Set-Location "$env:USERPROFILE\YUTOPIA-Chrome-QA-27"
+git status --short
+git pull --ff-only origin feature/yutopia-27-worker-messaging
+git rev-parse HEAD
+git status --short
+node --test extension/tests/*.test.cjs
+~~~
+
+기존 `git status --short`가 빈 출력인지 먼저 확인한다. 다른 로컬 변경이 있으면 덮어쓰지 않는다. **이 PR은 Draft이며 아직 병합하지 않는다.**
+
+---
+
+
 > CODE_READY / LOCAL_NODE_17_OF_17_PASS / ORIGINAL_160_NOT_RERUN / CHROMIUM_MV3_NOT_CONFIRMED / LIVE_YOUTUBE_NOT_RUN / PR_REVIEW_REQUIRED
 
 ## 범위 및 보호 계약
