@@ -1,5 +1,19 @@
 # YU-27 Worker Messaging & Synthetic Session Cache — QA 증거
 
+## 2026-10-21 Windows 전체 Native Node 재검증 — 177/177 PASS (최신)
+
+- **사용자 제공 실제 PowerShell 로그** (`붙여넣은 텍스트(1)(20261021-041740).txt`): `C:\Users\diser\YUTOPIA-Chrome-QA-27`에서 `git pull --ff-only origin feature/yutopia-27-worker-messaging`가 `7be47b6..73573b3` Fast-forward 성공.
+- **테스트 대상 SHA:** `73573b3f01b1e0f9376a29ecfa93e2aa70abb877`; `git rev-parse HEAD` 출력과 일치. `git status --short`는 pull 전 빈 출력. Pull 후 별도 clean 확인 명령은 해당 로그에 없음.
+- **명령:** `node --test extension/tests/*.test.cjs`.
+- **실행 결과:** **177 tests / 177 pass / 0 fail / 0 skipped / 0 cancelled**, `duration_ms 192.7404`. 기존 YU-21~26 160건과 신규 YU-27 17건 전부 PASS.
+- 과거 176/177 FAIL이었던 Manifest 로드 순서 검사 `Manifest: model/renderer는 Hover controller 이후 순서로 실행` 역시 **PASS**. 변경 커밋 `634d0160fd0868c14e907cad248330db1c2817b5`의 수정 효과를 확인.
+- **게이트 판정:** `WINDOWS_NATIVE_NODE_FULL_177_OF_177_PASS` / `CHROMIUM_OFFLINE_FIXTURES_PENDING` / `INSTALLED_CHROME_MV3_PENDING` / `LIVE_YOUTUBE_FINAL_PENDING`. Node 통과를 Chrome 설치형 확장 E2E 통과로 간주하지 않는다.
+- PR은 계속 **Draft / 미병합**. 이후 Chromium Fixture 2종과 Windows 설치형 Chrome Service Worker·Content Script 통합 검증 결과 필요.
+- **이하 176/177 FAIL 기록과 당시 PENDING 문구는 실패 발견 시점의 이력이며 현재 Node 최종 상태가 아니다.**
+
+---
+
+
 ## 2026-10-21 Windows Native Node 전체 실행 — 초기 FAIL 및 수정
 
 - **사용자 제출 PowerShell 로그:** `C:\Users\diser\YUTOPIA-Chrome-QA-27`에서 `7be47b664e3a1765ae1e931712966e21249f9f76`를 Clone했고 `git status --short`에는 변경사항 출력이 없었다.
@@ -25,7 +39,7 @@ node --test extension/tests/*.test.cjs
 ---
 
 
-> CODE_READY / LOCAL_NODE_17_OF_17_PASS / WINDOWS_NODE_176_OF_177_INITIAL_FAIL / LOAD_ORDER_FIX_COMMITTED / WINDOWS_RETEST_PENDING / CHROMIUM_MV3_NOT_CONFIRMED / LIVE_YOUTUBE_NOT_RUN / PR_REVIEW_REQUIRED
+> CODE_READY / LOCAL_NODE_17_OF_17_PASS / WINDOWS_NATIVE_NODE_177_OF_177_PASS / CHROMIUM_OFFLINE_PENDING / CHROMIUM_MV3_NOT_CONFIRMED / LIVE_YOUTUBE_NOT_RUN / PR_REVIEW_REQUIRED
 
 ## 범위 및 보호 계약
 
