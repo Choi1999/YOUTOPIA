@@ -8,7 +8,7 @@
     "unchangedProductCode": true
   },
   "figmaFileKey": "00Q6HNjuv02u7Ex4yUzZer",
-  "status": "FIGMA_PAGE_TAXONOMY_REORG_DONE / STATIC_READBACK_PASS / USER_VISUAL_SIGNOFF_PENDING / PRESENT_NOT_RUN",
+  "status": "FIGMA_PAGE_TAXONOMY_REORG_AND_CHROME_SCENARIO_REBASE_DONE / STATIC_READBACK_PASS / USER_VISUAL_SIGNOFF_PENDING / PRESENT_NOT_RUN",
   "existingPageCountBefore": 15,
   "pageCountAfter": 19,
   "presentPages": [
@@ -300,7 +300,9 @@
     "brokenUrlDestinations": 0,
     "newReviewInternalNodeActions": 16,
     "newCustomerReviewFlowStarts": 8,
-    "brokenNewInternalTargets": 0
+    "brokenNewInternalTargets": 0,
+    "rebasedChromeNodeActions": 34,
+    "rebasedChromeBackActions": 2
   },
   "newWorkflowCanvas": {
     "scenes": 16,
@@ -346,6 +348,15 @@
       "1267:2",
       "1268:2",
       "1276:217"
+    ],
+    "oldChannelAndNoDataDetails": [
+      "1267:2",
+      "1268:2"
+    ],
+    "previousFourTabFlowsRetained": true,
+    "latestChannelAndNoDataReviewIndexTargets": [
+      "1608:2",
+      "1608:224"
     ]
   },
   "adminAndQA": {
@@ -456,7 +467,8 @@
     "1584:35",
     "1584:38",
     "1584:41",
-    "1584:44"
+    "1584:44",
+    "1608:446"
   ],
   "verificationScope": "Figma Plugin API node/style/color/prototype readback and get_screenshot visual spot-check. Not actual Figma Present mouse/keyboard, no browser zoom or installed Chrome MV3/FE/BE runtime.",
   "notExecuted": [
@@ -466,7 +478,79 @@
     "live YouTube API or derived sentiment rights verification",
     "production Job/monitor/alert",
     "FE/BE authorization and retention rules",
-    "keyboard/screenreader zoom WCAG"
+    "keyboard/screenreader zoom WCAG",
+    "Figma Present actual click for new Channel/NoData paths and browser return to pinned target"
   ],
-  "provenance": "Original editable YUTOPIA Figma internal design styles/variables; no imported reference screenshots or third-party UI code."
+  "provenance": "Original editable YUTOPIA Figma internal design styles/variables; no imported reference screenshots or third-party UI code.",
+  "newChromeThreeTabRebase": {
+    "scope": "Channel dark and NoData light, each with Hover→Summary↔Topics↔Trends→Contextual Analysis Basis/BACK. All old frame IDs preserved.",
+    "sourceVideoThreeTab": "1375:2",
+    "channel": {
+      "hover": "1608:2",
+      "summary": "1606:2",
+      "topics": "1606:263",
+      "trends": "1606:524",
+      "basis": "1606:785",
+      "mode": "DARK",
+      "oldHover": "1253:6",
+      "oldDetail": "1267:2"
+    },
+    "noData": {
+      "hover": "1608:224",
+      "summary": "1606:1046",
+      "topics": "1621:2",
+      "trends": "1621:214",
+      "basis": "1606:1307",
+      "mode": "LIGHT",
+      "oldHover": "1253:7",
+      "oldDetail": "1268:2"
+    },
+    "newScreens": 10,
+    "newHoverCards": 2,
+    "newSidePanels": 8,
+    "totalSemanticPanelText": 154,
+    "styledText": 154,
+    "totalSemanticFillsAndStrokes": 284,
+    "boundSemanticFillsAndStrokes": 284,
+    "prototypeNodeActions": 34,
+    "prototypeBackActions": 2,
+    "brokenDestinations": 0,
+    "unintendedOtherActions": 0,
+    "generatedSentimentPercentagesInNewPanels": 0,
+    "flowEntryPoints": [
+      "1608:2",
+      "1608:224"
+    ],
+    "flowStartCountAfter": 13,
+    "reviewIndexRetargeted": [
+      "1582:289",
+      "1582:294"
+    ],
+    "reviewIndexReplacesOldChannelAndNoDataUrls": true,
+    "visualSpotChecks": [
+      {
+        "nodeId": "1606:2",
+        "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1606-2"
+      },
+      {
+        "nodeId": "1606:263",
+        "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1606-263"
+      },
+      {
+        "nodeId": "1606:1046",
+        "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1606-1046"
+      },
+      {
+        "nodeId": "1608:2",
+        "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1608-2"
+      },
+      {
+        "nodeId": "1608:224",
+        "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1608-224"
+      }
+    ],
+    "panelDesignType": "Editable Figma frames and styled text using existing semantic color tokens; existing YouTube mock background copied from original references; not live data",
+    "qaStatus": "STATIC_QA_PASS / FIGMA_PRESENT_NOT_RUN / REAL_CHROME_NOT_RUN / DATA_PROVIDER_NOT_APPROVED",
+    "pending": "Need real Present/browser click-through and A11y review, then actual extension/BE integration evidence"
+  }
 }
