@@ -216,9 +216,10 @@ function makeFixture({vw=1200,vh=800,dark=false,cardHeight=260}={}) {
 
 test("Manifest: model/renderer는 Hover controller 이후 순서로 실행",()=>{
   const list=manifest.content_scripts[0].js;
+  assert.equal(list.at(-4),"hover-controller.js");
+  assert.equal(list.at(-3),"preview-client.js");
   assert.equal(list.at(-2),"hover-card-model.js");
   assert.equal(list.at(-1),"hover-card.js");
-  assert.equal(list.at(-3),"hover-controller.js");
 });
 
 test("모델: 고정된 가상 분포는 합이 100이며 실제 수집 근거를 가장하지 않음",()=>{
