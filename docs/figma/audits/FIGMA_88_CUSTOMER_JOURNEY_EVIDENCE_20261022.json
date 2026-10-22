@@ -1,0 +1,312 @@
+{
+  "auditId": "FIGMA-88-CUSTOMER-JOURNEY-20261022",
+  "date": "2026-10-22 KST",
+  "baseline": {
+    "repository": "Choi1999/YOUTOPIA",
+    "branch": "frontend",
+    "sha": "9a50ad7ac9ed0bbf78d2512449c1a0daed5e0a3e",
+    "figmaKey": "00Q6HNjuv02u7Ex4yUzZer",
+    "previousPR": 32
+  },
+  "status": "FIGMA_JOURNEY_STATIC_QA_PASS / UX_CANDIDATE / FIGMA_PRESENT_NOT_RUN / NO_FE_BE_CHROME_RUNTIME_CHANGES",
+  "productDecisionSource": "User approved Guest baseline, Free customer saved target reference/bookmarks+own note/folders, subscriber expanded compare/monitor, organization-role rights separate; pricing/limits/provider/YouTube derived rights not approved",
+  "pagesBefore": 19,
+  "pagesAfter": 20,
+  "newPage": {
+    "number": "88",
+    "id": "1645:2",
+    "title": "Guest→Auth→Bookmark→Subscription",
+    "themeScreens": 20,
+    "light": 10,
+    "dark": 10,
+    "lightFlowEntry": "1647:2",
+    "darkFlowEntry": "1649:2",
+    "secondaryBookmarkEntries": [
+      "1647:265",
+      "1649:265"
+    ],
+    "links": [
+      {
+        "state": "GUEST_DISCOVERY",
+        "light": "1647:2",
+        "dark": "1649:2",
+        "canonical": "1321:3",
+        "allowedNext": [
+          "SAVE_REQUEST"
+        ],
+        "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1647-2",
+        "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1649-2",
+        "canonicalUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1321-3"
+      },
+      {
+        "state": "SAVE_REQUEST",
+        "light": "1647:53",
+        "dark": "1649:53",
+        "canonical": "1321:44",
+        "allowedNext": [
+          "CUSTOMER_SIGNIN",
+          "LOGIN_CANCELLED"
+        ],
+        "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1647-53",
+        "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1649-53",
+        "canonicalUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1321-44"
+      },
+      {
+        "state": "CUSTOMER_SIGNIN",
+        "light": "1647:106",
+        "dark": "1649:106",
+        "canonical": "1322:8",
+        "allowedNext": [
+          "RETURN_CONFIRM",
+          "LOGIN_CANCELLED"
+        ],
+        "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1647-106",
+        "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1649-106",
+        "canonicalUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1322-8"
+      },
+      {
+        "state": "LOGIN_CANCELLED",
+        "light": "1647:159",
+        "dark": "1649:159",
+        "canonical": "1322:49",
+        "allowedNext": [
+          "GUEST_DISCOVERY",
+          "CUSTOMER_SIGNIN"
+        ],
+        "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1647-159",
+        "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1649-159",
+        "canonicalUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1322-49"
+      },
+      {
+        "state": "RETURN_CONFIRM",
+        "light": "1647:212",
+        "dark": "1649:212",
+        "canonical": "1322:33",
+        "allowedNext": [
+          "SAVED_BOOKMARK",
+          "GUEST_DISCOVERY"
+        ],
+        "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1647-212",
+        "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1649-212",
+        "canonicalUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1322-33"
+      },
+      {
+        "state": "SAVED_BOOKMARK",
+        "light": "1647:265",
+        "dark": "1649:265",
+        "canonical": "1576:47",
+        "allowedNext": [
+          "COMPARE_ENTITLEMENT",
+          "GUEST_DISCOVERY"
+        ],
+        "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1647-265",
+        "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1649-265",
+        "canonicalUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-47"
+      },
+      {
+        "state": "COMPARE_ENTITLEMENT",
+        "light": "1647:318",
+        "dark": "1649:318",
+        "canonical": "1576:272",
+        "allowedNext": [
+          "PLAN_PREVIEW",
+          "SAVED_BOOKMARK"
+        ],
+        "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1647-318",
+        "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1649-318",
+        "canonicalUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-272"
+      },
+      {
+        "state": "PLAN_PREVIEW",
+        "light": "1647:371",
+        "dark": "1649:371",
+        "canonical": "1576:317",
+        "allowedNext": [
+          "COMPARE_PREVIEW",
+          "SAVED_BOOKMARK"
+        ],
+        "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1647-371",
+        "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1649-371",
+        "canonicalUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-317"
+      },
+      {
+        "state": "COMPARE_PREVIEW",
+        "light": "1647:424",
+        "dark": "1649:424",
+        "canonical": "1576:137",
+        "allowedNext": [
+          "MONITOR_PREVIEW",
+          "PLAN_PREVIEW"
+        ],
+        "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1647-424",
+        "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1649-424",
+        "canonicalUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-137"
+      },
+      {
+        "state": "MONITOR_PREVIEW",
+        "light": "1647:477",
+        "dark": "1649:477",
+        "canonical": "1576:227",
+        "allowedNext": [
+          "GUEST_DISCOVERY",
+          "COMPARE_PREVIEW"
+        ],
+        "lightUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1647-477",
+        "darkUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1649-477",
+        "canonicalUrl": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-227"
+      }
+    ]
+  },
+  "journeyLogic": {
+    "saveRequiresAuthenticatedCustomer": true,
+    "loginCancelReturnsGuestAndDoesNotSave": true,
+    "loginSuccessReturnsSamePinnedVideoAWithPendingAction": true,
+    "saveRequiresExplicitConfirmation": true,
+    "syntheticSavedBookmarkNotActualServerPersistence": true,
+    "savePayloadCandidate": [
+      "authenticatedOwnerId",
+      "targetType",
+      "verifiedTargetId",
+      "folderId",
+      "ownNote",
+      "savedAt",
+      "revision"
+    ],
+    "saveDoesNotCloneOriginalCommentsOrPermanentAnalysisSnapshot": true,
+    "paidFeatures": [
+      "multivideoCompare",
+      "extendedPeriod",
+      "monitoring",
+      "reportCandidates"
+    ],
+    "paidPlanDoesNotElevateOrgRole": true,
+    "planPreviewDoesNotExecutePaymentOrUpgradeSubscription": true,
+    "noDataAndPolicyBlockedNeverUnlockWithPlan": true
+  },
+  "staticDesignVerification": {
+    "scenes": 20,
+    "textNodes": 638,
+    "styledTexts": 638,
+    "solidFillsAndStrokes": 1214,
+    "boundSemanticColors": 1214,
+    "internalNodes": 38,
+    "brokenInternalNodes": 0,
+    "canonicalURLReferences": 20,
+    "invalidCanonicalURLTargets": 0,
+    "flowStarts": 4,
+    "guestToSaveIntent": true,
+    "guestCancelPath": true,
+    "successToExplicitSave": true,
+    "scenarioDarkScreensEditable": true,
+    "screenshotsChecked": [
+      "1647:2",
+      "1647:106",
+      "1647:212",
+      "1647:318",
+      "1649:106"
+    ]
+  },
+  "referenceIntegrity": {
+    "syntheticVideoA": "video A · 조리법 따라하기",
+    "videoASource": "1321:3",
+    "videoASourceURL": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1321-3",
+    "videoBIn98": "video B · 서울 골목의 숨은 맛집 5곳",
+    "videoBExample": "1375:2",
+    "important": "Video A journey and Video B Chrome 98 screen are separate fixtures. URL reference links do not guarantee a single browser session/target across pages.",
+    "customerAuthF04": "1322:8",
+    "authSuccessF05": "1322:33",
+    "authCancelF06": "1322:49",
+    "freeLibrary": "1576:47",
+    "productPanels": {
+      "compare": "1576:137",
+      "monitor": "1576:227",
+      "freePlan": "1576:272",
+      "paidPlan": "1576:317"
+    }
+  },
+  "chromeSubscriptionAlignment": {
+    "chromePage": "1253:2",
+    "newGate": "1655:2",
+    "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1655-2",
+    "oldArchive": "1253:8",
+    "oldArchivePreserved": true,
+    "teaserRedirects": [
+      "1375:233",
+      "1376:239",
+      "1379:239",
+      "1380:239"
+    ],
+    "oldDestination": "1253:8",
+    "newDestination": "1655:2",
+    "gateActions": {
+      "back": 1,
+      "urlTo87": "1576:272",
+      "urlTo88SeparateFixture": "1647:2"
+    },
+    "noCheckout": true,
+    "noPriceOrQuotaClaims": true,
+    "policyMissingNotPaywall": true
+  },
+  "indexRefresh": {
+    "page00": {
+      "id": "1583:2",
+      "pageCount": 20,
+      "add88Row": "1653:2",
+      "keepsHistoricalRegistry": "1367:2"
+    },
+    "page80": {
+      "hub": "1582:20",
+      "totalLinks": 10,
+      "link88": "1658:20"
+    },
+    "page100": {
+      "hub": "1581:24",
+      "totalLinks": 9,
+      "linkF09": "1654:15"
+    },
+    "page98": {
+      "hub": "1582:255",
+      "totalLinks": 10,
+      "linkPlan": "1658:25"
+    },
+    "allReviewIndexes": [
+      "1583:2",
+      "1582:20",
+      "1582:83",
+      "1582:146",
+      "1582:209",
+      "1582:255",
+      "1582:308",
+      "1581:24"
+    ],
+    "allIndexUrlActions": 84,
+    "brokenIndexUrlActions": 0
+  },
+  "notVerified": [
+    "Figma Present actual mouse/keyboard, BACK and browser navigation (Figma static structure only)",
+    "Cross-page URL references are separate Figma tabs, not automatic same-session auth/return",
+    "Native Chrome extension SidePanel and installed MV3 interaction",
+    "Customer authentication, AuthReturnIntent anti-replay, user/tenant resource ownership and API",
+    "Actual SavedTarget persistence and deletion/retention",
+    "Actual paid entitlement, Stripe/provider checkout, monitoring job and notification",
+    "YouTube data rights, sentiment/content classification approval and actual comments"
+  ],
+  "existingFigmaOriginalsPreserved": [
+    "1320:3",
+    "1321:3",
+    "1321:44",
+    "1322:8",
+    "1322:33",
+    "1322:49",
+    "1375:2",
+    "1376:2",
+    "1379:2",
+    "1380:2",
+    "1253:8",
+    "1576:2",
+    "1576:47",
+    "1576:272",
+    "1576:317"
+  ],
+  "gitChangeScope": "Design Figma and documentation-only new PR. No frontend/backend/extension source, environment, billing, OAuth, actual YouTube data changes."
+}
