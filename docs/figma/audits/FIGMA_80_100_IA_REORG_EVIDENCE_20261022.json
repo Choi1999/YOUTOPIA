@@ -1,0 +1,472 @@
+{
+  "auditId": "FIM-80-100-IA-20261022",
+  "dateKST": "2026-10-22",
+  "repoBaseline": {
+    "name": "Choi1999/YOUTOPIA",
+    "base": "frontend",
+    "sha": "826ec54718895404eca1ddb784b4618e8bfaa215",
+    "unchangedProductCode": true
+  },
+  "figmaFileKey": "00Q6HNjuv02u7Ex4yUzZer",
+  "status": "FIGMA_PAGE_TAXONOMY_REORG_DONE / STATIC_READBACK_PASS / USER_VISUAL_SIGNOFF_PENDING / PRESENT_NOT_RUN",
+  "existingPageCountBefore": 15,
+  "pageCountAfter": 19,
+  "presentPages": [
+    {
+      "number": "80",
+      "pageId": "1283:2",
+      "classification": "CUSTOMER_ROLE_REFERENCE",
+      "entryId": "1582:20",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1582-20"
+    },
+    {
+      "number": "81",
+      "pageId": "1283:3",
+      "classification": "ORG_ROLE_REFERENCE",
+      "entryId": "1582:83",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1582-83"
+    },
+    {
+      "number": "82",
+      "pageId": "1283:4",
+      "classification": "CURRENT_ADMIN_TWO_VIEWS",
+      "entryId": "1485:14",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1485-14"
+    },
+    {
+      "number": "83",
+      "pageId": "1283:5",
+      "classification": "DEV_QA_TOOLCHAIN_FIRST",
+      "entryId": "1488:14",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1488-14"
+    },
+    {
+      "number": "84",
+      "pageId": "1575:2",
+      "classification": "NEW_FREE_BOOKMARKS",
+      "entryId": "1576:2",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-2"
+    },
+    {
+      "number": "85",
+      "pageId": "1575:3",
+      "classification": "NEW_SUBSCRIBER_COMPARE",
+      "entryId": "1576:92",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-92"
+    },
+    {
+      "number": "86",
+      "pageId": "1575:4",
+      "classification": "NEW_SUBSCRIBER_MONITOR",
+      "entryId": "1576:182",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-182"
+    },
+    {
+      "number": "87",
+      "pageId": "1575:5",
+      "classification": "NEW_PLAN_ENTITLEMENTS",
+      "entryId": "1576:272",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-272"
+    },
+    {
+      "number": "90",
+      "pageId": "0:1",
+      "classification": "ARCHIVE_GAME_PILOT",
+      "entryId": "0:1",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=0-1"
+    },
+    {
+      "number": "91",
+      "pageId": "858:10",
+      "classification": "ARCHIVE_GAME_WEEKLY",
+      "entryId": "858:10",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=858-10"
+    },
+    {
+      "number": "92",
+      "pageId": "1136:3886",
+      "classification": "ARCHIVE_GAME_POLICY",
+      "entryId": "1136:3886",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1136-3886"
+    },
+    {
+      "number": "93",
+      "pageId": "1159:10",
+      "classification": "REACT_YU01_12_DEMO_REFERENCE",
+      "entryId": "1159:11",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1159-11"
+    },
+    {
+      "number": "94",
+      "pageId": "1177:12",
+      "classification": "PUBLIC_RIGHTS_REFERENCE",
+      "entryId": "1177:12",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1177-12"
+    },
+    {
+      "number": "95",
+      "pageId": "1044:10",
+      "classification": "PRESENTATION_ARCHIVE",
+      "entryId": "1044:10",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1044-10"
+    },
+    {
+      "number": "96",
+      "pageId": "1044:11",
+      "classification": "PRESENTATION_ARCHIVE",
+      "entryId": "1044:11",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1044-11"
+    },
+    {
+      "number": "97",
+      "pageId": "1044:12",
+      "classification": "PRESENTATION_ARCHIVE",
+      "entryId": "1044:12",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1044-12"
+    },
+    {
+      "number": "98",
+      "pageId": "1253:2",
+      "classification": "CHROME_MAIN_THREE_TABS",
+      "entryId": "1253:3",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1253-3"
+    },
+    {
+      "number": "99",
+      "pageId": "343:1698",
+      "classification": "DEPRECATED_ASSETS_ARCHIVE_INDEX",
+      "entryId": "1582:308",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1582-308"
+    },
+    {
+      "number": "100",
+      "pageId": "1320:2",
+      "classification": "CUSTOMER_AUTH_AND_WEB_ONLY_INTERNAL_REFERENCE",
+      "entryId": "1581:24",
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1581-24"
+    }
+  ],
+  "explicitlyNotCreated": [
+    "88",
+    "89"
+  ],
+  "newUserWorkflowPages": [
+    {
+      "number": "84",
+      "pageId": "1575:2",
+      "primaryGoal": "free login bookmark target ID + own note/folder, not auto-persist analysis snapshot",
+      "light": [
+        "1576:2",
+        "1576:47"
+      ],
+      "dark": [
+        "1577:2",
+        "1577:47"
+      ],
+      "states": [
+        "EMPTY",
+        "SYNTHETIC_LIST"
+      ],
+      "links": [
+        "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-2",
+        "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-47",
+        "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1577-2",
+        "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1577-47"
+      ]
+    },
+    {
+      "number": "85",
+      "pageId": "1575:3",
+      "primaryGoal": "subscriber multivideo comparison with source/window/denominator comparability gate",
+      "light": [
+        "1576:92",
+        "1576:137"
+      ],
+      "dark": [
+        "1577:92",
+        "1577:137"
+      ],
+      "states": [
+        "SELECTION",
+        "UNCOMPARABLE"
+      ],
+      "links": [
+        "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-92",
+        "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-137",
+        "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1577-92",
+        "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1577-137"
+      ]
+    },
+    {
+      "number": "86",
+      "pageId": "1575:4",
+      "primaryGoal": "subscriber monitoring setup and truthful empty observation history; no actual scheduled jobs",
+      "light": [
+        "1576:182",
+        "1576:227"
+      ],
+      "dark": [
+        "1577:182",
+        "1577:227"
+      ],
+      "states": [
+        "SETUP",
+        "EMPTY_HISTORY"
+      ],
+      "links": [
+        "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-182",
+        "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-227",
+        "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1577-182",
+        "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1577-227"
+      ]
+    },
+    {
+      "number": "87",
+      "pageId": "1575:5",
+      "primaryGoal": "free account vs subscription range, price/usage unknown, no checkout",
+      "light": [
+        "1576:272",
+        "1576:317"
+      ],
+      "dark": [
+        "1577:272",
+        "1577:317"
+      ],
+      "states": [
+        "FREE_GATE",
+        "PAID_SCOPE"
+      ],
+      "links": [
+        "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-272",
+        "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1576-317",
+        "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1577-272",
+        "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1577-317"
+      ]
+    }
+  ],
+  "reviewIndexes": [
+    {
+      "page": "00",
+      "id": "1583:2",
+      "links": 19,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1583-2"
+    },
+    {
+      "page": "80",
+      "id": "1582:20",
+      "links": 9,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1582-20"
+    },
+    {
+      "page": "81",
+      "id": "1582:83",
+      "links": 9,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1582-83"
+    },
+    {
+      "page": "82",
+      "id": "1582:146",
+      "links": 9,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1582-146"
+    },
+    {
+      "page": "83",
+      "id": "1582:209",
+      "links": 8,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1582-209"
+    },
+    {
+      "page": "98",
+      "id": "1582:255",
+      "links": 9,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1582-255"
+    },
+    {
+      "page": "99",
+      "id": "1582:308",
+      "links": 9,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1582-308"
+    },
+    {
+      "page": "100",
+      "id": "1581:24",
+      "links": 8,
+      "url": "https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1581-24"
+    }
+  ],
+  "navigation": {
+    "newReviewUrlActions": 80,
+    "uniqueReferencedDestinations": 50,
+    "brokenUrlDestinations": 0,
+    "newReviewInternalNodeActions": 16,
+    "newCustomerReviewFlowStarts": 8,
+    "brokenNewInternalTargets": 0
+  },
+  "newWorkflowCanvas": {
+    "scenes": 16,
+    "light": 8,
+    "dark": 8,
+    "textNodes": 480,
+    "textStylesBound": 480,
+    "solidFillsAndStrokes": 816,
+    "semanticTokenBound": 816,
+    "unboundSolid": 0,
+    "reviewLinks": 16,
+    "screenReadersOrZoomTested": false
+  },
+  "existingChromePreserved": {
+    "pageId": "1253:2",
+    "originalFrames": 18,
+    "originalNodeNavigationActions": 29,
+    "backActions": 1,
+    "invalidInternalDestinations": 0,
+    "oldFourTabId": "1276:217",
+    "current": [
+      "1253:3",
+      "1276:2",
+      "1375:2",
+      "1376:2",
+      "1379:2",
+      "1380:2"
+    ],
+    "darkThemeStatic": [
+      "1386:2",
+      "1389:2",
+      "1389:78",
+      "1389:147"
+    ],
+    "oldScenarioReview": [
+      "1253:6",
+      "1253:7"
+    ],
+    "archivedReferences": [
+      "1253:4",
+      "1253:5",
+      "1253:8",
+      "1267:2",
+      "1268:2",
+      "1276:217"
+    ]
+  },
+  "adminAndQA": {
+    "adminPage": "1283:4",
+    "adminPrimary": [
+      "1485:14",
+      "1485:49",
+      "1486:14",
+      "1486:49"
+    ],
+    "oldAdmin": [
+      "1286:144",
+      "1286:218"
+    ],
+    "qaPage": "1283:5",
+    "qaCurrentDecision": "1488:14",
+    "qaOldWeb": [
+      "1286:290",
+      "1286:362"
+    ],
+    "oldFlowStartsPreserved": true,
+    "oldNodesNotDeleted": true
+  },
+  "auth": {
+    "page": "1320:2",
+    "board": "1320:3",
+    "index": "1581:24",
+    "customerFlow": [
+      "1321:3",
+      "1321:21",
+      "1321:44",
+      "1322:8",
+      "1322:33",
+      "1322:49"
+    ],
+    "webOnlyAdmin": "1323:14",
+    "internalQa": "1323:37",
+    "noCustomerChromeAdminAuth": true
+  },
+  "archive": {
+    "registryOld": "1367:2",
+    "registryNew": "1583:2",
+    "registryOldMarkedHistorical": true,
+    "gamePilotPages": [
+      "0:1",
+      "858:10",
+      "1136:3886"
+    ],
+    "reactDemoPage": "1159:10",
+    "presentations": [
+      "1044:10",
+      "1044:11",
+      "1044:12"
+    ],
+    "oldDeprecatedFrame": "348:1739",
+    "legacy92CrossPageNodeActions": 11,
+    "legacy92CrossPageNodeTargetsExist": 11
+  },
+  "protectedOriginalNodeIds": [
+    "1285:2",
+    "1285:72",
+    "1285:145",
+    "1286:2",
+    "1286:72",
+    "1286:144",
+    "1286:218",
+    "1286:290",
+    "1286:362",
+    "1159:11",
+    "1159:50",
+    "1253:3",
+    "1253:4",
+    "1253:5",
+    "1253:6",
+    "1253:7",
+    "1253:8",
+    "1267:2",
+    "1268:2",
+    "1276:2",
+    "1276:217",
+    "1375:2",
+    "1376:2",
+    "1379:2",
+    "1380:2",
+    "1386:2",
+    "1389:2",
+    "1389:78",
+    "1389:147",
+    "1320:3",
+    "1321:3",
+    "1321:21",
+    "1321:44",
+    "1322:8",
+    "1322:33",
+    "1322:49",
+    "1323:14",
+    "1323:37",
+    "348:1739",
+    "343:1699",
+    "1201:2",
+    "1367:2"
+  ],
+  "protectedOriginalCount": 42,
+  "createdReviewSectionHeaders": [
+    "1584:14",
+    "1584:17",
+    "1584:32",
+    "1584:35",
+    "1584:38",
+    "1584:41",
+    "1584:44"
+  ],
+  "verificationScope": "Figma Plugin API node/style/color/prototype readback and get_screenshot visual spot-check. Not actual Figma Present mouse/keyboard, no browser zoom or installed Chrome MV3/FE/BE runtime.",
+  "notExecuted": [
+    "Figma Present actual onClick, navigation, BACK",
+    "actual customer login and storage",
+    "real subscription/checkout or billing",
+    "live YouTube API or derived sentiment rights verification",
+    "production Job/monitor/alert",
+    "FE/BE authorization and retention rules",
+    "keyboard/screenreader zoom WCAG"
+  ],
+  "provenance": "Original editable YUTOPIA Figma internal design styles/variables; no imported reference screenshots or third-party UI code."
+}
