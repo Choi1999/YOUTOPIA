@@ -38,7 +38,7 @@
 | 93 | React Demo Reference | 기존 YU-01~12 Dark/Light 시안은 테스트/기술적 재사용 근거. 최종 Chrome 중심 고객 웹의 유일한 IA가 아님 |
 | 94 | Public/rights reference | 공개·출처 설명용 참조, 실제 법적·정책 승인과 분리 |
 | 95~97 | Presentation archive | 발표 시스템/본편/근거 자산 기존 유지. 제품 실제 구현 흐름과 분리 |
-| [98](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1582-255) | **핵심 유지·재배치** | 최신 Home/Video Hover/3탭 및 분석 기준을 앞쪽에 모으고 Dark QA·구형 채널/No Data·옛 4탭 구역을 나눔 |
+| [98](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1582-255) | **핵심 유지·재배치 + 신규 3탭 시나리오** | 최신 영상 Hover/요약·주제·추이/근거는 보존하고 **채널 Dark·자료 없음 Light 3탭 후보 10개** 추가. 구형 채널/No Data/4탭은 별도 보존 |
 | [99](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1582-308) | 아카이브 통합 목차 | 게임 Pilot 90~92, React Demo 93, 공개 94, 발표 95~97, 옛 Chrome 98에 대한 접근 인덱스. 실제 프레임들은 기존 위치에 보존 |
 | [100](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1581-24) | 인증 책임 분리 | 기존 F01~F08 화면 보존. **F01~F06 고객 Chrome·고객 웹 로그인/복귀**, **F07 플랫폼 관리자 웹 전용**, **F08 내부 QA 웹 후보**로 8개 클릭 가능한 검토 링크 작성 |
 
@@ -58,6 +58,20 @@
 - 상태 변경용 Figma Prototype은 **실제 저장/결제 버튼이 아니라 QA용 시나리오 스위치**이며, 합성 Fixture 상태라고 표시.
 - 기존 분석 공통 계약 [Analysis v1 후보](../../../shared/contracts/analysis-v1/README.md)와, 최근 병합된 [Admin v1 후보](../../../shared/contracts/admin-v1/README.md)는 각각 범위가 다름. 고객 SavedTarget/Compare/Monitor/Entitlement 영속 API는 이 개편으로 새로 생성되지 않았다.
 
+### 3.1 추가 개편: 98 Channel / No Data 최신 3탭 시나리오 (2026-10-22)
+
+채널과 자료 없음에 사용되던 과거 **4탭(요약/주요 주제/기간 흐름/근거)** 상세 UI는 현재 영상의 **3탭(요약·주제·추이) + 맥락형 분석 기준**과 달랐다. 구형을 덮어쓰지 않고 기존 브라우저·YouTube 레이어를 편집 가능한 상태로 복제한 뒤 과거 패널을 제거하고 **의미 토큰으로 연결된 새 패널을 재작성**했다. 복제된 Chrome 배경은 시연용이며 **Panel·Hover 자체는 허위 통계가 없는 데이터 상태**를 표시한다.
+
+| 역할 | 신규 Hover 진입 | 최신 요약·주제·추이 | 분석 기준 및 뒤로가기 |
+|---|---|---|---|
+| **채널 Dark** | [98-25](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1608-2) | [98-19](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1606-2) → [98-20](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1606-263) → [98-21](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1606-524) | [98-22 근거](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1606-785) · BACK |
+| **자료 없음 Light** | [98-26](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1608-224) | [98-23](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1606-1046) → [98-27](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1621-2) → [98-28](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1621-214) | [98-24 근거](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1606-1307) · BACK |
+
+- **목적:** 채널은 선정 영상과 관측 기간/분모가 확인되기 전까지 채널 전체 여론·감성 비율을 표시하지 않음. 자료 없음은 `NO_DATA` / `COMMENTS_DISABLED` / `POLICY_BLOCKED`를 구분하며 미확보를 수치 0으로 둔갑시키지 않음.
+- **현재 98 목차:** Channel·No Data 링크 [IA Review Index](https://www.figma.com/design/00Q6HNjuv02u7Ex4yUzZer/?node-id=1582-255)를 새 Hover Flow에 연결. 과거 98-04/05/07/08의 노드 ID 및 기존 클릭 흐름은 보존.
+- **Figma 구조 QA:** 신규 10화면(상세 패널 8·Hover 2), 텍스트 **154/154** 스타일, 단색 채우기·선 **284/284** 의미 변수, **NODE 34/BACK 2, 내부 목적지 불량 0**, 가짜 감성 퍼센트 **0건**.
+- **주의:** 화면 연결은 정적 Figma 데이터 검증. **Figma Present 실제 마우스/키보드/BACK, 설치된 Chrome 확장의 Side Panel, 실제 YouTube/서버 연동 시험은 모두 NOT_RUN**. 전체 Chrome 복제 배경에 대한 토큰 정합성이나 WCAG 전체 준수는 이 검증의 범위 밖이다.
+
 ## 4. Figma 구조·탐색 검증
 
 | 확인 | 결과 | 한계 |
@@ -70,12 +84,14 @@
 | 84~87 Light/Dark Prototype 시작점 | **8개, 페이지마다 2개** | 사용성 시험은 NOT_RUN |
 | 새 Figma 검토 링크 | **80개**, 서로 다른 대상 50개 | **80개 URL 목적지 존재**, 브라우저 실제 클릭 NOT_RUN |
 | 원본 보존 ID | **42/42 존재** | Node ID 보존, 프레임 내용 승인·제품 코드 구현 검증과 구분 |
-| 98 원본 18개 프레임 | **18/18 유지** | 구형 시나리오 일부는 3탭 기준 재작성 필요 |
-| 98 기존 NODE/BACK | **NODE 29 / BACK 1**, 내부 불량 0 | Dark 4개는 정적 시각 검수 화면 |
+| 98 원본 18개 프레임 | **18/18 유지** | 채널·자료 없음 신규 후보는 원본을 변경하지 않은 별도 시안 |
+| 98 기존 NODE/BACK | **NODE 29 / BACK 1**, 내부 불량 0 | 원래 영상 3탭 유지, Dark 4개는 정적 시각 검수 화면 |
+| **98 신규 채널·자료 없음 3탭** | **10개 화면 · NODE 34 / BACK 2**, 불량 0 | 채널 Dark 4개 패널+Hover, 자료 없음 Light 4개 패널+Hover. 원본 별도 보관 |
+| 98 신규 편집 가능 패널/카드 | **텍스트 스타일 154/154, 의미 색상 284/284** | 감성 비율·확인하지 않은 댓글 수의 허위 표시 0; 복제한 YouTube 배경은 시연용 |
 | 92 구형 교차 페이지 NODE | **11/11 대상 존재** | 과거 Pilot/02·03 페이지 참조 보존, 현재 구현 정본 아님 |
 | 시각 검수 | Registry·Auth·Chrome IA, 무료·비교 Light/Dark, 관리자 화면 등 실제 Figma 렌더 육안 확인 | 확대·스크린리더·키보드 실제 테스트 아님 |
 
-**변경 화면 내부 구조:** 82 최신 운영 시안 4개는 y=0/1120, 이전 원본은 y=3390 이하. 83 현재 도구 결정은 y=0, 과거 QA 화면은 y=1130 이하. 98 최신 Home→Hover→Summary/Topics/Trends/Evidence는 y=0~1040, Dark·시나리오는 y=2080~3120, 구형 화면은 y=4420 이후에 분리.
+**변경 화면 내부 구조:** 82 최신 운영 시안 4개는 y=0/1120, 이전 원본은 y=3390 이하. 83 현재 도구 결정은 y=0, 과거 QA 화면은 y=1130 이하. 98 최신 Home→Hover→Summary/Topics/Trends/Evidence는 y=0~1040, Dark·구형 시나리오는 y=2080~3120, 구형 참조는 y=4420~5460. **신규 채널 Dark/자료 없음 Light 3탭·Hover는 y=6800~9925의 별도 리베이스 존**에 추가.
 
 **검토 허브:** 80 고객 · 81 조직 · 82 플랫폼 · 83 QA · 98 Chrome · 99 Archive · 100 Auth 및 새 00 Registry. 이들은 **Figma Review Index**이며 사용자 제품 UI의 메뉴·인가 기능을 제공하지 않는다.
 
@@ -90,14 +106,14 @@
 | IA-05 | 87 업셀 | 필요한 기능에서만 안내, 가격/한도 미정 시 결제 실행 없음, 역할은 독립 | **NOT_IMPLEMENTED** |
 | IA-06 | 82 관리자 | Light/Dark 각 운영↔정책 2뷰 실제 Present 클릭, 서버 역할/감사 E2E | **PRESENT_NOT_RUN / BE_NOT_IMPLEMENTED** |
 | IA-07 | 83 QA | 테스트 실행 SHA/환경·로그·Trace 원본이 증거이고 합성 권한이 운영에 노출되지 않음 | **NOT_RUN** |
-| IA-08 | 98 Chrome | Home→최신 Hover→3탭→분석 근거 BACK, Channel/No Data 3탭 재설계 | **PRESENT_NOT_RUN / SCENARIO_REBASE_PENDING** |
+| IA-08 | 98 Chrome | 영상/채널/자료 없음 각각 Hover→3탭→분석 근거 BACK, 닫기·대상 고정 확인 | **VIDEO STATIC / CHANNEL_NODATA_REBASE_STATIC_PASS / PRESENT_NOT_RUN** |
 | IA-09 | 100 Auth | Guest→고객 로그인→같은 Video A 고정 복귀·저장 확인 / F07·F08 경계 | **NOT_RUN / AUTH_BE_NOT_IMPLEMENTED** |
 | IA-10 | 접근성/성능 | 100/125/150% Zoom, Tab/Escape, 한국어/영어/태국어 긴 명칭, 스크린리더, Chrome native UI 충돌 | **NOT_RUN** |
 | IA-11 | 구형 참조 정리 | 90~92·93·95~97·옛 98의 실제 사용 참조가 0이고 새로운 경로 회귀 PASS | **DELETION_BLOCKED / HISTORICAL RETAINED** |
 
 ### 우선순위 후속 개선
 
-1. **98 Channel/No Data/구독의 구형 화면을 현재 3탭·분석 정책 기준으로 재정의.** 기존 old frame을 바로 삭제하지 않음.
+1. **98 구독 안내·업셀의 구형 경로를 최신 87 이용권 UX와 정합.** 채널/No Data는 신규 3탭 시안이 작성됐으므로 실제 Present·Chrome 적용을 검증하고, 기존 old frame은 삭제하지 않음.
 2. **84~87 제품 상태에서 실제 고객 행동(저장/비교/관측 범위/구독 안내)이 일어나는 흐름**을 서버 계약/권한 정의 후 UX 검증. 이번에는 상태만 보여주는 Figma 검토 화면.
 3. **100 Auth의 8개 후보와 Chrome↔고객 웹 왕복의 실제 동작 검증**. 기존 후보의 수치는 합성 시안이며 실제 서비스 로그인과 다름.
 4. **93 React YU-01~12 데모와 최신 신규 고객 UI간 Gap 추적**, 기존 프론트엔드 DEMO와 미구현 FE/BE를 혼동하지 않음.
