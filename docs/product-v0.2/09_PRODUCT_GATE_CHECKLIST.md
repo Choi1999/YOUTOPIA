@@ -48,7 +48,7 @@
 | **PG-01 방향 정렬** | 제품·사용자·핵심 Hover→Side Panel 명확 | **PASS — 사용자 승인 방향** |
 | **PG-02 문서 준비** | 00~09 문서 10개 모두 작성·연결·검수 | **READY_FOR_REVIEW — 문서·링크 검사 완료, 사람 검토 전** |
 | **PG-03 시각 디자인** | 10~19 상세 UX/접근성/오류 상태 검수 | **FIGMA_VISUAL_APPROVED / CHROME_A11Y_UNTESTED** — 2026-10-16 정적 시안 사용자 승인, 브라우저/키보드/접근성 검증 별도 |
-| **PG-04 확장 구현** | Chrome MV3 local mock/Side Panel 실제 시연 | **21~25 CODE_MERGED / YU26_BENCHMARK_P0_CODE_READY / YU26_INTERACTIVE_CARD_WINDOWS_QA_PENDING / FULL_E2E_NOT_DONE** — PR #8~#12 개발 브랜치 병합, 사용자 보고에 따른 기존 단계 실환경 검증. 26번 Shadow DOM 카드·고정 합성 데이터 코드는 별도 Draft 검수 대상이며 실제 Chrome UI·접근성, 27~28번 메시지/Side Panel 대상 고정은 미완료 |
+| **PG-04 확장 구현** | Chrome MV3 local mock/Side Panel 실제 시연 | **21~26 CODE_MERGED / YU26_USER_REPORTED_NODE_160_AND_CHROMIUM_2_PASS / YU27_28_NOT_STARTED / FULL_E2E_NOT_DONE** — PR #13은 2026-10-20 18:38:40 KST `frontend`에 병합됨. 최종 SHA Windows Native Node 160/160·Chromium 2종·Chrome 핵심 Hover 동작은 사용자 이전 로그/확인에 따른 PASS 보고이며 GitHub CI PASS는 아님. YU-26은 합성 데이터 기반 카드 UI까지만 구현; 최종 SHA 라이브 YouTube 자동 테스트·포괄적 키보드 접근성·장시간 검증 미확인. 메시지/캐시(27), 클릭→패널 대상 고정(28)은 미구현 |
 | **PG-05 실제 분석 데이터** | YouTube 파생지표·원문/보존·API 권한 근거 | **BLOCKED_EXTERNAL_GATE** |
 | **PG-06 구독/결제** | 구체 요금제·청구·취소 정책 | **UNRESOLVED** |
 | **PG-07 공개 출시** | 정책·안전·스토어·운영 승인 | **NOT_APPROVED** |
