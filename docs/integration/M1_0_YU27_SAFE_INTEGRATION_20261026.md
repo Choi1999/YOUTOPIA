@@ -1,6 +1,6 @@
 # YOUTOPIA M1-0 — YU-27 Safe Integration Candidate (2026-10-26 KST)
 
-> **INDEPENDENT_CANDIDATE / STATIC_DIFF_AUDITED / CANDIDATE_EXECUTION_QA_NOT_RUN / PR15_UNMERGED / LIVE_DATA_BLOCKED**
+> **INTEGRATION_CODE_AUDITED / CANDIDATE_NODE_177_PASS / CANDIDATE_CHROMIUM_5_PASS / MV3_USER_REPORTED_NO_ISSUES / DETAILED_MV3_EVIDENCE_PENDING / PR15_UNMERGED / MERGE_NOT_APPROVED / LIVE_DATA_BLOCKED**
 >
 > This is an isolated integration candidate, not a merge approval, release, Product HQ update, or implementation of YU-28 More→Side Panel handoff.
 
@@ -11,7 +11,7 @@
 | Source baseline | `frontend@9a50ad7ac9ed0bbf78d2512449c1a0daed5e0a3e` | Current target, untouched |
 | Old merge base | `d7f271b5afa1fc6b0bf31c000da6aa73611a6dc0` | Common ancestor |
 | YU-27 source | `feature/yutopia-27-worker-messaging@8ff1d9c6851d2627b7b3828ccaf2dc1f2a21c74d` | PR #15 DRAFT / OPEN / unmerged |
-| Integration candidate | `feature/youtopia-m1-0-yu27-integration-20261026` | New isolated branch, exact resulting SHA to be recorded separately |
+| Integration candidate | `feature/youtopia-m1-0-yu27-integration-20261026@7d8265e4f76785b1b4d863954cf7830a47c613d6` | Exact commit used for Windows Node and Chromium QA; subsequent documentation-only commits must keep extension tree unchanged |
 
 Compare at creation: PR #15 **16 ahead / 13 behind** latest `frontend`. Both changed `docs/product-v0.2/04_EXECUTION_00_99.md`, but **no changed paths under `extension/` on the frontend side** since the common ancestor. That is a file-path conflict analysis, not a runtime QA result.
 
@@ -36,20 +36,23 @@ Manifest stays MV3 with permissions `sidePanel` and `storage`, and YouTube-only 
 
 YU-27 remains a **STATIC_FIXTURE-only** Worker message boundary, validating VIDEO/CHANNEL, requestId, tab/document/sender scope, stale request, and `chrome.storage.session` cache. The Hover 'More' CTA remains disabled, Side Panel remains a placeholder, no real YouTube/Steam API, authentication, billing, server persistence or user comments are processed.
 
-## 3. Evidence and strict Gate distinction
+## 3. Confirmed M1-0 Windows QA and evidence limits
 
-| Gate | Existing source evidence | Candidate-commit status |
+Windows test run at **2026-10-26 16:24:23 KST** targeted the exact **integration candidate code commit** `7d8265e4f76785b1b4d863954cf7830a47c613d6`. Uploaded `M1_0_RESULTS_ONLY.zip` was independently examined in ChatGPT: original Node TAP and each Chromium fixture exit code/PASS marker, JSON summary, archive CRC, and **11/11 SHA-256 manifest checks** were consistent. SHA-256 of submitted evidence ZIP: `a2c7627ebebaab7ab9b87352d66ff26f1909117dcd4fc437f26e6b0094d5edaa`.
+
+| Gate | Evidence | M1-0 verdict |
 | --- | --- | --- |
-| M0 baseline `frontend` Node | Windows native `160/160 PASS` on `9a50ad7ac9ed0bbf78d2512449c1a0daed5e0a3e` | Historical M0 verified; not yet rerun on candidate |
-| M0 YU-27 Node | Windows native `177/177 PASS` on `8ff1d9c6851d2627b7b3828ccaf2dc1f2a21c74d` | **NOT_RUN** on new candidate SHA |
-| Offline Chromium | Five original fixtures PASS on `frontend` and five on PR #15 | **NOT_RUN** on new candidate SHA |
-| Installed Chrome | User reported no issues in both M0 builds | **USER_REPORTED**, scenario-specific logs / Worker cache proof not independently attached |
-| Candidate source tree | Git blob and tree SHA audit required after candidate commit | **PENDING POST-COMMIT READBACK** |
-| PR #15 merge/rebase | Original PR #15 remains draft and unmerged | **NOT_PERFORMED** |
-| YU-28 / Side Panel target pinning | Not implemented in candidate | **NOT_IMPLEMENTED** |
-| Live data / release | G2-P0 rights, sampling quality, free tier economics, retention, security still unresolved | **BLOCKED** |
+| Source / source equivalence | GitHub readback: original PR #15 and integration candidate share **whole `extension/` Git tree `07cbc21faddb296c9a2313430a3866adf74aa3d7`**; exact tested HEAD; source clean reported | **PASS** |
+| M0 baseline `frontend` | Prior native Node `160/160 PASS` on `9a50ad7...`; five offline Chromium fixtures PASS | **M0 HISTORICAL PASS**, separate SHA |
+| M1-0 official Node | Native Node 24.18.0, `node --test --test-reporter=tap`, **177/177 PASS, fail=0 skip=0 cancel=0, exit=0** on `7d8265e...` | **PASS / RAW_LOG_VERIFIED** |
+| M1-0 offline Chromium | Official Python DOM / SPA / Channel / Hover / Hover Card fixture scripts, **5/5 PASS markers with exit=0** on `7d8265e...` | **PASS / RAW_LOG_VERIFIED** |
+| Installed Chrome MV3 | User stated **"이상없음"** for this integration candidate; no individual CH-14/15 Worker message/cache/tab/document/restart logs or screenshots submitted | **USER_REPORTED_NO_ISSUES / SCOPED_EVIDENCE_PENDING** |
+| GitHub Actions / checks | No CI runs or combined statuses on candidate commit in checked queries | **NOT_OBSERVED**, not CI PASS |
+| PR #15 merge/rebase | PR #15 remains draft/open at `8ff1d9c...` | **NOT_PERFORMED** |
+| YU-28 / Side Panel target pinning | Not in candidate | **NOT_IMPLEMENTED** |
+| Live data / release | G2-P0 rights, sampling quality, economics, retention and security gates not fulfilled | **BLOCKED** |
 
-A byte-identical `extension/` tree to PR #15 means the *source* is equivalent, not that the new commit itself was executed in Windows/Chrome. No transfer of PASS across SHAs without explicitly recording the equivalence and the remaining audit limits.
+**Commit-level distinction:** source code and official Windows tests were executed against `7d8265e...`. If a subsequent commit changes only these Markdown audit files, its *commit SHA* changes but `extension/` must remain byte-identical (same Git tree SHA). No separate Node/Chromium rerun is claimed for a documentation-only commit. The user's Chrome report is preserved as a user report, not promoted to independently observed case-by-case MV3 test PASS.
 
 ## 4. Isolated Windows QA instructions for the candidate
 
@@ -79,12 +82,14 @@ After the offline tests, load the new `extension/` under a **new dedicated Chrom
 
 ## 5. Review/merge decision gates
 
-- [ ] Confirm candidate `extension/` subtree Git SHA matches pinned YU-27 source subtree
-- [ ] Confirm candidate PR diff has exactly seven YU-27 extension paths + ledger reconciliation + this audit document
-- [ ] Windows native Node on **new candidate SHA**: all 177 assertions PASS, zero fail/skip
-- [ ] Five offline Chromium fixtures PASS on **new candidate SHA**
-- [ ] Installed Chrome MV3 on **new candidate SHA**, especially Content→Worker→cache scope/restart error handling
-- [ ] Review original PR #15 direction and decide on superseding/replacing vs closing PR separately (no automatic merge or closure)
-- [ ] Explicit review approval before any integration into `frontend`
+- [x] Confirm integration candidate **whole `extension/` Git tree SHA** matches original YU-27 source subtree
+- [x] Confirm candidate PR diff contains exactly seven YU-27 extension paths + frontend-preserving ledger reconciliation + this audit document (nine total)
+- [x] Official native Node `177/177` tests on **`7d8265e...`**, with zero failure/skipped, original uploaded TAP verified
+- [x] Five official offline Chromium fixtures on **`7d8265e...`**, all pass markers and exit=0
+- [x] User reports no problems during installed Chrome MV3 manual check of **new candidate**
+- [ ] Obtain **scoped, reproducible** Chrome MV3 evidence for Worker↔Content message echo, cache HIT/MISS/60s TTL and restart, tab/document scope, stale response handling (per-case logs/screenshots not yet submitted)
+- [ ] Request/complete human code review and decide if PR #35 supersedes original PR #15; keep original PR unchanged until an explicit lifecycle decision
+- [ ] Separate explicit merge authorization before integrating PR #35 into `frontend`
+- [ ] Keep external YouTube/Steam data operations blocked until G2-P0 external rights/quality/retention/economics gates pass
 
-**Gate at preparation:** `M1_0_STATIC_SOURCE_RECONCILIATION_CANDIDATE / EXECUTION_QA_PENDING / MERGE_NOT_APPROVED`.
+**Gate now:** `M1_0_SOURCE_PASS / NODE_PASS / OFFLINE_CHROMIUM_PASS / CHROME_USER_REPORTED_NO_ISSUES / MV3_SCOPED_EVIDENCE_PENDING / MERGE_NOT_APPROVED`.
