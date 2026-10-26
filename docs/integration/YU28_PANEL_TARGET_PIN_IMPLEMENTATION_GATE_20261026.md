@@ -1,6 +1,6 @@
 # YOUTOPIA YU-28 — Hover 「더보기」 → Chrome Side Panel 대상 고정
 
-> **Status (2026-10-26 KST): DESIGN_CONTRACT_PREPARED / SOURCE_CODE_NOT_CHANGED / CHROME_GESTURE_SPIKE_PENDING / LIVE_DATA_BLOCKED**
+> **Status (2026-10-26 KST): G28_1_SOURCE_SPIKE_CANDIDATE / CHROME_USER_GESTURE_TEST_NOT_RUN / TARGET_PIN_NOT_IMPLEMENTED / LIVE_DATA_BLOCKED**
 >
 > Independent working branch: `feature/youtopia-28-panel-target-pin-20261026`.
 > Baseline: `frontend@1ff68c209448281dff4dd91ca6e82bbe203230cc` — merged YU-27 from PR #35.
@@ -63,7 +63,7 @@ Reference product acceptance: `AT-02` target identity, `AT-09` no fake real data
 ## 5. Stage gates
 
 - **G28-0 (this step):** merge baseline validated, feature branch isolated, contract prepared.
-- **G28-1:** Windows installed Chrome user-gesture `sidePanel.open` spike with capture and failure path — `NOT_RUN`.
+- **G28-1:** Isolated click-to-Worker `sidePanel.open` spike code and mock tests prepared; Windows **installed-Chrome actual gesture QA** — `NOT_RUN`.
 - **G28-2:** Implement target-select request/ack, sender validation, session pin, panel shell and strict click handler — `NOT_STARTED`.
 - **G28-3:** Original Node tests + new selection tests + offline Chromium fixtures executed on new SHA — `NOT_RUN`.
 - **G28-4:** Windows installed Chrome Home/Search/SPA and tab/document/Worker lifecycle E2E — `NOT_RUN`.
@@ -73,4 +73,6 @@ Reference product acceptance: `AT-02` target identity, `AT-09` no fake real data
 
 The `frontend` merge commit `1ff68c209448281dff4dd91ca6e82bbe203230cc` has identical `extension/` Git tree SHA `07cbc21faddb296c9a2313430a3866adf74aa3d7` to the earlier Windows-tested candidate `7d8265e4f76785b1b4d863954cf7830a47c613d6`. **Byte identity PASS**, but a fresh Windows Node/Chromium run *on the merge commit* has not been performed. If run, record exact SHA, machine versions, clean worktree and logs. This is a gate separate from YU-28 code.
 
-**Final status:** `YU28_CONTRACT_PREPARED / BROWSER_USER_GESTURE_SPIKE_PENDING / IMPLEMENTATION_NOT_STARTED / MERGE_NOT_APPROVED / LIVE_PRODUCT_RELEASE_BLOCKED`.
+**Final status:** `YU28_G28_1_CLICK_SPIKE_CODE_READY / NATIVE_TEST_NOT_RUN / CHROME_GESTURE_NOT_RUN / G28_2_TARGET_PIN_NOT_IMPLEMENTED / MERGE_NOT_APPROVED / LIVE_PRODUCT_RELEASE_BLOCKED`.
+
+G28-1 implementation and test runbook: [YU28_G28_1_GESTURE_SPIKE_QA_20261026.md](./YU28_G28_1_GESTURE_SPIKE_QA_20261026.md).
