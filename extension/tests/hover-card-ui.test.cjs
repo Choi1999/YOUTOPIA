@@ -425,7 +425,9 @@ test("G28-1: 사용자 실제 클릭에서만 메시지 전송, 응답 echo 검�
     requestId:1,targetType:"VIDEO",targetId:VIDEO_A,
   });
   assert.equal(f.api.getRuntimeStatus().lastAction,"YU28_G28_1_REQUESTED");
-  await Promise.resolve();await Promise.resolve();
+  // Node vm cross-context Promise reactions may run on a later event-loop turn.
+  // Await a macrotask boundary instead of assuming two microtasks are enough.
+  await new Promise(resolve => setImmediate(resolve));
   assert.equal(f.api.getRuntimeStatus().lastAction,"YU28_G28_1_OPENED");
   assert.match(note.textContent,/대상 고정 미구현/);
 });
@@ -450,7 +452,9 @@ test("G28-1: 실패 응답은 패널 열림 성공으로 표시하지 않음",as
   })});
   f.emit(channelState(3,f.anchor()));
   f.findClass("more").fire("click",{isTrusted:true});
-  await Promise.resolve();await Promise.resolve();
+  // Node vm cross-context Promise reactions may run on a later event-loop turn.
+  // Await a macrotask boundary instead of assuming two microtasks are enough.
+  await new Promise(resolve => setImmediate(resolve));
   assert.equal(f.api.getRuntimeStatus().lastAction,"YU28_G28_1_OPEN_FAILED");
   assert.match(f.findClass("more-status").textContent,/실패/);
 });
