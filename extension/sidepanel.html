@@ -9,14 +9,25 @@
   <body>
     <main class="panel">
       <header class="panel__header">
-        <strong>YUTOPIA</strong>
+        <strong>YOUTOPIA</strong>
         <span class="panel__pill">DEMO</span>
       </header>
-      <h1>영상·채널 반응 분석</h1>
-      <p class="panel__explain">YU-28 G28-1 · Hover 카드의 「더보기」 클릭으로 패널 열기만 확인하는 실험 화면입니다.</p>
-      <p class="panel__notice">실험용 DEMO입니다. 선택 영상·채널 대상 고정과 요약/주제/추이 3탭은 아직 구현되지 않았습니다. 실제 댓글·통계·계정 정보는 사용하지 않습니다.</p>
+      <h1>선택한 영상·채널</h1>
+      <p class="panel__explain">YU-28 G28-2 · 「더보기」를 클릭한 대상을 이 탭의 Side Panel에 고정합니다.</p>
+      <section class="selection" aria-labelledby="selection-title">
+        <h2 id="selection-title">선택 대상</h2>
+        <p id="selection-status" role="status" aria-live="polite">현재 탭 확인 중…</p>
+        <div id="selection-details" hidden>
+          <span class="panel__pill">SYNTHETIC · 선택만 확인</span>
+          <p class="selection__kind" id="selection-kind"></p>
+          <p class="selection__id" id="selection-id"></p>
+          <p class="panel__notice">다른 썸네일에 마우스를 올려도 선택은 바뀌지 않습니다. 다른 영상을 고르려면 그 영상의 「더보기」를 직접 클릭하세요.</p>
+        </div>
+      </section>
+      <p class="panel__notice">이 화면은 대상 선택 계약을 검증하는 DEMO입니다. 요약·주제·추이 탭, 실시간 댓글 분석, 로그인, 저장, 결제 기능은 아직 연결되지 않았습니다.</p>
     </main>
     <script src="shared.js"></script>
+    <script src="panel-selection-contract.js"></script>
     <script src="sidepanel.js"></script>
   </body>
 </html>

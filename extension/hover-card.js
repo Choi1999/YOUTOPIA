@@ -7,7 +7,7 @@
  * 출력: 대상별 합성 미니 차트, 예시 브리핑, 가상 분모/기간, 닫기/더보기 안내.
  * 실패: 미확정 ID/앵커 제거/화면 밖/오래된 requestId면 이전 카드 즉시 제거.
  * 보안: 실제 제목·댓글·시청기록·API 수집 없음, innerHTML 없음, 사이트 이벤트 미차단.
- * 경계: G28-1은 사용자 클릭→Side Panel 열기만 실험; 대상 고정(YU-28 G28-2)은 미구현.
+ * 경계: G28-2는 사용자 클릭 시 선택 대상을 세션에 고정. 실제 분석·저장 기능은 미연결.
  */
 (function initializeYutopiaHoverCard(scope) {
   "use strict";
@@ -233,7 +233,7 @@
       more.disabled = !canSendGesture;
       more.setAttribute("aria-disabled", String(!canSendGesture));
       more.setAttribute("aria-label", canSendGesture ?
-        "실험용 Chrome Side Panel 열기 · 대상 고정은 아직 지원되지 않음" :
+        "클릭한 영상·채널을 Chrome Side Panel에 고정하기 · 합성 데이터" :
         "Chrome 확장 메시징을 사용할 수 없어 상세 보기를 열 수 없음");
       const message = el("div", "more-status");
       message.setAttribute("role", "status");
@@ -241,7 +241,7 @@
       message.hidden = true;
       if (canSendGesture) {
         const request = Object.freeze({
-          type: "YUTOPIA_YU28_GESTURE_OPEN_V1",
+          type: "YUTOPIA_YU28_PIN_AND_OPEN_V1",
           version: 1, requestId: state.requestId,
           targetType: state.targetType, targetId: state.targetId,
         });
@@ -252,27 +252,32 @@
               !modelApi?.mockForTarget(request)) return;
           // Do not open on Hover READY; send ONLY in this synchronous handler.
           message.hidden = false;
-          message.textContent = "실험용 패널 열기 요청 중 · 선택 대상 고정 미구현";
-          lastAction = "YU28_G28_1_REQUESTED";
+          message.textContent = "선택 대상 고정 중 · 합성 데이터";
+          lastAction = "YU28_G28_2_REQUESTED";
           const settle = response => {
             if (disposed || !controller?.isCurrentRequest(request)) return;
-            const matched = response?.type === "YUTOPIA_YU28_GESTURE_RESULT_V1" &&
+            const matched = response?.type === "YUTOPIA_YU28_PIN_RESULT_V1" &&
               response.version === 1 && response.requestId === request.requestId &&
               response.targetType === request.targetType &&
               response.targetId === request.targetId &&
               response.targetKey === request.targetType + ":" + request.targetId &&
-              typeof response.ok === "boolean";
+              typeof response.ok === "boolean" &&
+              (response.tabId === null || (Number.isSafeInteger(response.tabId) && response.tabId >= 0));
             if (!matched) {
-              lastAction = "YU28_G28_1_RESPONSE_MISMATCH";
+              lastAction = "YU28_G28_2_RESPONSE_MISMATCH";
               message.textContent = "패널 열기 확인 실패 · 응답 불일치";
               return;
             }
-            if (response.ok === true && response.status === "OPENED") {
-              lastAction = "YU28_G28_1_OPENED";
-              message.textContent = "패널 열림 확인 · 대상 고정 미구현";
+            if (response.ok === true && response.status === "PINNED" &&
+                response.pinned === true && response.pin?.isSynthetic === true &&
+                response.pin?.source === "STATIC_FIXTURE" &&
+                response.pin?.targetId === request.targetId &&
+                response.pin?.targetType === request.targetType) {
+              lastAction = "YU28_G28_2_PINNED";
+              message.textContent = "선택 대상 고정 확인 · 시연용 합성 데이터";
             } else {
-              lastAction = "YU28_G28_1_" + (response.status || "OPEN_FAILED");
-              message.textContent = "패널 열기 실패: " +
+              lastAction = "YU28_G28_2_" + (response.status || "PIN_FAILED");
+              message.textContent = "패널 선택 실패: " +
                 (response.status || "OPEN_FAILED");
             }
           };
