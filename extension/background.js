@@ -93,11 +93,89 @@ async function yu27GetPreview(request, scopeKey) {
   }
 }
 
+
+/*
+ * YU-28 G28-1: Open Side Panel only for an explicit user-click message.
+ * Experimental click->Worker user activation; no target pin, storage mutation,
+ * or YU-27 preview-cache reuse. Chrome itself enforces the user-gesture Gate.
+ */
+const YU28_OPEN_REQUEST_TYPE = "YUTOPIA_YU28_GESTURE_OPEN_V1";
+const YU28_OPEN_RESULT_TYPE = "YUTOPIA_YU28_GESTURE_RESULT_V1";
+const YU28_REQUEST_FIELDS = new Set(["type", "version", "requestId", "targetType", "targetId"]);
+
+function yu28ParseOpenSpike(message) {
+  if (!message || typeof message !== "object" || Array.isArray(message) ||
+      Object.keys(message).length !== YU28_REQUEST_FIELDS.size ||
+      Object.keys(message).some(key => !YU28_REQUEST_FIELDS.has(key)) ||
+      message.type !== YU28_OPEN_REQUEST_TYPE) return null;
+  // Reuse YU-27 strict VIDEO/CHANNEL and monotonically positive request ID.
+  return YU27.parsePreviewRequest({
+    type: YU27.REQUEST_TYPE, version: message.version,
+    requestId: message.requestId, targetType: message.targetType,
+    targetId: message.targetId,
+  });
+}
+
+function yu28OpenReply(request, ok, status) {
+  return {
+    type: YU28_OPEN_RESULT_TYPE, version: 1,
+    requestId: request?.requestId ?? null,
+    targetType: request?.targetType ?? null,
+    targetId: request?.targetId ?? null,
+    targetKey: request?.targetKey ?? null,
+    ok, status,
+  };
+}
+
+function yu28OpenFromGesture(message, sender, sendResponse) {
+  const request = yu28ParseOpenSpike(message);
+  if (!request) {
+    sendResponse(yu28OpenReply(null, false, "INVALID_REQUEST"));
+    return false;
+  }
+  if (!yu27SenderScope(sender)) {
+    sendResponse(yu28OpenReply(request, false, "UNTRUSTED_SENDER"));
+    return false;
+  }
+  if (typeof chrome.sidePanel?.open !== "function") {
+    sendResponse(yu28OpenReply(request, false, "OPEN_UNAVAILABLE"));
+    return false;
+  }
+
+  // IMPORTANT: MUST invoke open directly within this incoming click message.
+  // Do NOT await storage, a Promise, tabs.query, setOptions, etc. beforehand.
+  let opening;
+  try {
+    opening = chrome.sidePanel.open({tabId: sender.tab.id});
+  } catch (error) {
+    console.warn("[YUTOPIA G28-1] OPEN_FAILED", String(error?.message || error).slice(0, 180));
+    sendResponse(yu28OpenReply(request, false, "OPEN_FAILED"));
+    return false;
+  }
+  if (!opening || typeof opening.then !== "function") {
+    sendResponse(yu28OpenReply(request, false, "OPEN_UNCONFIRMED"));
+    return false;
+  }
+  opening.then(() => {
+    console.info("[YUTOPIA G28-1] OPENED", {
+      tabId: sender.tab.id, targetType: request.targetType, targetId: request.targetId,
+      requestId: request.requestId, pinned: false,
+    });
+    sendResponse(yu28OpenReply(request, true, "OPENED"));
+  }, error => {
+    console.warn("[YUTOPIA G28-1] OPEN_FAILED", String(error?.message || error).slice(0, 180));
+    sendResponse(yu28OpenReply(request, false, "OPEN_FAILED"));
+  });
+  return true; // Keep reply channel alive until sidePanel.open() settles.
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "YUTOPIA_DEMO_PING") {
     sendResponse({ok: true, demo: true});
     return false;
   }
+  if (message?.type === YU28_OPEN_REQUEST_TYPE)
+    return yu28OpenFromGesture(message, sender, sendResponse);
   if (message?.type !== YU27.REQUEST_TYPE) return false;
   const request = YU27.parsePreviewRequest(message);
   if (!request) {
