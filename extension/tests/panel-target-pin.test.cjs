@@ -92,7 +92,9 @@ function worker(mem=bus(),{open=()=>Promise.resolve()}={}) {
   assert.equal(listeners.length,1);
   const youtube={id:"ext-yutopia",tab:{id:17},frameId:0,documentId:DOC1,
     url:"https://www.youtube.com/results?search_query=sample"};
-  const panel={id:"ext-yutopia",frameId:0,
+  // Real extension pages are usually not sent as tab content frames, so
+  // MessageSender.tab/frameId are absent. Never invent frameId:0 here.
+  const panel={id:"ext-yutopia",
     url:"chrome-extension://ext-yutopia/sidepanel.html"};
   function dispatch(message,sender=youtube){
     let answered=false,resolver;
@@ -219,6 +221,22 @@ test("G28-2 panel READ requires extension origin and current active tab",async()
   assert.equal((await f.dispatch(readSelection(18),f.panel).result).status,"EMPTY");
 });
 
+test("G28-2: Side Panel sender without tab/frameId is trusted, forged context rejected",async()=>{
+  const f=worker();
+  assert.equal((await f.dispatch(click(V1,1)).result).status,"PINNED");
+  const withoutFrame=await f.dispatch(readSelection(17),f.panel).result;
+  assert.equal(withoutFrame.status,"READY");
+  assert.equal(withoutFrame.pin.targetId,V1);
+  assert.equal((await f.dispatch(readSelection(17),
+    {...f.panel,frameId:1}).result).status,"UNTRUSTED_SENDER");
+  assert.equal((await f.dispatch(readSelection(17),
+    {...f.panel,tab:{id:17}}).result).status,"UNTRUSTED_SENDER");
+  assert.equal((await f.dispatch(readSelection(17),
+    {...f.panel,id:"other-ext"}).result).status,"UNTRUSTED_SENDER");
+  assert.equal((await f.dispatch(readSelection(17),
+    {...f.panel,frameId:0}).result).status,"READY");
+});
+
 test("G28-2 panel READ produces same persisted pin after worker restart",async()=>{
   const mem=bus();
   const before=worker(mem);
@@ -283,7 +301,8 @@ test("G28-2 panel DOM renders only user-click pin and refreshes on tab changes",
   for(const id of ["selection-status","selection-details","selection-kind","selection-id"]){
     nodes.set(id,{textContent:"",hidden:id==="selection-details"});
   }
-  const listeners=new Map();
+  const listeners=new Map(), expiryTimers=new Map();
+  let timerId=0;
   const panelContext={
     chrome:{
       runtime:{sendMessage:async msg=>(await f.dispatch(msg,f.panel).result)},
@@ -305,6 +324,12 @@ test("G28-2 panel DOM renders only user-click pin and refreshes on tab changes",
     },
     addEventListener(){},
     removeEventListener(){},
+    setTimeout(callback,delay){
+      const id=++timerId;
+      expiryTimers.set(id,{callback,delay});
+      return id;
+    },
+    clearTimeout(id){expiryTimers.delete(id);},
     Promise,console,
   };
   vm.createContext(panelContext);
@@ -323,6 +348,17 @@ test("G28-2 panel DOM renders only user-click pin and refreshes on tab changes",
   await f.dispatch(click(V2,3)).result;
   await pause();
   assert.match(nodes.get("selection-id").textContent,/VIDEO: Ab0_-123xyZ/);
+  // Expire B without a storage change or tab switch: the panel must
+  // independently hide an expired selection when its timer fires.
+  assert.equal(expiryTimers.size,1);
+  const [expiry] = [...expiryTimers.values()];
+  assert.ok(expiry.delay>0 && expiry.delay<=2*60*60*1000+50);
+  const key="YU28_SELECTED_TAB_V1_17";
+  f.mem.data.set(key,{...f.mem.data.get(key),expiresAt:Date.now()-1});
+  expiry.callback();
+  await pause();
+  assert.equal(panelContext.YUTOPIA_SIDE_PANEL.getRuntimeStatus().lastStatus,"EMPTY");
+  assert.equal(nodes.get("selection-details").hidden,true);
   f.setActive(18);
   listeners.get("tab-activated")({tabId:18});
   await pause();

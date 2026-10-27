@@ -19,8 +19,15 @@
   let selectedKey = null;
   let lastStatus = "INITIAL";
   let generation = 0;
+  let expiryTimer = null;
+
+  function clearExpiryTimer() {
+    if (expiryTimer !== null) scope.clearTimeout?.(expiryTimer);
+    expiryTimer = null;
+  }
 
   function display(status, text, pin = null) {
+    clearExpiryTimer();
     lastStatus = status;
     selectedKey = pin?.targetKey ?? null;
     if (statusElement) statusElement.textContent = text;
@@ -29,6 +36,17 @@
       (pin.targetType === "VIDEO" ? "선택 영상" : "선택 채널") : "";
     if (identifier) identifier.textContent = pin ?
       (pin.targetType + ": " + pin.targetId) : "";
+    // A two-hour session selection must disappear even if the panel stays
+    // open with no storage event, user interaction or tab switch.
+    if (pin && Number.isFinite(pin.expiresAt) &&
+        typeof scope.setTimeout === "function") {
+      const delay = Math.max(1, Math.min(2147483647,
+        pin.expiresAt - Date.now() + 1));
+      expiryTimer = scope.setTimeout(() => {
+        expiryTimer = null;
+        if (!disposed) refresh();
+      }, delay);
+    }
   }
 
   async function refresh() {
@@ -93,6 +111,7 @@
     if (disposed) return;
     disposed = true;
     generation += 1;
+    clearExpiryTimer();
     chromeApi?.storage?.onChanged?.removeListener?.(onChanged);
     chromeApi?.tabs?.onActivated?.removeListener?.(onActivated);
     scope.removeEventListener?.("focus", refresh);

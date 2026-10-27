@@ -296,7 +296,11 @@ function yu28PinAndOpen(message, sender, sendResponse) {
 }
 
 function yu28PanelSenderTrusted(sender) {
-  return sender?.id === chrome.runtime.id && sender.frameId === 0 &&
+  // MessageSender.frameId is optional and normally absent for extension
+  // pages without sender.tab (such as our top-level Side Panel).
+  // Validate the actual extension-page URL instead of requiring frameId=0.
+  return sender?.id === chrome.runtime.id && sender.tab == null &&
+    (sender.frameId == null || sender.frameId === 0) &&
     typeof sender.url === "string" &&
     typeof chrome.runtime.getURL === "function" &&
     sender.url === chrome.runtime.getURL("sidepanel.html");
