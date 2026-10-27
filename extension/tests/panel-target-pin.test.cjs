@@ -11,6 +11,7 @@ const files = {
   "shared.js":read("shared.js"),
   "hover-card-model.js":read("hover-card-model.js"),
   "panel-selection-contract.js":read("panel-selection-contract.js"),
+  "panel-selection-worker.js":read("panel-selection-worker.js"),
   "background.js":read("background.js"),
   "sidepanel.js":read("sidepanel.js"),
 };

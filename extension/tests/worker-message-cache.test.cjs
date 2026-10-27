@@ -9,7 +9,8 @@ const vm = require("node:vm");
 const read = name => fs.readFileSync(path.join(__dirname, "..", name), "utf8");
 const source = {"shared.js": read("shared.js"), "hover-card-model.js": read("hover-card-model.js"),
   "background.js": read("background.js"), "preview-client.js": read("preview-client.js"),
-  "panel-selection-contract.js": read("panel-selection-contract.js")};
+  "panel-selection-contract.js": read("panel-selection-contract.js"),
+  "panel-selection-worker.js": read("panel-selection-worker.js")};
 const manifest = JSON.parse(read("manifest.json"));
 const A = "Ab0_-123xyz", B = "Ab0_-123xyZ", C = "Ab0_-123xy0";
 const CH = "UC" + "a".repeat(22);

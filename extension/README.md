@@ -12,6 +12,14 @@
 - Chrome 116 이상 MV3 + `sidePanel` API를 기준으로 시연합니다.
 - 브라우저에서 로컬로 테스트하기 전에는 **기능 PASS라고 보고하지 않습니다**.
 
+## 현재 정본과 모듈 경계 (2026-10-27)
+
+- `frontend@78b7712a831ee773f7340d44671275fb93ad34f3`에 YU-28 G28-1 클릭 열기와 G28-2 탭별 대상 고정 기능이 병합됐습니다. 기존 아래의 20~27 단계별 QA 기록은 당시 상황을 보존하는 **이력**이며 최신 구현 상태가 아닙니다.
+- YU-29 AR-01 구조 정리 후보는 독립 브랜치 `refactor/youtopia-yu29-worker-boundaries-20261027`에서 개발합니다. **frontend에 아직 적용되지 않았습니다.**
+- AR-01에서 `background.js`는 서비스 워커 부팅·YU-27 Preview 및 메시지 라우팅을, 신규 `panel-selection-worker.js`는 G28-2 pin/READ/탭 생명주기를 담당하도록 분리합니다. Side Panel과 콘텐츠 스크립트의 UI/메시지 형식은 유지합니다.
+- 전체 책임 표·위험·테스트 Gate: [YU-29 Chrome 확장 모듈 경계](../docs/architecture/YU29_EXTENSION_MODULE_BOUNDARIES_20261027.md).
+- **리팩터링은 기능 승인이나 라이브 API 연동 승인과 별개입니다.** 신규 SHA는 다시 Node·Chromium 검증해야 하며, 사용자 허가 없는 병합은 금지합니다.
+
 ## 설치 — 코드를 별도 디렉터리로 받은 후
 
 1. 현재 유지되는 **`frontend` 브랜치의 `extension/`** 디렉터리를 가져오거나 별도 Git worktree에 체크아웃하세요. 병합 후 삭제된 임시 기능 브랜치를 사용하지 마세요. 다른 Codex가 작업하는 로컬 브랜치는 변경하지 마세요.

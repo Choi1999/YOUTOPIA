@@ -8,7 +8,8 @@ const vm = require("node:vm");
 const source = name => fs.readFileSync(path.join(__dirname, "..", name), "utf8");
 const workerSource = source("background.js");
 const inputs = { "shared.js":source("shared.js"),"hover-card-model.js":source("hover-card-model.js"),
-  "panel-selection-contract.js":source("panel-selection-contract.js") };
+  "panel-selection-contract.js":source("panel-selection-contract.js"),
+  "panel-selection-worker.js":source("panel-selection-worker.js") };
 const VIDEO = "Ab0_-123xyz", VIDEO_B = "Ab0_-123xyZ", CHANNEL = "UC"+"a".repeat(22);
 const req=(targetId=VIDEO, requestId=1, targetType="VIDEO")=>({
   type:"YUTOPIA_YU28_GESTURE_OPEN_V1",version:1,requestId,targetType,targetId,
