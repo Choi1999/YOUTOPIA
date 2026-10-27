@@ -1,6 +1,6 @@
 # YOUTOPIA YU-28 — Hover 「더보기」 → Chrome Side Panel 대상 고정
 
-> **Status (2026-10-26 KST): G28_1_SOURCE_SPIKE_CANDIDATE / CHROME_USER_GESTURE_TEST_NOT_RUN / TARGET_PIN_NOT_IMPLEMENTED / LIVE_DATA_BLOCKED**
+> **Status (2026-10-27 KST): G28_1_CHROME_OPEN_USER_EVIDENCE_PASS / G28_2_PIN_IMPLEMENTATION_CANDIDATE / NATIVE_NODE_CHROMIUM_QA_PENDING / PR_MERGE_NOT_APPROVED / LIVE_DATA_BLOCKED**
 >
 > Independent working branch: `feature/youtopia-28-panel-target-pin-20261026`.
 > Baseline: `frontend@1ff68c209448281dff4dd91ca6e82bbe203230cc` — merged YU-27 from PR #35.
@@ -63,8 +63,8 @@ Reference product acceptance: `AT-02` target identity, `AT-09` no fake real data
 ## 5. Stage gates
 
 - **G28-0 (this step):** merge baseline validated, feature branch isolated, contract prepared.
-- **G28-1:** Isolated click-to-Worker `sidePanel.open` spike code and mock tests prepared; Windows **installed-Chrome actual gesture QA** — `NOT_RUN`.
-- **G28-2:** Implement target-select request/ack, sender validation, session pin, panel shell and strict click handler — `NOT_STARTED`.
+- **G28-1:** PR #36 click-to-Worker gesture spike was tested on Windows: native Node 190/190 and Chromium 5/5 **USER_CONSOLE_PASS**; Chrome screenshot and Worker `[YUTOPIA G28-1] OPENED` **USER_EVIDENCE_PASS**. Original ZIP and complete negative-case evidence still pending.
+- **G28-2:** Separate stacked branch `feature/youtopia-28-g28-2-target-pin-20261027`: explicit-click request/ack, strict sender/ID validation, per-tab `chrome.storage.session` pin with 2-hour expiry and document metadata, race cancellation, sidepanel active-tab read/refresh, full navigation/tab close invalidation — `CODE_CANDIDATE_PREPARED / NATIVE_QA_PENDING`.
 - **G28-3:** Original Node tests + new selection tests + offline Chromium fixtures executed on new SHA — `NOT_RUN`.
 - **G28-4:** Windows installed Chrome Home/Search/SPA and tab/document/Worker lifecycle E2E — `NOT_RUN`.
 - **G28-5:** Independent review + user merge authorization. **Do not auto-merge PR or change existing PR #15.**
@@ -73,6 +73,8 @@ Reference product acceptance: `AT-02` target identity, `AT-09` no fake real data
 
 The `frontend` merge commit `1ff68c209448281dff4dd91ca6e82bbe203230cc` has identical `extension/` Git tree SHA `07cbc21faddb296c9a2313430a3866adf74aa3d7` to the earlier Windows-tested candidate `7d8265e4f76785b1b4d863954cf7830a47c613d6`. **Byte identity PASS**, but a fresh Windows Node/Chromium run *on the merge commit* has not been performed. If run, record exact SHA, machine versions, clean worktree and logs. This is a gate separate from YU-28 code.
 
-**Final status:** `YU28_G28_1_CLICK_SPIKE_CODE_READY / NATIVE_TEST_NOT_RUN / CHROME_GESTURE_NOT_RUN / G28_2_TARGET_PIN_NOT_IMPLEMENTED / MERGE_NOT_APPROVED / LIVE_PRODUCT_RELEASE_BLOCKED`.
+**Final status:** `YU28_G28_1_CHROME_OPEN_USER_PASS / G28_2_SOURCE_CANDIDATE / V8_MOCK_REGRESSION_PASS / WINDOWS_NODE_CHROMIUM_NOT_RUN_ON_G28_2_SHA / CHROME_TARGET_PIN_NOT_RUN / PR_MERGE_NOT_APPROVED / LIVE_PRODUCT_RELEASE_BLOCKED`.
+
+G28-2 Windows and installed-Chrome acceptance: [YU28_G28_2_PIN_QA_20261027.md](./YU28_G28_2_PIN_QA_20261027.md).
 
 G28-1 implementation and test runbook: [YU28_G28_1_GESTURE_SPIKE_QA_20261026.md](./YU28_G28_1_GESTURE_SPIKE_QA_20261026.md).

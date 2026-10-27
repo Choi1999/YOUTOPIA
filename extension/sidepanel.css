@@ -4,10 +4,16 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: #0f172a; color: #e2e8f0; }
-.panel { padding: 20px; display: grid; gap: 14px; }
+.panel { padding: 20px; display: grid; gap: 14px; min-width: 0; }
 .panel__header { display: flex; align-items: center; justify-content: space-between; font-size: 16px; }
-.panel__pill { padding: 3px 8px; border-radius: 999px; background: #334155; font-size: 12px; }
+.panel__pill { display: inline-block; padding: 3px 8px; border-radius: 999px; background: #334155; font-size: 12px; }
 h1 { margin: 0; font-size: 20px; }
+h2 { margin: 0; font-size: 14px; }
 p { line-height: 1.55; margin: 0; }
 .panel__explain { color: #cbd5e1; }
 .panel__notice { font-size: 12px; color: #94a3b8; }
+.selection { display: grid; gap: 12px; border: 1px solid #475569; border-radius: 12px; padding: 14px; }
+.selection__kind { margin-top: 12px; color: #cbd5e1; font-weight: 600; }
+.selection__id { margin-top: 5px; color: #fff; font: 600 12px/1.5 ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
+#selection-status { color: #cbd5e1; }
+#selection-details[hidden] { display: none; }

@@ -392,7 +392,7 @@ test("기존 YouTube 문서는 Shadow Root 바깥에서 수정되지 않음",()=
   assert.equal(f.host().attributes.get("data-yutopia-demo"),"true");
 });
 
-test("G28-1: Chrome 메시징 없는 Fake DOM에서는 더보기 비활성",()=>{
+test("G28-2: Chrome 메시징 없는 Fake DOM에서는 더보기 비활성",()=>{
   const f=makeFixture();f.emit(videoState(VIDEO_A,1,f.anchor()));
   const button=f.findClass("more");
   assert.ok(button);
@@ -403,14 +403,15 @@ test("G28-1: Chrome 메시징 없는 Fake DOM에서는 더보기 비활성",()=>
   assert.equal(f.api.getRuntimeStatus().lastAction,null);
 });
 
-test("G28-1: 사용자 실제 클릭에서만 메시지 전송, 응답 echo 검증",async()=>{
+test("G28-2: 사용자 실제 클릭에서만 선택 메시지 전송, 응답 echo 검증",async()=>{
   const calls=[];
   const f=makeFixture({sendMessage:req=>{
     calls.push(req);
     return Promise.resolve({
-      type:"YUTOPIA_YU28_GESTURE_RESULT_V1",version:1,
+      type:"YUTOPIA_YU28_PIN_RESULT_V1",version:1,
       requestId:req.requestId,targetType:req.targetType,targetId:req.targetId,
-      targetKey:req.targetType+":"+req.targetId,ok:true,status:"OPENED",
+      targetKey:req.targetType+":"+req.targetId,tabId:17,ok:true,status:"PINNED",pinned:true,
+      pin:{targetType:req.targetType,targetId:req.targetId,isSynthetic:true,source:"STATIC_FIXTURE"},
     });
   }});
   f.emit(videoState(VIDEO_A,1,f.anchor()));
@@ -421,18 +422,18 @@ test("G28-1: 사용자 실제 클릭에서만 메시지 전송, 응답 echo 검�
   button.fire("click",{isTrusted:true});
   assert.equal(calls.length,1);
   assert.deepEqual(JSON.parse(JSON.stringify(calls[0])),{
-    type:"YUTOPIA_YU28_GESTURE_OPEN_V1",version:1,
+    type:"YUTOPIA_YU28_PIN_AND_OPEN_V1",version:1,
     requestId:1,targetType:"VIDEO",targetId:VIDEO_A,
   });
-  assert.equal(f.api.getRuntimeStatus().lastAction,"YU28_G28_1_REQUESTED");
+  assert.equal(f.api.getRuntimeStatus().lastAction,"YU28_G28_2_REQUESTED");
   // Node vm cross-context Promise reactions may run on a later event-loop turn.
   // Await a macrotask boundary instead of assuming two microtasks are enough.
   await new Promise(resolve => setImmediate(resolve));
-  assert.equal(f.api.getRuntimeStatus().lastAction,"YU28_G28_1_OPENED");
-  assert.match(note.textContent,/대상 고정 미구현/);
+  assert.equal(f.api.getRuntimeStatus().lastAction,"YU28_G28_2_PINNED");
+  assert.match(note.textContent,/선택 대상 고정 확인/);
 });
 
-test("G28-1: 오래된 Hover 카드의 클릭은 전송하지 않음",()=>{
+test("G28-2: 오래된 Hover 카드의 클릭은 전송하지 않음",()=>{
   const calls=[];
   const f=makeFixture({sendMessage:req=>{calls.push(req);return Promise.resolve(null);}});
   const anchor=f.anchor();
@@ -444,18 +445,18 @@ test("G28-1: 오래된 Hover 카드의 클릭은 전송하지 않음",()=>{
   assert.equal(f.api.getRuntimeStatus().lastAction,null);
 });
 
-test("G28-1: 실패 응답은 패널 열림 성공으로 표시하지 않음",async()=>{
+test("G28-2: 저장 실패 응답을 선택 성공으로 표시하지 않음",async()=>{
   const f=makeFixture({sendMessage:req=>Promise.resolve({
-    type:"YUTOPIA_YU28_GESTURE_RESULT_V1",version:1,
+    type:"YUTOPIA_YU28_PIN_RESULT_V1",version:1,
     requestId:req.requestId,targetType:req.targetType,targetId:req.targetId,
-    targetKey:req.targetType+":"+req.targetId,ok:false,status:"OPEN_FAILED",
+    targetKey:req.targetType+":"+req.targetId,tabId:17,ok:false,status:"PIN_FAILED",pinned:false,
   })});
   f.emit(channelState(3,f.anchor()));
   f.findClass("more").fire("click",{isTrusted:true});
   // Node vm cross-context Promise reactions may run on a later event-loop turn.
   // Await a macrotask boundary instead of assuming two microtasks are enough.
   await new Promise(resolve => setImmediate(resolve));
-  assert.equal(f.api.getRuntimeStatus().lastAction,"YU28_G28_1_OPEN_FAILED");
+  assert.equal(f.api.getRuntimeStatus().lastAction,"YU28_G28_2_PIN_FAILED");
   assert.match(f.findClass("more-status").textContent,/실패/);
 });
 
