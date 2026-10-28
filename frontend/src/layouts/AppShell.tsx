@@ -29,6 +29,7 @@ type NavigationIconProps = {
   light: string;
 };
 
+/** Dark/Light 아이콘을 함께 구성하며 실제 노출은 테마 CSS에서 제어한다. */
 function NavigationIcon({ dark, light }: NavigationIconProps) {
   return (
     <span aria-hidden="true" className="navigation-icon">
@@ -38,6 +39,7 @@ function NavigationIcon({ dark, light }: NavigationIconProps) {
   );
 }
 
+// 탐색 그룹은 routeDefinitions의 경로를 사용한다. 새 메뉴는 라우팅과 함께 검토한다.
 const groups = [
   {
     label: "관측",
@@ -63,6 +65,7 @@ const groups = [
   },
 ];
 
+/** NavLink를 이용해 주소 이동과 현재 메뉴 활성 상태를 표시한다. */
 function NavigationItem({
   label,
   href,
@@ -86,6 +89,10 @@ function NavigationItem({
   );
 }
 
+/**
+ * 내부 페이지가 공유하는 사이드바와 본문 레이아웃.
+ * 선택된 하위 페이지는 Outlet에 표시되며 데이터 조회·권한 판정은 담당하지 않는다.
+ */
 export function AppShell() {
   const reportRoute = getRoute("YU-12");
 

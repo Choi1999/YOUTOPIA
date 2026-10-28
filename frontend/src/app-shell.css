@@ -10,6 +10,7 @@
   border: 0;
 }
 
+/* AppShell.tsx의 공통 외형: 208px 사이드바와 가변 본문을 배치한다. */
 .app-shell {
   display: grid;
   min-width: 1024px;
@@ -19,6 +20,7 @@
   color: var(--text-primary);
 }
 
+/* 공통 탐색 영역: 구조를 바꾸면 layouts/AppShell.tsx도 함께 검토한다. */
 .app-sidebar {
   position: sticky;
   top: 0;
@@ -68,6 +70,7 @@
   height: auto;
 }
 
+/* Dark/Light 아이콘 노출 전환. 테마 색상 토큰은 theme/tokens.css에서 관리한다. */
 .icon-light {
   display: none !important;
 }
