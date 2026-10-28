@@ -40,7 +40,9 @@
           "then": {
             "properties": {
               "targetId": {
-                "pattern": "^[A-Za-z0-9_-]{11}$"
+                "pattern": "^[A-Za-z0-9_-]{11}$",
+                "minLength": 11,
+                "maxLength": 11
               }
             }
           }
@@ -56,7 +58,9 @@
           "then": {
             "properties": {
               "targetId": {
-                "pattern": "^UC[A-Za-z0-9_-]{22}$"
+                "pattern": "^UC[A-Za-z0-9_-]{22}$",
+                "minLength": 24,
+                "maxLength": 24
               }
             }
           }
