@@ -82,7 +82,6 @@ export function AppRoutes() {
                   element={<SingleVideoAnalysisPage />}
                   path="/analysis/youtube/video/:videoId"
               />
-              
               {/* 별도 구현 화면이 없는 등록 경로는 임시 화면으로 표시한다. */}
               {placeholderRoutes.map((route) => (
                 <Route
@@ -90,7 +89,7 @@ export function AppRoutes() {
                   key={route.code}
                   path={route.path}
                 />
-              ))}
+                ))}
             </Route>
             {/* 등록되지 않은 URL은 404 페이지를 표시한다. */}
             <Route element={<NotFoundPage />} path="*" />

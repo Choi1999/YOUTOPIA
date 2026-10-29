@@ -29,6 +29,10 @@ type NavigationIconProps = {
   light: string;
 };
 
+/**
+ * 테마에 맞는 탐색 아이콘을 표시한다.
+ * Dark/Light 이미지의 실제 노출 여부는 CSS에서 제어한다.
+ */
 function NavigationIcon({ dark, light }: NavigationIconProps) {
   return (
     <span aria-hidden="true" className="navigation-icon">
@@ -63,6 +67,10 @@ const groups = [
   },
 ];
 
+/**
+ * 공통 사이드바의 메뉴 항목.
+ * NavLink를 사용하여 현재 URL의 활성 상태를 표시한다.
+ */
 function NavigationItem({
   label,
   href,
@@ -86,6 +94,14 @@ function NavigationItem({
   );
 }
 
+/**
+ * 로그인 페이지를 제외한 주요 내부 화면의 공통 레이아웃.
+ *
+ * 사이드바와 본문 영역을 구성하며,
+ * 선택된 하위 페이지를 Outlet에 표시한다.
+ *
+ * 데이터 조회와 접근 권한 검증은 담당하지 않는다.
+ */
 export function AppShell() {
   const reportRoute = getRoute("YU-12");
 
