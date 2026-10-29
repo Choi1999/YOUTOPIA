@@ -230,7 +230,115 @@ it("표본 건수가 모순되면 감성 비율을 숨긴다", async () => {
   );
 
   expect(
-    await screen.findByRole("note")
+    await screen.findByRole("alert")
+  ).toHaveTextContent("검증되지 않은 분석 결과");
+
+  expect(
+    screen.queryByText(/긍정:/)
+  ).not.toBeInTheDocument();
+
+  expect(
+    screen.queryByText(/원시 댓글:/)
+  ).not.toBeInTheDocument();
+
+  expect(
+    screen.queryByText(/스냅샷 ID:/)
+  ).not.toBeInTheDocument();
+});
+
+
+it("Web Projection의 스냅샷과 주제 정보를 표시한다", async () => {
+  renderPage("/analysis/youtube/video/Ab0_-123xyz");
+
+  expect(
+    await screen.findByText("분석 스냅샷 조회 결과")
+  ).toBeInTheDocument();
+
+  expect(
+    screen.getByText(/스냅샷 ID:/)
+  ).toHaveTextContent("synthetic-one-video-001");
+
+  expect(
+    screen.getByText(/관측 기간:/)
+  ).toHaveTextContent("2026-10-01");
+
+  expect(
+    screen.getByText("RECIPE: 38건")
+  ).toBeInTheDocument();
+
+  expect(
+    screen.getByText("PRICE: 22건")
+  ).toBeInTheDocument();
+});
+
+it("STALE Projection에서는 이전 분석 수치를 숨긴다", async () => {
+  const repository: AnalysisRepository = {
+    async getSnapshot(target) {
+      return {
+        kind: "FOUND",
+        snapshot: {
+          ...demoReadySnapshot,
+          target,
+          status: "STALE",
+        },
+      };
+    },
+  };
+
+  renderPage(
+    "/analysis/youtube/video/Ab0_-123xyz",
+    repository,
+  );
+
+  expect(
+    await screen.findByText("오래된 분석 결과")
+  ).toBeInTheDocument();
+
+  expect(
+    screen.getByRole("note")
+  ).toHaveTextContent("감성 비율과 표본 수치");
+
+  expect(
+    screen.queryByText(/긍정:/)
+  ).not.toBeInTheDocument();
+
+  expect(
+    screen.queryByText(/원시 댓글:/)
+  ).not.toBeInTheDocument();
+});
+
+it("PARTIAL의 분모가 미확정이면 수치를 표시하지 않는다", async () => {
+  const repository: AnalysisRepository = {
+    async getSnapshot(target) {
+      return {
+        kind: "FOUND",
+        snapshot: {
+          ...demoReadySnapshot,
+          target,
+          status: "PARTIAL",
+          sample: {
+            rawCount: 120,
+            eligibleCount: 100,
+            excludedCount: 20,
+            classifiedCount: null,
+            unclassifiedCount: null,
+          },
+        },
+      };
+    },
+  };
+
+  renderPage(
+    "/analysis/youtube/video/Ab0_-123xyz",
+    repository,
+  );
+
+  expect(
+    await screen.findByText("부분 분석 결과")
+  ).toBeInTheDocument();
+
+  expect(
+    screen.getByRole("note")
   ).toHaveTextContent("정합성을 검증할 수 없어");
 
   expect(

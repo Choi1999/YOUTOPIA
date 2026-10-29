@@ -8,7 +8,7 @@ import {
 } from "../../features/analysis-target/analysisTarget";
 
 import { useAnalysisRepository } from "../../features/analysis/data/AnalysisRepositoryContext";
-import { deriveSentimentMetrics } from "../../features/analysis/model/sentimentMetrics";
+import { projectDemoAnalysisSnapshot } from "../../features/analysis/model/analysisProjection";
 import type { AnalysisSnapshot } from "../../features/analysis/model/analysisSnapshot";
 
 
@@ -167,65 +167,137 @@ function AnalysisResult({ target }: { target: AnalysisTarget }) {
     );
   }
 
-  const snapshot = state.snapshot;
-  const presentation = SNAPSHOT_PRESENTATION[snapshot.status];
-  const metrics = presentation.showCounts
-  ? deriveSentimentMetrics(snapshot)
-  : null;
+  /*
+   * Repository가 반환한 스냅샷에서 검증된 표시 모델을 만든다.
+   * Projection이 거부한 데이터는 부분적으로도 표시하지 않는다.
+   */
+  const projection = projectDemoAnalysisSnapshot(
+    state.snapshot,
+    target,
+  );
+
+  if (projection.kind === "REJECTED") {
+    return (
+      <section className="analysis-guard">
+        <h2>분석 결과를 조회할 수 없습니다.</h2>
+        <p role="alert">
+          검증되지 않은 분석 결과는 표시하지 않습니다.
+        </p>
+      </section>
+    );
+  }
+
+  const web = projection.web;
+  const presentation = SNAPSHOT_PRESENTATION[web.status];
+
+  const hasAnalysisData =
+    web.status === "READY" ||
+    web.status === "PARTIAL" ||
+    web.status === "STALE";
+
+  // 오래된 결과나 분모 미확정 상태에서는 수치를 숨긴다.
+  const metrics =
+    web.status === "READY" || web.status === "PARTIAL"
+      ? web.sentimentPercent
+      : null;
 
   return (
     <section className="analysis-guard">
       <h2>{presentation.title}</h2>
 
-      <p>영상 ID: {target.targetId}</p>
-      <p>분석 상태: {snapshot.status}</p>
-
+      <p>영상 ID: {web.target.targetId}</p>
+      <p>분석 상태: {web.status}</p>
       <p role="status">{presentation.description}</p>
 
-      {presentation.showCounts && (
-        metrics?.kind === "AVAILABLE" ? (
-          <>
-            {typeof snapshot.sample?.rawCount === "number" && (
+      {hasAnalysisData && (
+        <>
+          <p>
+            스냅샷 ID: <code>{web.snapshotId}</code>
+          </p>
+
+          <p>
+            관측 기간: {web.observationScope.windowStart}
+            {" ~ "}
+            {web.observationScope.windowEnd}
+          </p>
+
+          <p>
+            분석 시각: {web.analyzedAt ?? "미확정"}
+          </p>
+
+          <p>
+            분석 버전: {web.analysisVersion ?? "미확정"}
+          </p>
+        </>
+      )}
+
+      {metrics && (
+        <>
+          {typeof web.sample?.rawCount === "number" && (
+            <p>
+              원시 댓글:{" "}
+              {web.sample.rawCount.toLocaleString("ko-KR")}건
+            </p>
+          )}
+
+          <p>
+            감성 분류 완료:{" "}
+            {metrics.denominator.toLocaleString("ko-KR")}건
+          </p>
+
+          <p>
+            감성 비율 분모: 분류 완료{" "}
+            {metrics.denominator.toLocaleString("ko-KR")}건
+          </p>
+
+          <p>긍정: {metrics.positivePercent.toFixed(1)}%</p>
+          <p>중립: {metrics.neutralPercent.toFixed(1)}%</p>
+          <p>부정: {metrics.negativePercent.toFixed(1)}%</p>
+
+          {metrics.classificationCoveragePercent !== null && (
+            <p>
+              적격 표본 중 감성 분류 비율:{" "}
+              {metrics.classificationCoveragePercent.toFixed(1)}%
+            </p>
+          )}
+
+          {web.topics.length > 0 && (
+            <section aria-label="주제별 언급">
+              <h3>주제별 언급</h3>
+              <ul>
+                {web.topics.map((topic, index) => (
+                  <li key={`${topic.topicId}-${index}`}>
+                    {topic.topicId}:{" "}
+                    {topic.mentionCount.toLocaleString("ko-KR")}건
+                  </li>
+                ))}
+              </ul>
               <p>
-                원시 댓글: {snapshot.sample.rawCount.toLocaleString("ko-KR")}건
+                주제는 다중 라벨이므로 언급 건수를 합산해
+                전체 댓글 수로 해석하지 않습니다.
               </p>
-            )}
+            </section>
+          )}
+        </>
+      )}
 
-            <p>
-              감성 분류 완료: {metrics.denominator.toLocaleString("ko-KR")}건
-            </p>
+      {web.status === "STALE" && (
+        <p role="note">
+          오래된 분석 결과이므로 감성 비율과 표본 수치를
+          표시하지 않습니다.
+        </p>
+      )}
 
-            <p>
-              감성 비율 분모: 분류 완료 {metrics.denominator.toLocaleString("ko-KR")}건
-            </p>
-
-            <p>긍정: {metrics.positivePercent.toFixed(1)}%</p>
-            <p>중립: {metrics.neutralPercent.toFixed(1)}%</p>
-            <p>부정: {metrics.negativePercent.toFixed(1)}%</p>
-
-            {metrics.classificationCoveragePercent !== null && (
-              <p>
-                적격 표본 중 감성 분류 비율:{" "}
-                {metrics.classificationCoveragePercent.toFixed(1)}%
-              </p>
-            )}
-
-            <p>
-              분석 시각: {snapshot.analyzedAt ?? "미확정"}
-            </p>
-          </>
-        ) : (
+      {(web.status === "READY" || web.status === "PARTIAL") &&
+        metrics === null && (
           <p role="note">
             표본 수치의 분모 또는 정합성을 검증할 수 없어
             감성 비율과 표본 수치를 표시하지 않습니다.
           </p>
-        )
-      )}
+        )}
 
       <p>
-        {snapshot.isSynthetic
-          ? "합성 데모 데이터이며 실제 YouTube 분석 결과가 아닙니다."
-          : "분석 데이터의 출처와 사용 범위를 확인해야 합니다."}
+        합성 데모 데이터이며 실제 YouTube 분석 결과가 아닙니다.
       </p>
     </section>
   );
