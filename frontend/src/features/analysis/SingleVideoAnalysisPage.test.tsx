@@ -183,4 +183,62 @@ it("POLICY_BLOCKED에서는 분석 수치를 노출하지 않는다", async () =
     screen.queryByText(/원시 댓글:/)
   ).not.toBeInTheDocument();
 });
+
+it("READY 감성 비율을 분류 완료 80건 기준으로 표시한다", async () => {
+  renderPage("/analysis/youtube/video/Ab0_-123xyz");
+
+  expect(
+    await screen.findByText("긍정: 62.5%")
+  ).toBeInTheDocument();
+
+  expect(
+    screen.getByText("중립: 25.0%")
+  ).toBeInTheDocument();
+
+  expect(
+    screen.getByText("부정: 12.5%")
+  ).toBeInTheDocument();
+
+  expect(
+    screen.getByText("감성 비율 분모: 분류 완료 80건")
+  ).toBeInTheDocument();
+});
+
+it("표본 건수가 모순되면 감성 비율을 숨긴다", async () => {
+  const invalidRepository: AnalysisRepository = {
+    async getSnapshot(target) {
+      return {
+        kind: "FOUND",
+        snapshot: {
+          ...demoReadySnapshot,
+          target,
+          sample: {
+            rawCount: 121,
+            eligibleCount: 100,
+            excludedCount: 20,
+            classifiedCount: 80,
+            unclassifiedCount: 20,
+          },
+        },
+      };
+    },
+  };
+
+  renderPage(
+    "/analysis/youtube/video/Ab0_-123xyz",
+    invalidRepository,
+  );
+
+  expect(
+    await screen.findByRole("note")
+  ).toHaveTextContent("정합성을 검증할 수 없어");
+
+  expect(
+    screen.queryByText(/긍정:/)
+  ).not.toBeInTheDocument();
+
+  expect(
+    screen.queryByText(/원시 댓글:/)
+  ).not.toBeInTheDocument();
+});
 });

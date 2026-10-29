@@ -8,7 +8,9 @@ import {
 } from "../../features/analysis-target/analysisTarget";
 
 import { useAnalysisRepository } from "../../features/analysis/data/AnalysisRepositoryContext";
+import { deriveSentimentMetrics } from "../../features/analysis/model/sentimentMetrics";
 import type { AnalysisSnapshot } from "../../features/analysis/model/analysisSnapshot";
+
 
 type LoadState =
   | { kind: "LOADING" }
@@ -167,6 +169,9 @@ function AnalysisResult({ target }: { target: AnalysisTarget }) {
 
   const snapshot = state.snapshot;
   const presentation = SNAPSHOT_PRESENTATION[snapshot.status];
+  const metrics = presentation.showCounts
+  ? deriveSentimentMetrics(snapshot)
+  : null;
 
   return (
     <section className="analysis-guard">
@@ -178,23 +183,43 @@ function AnalysisResult({ target }: { target: AnalysisTarget }) {
       <p role="status">{presentation.description}</p>
 
       {presentation.showCounts && (
-        <>
-          {typeof snapshot.sample?.rawCount === "number" && (
-            <p>
-              원시 댓글: {snapshot.sample.rawCount.toLocaleString("ko-KR")}건
-            </p>
-          )}
+        metrics?.kind === "AVAILABLE" ? (
+          <>
+            {typeof snapshot.sample?.rawCount === "number" && (
+              <p>
+                원시 댓글: {snapshot.sample.rawCount.toLocaleString("ko-KR")}건
+              </p>
+            )}
 
-          {typeof snapshot.sample?.classifiedCount === "number" && (
             <p>
-              감성 분류 완료: {snapshot.sample.classifiedCount.toLocaleString("ko-KR")}건
+              감성 분류 완료: {metrics.denominator.toLocaleString("ko-KR")}건
             </p>
-          )}
 
-          <p>
-            분석 시각: {snapshot.analyzedAt ?? "미확정"}
+            <p>
+              감성 비율 분모: 분류 완료 {metrics.denominator.toLocaleString("ko-KR")}건
+            </p>
+
+            <p>긍정: {metrics.positivePercent.toFixed(1)}%</p>
+            <p>중립: {metrics.neutralPercent.toFixed(1)}%</p>
+            <p>부정: {metrics.negativePercent.toFixed(1)}%</p>
+
+            {metrics.classificationCoveragePercent !== null && (
+              <p>
+                적격 표본 중 감성 분류 비율:{" "}
+                {metrics.classificationCoveragePercent.toFixed(1)}%
+              </p>
+            )}
+
+            <p>
+              분석 시각: {snapshot.analyzedAt ?? "미확정"}
+            </p>
+          </>
+        ) : (
+          <p role="note">
+            표본 수치의 분모 또는 정합성을 검증할 수 없어
+            감성 비율과 표본 수치를 표시하지 않습니다.
           </p>
-        </>
+        )
       )}
 
       <p>
