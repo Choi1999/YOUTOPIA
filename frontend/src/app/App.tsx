@@ -5,6 +5,10 @@ import { ThemeProvider } from "../theme/ThemeProvider";
 import { AnalysisRepositoryProvider } from "../features/analysis/data/AnalysisRepositoryContext";
 import { demoAnalysisRepository } from "../features/analysis/data/DemoAnalysisRepository";
 import { AppRoutes } from "./AppRoutes";
+import { createValidatedDemoAnalysisRepository } from "../features/analysis/data/ValidatedDemoAnalysisRepository";
+
+const validatedDemoAnalysisRepository =
+  createValidatedDemoAnalysisRepository(demoAnalysisRepository);
 
 /**
  * 웹 애플리케이션의 최상위 구성.
@@ -18,7 +22,7 @@ export function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
-        <AnalysisRepositoryProvider repository={demoAnalysisRepository}>
+        <AnalysisRepositoryProvider repository={validatedDemoAnalysisRepository}>
           <AppRoutes />
         </AnalysisRepositoryProvider>
       </ThemeProvider>
