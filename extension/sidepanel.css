@@ -17,3 +17,26 @@ p { line-height: 1.55; margin: 0; }
 .selection__id { margin-top: 5px; color: #fff; font: 600 12px/1.5 ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
 #selection-status { color: #cbd5e1; }
 #selection-details[hidden] { display: none; }
+/* 로컬 Web 상세 분석 진입 링크 */
+.web-analysis-link {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid #64748b;
+  border-radius: 8px;
+  background: #1e293b;
+  color: #e2e8f0;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.web-analysis-link:hover,
+.web-analysis-link:focus-visible {
+  background: #334155;
+  border-color: #94a3b8;
+}
+
+.web-analysis-link[hidden] {
+  display: none;
+}

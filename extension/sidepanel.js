@@ -13,6 +13,8 @@
   const details = doc?.getElementById?.("selection-details");
   const kind = doc?.getElementById?.("selection-kind");
   const identifier = doc?.getElementById?.("selection-id");
+  const webLink = doc?.getElementById?.("web-analysis-link");
+  const webLinkApi = scope.YUTOPIA_WEB_ANALYSIS_LINK;
   const chromeApi = scope.chrome;
   let disposed = false;
   let activeTabId = null;
@@ -36,6 +38,31 @@
       (pin.targetType === "VIDEO" ? "선택 영상" : "선택 채널") : "";
     if (identifier) identifier.textContent = pin ?
       (pin.targetType + ": " + pin.targetId) : "";
+    /*
+    * 실제로 검증된 선택 영상에 대해서만
+    * 로컬 Web 상세 페이지 링크를 표시한다.
+    *
+    * 패널이 비거나 다른 탭으로 전환되면
+    * 이전 링크를 즉시 비활성화한다.
+    */
+    if (webLink) {
+      const url =
+        pin?.isSynthetic === true &&
+        pin.source === "STATIC_FIXTURE"
+          ? webLinkApi?.buildVideoUrl(
+              pin.targetType,
+              pin.targetId
+            )
+          : null;
+
+      if (url) {
+        webLink.href = url;
+        webLink.hidden = false;
+      } else {
+        webLink.hidden = true;
+        webLink.removeAttribute("href");
+      }
+    }
     // A two-hour session selection must disappear even if the panel stays
     // open with no storage event, user interaction or tab switch.
     if (pin && Number.isFinite(pin.expiresAt) &&
