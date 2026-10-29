@@ -32,11 +32,46 @@
     for (const char of targetId) index = (index * 31 + char.charCodeAt(0)) % EXAMPLES.length;
     const sample = EXAMPLES[index];
 
+    /*
+     * Preview와 Web 분석의 공통 식별·출처 의미를 정의한다.
+     *
+     * 가상 시각화 비율은 AnalysisSnapshot의 감성 집계가 아니다.
+     * 실제 분석하지 않았으므로 분모·기간·스냅샷 ID는 null이다.
+     */
+    const previewContract = Object.freeze({
+      contractVersion: "preview-web-compat-v1-draft",
+
+      target: Object.freeze({
+        source: "YOUTUBE",
+        targetType,
+        targetId,
+      }),
+
+      provenance: Object.freeze({
+        sourceType: "STATIC_FIXTURE",
+        isSynthetic: true,
+      }),
+
+      valueSemantics: "ILLUSTRATIVE_ONLY",
+
+      snapshotId: null,
+      analysisStatus: null,
+      observationScope: null,
+
+      sampleCounts: null,
+      sentimentCounts: null,
+      sentimentDenominator: null,
+
+      observedAt: null,
+      analyzedAt: null,
+    });
+
     return Object.freeze({
       isSynthetic: true,
       source: "STATIC_FIXTURE",
       targetType,
       targetId,
+      previewContract,
       title: targetType === "VIDEO" ? "영상 반응 미리보기" : "채널 반응 미리보기",
       scopeLabel: targetType === "CHANNEL" ? "선정 영상 8개 (가상)" : "단일 영상 (가상)",
       sampleLabel: "예시 댓글 " + sample.sample + "건 (가상)",
