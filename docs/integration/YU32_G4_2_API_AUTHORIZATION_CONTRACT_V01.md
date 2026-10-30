@@ -111,19 +111,19 @@ DDL, 인덱스, Redis 여부, 복제/암호화/보존/삭제 정책 및 배포 �
 
 ## 8. G4-2E — 계약·부정 테스트
 
-코드: `shared/contracts/yu32-operations-v0/contract.cjs`, `yu32-operations.schema.json`, `tests/contract.test.cjs`. 모두 **합성 오프라인 계약 검사**이며 운영 Authorization 로직이 아니다.
+코드: `shared/contracts/yu32-operations-v0/contract.cjs`, `yu32-operations.schema.json`, `tests/contract.test.cjs`. 모두 **합성 오프라인 계약 검사**이며 운영 Authorization 로직이 아니다. 머신 판독·출처·상태 부정 검증은 현재 **T01~T26(26건)**으로 구성한다. 아래 A01~A12는 별도의 장기 서버 수용 시나리오이며 T번호와 일대일 대응하지 않는다.
 
-| ID | 검증 사항 | 범위 |
+| 수용 시나리오 | 검증 사항 | 범위 |
 |---|---|---|
-| T01–02 | 입력 canonical VIDEO, 임의 tenant/role/policy 필드 거부 | 오프라인 |
-| T03–04 | Guest 공개 읽기/쓰기 차단, 테넌트 교차 접근 차단 | 가상 권한 Gate |
-| T05–06 | 정책 HOLD·기능 OFF·구독/할당량 불가 차단 | 가상 권한 Gate |
-| T07 | 같은/다른 멱등 키 동시 처리·중복 예약 | **실제 DB 테스트 필요** |
-| T08 | 상태 전이 단조성·종단 상태·새 attempt | 오프라인 표 + **실제 DB 필요** |
-| T09 | MISS/NO_DATA/STALE·위조·출처 불일치 | 합성 경계 + 서버 미검증 |
-| T10 | Worker 장애·리스 재할당·재시작 복구 | **실제 DB/Worker 필요** |
-| T11 | Chrome Hover GET-only, Side Panel 정상 | 기존 수동 QA, 운영 API E2E 별도 |
-| T12 | 새 API Adapter·기존 Summary v1 wire 검증 | Consumer/Provider 미구현 |
+| A01–02 | 입력 canonical VIDEO, 임의 tenant/role/policy 필드 거부 | 오프라인 |
+| A03–04 | Guest 공개 읽기/쓰기 차단, 테넌트 교차 접근 차단 | 가상 권한 Gate |
+| A05–06 | 정책 HOLD·기능 OFF·구독/할당량 불가 차단 | 가상 권한 Gate |
+| A07 | 같은/다른 멱등 키 동시 처리·중복 예약 | **실제 DB 테스트 필요** |
+| A08 | 상태 전이 단조성·종단 상태·새 attempt | 오프라인 표 + **실제 DB 필요** |
+| A09 | MISS/NO_DATA/STALE·위조·출처 불일치 | 합성 경계 + 서버 미검증 |
+| A10 | Worker 장애·리스 재할당·재시작 복구 | **실제 DB/Worker 필요** |
+| A11 | Chrome Hover GET-only, Side Panel 정상 | 기존 수동 QA, 운영 API E2E 별도 |
+| A12 | 새 API Adapter·기존 Summary v1 wire 검증 | Consumer/Provider 미구현 |
 
 오프라인 테스트에서는 `APPROVED_TEST_ONLY`를 사용하지만 이는 실제 승인 값이나 서버 기능 플래그가 아니다.
 
