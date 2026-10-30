@@ -15,7 +15,7 @@ public class RankingChartController {
         QueryParameters.only(request);response.setHeader("Cache-Control","no-store");return service.periods();
     }
     @GetMapping("/api/v1/charts/steam/rankings")
-    RankingChartService.Result get(@RequestParam String source,@RequestParam String category,@RequestParam String from,@RequestParam String to,HttpServletRequest request,HttpServletResponse response){
+    RankingChartService.Result get(@RequestParam String source,@RequestParam(required=false) String category,@RequestParam String from,@RequestParam String to,HttpServletRequest request,HttpServletResponse response){
         QueryParameters.only(request,"source","category","from","to");response.setHeader("Cache-Control","no-store");return service.get(source,category,parse(from),parse(to));
     }
     private java.time.Instant parse(String value){try{return OffsetDateTime.parse(value).toInstant();}catch(java.time.DateTimeException e){throw new IllegalArgumentException("Explicit UTC offset required");}}

@@ -63,7 +63,7 @@ export type Detail = {
 };
 export type Period = {
   source: string;
-  category: string;
+  category: string | null;
   start: string;
   end: string;
 };
@@ -98,7 +98,7 @@ export type RankPair = {
 };
 export type RankReport = {
   source: string;
-  category: string;
+  category: string | null;
   asOf: string;
   calculationVersion: string;
   charts: {

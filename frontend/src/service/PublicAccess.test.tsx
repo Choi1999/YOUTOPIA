@@ -58,6 +58,24 @@ it("searches as a guest with opted-in tracking without assuming a member identit
   expect(screen.queryByRole("alert")).toBeNull();
   expect(window.location.pathname).toBe("/games");
 });
+it("selects a source NULL category without conflating it with literal category names", async () => {
+  vi.spyOn(serviceApi,"periods").mockResolvedValue({dataStatus:"AVAILABLE",content:
+    [null,"null","UNSPECIFIED"].map(category=>({source:"weekly_native",category,start:"2026-10-13T00:00:00Z",end:"2026-10-20T00:00:00Z"}))});
+  const rankings=vi.spyOn(serviceApi,"rankings").mockResolvedValue(null!);
+  window.history.replaceState({},"","/charts/steam");render(<ServiceApp />);
+  const scope=await screen.findByRole("combobox",{name:"관측 원천 / 범주"});
+  await waitFor(()=>expect(rankings).toHaveBeenCalled());
+  expect(rankings.mock.lastCall![0].get("source")).toBe("weekly_native");
+  expect(rankings.mock.lastCall![0].has("category")).toBe(false);
+  expect(screen.getByRole("option",{name:"weekly_native / 범주 미지정"})).toBeVisible();
+  for(const category of ["null","UNSPECIFIED"]){
+    fireEvent.change(scope,{target:{value:JSON.stringify(["weekly_native",category])}});
+    await waitFor(()=>expect(rankings.mock.lastCall![0].get("category")).toBe(category));
+  }
+  fireEvent.change(scope,{target:{value:JSON.stringify(["weekly_native",null])}});
+  await waitFor(()=>expect(rankings.mock.lastCall![0].has("category")).toBe(false));
+  expect(window.location.pathname).toBe("/charts/steam");
+});
 it("returns from login to public browsing and keeps browsing public after logout", async () => {
   const identity: Identity={kind:"USER",id:"00000000-0000-0000-0000-000000000123",emailVerified:false};
   vi.spyOn(serviceApi,"login").mockResolvedValue(identity);

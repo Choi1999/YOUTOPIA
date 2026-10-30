@@ -911,6 +911,42 @@ class AuthenticationIntegrationTest {
         browser.get("/api/v1/charts/steam/ranking-periods?source=fabricated",400);new Browser().get("/api/v1/charts/steam/ranking-periods",200);
     }
 
+    @Test void uncategorizedWeeklySourceRemainsDistinctFromNamedCategoriesAndDailyRuns() throws Exception {
+        Instant first=chartFixtures();
+        try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var statement=c.createStatement()){
+            statement.execute("UPDATE service.ranking_chart_fixture SET category_key=null");
+            try(var insert=c.prepareStatement("INSERT INTO service.ranking_chart_fixture VALUES(?,?,'KR',?,?,?,?,999,'Synthetic separate scope',1)")){
+                int id=100;
+                for(String category:Arrays.asList(null,"null","UNSPECIFIED")){
+                    insert.setLong(1,id++);insert.setString(2,"weekly_native");insert.setString(3,category);
+                    insert.setTimestamp(4,Timestamp.from(first));
+                    insert.setTimestamp(5,Timestamp.from(first.plusSeconds(category==null?86400:604800)));
+                    insert.setTimestamp(6,Timestamp.from(first.plusSeconds(604801)));insert.executeUpdate();
+                }
+                insert.setLong(1,id);insert.setString(2,"daily_native");insert.setNull(3,Types.VARCHAR);
+                insert.setTimestamp(5,Timestamp.from(first.plusSeconds(86400)));insert.executeUpdate();
+            }
+        }
+        var guest=new Browser();var choices=guest.get("/api/v1/charts/steam/ranking-periods",200).path("content");
+        assertThat(choices).hasSize(5);
+        assertThat(choices.findValues("source")).allMatch(v->v.asText().equals("weekly_native"));
+        assertThat(choices.findValues("category").stream().filter(JsonNode::isNull).count()).isEqualTo(3);
+        String path="/api/v1/charts/steam/rankings?source=weekly_native&from="+first+"&to="+first.plusSeconds(2*604800L);
+        var uncategorized=guest.get(path,200);
+        assertThat(uncategorized.path("category").isNull()).isTrue();
+        assertThat(uncategorized.at("/charts/weeks/0/kr/observedEntries").asInt()).isEqualTo(2);
+        assertThat(uncategorized.at("/charts/weeks/2/kr/observedEntries").asInt()).isEqualTo(3);
+        assertThat(uncategorized.at("/charts/lastThreeWeekTrends")).hasSize(2);
+        for(String category:List.of("null","UNSPECIFIED")){
+            var named=guest.get(path+"&category="+category,200);
+            assertThat(named.path("category").asText()).isEqualTo(category);
+            assertThat(named.at("/charts/weeks/0/kr/observedEntries").asInt()).isEqualTo(1);
+        }
+        guest.get(path+"&category=",400);guest.get(path+"&category=sales&category=sales",400);
+        var daily=guest.get(path.replace("weekly_native","daily_native"),200);
+        assertThat(daily.at("/charts/weeks/0/kr/availability").asText()).isEqualTo("UNAVAILABLE");
+    }
+
     @Test void anonymousPublicSearchAndChartsDoNotGrantPersonalOrAdminAccessAndSurviveLogout() throws Exception {
         Instant first=chartFixtures();var guest=new Browser();
         assertThat(guest.get("/api/v1/games",200).path("content")).isNotEmpty();

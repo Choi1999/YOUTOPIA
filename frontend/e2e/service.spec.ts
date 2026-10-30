@@ -4,6 +4,21 @@ test.describe("real isolated Spring/PostgreSQL/Redis browser flow", () => {
     process.env.YOUTOPIA_REAL_E2E !== "true",
     "Requires the explicit isolated packaged-JAR runner",
   );
+  test("guest selects an uncategorized observed weekly source without a category sentinel", async ({page}) => {
+    await page.goto("/charts/steam");
+    const requested=page.waitForResponse(response=>{
+      const url=new URL(response.url());
+      return url.pathname==="/api/v1/charts/steam/rankings" && url.searchParams.get("source")==="weekly_uncategorized";
+    });
+    await page.getByRole("combobox",{name:"관측 원천 / 범주"}).selectOption({label:"weekly_uncategorized / 범주 미지정"});
+    const response=await requested;
+    expect(response.status()).toBe(200);
+    expect(new URL(response.url()).searchParams.has("category")).toBe(false);
+    expect((await response.json()).category).toBeNull();
+    await expect(page.getByText(/weekly_uncategorized \/ 범주 미지정 · 마지막 선택 주차/)).toBeVisible();
+    await expect(page.getByRole("heading",{name:"08 · TOP20 진입 및 매주 유지"})).toBeVisible();
+    await expect(page.getByRole("link",{name:"로그인",exact:true})).toBeVisible();
+  });
   test("signup, real login, search, detail, observed charts, settings, logout and account switching", async ({
     page,
   }) => {

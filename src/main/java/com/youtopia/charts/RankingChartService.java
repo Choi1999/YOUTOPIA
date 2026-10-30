@@ -23,7 +23,7 @@ public class RankingChartService {
     @Transactional(readOnly=true,isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ,timeout=8)
     public Result get(String source,String category,Instant from,Instant to){
         Instant now=clock.instant();long span=Duration.between(from,to).getSeconds();
-        if(!source.matches("[A-Za-z0-9_.:-]{1,80}")||!category.matches("[A-Za-z0-9_.:-]{1,80}")||from.isAfter(to)||span>12*604800L||span%604800!=0||!from.plusSeconds(span).equals(to)||to.isAfter(now))throw new IllegalArgumentException("Invalid source periods");
+        if(!source.matches("[A-Za-z0-9_.:-]{1,80}")||category!=null&&!category.matches("[A-Za-z0-9_.:-]{1,80}")||from.isAfter(to)||span>12*604800L||span%604800!=0||!from.plusSeconds(span).equals(to)||to.isAfter(now))throw new IllegalArgumentException("Invalid source periods");
         budget.acquire();var runs=repository.runs(source,category,from,to,now);
         try{return new Result(source,category,from,to,now,"ELIGIBLE_CONFIRMED_GAME_ENTRIES_FROM_COMPLETE_RUNS","UNASSESSED",RankingAnalytics.calculate(runs,from,to,now));}
         catch(IllegalArgumentException error){throw new DataRetrievalFailureException("Ranking source contract mismatch");}

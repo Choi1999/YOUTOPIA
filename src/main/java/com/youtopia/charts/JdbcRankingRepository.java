@@ -14,9 +14,9 @@ public class JdbcRankingRepository {
     private final JdbcTemplate jdbc;
     public JdbcRankingRepository(JdbcTemplate jdbc){this.jdbc=jdbc;}
     public List<Period> periods(Instant asOf){
-        var values=jdbc.query("SELECT DISTINCT ranking_source,category_key,period_start,period_end FROM service.v_weekly_rank_observation WHERE (country_code='KR' OR country_code IS NULL) AND period_end<=? AND received_at<=? ORDER BY period_start DESC,ranking_source,category_key,period_end LIMIT 1001",(r,n)->{
+        var values=jdbc.query("SELECT DISTINCT ranking_source,category_key,period_start,period_end FROM service.v_weekly_rank_observation WHERE (country_code='KR' OR country_code IS NULL) AND period_end-period_start=interval '168 hours' AND period_end<=? AND received_at<=? ORDER BY period_start DESC,ranking_source,category_key,period_end LIMIT 1001",(r,n)->{
             String source=r.getString(1),category=r.getString(2);
-            if(source==null||category==null||!source.matches("[A-Za-z0-9_.:-]{1,80}")||!category.matches("[A-Za-z0-9_.:-]{1,80}"))throw new DataRetrievalFailureException("Invalid source category contract");
+            if(source==null||!source.matches("[A-Za-z0-9_.:-]{1,80}")||category!=null&&!category.matches("[A-Za-z0-9_.:-]{1,80}"))throw new DataRetrievalFailureException("Invalid source category contract");
             Instant start=timestamp(r.getTimestamp(3)),end=timestamp(r.getTimestamp(4));
             if(!end.isAfter(start))throw new DataRetrievalFailureException("Invalid source period");
             return new Period(source,category,start,end);
@@ -26,7 +26,7 @@ public class JdbcRankingRepository {
     }
     public List<RankingAnalytics.Run> runs(String source,String category,Instant from,Instant to,Instant asOf){
         var runs=new LinkedHashMap<Long,RankingAnalytics.Run>();
-        var rows=jdbc.queryForList("SELECT ranking_run_id,country_code,period_start,period_end,received_at,app_id,game_name,result_position FROM service.v_weekly_rank_observation WHERE (country_code='KR' OR country_code IS NULL) AND ranking_source=? AND category_key=? AND period_start BETWEEN ? AND ? AND period_end<=? AND received_at<=? ORDER BY ranking_run_id,result_position LIMIT 50001",source,category,Timestamp.from(from.minusSeconds(604800)),Timestamp.from(to),Timestamp.from(asOf),Timestamp.from(asOf));
+        var rows=jdbc.queryForList("SELECT ranking_run_id,country_code,period_start,period_end,received_at,app_id,game_name,result_position FROM service.v_weekly_rank_observation WHERE (country_code='KR' OR country_code IS NULL) AND period_end-period_start=interval '168 hours' AND ranking_source=? AND category_key IS NOT DISTINCT FROM ? AND period_start BETWEEN ? AND ? AND period_end<=? AND received_at<=? ORDER BY ranking_run_id,result_position LIMIT 50001",source,category,Timestamp.from(from.minusSeconds(604800)),Timestamp.from(to),Timestamp.from(asOf),Timestamp.from(asOf));
         if(rows.size()>50000)throw new DataRetrievalFailureException("Ranking input exceeds bound");
         for(var r:rows){
             long id=positiveNumber(r.get("ranking_run_id"));

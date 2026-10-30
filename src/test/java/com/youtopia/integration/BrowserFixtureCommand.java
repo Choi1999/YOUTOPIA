@@ -27,6 +27,7 @@ public final class BrowserFixtureCommand {
                     insert.setLong(1,week*2+country+1);insert.setString(2,"weekly_browser");if(country==0)insert.setString(3,"KR");else insert.setNull(3,Types.VARCHAR);insert.setString(4,"sales");insert.setTimestamp(5,Timestamp.from(first.plusSeconds(week*604800L)));insert.setTimestamp(6,Timestamp.from(first.plusSeconds((week+1)*604800L)));insert.setTimestamp(7,Timestamp.from(first.plusSeconds((week+1)*604800L+60)));insert.setLong(8,new long[]{570,730,900}[game]);insert.setString(9,new String[]{"Browser Arena","Browser Counter","Browser Indie"}[game]);insert.setInt(10,game==0?10-week+country:game==1?20+week+country:30+week+country);insert.executeUpdate();
                 }
             }
+            query.execute("INSERT INTO service.ranking_chart_fixture SELECT ranking_run_id+100,'weekly_uncategorized',country_code,null,period_start,period_end,received_at,app_id,game_name,result_position FROM service.ranking_chart_fixture WHERE ranking_source='weekly_browser'");
             connection.commit();
         }
         System.out.println("Synthetic browser fixtures prepared in loopback test databases only.");

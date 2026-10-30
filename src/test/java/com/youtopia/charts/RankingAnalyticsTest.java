@@ -48,4 +48,10 @@ class RankingAnalyticsTest {
         assertThatThrownBy(()->RankingAnalytics.calculate(List.of(run(1,"KR",0,entry(1,1),entry(1,2))),first,first,now)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(()->RankingAnalytics.calculate(List.of(),first,first.plusSeconds(100),now)).isInstanceOf(IllegalArgumentException.class);
     }
+    @Test void dailyAndLongSourceRunsCannotBePresentedAsWeeklyObservations(){
+        for(long duration:List.of(86400L,604799L,604801L,1209600L)){
+            var invalid=new RankingAnalytics.Run(1,"KR",first,first.plusSeconds(duration),first.plusSeconds(duration+1),List.of(entry(1,1)));
+            assertThatThrownBy(()->RankingAnalytics.calculate(List.of(invalid),first,first,now)).isInstanceOf(IllegalArgumentException.class);
+        }
+    }
 }

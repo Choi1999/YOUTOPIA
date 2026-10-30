@@ -27,7 +27,7 @@ public final class RankingAnalytics {
         if(from.isAfter(to)||seconds>12*604800L||seconds%604800!=0||!from.plusSeconds(seconds).equals(to)||to.isAfter(asOf))throw new IllegalArgumentException("Explicit weekly source-period bounds required");
         Map<Key,Run> chosen=new HashMap<>();
         for(var run:input){
-            if(run.id()<=0||run.start()==null||run.end()==null||run.receivedAt()==null||!run.end().isAfter(run.start()))throw new IllegalArgumentException("Invalid rank run contract");
+            if(run.id()<=0||run.start()==null||run.end()==null||run.receivedAt()==null||!run.end().equals(run.start().plusSeconds(604800)))throw new IllegalArgumentException("Invalid weekly rank run contract");
             if(run.receivedAt().isAfter(asOf)||run.end().isAfter(asOf)||run.start().isBefore(from.minusSeconds(604800))||run.start().isAfter(to))continue;
             if(run.country()!=null&&!run.country().equals("KR"))continue;
             var ids=new HashSet<Long>();var positions=new HashSet<Integer>();

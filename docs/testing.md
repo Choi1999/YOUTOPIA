@@ -81,6 +81,32 @@ transactions, RLS/negative privilege checks and a backup/restore of synthetic
 data. It does not establish production DDL equivalence, real source quality,
 operator permissions, external API availability or deployment acceptance.
 
+The ranking regressions include a source NULL category beside literal `null` and
+`UNSPECIFIED` categories, and daily rows sharing a weekly source/category. They
+verify exact category separation and exclude nonweekly observations. The browser
+suite also selects an uncategorized source as a guest and checks that the request
+omits `category` while the response retains JSON `null`.
+
+## Read-only production evidence
+
+Synthetic success does not replace actual-login checks. Use each configured
+application identity directly for its approved SELECT allow/deny checks; do not
+substitute an owner or `SET ROLE`. Keep operational SQL and captured database
+metadata outside Git. Never run provisioning from this test runner against a
+real database.
+
+Repository SELECT queries and pure analysis functions can be checked with the
+dedicated reader in an explicit read-only transaction. This validates only that
+database/query path. Public HTTP requests also use the shared Redis request
+budget; account/session paths additionally require their configured stores and
+control service. Missing runtime dependencies must be recorded as unexecuted
+checks. Disabling the budget or replacing production dependencies with a local
+test service does not verify production HTTP, login or logout.
+
+A before/after catalog fingerprint compares only the metadata included in that
+capture, such as owners, ACLs and definitions. Even an exact match does not prove
+that live source rows remained unchanged.
+
 ## Acceptance with empty caches
 
 The optional cold runner creates its own **nested Docker daemon** with no host

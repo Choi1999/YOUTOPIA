@@ -81,7 +81,7 @@ Implemented API groups (account modules require their configuration):
 - `GET /api/v1/games`: public, paged game catalog with literal name search and allowlisted filters/sorts.
 - `GET /api/v1/games/steam:{appId}`: native Steam identity, observed summary and a 30-day CCU preview.
 - `POST /api/v1/games/search`: explicit search; optional analytics proof follows a successful query. It does not automatically record an event.
-- `GET /api/v1/charts/steam/rankings`: explicit source/category and weekly offset timestamps; eight rank comparisons preserve original positions.
+- `GET /api/v1/charts/steam/rankings`: explicit source and weekly offset timestamps; eight rank comparisons preserve original positions. Omit `category` only for a source NULL category; named categories remain exact matches.
 - `GET /api/v1/charts/steam/ranking-periods`: bounded source/category and completed periods observed in the approved projection; the UI does not invent a weekly calendar.
 - `GET /api/v1/charts/steam/ccu?appIds=570,730&days=7`: latest two observations and exact 24-hour comparisons for explicit native IDs.
 - `GET /api/v1/charts/steam/app-types`: distinct active CCU targets, separating unknown types.
@@ -99,6 +99,12 @@ Pagination responses use `content` and `page`. The catalog includes eligible nam
 Steam game candidates. Unsupported metrics remain unavailable rather than zero.
 Rank comparisons use the latest complete whole run per source/category/country/period;
 missing prior periods are excluded. A null country is labelled `UNSPECIFIED`.
+Weekly period choices and ranking inputs require an actual 168-hour source period;
+daily runs are excluded, including when they share the same source/category.
+A source NULL category remains JSON `null` and appears as “범주 미지정” in the
+selector. Omitting the query parameter selects SQL NULL only; it is not a wildcard.
+Empty categories are rejected, and literal names such as `null` and `UNSPECIFIED`
+remain separate named categories. No source category or weekly calendar is invented.
 Chart responses expose a calculation version, observation scope and comparison basis.
 Collector canonical views choose their own representatives; defensive duplicate handling
 inside this application does not override their raw-data selection policy.

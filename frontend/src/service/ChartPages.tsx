@@ -150,20 +150,23 @@ function RankCharts() {
   const [country, setCountry] = useState("KR");
   const [trend, setTrend] = useState("");
   const content = periods.data?.content ?? [];
-  const choices = [...new Set(content.map((p) => p.source + "|" + p.category))],
-    chosen = scope || choices[0] || "";
+  const scopeKey = (p: {source: string; category: string | null}) =>
+    JSON.stringify([p.source, p.category]);
+  const choices = [...new Map(content.map((p) => [scopeKey(p), p])).entries()];
+  const chosen = choices.find(([key]) => key === scope) ?? choices[0];
+  const chosenKey = chosen?.[0] ?? "";
   const dates = content
-    .filter((p) => p.source + "|" + p.category === chosen)
+    .filter((p) => scopeKey(p) === chosenKey)
     .sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
   const to = dates.at(-1)?.start,
     from = range || dates[Math.max(0, dates.length - 3)]?.start;
-  const key = chosen + ":" + from + ":" + to;
+  const key = chosenKey + ":" + from + ":" + to;
   const report = useResource(key, (s) =>
     chosen && from && to
       ? serviceApi.rankings(
           new URLSearchParams({
-            source: chosen.split("|")[0],
-            category: chosen.split("|")[1],
+            source: chosen[1].source,
+            ...(chosen[1].category === null ? {} : {category: chosen[1].category}),
             from,
             to,
           }),
@@ -192,14 +195,16 @@ function RankCharts() {
         <label>
           관측 원천 / 범주
           <select
-            value={chosen}
+            value={chosenKey}
             onChange={(e) => {
               setScope(e.target.value);
               setRange("");
             }}
           >
-            {choices.map((v) => (
-              <option key={v}>{v}</option>
+            {choices.map(([key, period]) => (
+              <option key={key} value={key}>
+                {period.source} / {period.category ?? "범주 미지정"}
+              </option>
             ))}
           </select>
         </label>
@@ -229,7 +234,7 @@ function RankCharts() {
       {data && last && region && (
         <>
           <p className="chart-caption">
-            {data.source} / {data.category} · 마지막 선택 주차{" "}
+            {data.source} / {data.category ?? "범주 미지정"} · 마지막 선택 주차{" "}
             {time(last.periodStart)} · {data.calculationVersion}
           </p>
           <label className="game-filters">
