@@ -134,7 +134,7 @@ function unresolvedState(requestId=1,anchor=null) {
   return {phase:"UNRESOLVED",requestId,targetType:"CHANNEL",targetId:null,
     identityStatus:"HANDLE_UNRESOLVED",anchor,target:null};
 }
-function makeFixture({vw=1200,vh=800,dark=false,cardHeight=260,sendMessage=null}={}) {
+function makeFixture({vw=1200, vh=800, dark=false, cardHeight=260, sendMessage=null, summaryClient=null}={}) {
   const doc=new FakeNode("document");
   doc._root=true;
   doc.body=new FakeNode("body",doc);
@@ -187,6 +187,7 @@ function makeFixture({vw=1200,vh=800,dark=false,cardHeight=260,sendMessage=null}
     addEventListener:win.addEventListener.bind(win),
     removeEventListener:win.removeEventListener.bind(win),
     YUTOPIA_HOVER_CONTROLLER:controller,
+    YUTOPIA_HOVER_SUMMARY_CLIENT: summaryClient || undefined,
     chrome: sendMessage ? {runtime:{sendMessage}} : undefined,
   });
   vm.runInContext(modelSource,ctx,{filename:"hover-card-model.js"});
@@ -217,10 +218,16 @@ function makeFixture({vw=1200,vh=800,dark=false,cardHeight=260,sendMessage=null}
 
 test("Manifest: model/renderer는 Hover controller 이후 순서로 실행",()=>{
   const list=manifest.content_scripts[0].js;
-  assert.equal(list.at(-4),"hover-controller.js");
-  assert.equal(list.at(-3),"preview-client.js");
-  assert.equal(list.at(-2),"hover-card-model.js");
-  assert.equal(list.at(-1),"hover-card.js");
+
+  assert.deepEqual(list.slice(-7), [
+    "hover-controller.js",
+    "preview-client.js",
+    "hover-card-model.js",
+    "hover-summary-contract.js",
+    "hover-summary-transport.js",
+    "hover-summary-client.js",
+    "hover-card.js",
+  ]);
 });
 
 test("모델: 고정된 가상 분포는 합이 100이며 실제 수집 근거를 가장하지 않음",()=>{
@@ -252,18 +259,22 @@ test("IDLE과 HOVER_PENDING에는 DOM 카드가 생성되지 않음",()=>{
   assert.equal(f.host(),null);
 });
 
-test("READY VIDEO는 Shadow DOM으로 단일 카드와 타깃 ID를 표시",()=>{
-  const f=makeFixture(),a=f.anchor();
-  f.emit(videoState(VIDEO_A,1,a));
-  assert.equal(f.host()?.isConnected,true);
+
+test("READY VIDEO는 검증 전 수치를 표시하지 않고 카드를 생성한다", () => {
+  const f = makeFixture(), a = f.anchor();
+
+  f.emit(videoState(VIDEO_A, 1, a));
+
+  assert.equal(f.host()?.isConnected, true);
   assert.ok(f.host().shadowRoot);
-  assert.equal(f.api.getRuntimeStatus().hostCount,1);
-  assert.equal(f.api.getRuntimeStatus().targetId,VIDEO_A);
-  assert.match(f.cardText(),new RegExp(VIDEO_A));
-  assert.match(f.cardText(),/DEMO/);
-  assert.match(f.cardText(),/실제 YouTube 댓글/);
-  assert.equal(f.findClass("bar")?.attributes.get("role"),"img");
+  assert.equal(f.api.getRuntimeStatus().hostCount, 1);
+  assert.equal(f.api.getRuntimeStatus().targetId, VIDEO_A);
+  assert.match(f.cardText(), new RegExp(VIDEO_A));
+  assert.match(f.cardText(), /DEMO/);
+  assert.match(f.cardText(), /검증된 요약을 사용할 수 없습니다/);
+  assert.equal(f.findClass("bar"), null);
 });
+
 
 test("Card만 pointer-events:auto, Host·Surface는 투명하며 Controller에 등록",()=>{
   const f=makeFixture();
@@ -297,13 +308,17 @@ test("A→B 카드 내용 갱신 시 새 cardRoot로 Controller hit region 갱�
   assert.equal(f.api.getRuntimeStatus().targetId,VIDEO_B);
 });
 
-test("가상 감성 차트에는 긍정/중립/부정 라벨과 비율이 모두 있음",()=>{
-  const f=makeFixture();
-  f.emit(videoState(VIDEO_A,1,f.anchor()));
-  const text=f.cardText();
-  assert.match(text,/긍정/);assert.match(text,/중립/);assert.match(text,/부정/);
-  assert.match(text,/%/);
-  assert.match(text,/가상/);
+test("요약을 사용할 수 없으면 기존 가상 감성 비율을 표시하지 않는다", () => {
+  const f = makeFixture();
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+
+  assert.equal(f.findClass("bar"), null);
+  assert.doesNotMatch(
+    f.cardText(),
+    /긍정\s+\d+(?:\.\d+)?%/
+  );
+  assert.match(f.cardText(), /분석 비율은 제공하지 않습니다/);
 });
 
 test("영상 A→B 선택 변경 시 이전 ID·카드가 재사용되지 않음",()=>{
@@ -359,13 +374,15 @@ test("IDLE/DISMISSED로 전이하면 Host가 완전히 제거됨",()=>{
   assert.equal(f.host(),null);
 });
 
-test("READY CHANNEL은 동일 컴포넌트에서 채널 ID와 가상 선정 범위 표시",()=>{
-  const f=makeFixture();
-  f.emit(channelState(1,f.anchor()));
-  assert.equal(f.api.getRuntimeStatus().targetType,"CHANNEL");
-  assert.match(f.cardText(),new RegExp(CHANNEL_ID));
-  assert.match(f.cardText(),/선정 영상 8개/);
-  assert.match(f.cardText(),/실제 갱신 시각 없음/);
+test("READY CHANNEL도 미검증 예시 비율을 표시하지 않는다", () => {
+  const f = makeFixture();
+
+  f.emit(channelState(1, f.anchor()));
+
+  assert.equal(f.api.getRuntimeStatus().targetType, "CHANNEL");
+  assert.match(f.cardText(), new RegExp(CHANNEL_ID));
+  assert.equal(f.findClass("bar"), null);
+  assert.doesNotMatch(f.cardText(), /선정 영상 8개/);
 });
 
 test("HANDLE_UNRESOLVED는 거짓 비율이나 더보기 CTA를 만들지 않음",()=>{
@@ -638,4 +655,150 @@ test("pagehide 시 Host가 정리되며 API도 해제",()=>{
   f.win.fire("pagehide");
   assert.equal(f.host(),null);
   assert.equal(f.ctx.YUTOPIA_HOVER_CARD,undefined);
+});
+
+
+function makeSummaryStub() {
+  let current = null;
+  const listeners = new Set();
+
+  return {
+    getView(state) {
+      if (
+        current &&
+        current.requestId === state?.requestId &&
+        current.targetType === state?.targetType &&
+        current.targetId === state?.targetId
+      ) {
+        return current;
+      }
+      return { kind: "LOADING" };
+    },
+
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+
+    publish(view) {
+      current = view;
+      for (const listener of [...listeners]) {
+        listener(view);
+      }
+    },
+
+    listenerCount() {
+      return listeners.size;
+    },
+  };
+}
+
+function readySummaryView(requestId = 1) {
+  return {
+    kind: "SNAPSHOT",
+    requestId,
+    targetType: "VIDEO",
+    targetId: VIDEO_A,
+
+    summary: {
+      status: "READY",
+      valueSemantics: "SNAPSHOT_DERIVED_SYNTHETIC",
+
+      target: {
+        source: "YOUTUBE",
+        targetType: "VIDEO",
+        targetId: VIDEO_A,
+      },
+
+      provenance: {
+        sourceType: "STATIC_FIXTURE",
+        isSynthetic: true,
+      },
+
+      sentimentPercent: {
+        denominator: 80,
+        positivePercent: 62.5,
+        neutralPercent: 25,
+        negativePercent: 12.5,
+      },
+
+      topTopics: [
+        { topicId: "RECIPE", mentionCount: 38 },
+        { topicId: "PRICE", mentionCount: 22 },
+      ],
+
+      observationScope: {
+        mode: "ONE_VIDEO",
+        windowStart: "2026-10-01T00:00:00+09:00",
+        windowEnd: "2026-10-08T00:00:00+09:00",
+      },
+
+      analyzedAt: "2026-10-08T09:20:00+09:00",
+    },
+  };
+}
+
+test("합성 READY 도착 시 카드 Root를 유지한 채 수치를 표시한다", () => {
+  const summary = makeSummaryStub();
+  const f = makeFixture({ summaryClient: summary });
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+
+  const originalCard = f.cardRegion.card;
+
+  assert.equal(f.findClass("bar"), null);
+
+  summary.publish(readySummaryView());
+
+  assert.equal(f.cardRegion.card, originalCard);
+  assert.equal(f.findClass("bar")?.getAttribute("role"), "img");
+  assert.match(f.cardText(), /긍정 62.5%/);
+  assert.match(f.cardText(), /중립 25%/);
+  assert.match(f.cardText(), /부정 12.5%/);
+  assert.match(f.cardText(), /분모: 80건/);
+  assert.match(f.cardText(), /RECIPE · 언급 38건/);
+  assert.match(f.cardText(), /STATIC_FIXTURE/);
+  assert.equal(f.api.getRuntimeStatus().summaryKind, "SNAPSHOT");
+});
+
+test("NOT_FOUND는 감성 차트와 이전 수치를 제거한다", () => {
+  const summary = makeSummaryStub();
+  const f = makeFixture({ summaryClient: summary });
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+  summary.publish(readySummaryView());
+
+  assert.ok(f.findClass("bar"));
+
+  summary.publish({
+    kind: "NOT_FOUND",
+    requestId: 1,
+    targetType: "VIDEO",
+    targetId: VIDEO_A,
+  });
+
+  assert.equal(f.findClass("bar"), null);
+  assert.doesNotMatch(f.cardText(), /62.5%/);
+  assert.match(f.cardText(), /합성 스냅샷이 없습니다/);
+  assert.equal(f.api.getRuntimeStatus().summaryKind, "NOT_FOUND");
+});
+
+test("이전 A의 늦은 갱신은 현재 B 카드에 적용하지 않는다", () => {
+  const summary = makeSummaryStub();
+  const f = makeFixture({ summaryClient: summary });
+  const a = f.anchor();
+
+  f.emit(videoState(VIDEO_A, 1, a));
+  f.emit(videoState(VIDEO_B, 2, a));
+
+  summary.publish(readySummaryView(1));
+
+  assert.equal(f.api.getRuntimeStatus().targetId, VIDEO_B);
+  assert.match(f.cardText(), new RegExp(VIDEO_B));
+  assert.doesNotMatch(f.cardText(), /62.5%/);
+  assert.equal(f.findClass("bar"), null);
+
+  f.api.dispose();
+
+  assert.equal(summary.listenerCount(), 0);
 });

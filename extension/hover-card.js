@@ -3,9 +3,10 @@
  *
  * 목적: 25번 Hover Controller의 READY/UNRESOLVED 상태에 반응하여 YouTube에
  *       카드 한 개를 Shadow DOM으로 표시하고 사용성·위치를 시험한다.
- * 입력: 사용자 Hover 상태, 안정된 VIDEO/CHANNEL 대상, 고정 STATIC_FIXTURE.
- * 출력: 대상별 합성 미니 차트, 예시 브리핑, 가상 분모/기간, 닫기/더보기 안내.
- * 실패: 미확정 ID/앵커 제거/화면 밖/오래된 requestId면 이전 카드 즉시 제거.
+ * 입력: Hover Controller의 대상 상태와 검증된 Summary Client 결과.
+ * 출력: 검증된 합성 스냅샷 또는 데이터 미제공 안내.
+ * 실패: 이전 Hover 응답 및 미검증 감성 수치 표시 차단.
+ * 경계: 실제 YouTube 댓글·통계·외부 API 수집 없음.
  * 보안: 실제 제목·댓글·시청기록·API 수집 없음, innerHTML 없음, 사이트 이벤트 미차단.
  * 경계: G28-2는 사용자 클릭 시 선택 대상을 세션에 고정. 실제 분석·저장 기능은 미연결.
  */
@@ -15,6 +16,7 @@
 
   const controller = scope.YUTOPIA_HOVER_CONTROLLER;
   const modelApi = scope.YUTOPIA_HOVER_CARD_MODEL;
+  const summaryClient = scope.YUTOPIA_HOVER_SUMMARY_CLIENT;
   const doc = scope.document;
   const HOST_ID = "yutopia-extension-hover-card";
   const MARGIN = 8;
@@ -83,6 +85,9 @@
   let currentAnchor = null;
   let currentState = null;
   let unsubscribe = null;
+  let summaryUnsubscribe = null;
+  let summaryArea = null;
+  let lastSummaryKind = "UNAVAILABLE";
   let connected = false;
   let disposed = false;
   let moving = false;
@@ -136,6 +141,184 @@
     host.dataset.theme = dark ? "dark" : "light";
   }
 
+  /**
+   * 검증된 합성 스냅샷만 카드에 표현한다.
+   *
+   * 기존 mockForTarget의 임의 감성 비율은 사용하지 않는다.
+   * 카드 전체를 교체하지 않고 요약 영역만 갱신한다.
+   */
+  function renderSummaryArea(area, state) {
+    const view = summaryClient?.getView?.(state);
+    const kind = view?.kind || "UNAVAILABLE";
+    lastSummaryKind = kind;
+
+    const summary = kind === "SNAPSHOT"
+      ? view.summary
+      : null;
+
+    const metrics = summary?.sentimentPercent;
+
+    const percentages = metrics
+      ? [
+          metrics.positivePercent,
+          metrics.neutralPercent,
+          metrics.negativePercent,
+        ]
+      : [];
+
+    const verified =
+      summary &&
+      (summary.status === "READY" ||
+       summary.status === "PARTIAL") &&
+      summary.valueSemantics ===
+        "SNAPSHOT_DERIVED_SYNTHETIC" &&
+      summary.provenance?.sourceType === "STATIC_FIXTURE" &&
+      summary.provenance?.isSynthetic === true &&
+      summary.target?.source === "YOUTUBE" &&
+      summary.target?.targetType === state.targetType &&
+      summary.target?.targetId === state.targetId &&
+      Number.isSafeInteger(metrics?.denominator) &&
+      metrics.denominator > 0 &&
+      percentages.length === 3 &&
+      percentages.every(value =>
+        typeof value === "number" &&
+        Number.isFinite(value) &&
+        value >= 0 &&
+        value <= 100
+      ) &&
+      Math.abs(
+        percentages.reduce((sum, value) => sum + value, 0) -
+        100
+      ) < 0.000001;
+
+    if (!verified) {
+      const notices = {
+        LOADING:
+          "검증된 합성 스냅샷을 확인 중입니다. 결과가 도착하기 전에는 감성 비율을 표시하지 않습니다.",
+
+        NOT_FOUND:
+          "이 대상에는 제공된 합성 스냅샷이 없습니다. 실제 YouTube 댓글 분석을 수행하지 않았습니다.",
+
+        REJECTED:
+          "스냅샷 검증에 실패하여 감성 비율과 주요 논점을 표시하지 않습니다.",
+
+        TRANSPORT_ERROR:
+          "요약 메시지 처리에 실패했습니다. 확인되지 않은 분석 수치는 표시하지 않습니다.",
+
+        UNAVAILABLE:
+          "검증된 요약을 사용할 수 없습니다. 현재 분석 비율은 제공하지 않습니다.",
+      };
+
+      const notice = notices[kind] ||
+        (kind === "SNAPSHOT"
+          ? "분석 상태: " +
+            (summary?.status || "UNKNOWN") +
+            " · 표시할 수 있는 감성 비율이 없습니다."
+          : "검증된 분석 데이터를 사용할 수 없습니다.");
+
+      area.replaceChildren(
+        el("p", "notice", notice)
+      );
+      return;
+    }
+
+    const metric = el("section", "section");
+
+    metric.appendChild(
+      el("strong", "heading",
+        "감성 분포 · 검증된 합성 스냅샷")
+    );
+
+    const bar = el("div", "bar");
+    bar.setAttribute("role", "img");
+    bar.setAttribute(
+      "aria-label",
+      "합성 스냅샷 긍정 " + metrics.positivePercent +
+      "퍼센트, 중립 " + metrics.neutralPercent +
+      "퍼센트, 부정 " + metrics.negativePercent +
+      "퍼센트. 실제 YouTube 분석값이 아닙니다."
+    );
+
+    const entries = [
+      ["positive", "긍정", metrics.positivePercent],
+      ["neutral", "중립", metrics.neutralPercent],
+      ["negative", "부정", metrics.negativePercent],
+    ];
+
+    for (const [kindName, , value] of entries) {
+      const segment = el("span", kindName);
+      segment.style.width = String(value) + "%";
+      bar.appendChild(segment);
+    }
+
+    metric.appendChild(bar);
+
+    const legend = el("div", "legend");
+
+    for (const [kindName, label, value] of entries) {
+      const item = el("span", "legend-item");
+      item.appendChild(el("span", "dot " + kindName));
+      item.appendChild(
+        doc.createTextNode(label + " " + value + "%")
+      );
+      legend.appendChild(item);
+    }
+
+    metric.appendChild(legend);
+
+    const sections = [metric];
+
+    if (summary.topTopics.length > 0) {
+      const issues = el("section", "section");
+      issues.appendChild(
+        el("strong", "heading",
+          "주요 논점 · 합성 스냅샷")
+      );
+
+      const topics = el("ul", "topics");
+
+      for (const topic of summary.topTopics) {
+        topics.appendChild(
+          el("li", "",
+            topic.topicId +
+            " · 언급 " +
+            topic.mentionCount +
+            "건")
+        );
+      }
+
+      issues.appendChild(topics);
+      sections.push(issues);
+    }
+
+    const scopeData = summary.observationScope;
+
+    sections.push(
+      el(
+        "p",
+        "meta",
+        "분류된 합성 댓글 분모: " +
+        metrics.denominator +
+        "건 · 분석 상태: " + summary.status +
+        " · 범위: " + scopeData.mode +
+        " · 관측 기간: " + scopeData.windowStart +
+        " ~ " + scopeData.windowEnd +
+        " · 분석 시각: " + summary.analyzedAt
+      )
+    );
+
+    sections.push(
+      el(
+        "div",
+        "notice",
+        "STATIC_FIXTURE · SNAPSHOT_DERIVED_SYNTHETIC · " +
+        "검증된 합성 예시입니다. 실제 YouTube 댓글 분석 결과가 아닙니다."
+      )
+    );
+
+    area.replaceChildren(...sections);
+  }
+
   /*
    * 실제 영상 ID는 직접 앵커에서 추측하지 않고 23/24/25번의 정규 식별 계약만 소비.
    * DOM 구성에는 textContent만 사용해 YouTube 링크나 제목에 HTML이 섞여도 실행되지 않는다.
@@ -149,7 +332,7 @@
 
     const header = el("header", "header");
     header.appendChild(el("strong", "brand", "YUTOPIA"));
-    header.appendChild(el("span", "tag", "DEMO · 가상 데이터"));
+    header.appendChild(el("span", "tag", "DEMO · 합성 데이터 전용"));
     header.appendChild(el("span", "spacer"));
     const close = el("button", "close", "×");
     // The card itself is interactive for pointer containment. Stage 27-28
@@ -168,58 +351,19 @@
       (isVideo ? "영상 ID: " : "채널 ID: ") + mock.targetId));
 
     if (unresolved) {
-      const text = el("p", "notice",
-        "이 채널 링크는 @handle 형식입니다. 정확한 채널 ID 매핑이 없어 분석을 표시하지 않습니다.");
-      body.appendChild(text);
+      body.appendChild(el(
+        "p",
+        "notice",
+        "이 채널 링크는 @handle 형식입니다. " +
+        "정확한 채널 ID 매핑이 없어 분석을 표시하지 않습니다."
+      ));
     } else {
-      const metric = el("section", "section");
-      metric.appendChild(el("strong", "heading", "반응 분포 · 시연용 합성 비율"));
+      summaryArea = el("div", "summary-area");
+      summaryArea.setAttribute("aria-live", "polite");
 
-      const bar = el("div", "bar");
-      bar.setAttribute("role", "img");
-      bar.setAttribute("aria-label",
-        "가상 긍정 " + mock.positive + "퍼센트, 중립 " + mock.neutral +
-        "퍼센트, 부정 " + mock.negative + "퍼센트. 실제 분석값이 아닙니다.");
-      for (const [kind, value] of [
-        ["positive", mock.positive], ["neutral", mock.neutral], ["negative", mock.negative],
-      ]) {
-        const segment = el("span", kind);
-        segment.style.width = String(value) + "%";
-        bar.appendChild(segment);
-      }
-      metric.appendChild(bar);
+      renderSummaryArea(summaryArea, state);
 
-      const legend = el("div", "legend");
-      for (const [kind, label, value] of [
-        ["positive", "긍정", mock.positive],
-        ["neutral", "중립", mock.neutral],
-        ["negative", "부정", mock.negative],
-      ]) {
-        const item = el("span", "legend-item");
-        item.appendChild(el("span", "dot " + kind));
-        item.appendChild(doc.createTextNode(label + " " + value + "%"));
-        legend.appendChild(item);
-      }
-      metric.appendChild(legend);
-      body.appendChild(metric);
-
-      const issues = el("section", "section");
-      issues.appendChild(el("strong", "heading", "주요 논점 · 가상 예시"));
-      const topics = el("ul", "topics");
-      for (const topic of mock.topics) topics.appendChild(el("li", "", topic));
-      issues.appendChild(topics);
-      body.appendChild(issues);
-
-      const briefing = el("section", "section");
-      briefing.appendChild(el("strong", "heading", "짧은 브리핑"));
-      briefing.appendChild(el("p", "briefing", mock.briefing));
-      body.appendChild(briefing);
-
-      body.appendChild(el("p", "meta",
-        mock.sampleLabel + " · " + mock.scopeLabel + "\n" +
-        mock.periodLabel + " · " + mock.updatedLabel));
-      body.appendChild(el("div", "notice",
-        "STATIC FIXTURE · 실제 YouTube 댓글·통계·감성 분석 결과가 아닙니다."));
+      body.appendChild(summaryArea);
     }
 
     container.appendChild(body);
@@ -307,6 +451,7 @@
     shadow = null;
     surface = null;
     currentKey = null;
+    summaryArea = null;
     if (!preserveState) {
       currentAnchor = null;
       currentState = null;
@@ -437,6 +582,7 @@
 
     const key = [state.requestId, state.targetType, state.targetId || "UNRESOLVED"].join(":");
     if (key !== currentKey) {
+      summaryArea = null;
       surface.replaceChildren(buildCard(state, mock));
       currentKey = key;
       lastAction = null;
@@ -447,6 +593,24 @@
     // Register before showing the card so capture-phase document pointer
     // handlers can recognize the host/Shadow card on its first pointerover.
     controller?.setCardRegion?.(host, surface.childNodes[0] || null);
+    position();
+  }
+
+  function onSummaryUpdate() {
+    if (
+      disposed ||
+      currentState?.phase !== "READY" ||
+      !controller?.isCurrentRequest(currentState) ||
+      !summaryArea?.isConnected
+    ) {
+      return;
+    }
+
+    // 현재 카드의 요약 부분만 변경한다.
+    // 카드 Root와 더보기 버튼은 재생성하지 않는다.
+    renderSummaryArea(summaryArea, currentState);
+
+    // 내용 높이가 변경될 수 있으므로 위치만 재계산한다.
     position();
   }
 
@@ -472,6 +636,7 @@
       lastRenderReason,
       layout: lastLayout,
       lastAction,
+      summaryKind: lastSummaryKind,
     });
   }
 
@@ -482,6 +647,8 @@
     frame = null;
     moving = false;
     unsubscribe?.();
+    summaryUnsubscribe?.();
+    summaryUnsubscribe = null;
     unsubscribe = null;
     scope.removeEventListener?.("scroll", queuePosition, true);
     scope.removeEventListener?.("resize", queuePosition);
@@ -495,6 +662,11 @@
   scope.YUTOPIA_HOVER_CARD = api;
   if (controller && modelApi && typeof controller.subscribe === "function") {
     unsubscribe = controller.subscribe(onHoverState);
+
+  if (typeof summaryClient?.subscribe === "function") {
+    summaryUnsubscribe =
+      summaryClient.subscribe(onSummaryUpdate);
+  }
     connected = true;
     scope.addEventListener?.("scroll", queuePosition, true);
     scope.addEventListener?.("resize", queuePosition);

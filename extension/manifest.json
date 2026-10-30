@@ -33,6 +33,9 @@
         "hover-controller.js",
         "preview-client.js",
         "hover-card-model.js",
+        "hover-summary-contract.js",
+        "hover-summary-transport.js",
+        "hover-summary-client.js",
         "hover-card.js"
       ],
       "run_at": "document_idle"
