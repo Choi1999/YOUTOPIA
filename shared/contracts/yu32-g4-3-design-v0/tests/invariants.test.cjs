@@ -61,8 +61,10 @@ class FakeDesign {
   }
 
   submit({actor="customer-A",scope=SCOPE,requestKey="key-1",digest="digest-A",
-    executionPartition=actor,policy="POLICY_HOLD",explicitClick=true,
+    policy="POLICY_HOLD",explicitClick=true,
     featureEnabled=true,entitlement=true,quota=true} = {}) {
+    // Execution partition is server-derived in the design; ignore caller flags.
+    const executionPartition=actor;
     const skey=scopeKey(scope);
     if(!explicitClick)return {kind:"EXPLICIT_CLICK_REQUIRED"};
     if(actor==="GUEST")return {kind:"AUTHENTICATION_REQUIRED"};
@@ -107,17 +109,20 @@ class FakeDesign {
   heartbeat(token,now) {
     const j=this.jobs.get(token.jobId);
     if(!j || j.state!=="RUNNING" || j.leaseEpoch!==token.epoch ||
-      j.leaseOwner!==token.owner || now>=j.leaseExpiresAt)return false;
+      j.leaseOwner!==token.owner || j.version!==token.version ||
+      now>=j.leaseExpiresAt)return false;
     j.leaseExpiresAt=now+10;
     j.version++;
-    return true;
+    // Heartbeat returns the new version; the previous token is now stale.
+    return Object.freeze({...token,version:j.version});
   }
 
   complete(token,now,{scope=SCOPE,policy=ALLOW,snapshotId="synthetic-001",status="READY"}={}) {
     const j=this.jobs.get(token.jobId);
     if(!j || j.state!=="RUNNING" || j.leaseEpoch!==token.epoch ||
-      j.leaseOwner!==token.owner || now>=j.leaseExpiresAt ||
-      this.revoked || policy!==ALLOW || scopeKey(scope)!==j.scopeKey ||
+      j.leaseOwner!==token.owner || j.version!==token.version ||
+      now>=j.leaseExpiresAt || this.revoked || policy!==ALLOW ||
+      scopeKey(scope)!==j.scopeKey ||
       !["READY","PARTIAL","NO_DATA"].includes(status) ||
       typeof snapshotId!=="string" || !snapshotId)return false;
     j.state="SUCCEEDED";
@@ -129,7 +134,8 @@ class FakeDesign {
   fail(token,now) {
     const j=this.jobs.get(token.jobId);
     if(!j || j.state!=="RUNNING" || j.leaseEpoch!==token.epoch ||
-      j.leaseOwner!==token.owner || now>=j.leaseExpiresAt)return false;
+      j.leaseOwner!==token.owner || j.version!==token.version ||
+      now>=j.leaseExpiresAt)return false;
     j.state="FAILED";j.version++;return true;
   }
 
@@ -360,7 +366,11 @@ test("G43-D27: 지난 리스는 heartbeat/완료 불가, 새로운 lease는 활�
   const refreshed=f.claim(j.jobId,"worker-B",11,10);
   assert.ok(refreshed);
   assert.equal(f.heartbeat(token,12),false);
-  assert.equal(f.heartbeat(refreshed,12),true);
+  const latest=f.heartbeat(refreshed,12);
+  assert.ok(latest);
+  assert.equal(latest.version,refreshed.version+1);
+  assert.equal(f.complete(refreshed,13),false);
+  assert.equal(f.complete(latest,13),true);
 });
 
 test("G43-D28: Snapshot scope 불일치 또는 정책 철회 중에는 Fake 발행 차단",()=>{
@@ -396,4 +406,31 @@ test("G43-D30: Fake 실패 Job 사용자 재시도는 새 명시적 Job이어야
   assert.equal(retried.kind,"CREATED");
   assert.notEqual(retried.jobId,created.jobId);
   assert.equal(f.jobs.get(created.jobId).state,"FAILED");
+});
+test("G43-D31: 설계 데이터는 JSON Schema 인증 문서로 오인되지 않는다",()=>{
+  assert.equal(model.documentKind,"YU32_G43_OFFLINE_DESIGN_DATA");
+  assert.equal(model.schemaValidation,"NOT_A_JSON_SCHEMA");
+  assert.equal(Object.hasOwn(model,"$schema"),false);
+});
+
+test("G43-D32: 클라이언트가 executionPartition 값을 위조해도 다른 actor Job에 합류하지 않는다",()=>{
+  const f=new FakeDesign();
+  const a=f.submit({policy:ALLOW,actor:"customer-A",requestKey:"a"});
+  const b=f.submit({policy:ALLOW,actor:"customer-B",requestKey:"b",
+    executionPartition:"customer-A"});
+  assert.equal(a.kind,"CREATED");
+  assert.equal(b.kind,"CREATED");
+  assert.notEqual(a.jobId,b.jobId);
+});
+
+test("G43-D33: Job version이 뒤바뀐 heartbeat/완료는 같은 owner·epoch여도 거부한다",()=>{
+  const f=new FakeDesign();
+  const j=f.submit({policy:ALLOW});
+  const first=f.claim(j.jobId,"worker-A",0,10);
+  const renewed=f.heartbeat(first,1);
+  assert.ok(renewed);
+  assert.equal(f.heartbeat(first,2),false);
+  assert.equal(f.complete(first,2),false);
+  assert.equal(f.complete(renewed,2),true);
+  assert.equal(f.latest.size,1);
 });
