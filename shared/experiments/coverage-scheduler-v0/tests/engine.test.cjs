@@ -414,3 +414,47 @@ test("C13: 다른 영상의 스냅샷 참조를 잘못 저장하지 않는다", 
 
   assert.equal(s.lookup(BASE).kind, "MISS");
 });
+
+test("C14: 실패한 합성 Job은 MISS가 아닌 FAILED로 표시하고 명시적 재시도를 허용한다", () => {
+  const s = qa({budgetUnits: 2});
+  const first = s.request(BASE, ALLOW);
+
+  assert.equal(first.kind, "CREATED");
+  assert.equal(s.startNext().jobId, first.jobId);
+  assert.equal(s.fail(first.jobId).kind, "FAILED");
+
+  const view = s.action(BASE, {requestAllowed: true});
+  assert.equal(view.kind, "FAILED");
+  assert.equal(view.jobId, first.jobId);
+  assert.equal(view.action.type, "DEMO_REQUEST");
+  assert.equal(view.action.enabled, true);
+  assert.equal(s.getJob(first.jobId).state, "FAILED");
+
+  // Hover만으로 실패 작업을 자동 재시작하지 않는다.
+  assert.equal(s.hover(BASE, {requestAllowed: true}).kind, "FAILED");
+  assert.equal(s.stats().createdJobs, 1);
+
+  const retried = s.request(BASE, ALLOW);
+  assert.equal(retried.kind, "CREATED");
+  assert.notEqual(retried.jobId, first.jobId);
+  assert.equal(s.action(BASE).kind, "QUEUED");
+
+  assert.equal(s.startNext().jobId, retried.jobId);
+  assert.equal(s.complete(retried.jobId, fixture()).kind, "SUCCEEDED");
+  assert.equal(s.action(BASE).kind, "READY");
+});
+
+test("C15: 실패 기록은 예산 소진 후에도 보이고 재시도는 차단한다", () => {
+  const s = qa({budgetUnits: 1});
+  const first = s.request(BASE, ALLOW);
+
+  assert.equal(s.startNext().jobId, first.jobId);
+  assert.equal(s.fail(first.jobId).kind, "FAILED");
+
+  const view = s.action(BASE, {requestAllowed: true});
+  assert.equal(view.kind, "FAILED");
+  assert.equal(view.action.type, "NONE");
+  assert.equal(view.action.enabled, false);
+  assert.equal(s.request(BASE, ALLOW).kind, "QUOTA_DEFERRED");
+  assert.equal(s.stats().createdJobs, 1);
+});
