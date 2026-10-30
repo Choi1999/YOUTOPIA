@@ -16,6 +16,82 @@ const cardSource = fs.readFileSync(path.join(__dirname, "..", "hover-card.js"), 
 const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "manifest.json"), "utf8"));
 const VIDEO_A = "Ab0_-123xyz";
 const VIDEO_B = "Ab0_-123xyZ";
+
+/*
+ * YU-32 3단계 — 실제 기존 계약과 합성 READY Fixture 재사용.
+ * 모든 데이터는 QA 전용이며 실제 YouTube 데이터가 아니다.
+ */
+const qaContractContext = vm.createContext({});
+
+vm.runInContext(
+  fs.readFileSync(
+    path.join(__dirname, "..", "hover-summary-contract.js"),
+    "utf8"
+  ),
+  qaContractContext,
+  {filename: "hover-summary-contract.js"}
+);
+
+const qaContract =
+  qaContractContext.YUTOPIA_HOVER_SUMMARY_CONTRACT;
+
+const qaReadyRaw = JSON.parse(
+  fs.readFileSync(
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "shared",
+      "contracts",
+      "analysis-v1",
+      "fixtures",
+      "ready.snapshot.json"
+    ),
+    "utf8"
+  )
+);
+
+function makeQaWireReadySummary() {
+  const raw = qaReadyRaw;
+  const denominator = raw.sample.classifiedCount;
+
+  return {
+    snapshotId: raw.snapshotId,
+    target: {...raw.target},
+    status: "READY",
+
+    provenance: {
+      sourceType: "STATIC_FIXTURE",
+      isSynthetic: true,
+      visibility: "PUBLIC_REUSABLE",
+      tenantId: null,
+    },
+
+    observationScope: {...raw.scope},
+    observedAt: raw.observedAt,
+    analyzedAt: raw.analyzedAt,
+
+    valueSemantics: "SNAPSHOT_DERIVED_SYNTHETIC",
+
+    sentimentPercent: {
+      denominator,
+      positivePercent:
+        raw.sentiment.positive / denominator * 100,
+      neutralPercent:
+        raw.sentiment.neutral / denominator * 100,
+      negativePercent:
+        raw.sentiment.negative / denominator * 100,
+      classificationCoveragePercent:
+        denominator / raw.sample.eligibleCount * 100,
+    },
+
+    topTopics: raw.topics.map(topic => ({
+      topicId: topic.topicId,
+      mentionCount: topic.mentionCount,
+    })),
+  };
+}
+
 const CHANNEL_ID = "UC" + "a".repeat(22);
 
 const { createSimulator } = require(
@@ -194,6 +270,7 @@ function makeFixture({vw=1200, vh=800, dark=false, cardHeight=260, sendMessage=n
     YUTOPIA_HOVER_SUMMARY_CLIENT: summaryClient || undefined,
     chrome: sendMessage ? {runtime:{sendMessage}} : undefined,
     YUTOPIA_YU32_QA_BRIDGE: qaBridge || undefined,
+    YUTOPIA_HOVER_SUMMARY_CONTRACT: qaContract,
   });
   vm.runInContext(modelSource,ctx,{filename:"hover-card-model.js"});
   vm.runInContext(cardSource,ctx,{filename:"hover-card.js"});
@@ -666,6 +743,8 @@ test("pagehide 시 Host가 정리되며 API도 해제",()=>{
 function makeSummaryStub() {
   let current = null;
   const listeners = new Set();
+  const jobScopes = new Map();
+  const qaReadySummary = makeQaWireReadySummary();
 
   return {
     getView(state) {
@@ -963,7 +1042,8 @@ test("Hover 종료 후 진단 상태와 카드 영역을 초기화한다", () =>
  */
 
 function makeYu32QaBridge() {
-  const clock = Date.parse("2026-10-08T10:00:00Z");
+  // TTL 테스트에서 시간을 변경하므로 let을 사용한다.
+  let clock = Date.parse("2026-10-08T10:00:00Z");
 
   const simulator = createSimulator({
     mode: "QA_SYNTHETIC",
@@ -972,6 +1052,12 @@ function makeYu32QaBridge() {
   });
 
   const listeners = new Set();
+
+  // YU-32 3단계: Job ID별 분석 범위를 보존한다.
+  const jobScopes = new Map();
+
+  // 기존 분석 계약을 통과할 합성 READY Summary
+  const qaReadySummary = makeQaWireReadySummary();
 
   function scopeFor(state) {
     return {
@@ -1006,12 +1092,26 @@ function makeYu32QaBridge() {
     },
 
     request(state, options = {}) {
-      const result = simulator.request(scopeFor(state), {
+      const analysisScope = scopeFor(state);
+
+      const result = simulator.request(analysisScope, {
         explicitClick: options.explicitClick === true,
         requestAllowed: true,
       });
 
+      // 생성 또는 기존 Job 합류 시 분석 범위 기록
+      if (
+        typeof result.jobId === "string" &&
+        (
+          result.kind === "CREATED" ||
+          result.kind === "JOINED"
+        )
+      ) {
+        jobScopes.set(result.jobId, analysisScope);
+      }
+
       notify();
+
       return result;
     },
 
@@ -1019,6 +1119,116 @@ function makeYu32QaBridge() {
       const result = simulator.startNext();
       notify();
       return result;
+    },
+
+    /*
+    * 합성 Job 완료:
+    * 고정된 READY Fixture가 존재하는 영상에만 완료를 허용한다.
+    * 영상 B에 영상 A의 Fixture를 복사해 성공 처리하지 않는다.
+    */
+    complete(jobId) {
+      const analysisScope = jobScopes.get(jobId);
+
+      if (
+        !analysisScope ||
+        analysisScope.targetType !== "VIDEO" ||
+        analysisScope.targetId !== qaReadyRaw.target.targetId ||
+        analysisScope.analysisSpecVersion !== qaReadyRaw.analysisVersion ||
+        analysisScope.locale !== qaReadyRaw.scope.locale ||
+        analysisScope.visibility !== "PUBLIC_REUSABLE" ||
+        analysisScope.tenantId !== null
+      ) {
+        return {
+          kind: "REJECTED",
+          reason: "QA_FIXTURE_MISMATCH",
+        };
+      }
+
+      const expected = qaContract.makeRequest(
+        analysisScope.targetType,
+        analysisScope.targetId,
+        1
+      );
+
+      const validated = qaContract.makeResponse(expected, {
+        kind: "SNAPSHOT",
+        summary: qaReadySummary,
+      });
+
+      if (validated?.result?.kind !== "SNAPSHOT") {
+        return {
+          kind: "REJECTED",
+          reason: "INVALID_QA_SNAPSHOT",
+        };
+      }
+
+      const safe = validated.result.summary;
+
+      const completed = simulator.complete(jobId, {
+        snapshotId: safe.snapshotId,
+        target: {...safe.target},
+        status: safe.status,
+        sourceType: safe.provenance.sourceType,
+        isSynthetic: safe.provenance.isSynthetic,
+        visibility: safe.provenance.visibility,
+        tenantId: safe.provenance.tenantId,
+        analyzedAt: safe.analyzedAt,
+        analysisSpecVersion: analysisScope.analysisSpecVersion,
+        observationWindowId: analysisScope.observationWindowId,
+        samplingPolicyVersion: analysisScope.samplingPolicyVersion,
+        locale: analysisScope.locale,
+      });
+
+      notify();
+      return completed;
+    },
+
+    /*
+    * 캐시가 FRESH이고 snapshotId가 합성 Fixture와 일치할 때만
+    * 기존 Hover Summary wire 응답을 생성한다.
+    */
+    getCompletedPacket(state) {
+      if (
+        state?.targetType !== "VIDEO" ||
+        state.targetId !== qaReadyRaw.target.targetId
+      ) return null;
+
+      const cached = simulator.lookup(scopeFor(state));
+
+      if (
+        cached.kind !== "FRESH" ||
+        cached.status !== "READY" ||
+        cached.snapshotId !== qaReadySummary.snapshotId
+      ) return null;
+
+      const expected = qaContract.makeRequest(
+        state.targetType,
+        state.targetId,
+        state.requestId
+      );
+
+      if (!expected) return null;
+
+      return qaContract.makeResponse(expected, {
+        kind: "SNAPSHOT",
+        summary: qaReadySummary,
+      });
+    },
+
+    /*
+    * TTL 및 STALE 전이의 재현 가능한 테스트용 가상 시계.
+    */
+    advanceTime(milliseconds) {
+      if (
+        !Number.isSafeInteger(milliseconds) ||
+        milliseconds < 0
+      ) {
+        throw new TypeError("Invalid virtual time increment");
+      }
+
+      clock += milliseconds;
+      notify();
+      return clock;
     },
 
     subscribe(listener) {
@@ -1224,4 +1434,233 @@ test("YU32: 브리지 예외 후 요청 가능 상태를 다시 평가한다", (
   assert.ok(retry);
   assert.notEqual(retry, original);
   assert.equal(retry.disabled, false);
+});
+
+/*
+ * YU-32 3단계 — 합성 완료 결과의 계약 검증 및 재사용.
+ */
+
+test("YU32-3: Job 완료 후 검증된 합성 Summary를 표시한다", () => {
+  const qa = makeYu32QaBridge();
+  const summary = makeSummaryStub();
+
+  const f = makeFixture({
+    summaryClient: summary,
+    qaBridge: qa,
+  });
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+  publishNotFound(summary, VIDEO_A, 1);
+
+  const originalCard = f.cardRegion.card;
+  const more = f.findClass("more");
+
+  f.findClass("yu32-request").fire(
+    "click", {isTrusted: true}
+  );
+
+  const started = qa.startNext();
+
+  assert.equal(started.kind, "STARTED");
+  assert.equal(qa.complete(started.jobId).kind, "SUCCEEDED");
+
+  assert.equal(f.cardRegion.card, originalCard);
+  assert.equal(f.findClass("more"), more);
+  assert.equal(f.findClass("yu32-request"), null);
+
+  assert.ok(f.findClass("bar"));
+  assert.match(f.cardText(), /긍정 62\.5%/);
+  assert.match(f.cardText(), /분모: 80건/);
+  assert.match(f.cardText(), /STATIC_FIXTURE/);
+
+  assert.equal(
+    f.api.getRuntimeStatus().summaryKind,
+    "SNAPSHOT"
+  );
+
+  assert.equal(qa.stats().createdJobs, 1);
+});
+
+test("YU32-3: 동일 영상 재방문 시 기존 Snapshot을 재사용한다", () => {
+  const qa = makeYu32QaBridge();
+  const summary = makeSummaryStub();
+
+  const f = makeFixture({
+    summaryClient: summary,
+    qaBridge: qa,
+  });
+
+  const anchor = f.anchor();
+
+  f.emit(videoState(VIDEO_A, 1, anchor));
+  publishNotFound(summary, VIDEO_A, 1);
+
+  f.findClass("yu32-request").fire(
+    "click", {isTrusted: true}
+  );
+
+  const started = qa.startNext();
+  assert.equal(qa.complete(started.jobId).kind, "SUCCEEDED");
+
+  f.emit({phase: "IDLE"});
+  assert.equal(f.host(), null);
+
+  f.emit(videoState(VIDEO_A, 2, anchor));
+  publishNotFound(summary, VIDEO_A, 2);
+
+  assert.ok(f.findClass("bar"));
+  assert.match(f.cardText(), /긍정 62\.5%/);
+  assert.equal(f.findClass("yu32-request"), null);
+  assert.equal(qa.stats().createdJobs, 1);
+});
+
+test("YU32-3: 다른 영상에는 A의 Snapshot을 연결하지 않는다", () => {
+  const qa = makeYu32QaBridge();
+  const summary = makeSummaryStub();
+
+  const f = makeFixture({
+    summaryClient: summary,
+    qaBridge: qa,
+  });
+
+  f.emit(videoState(VIDEO_B, 1, f.anchor()));
+  publishNotFound(summary, VIDEO_B, 1);
+
+  f.findClass("yu32-request").fire(
+    "click", {isTrusted: true}
+  );
+
+  const started = qa.startNext();
+  const completed = qa.complete(started.jobId);
+
+  assert.equal(completed.kind, "REJECTED");
+  assert.equal(completed.reason, "QA_FIXTURE_MISMATCH");
+  assert.equal(f.findClass("bar"), null);
+  assert.doesNotMatch(f.cardText(), /62\.5%/);
+});
+
+test("YU32-3: A 완료 이후에도 현재 Hover B는 변경되지 않는다", () => {
+  const qa = makeYu32QaBridge();
+  const summary = makeSummaryStub();
+
+  const f = makeFixture({
+    summaryClient: summary,
+    qaBridge: qa,
+  });
+
+  const anchor = f.anchor();
+
+  f.emit(videoState(VIDEO_A, 1, anchor));
+  publishNotFound(summary, VIDEO_A, 1);
+
+  f.findClass("yu32-request").fire(
+    "click", {isTrusted: true}
+  );
+
+  const started = qa.startNext();
+
+  f.emit(videoState(VIDEO_B, 2, anchor));
+  publishNotFound(summary, VIDEO_B, 2);
+
+  assert.equal(qa.complete(started.jobId).kind, "SUCCEEDED");
+
+  assert.equal(f.api.getRuntimeStatus().targetId, VIDEO_B);
+  assert.equal(f.findClass("bar"), null);
+  assert.doesNotMatch(f.cardText(), /긍정 62\.5%/);
+});
+
+test("YU32-3: TTL 경과 후에는 합성 수치를 숨긴다", () => {
+  const qa = makeYu32QaBridge();
+  const summary = makeSummaryStub();
+
+  const f = makeFixture({
+    summaryClient: summary,
+    qaBridge: qa,
+  });
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+  publishNotFound(summary, VIDEO_A, 1);
+
+  f.findClass("yu32-request").fire(
+    "click", {isTrusted: true}
+  );
+
+  const started = qa.startNext();
+  assert.equal(qa.complete(started.jobId).kind, "SUCCEEDED");
+
+  assert.ok(f.findClass("bar"));
+
+  qa.advanceTime(48 * 60 * 60 * 1000);
+
+  assert.equal(f.findClass("bar"), null);
+  assert.doesNotMatch(f.cardText(), /긍정 62\.5%/);
+  assert.match(f.cardText(), /데모 분석 갱신 필요/);
+});
+
+test("YU32-3: Worker 거부 결과를 QA 캐시가 덮어쓰지 않는다", () => {
+  const qa = makeYu32QaBridge();
+  const summary = makeSummaryStub();
+
+  const f = makeFixture({
+    summaryClient: summary,
+    qaBridge: qa,
+  });
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+  publishNotFound(summary, VIDEO_A, 1);
+
+  f.findClass("yu32-request").fire(
+    "click", {isTrusted: true}
+  );
+
+  const started = qa.startNext();
+  assert.equal(qa.complete(started.jobId).kind, "SUCCEEDED");
+
+  assert.ok(f.findClass("bar"));
+
+  summary.publish({
+    kind: "REJECTED",
+    requestId: 1,
+    targetType: "VIDEO",
+    targetId: VIDEO_A,
+    reason: "SOURCE_ERROR",
+  });
+
+  assert.equal(f.findClass("bar"), null);
+  assert.equal(
+    f.api.getRuntimeStatus().summaryKind,
+    "REJECTED"
+  );
+});
+
+test("YU32-3: 위조된 QA 응답은 기존 계약에서 거부한다", () => {
+  const qa = makeYu32QaBridge();
+
+  qa.getCompletedPacket = state => ({
+    type: "YUTOPIA_HOVER_SUMMARY_RESULT_V1",
+    version: 1,
+    requestId: state.requestId,
+    targetType: "VIDEO",
+    targetId: VIDEO_B,
+    targetKey: "VIDEO:" + VIDEO_B,
+    result: {
+      kind: "SNAPSHOT",
+      summary: makeQaWireReadySummary(),
+    },
+  });
+
+  const summary = makeSummaryStub();
+  const f = makeFixture({
+    summaryClient: summary,
+    qaBridge: qa,
+  });
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+  publishNotFound(summary, VIDEO_A, 1);
+
+  assert.equal(f.findClass("bar"), null);
+  assert.equal(
+    f.api.getRuntimeStatus().summaryKind,
+    "NOT_FOUND"
+  );
 });

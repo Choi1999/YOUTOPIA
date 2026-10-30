@@ -325,7 +325,56 @@
    * 카드 전체를 교체하지 않고 요약 영역만 갱신한다.
    */
   function renderSummaryArea(area, state) {
-    const view = summaryClient?.getView?.(state);
+    // 정상 Worker 결과를 항상 우선한다.
+    const workerView = summaryClient?.getView?.(state);
+    let view = workerView;
+
+    /*
+    * YU-32 3단계:
+    * Worker가 NOT_FOUND를 반환한 경우에만
+    * QA 합성 캐시의 완료 스냅샷을 조회한다.
+    *
+    * 반환 객체를 직접 신뢰하지 않고 기존 Hover Summary
+    * 응답 계약으로 다시 검증한다.
+    */
+    if (
+      workerView?.kind === "NOT_FOUND" &&
+      qaBridge?.mode === "QA_SYNTHETIC" &&
+      typeof qaBridge.getCompletedPacket === "function" &&
+      controller?.isCurrentRequest(state) === true
+    ) {
+      const contract = scope.YUTOPIA_HOVER_SUMMARY_CONTRACT;
+
+      try {
+        const expected = contract?.makeRequest?.(
+          state.targetType,
+          state.targetId,
+          state.requestId
+        );
+
+        const packet = expected
+          ? qaBridge.getCompletedPacket(state)
+          : null;
+
+        const verifiedPacket =
+          expected && packet
+            ? contract?.parseResponse?.(packet, expected)
+            : null;
+
+        if (
+          verifiedPacket?.result?.kind === "SNAPSHOT" &&
+          verifiedPacket.result.summary.status === "READY"
+        ) {
+          view = {
+            kind: "SNAPSHOT",
+            summary: verifiedPacket.result.summary,
+          };
+        }
+      } catch {
+        // QA 브리지 또는 검증 실패는 기존 Worker 상태로 복귀한다.
+      }
+    }
+
     const kind = view?.kind || "UNAVAILABLE";
     lastSummaryKind = kind;
 
