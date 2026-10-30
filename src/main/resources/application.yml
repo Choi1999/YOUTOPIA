@@ -1,0 +1,112 @@
+spring:
+  application:
+    name: youtopia-backend
+  datasource:
+    url: ${YOUTOPIA_DATA_JDBC_URL}
+    username: ${YOUTOPIA_DATA_DB_USER}
+    password: ${YOUTOPIA_DATA_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
+      connection-timeout: 5000
+      read-only: true
+      data-source-properties:
+        connectTimeout: 5
+        socketTimeout: 10
+        options: -c default_transaction_read_only=on -c statement_timeout=5000
+  sql:
+    init:
+      mode: never
+  data:
+    redis:
+      host: ${YOUTOPIA_SESSION_REDIS_HOST}
+      port: ${YOUTOPIA_SESSION_REDIS_PORT:6379}
+      username: ${YOUTOPIA_SESSION_REDIS_USERNAME:}
+      password: ${YOUTOPIA_SESSION_REDIS_PASSWORD:}
+      ssl:
+        enabled: ${YOUTOPIA_SESSION_REDIS_TLS:true}
+      connect-timeout: 2s
+      timeout: 2s
+  session:
+    timeout: 60m
+    data:
+      redis:
+        namespace: youtopia:sessions
+        configure-action: none
+        repository-type: indexed
+        flush-mode: immediate
+  jackson2:
+    deserialization:
+      fail-on-unknown-properties: true
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+  servlet:
+    session:
+      cookie:
+        name: YOUTOPIA_SESSION
+        http-only: true
+        secure: true
+        same-site: lax
+
+youtopia:
+  accounts:
+    enabled: ${YOUTOPIA_ACCOUNTS_ENABLED:false}
+    hmac-key: ${YOUTOPIA_ACCOUNT_HMAC_KEY:}
+    password-blocklist: ${YOUTOPIA_PASSWORD_BLOCKLIST:}
+    member:
+      jdbc-url: ${YOUTOPIA_MEMBER_JDBC_URL:}
+      username: ${YOUTOPIA_MEMBER_DB_USER:}
+      password: ${YOUTOPIA_MEMBER_DB_PASSWORD:}
+    admin:
+      jdbc-url: ${YOUTOPIA_ADMIN_JDBC_URL:}
+      username: ${YOUTOPIA_ADMIN_DB_USER:}
+      password: ${YOUTOPIA_ADMIN_DB_PASSWORD:}
+    audit:
+      jdbc-url: ${YOUTOPIA_AUDIT_JDBC_URL:}
+      username: ${YOUTOPIA_AUDIT_DB_USER:}
+      password: ${YOUTOPIA_AUDIT_DB_PASSWORD:}
+
+  directory:
+    enabled: ${YOUTOPIA_DIRECTORY_ENABLED:false}
+    datasource:
+      jdbc-url: ${YOUTOPIA_DIRECTORY_JDBC_URL:}
+      username: ${YOUTOPIA_DIRECTORY_DB_USER:}
+      password: ${YOUTOPIA_DIRECTORY_DB_PASSWORD:}
+
+  events:
+    enabled: ${YOUTOPIA_EVENTS_ENABLED:false}
+    datasource:
+      jdbc-url: ${YOUTOPIA_EVENT_JDBC_URL:}
+      username: ${YOUTOPIA_EVENT_DB_USER:}
+      password: ${YOUTOPIA_EVENT_DB_PASSWORD:}
+
+  reporting:
+    active-window-seconds: ${YOUTOPIA_ACTIVE_SESSION_WINDOW_SECONDS:300}
+    enabled: ${YOUTOPIA_REPORTING_ENABLED:false}
+    datasource:
+      jdbc-url: ${YOUTOPIA_REPORT_JDBC_URL:}
+      username: ${YOUTOPIA_REPORT_DB_USER:}
+      password: ${YOUTOPIA_REPORT_DB_PASSWORD:}
+
+  privacy:
+    enabled: ${YOUTOPIA_PRIVACY_ENABLED:false}
+    approval-ref: ${YOUTOPIA_RETENTION_APPROVAL_REF:}
+    retention-plan: ${YOUTOPIA_RETENTION_PLAN:}
+    datasource:
+      jdbc-url: ${YOUTOPIA_PRIVACY_JDBC_URL:}
+      username: ${YOUTOPIA_PRIVACY_DB_USER:}
+      password: ${YOUTOPIA_PRIVACY_DB_PASSWORD:}
+
+  control:
+    enabled: ${YOUTOPIA_CONTROL_ENABLED:false}
+    service-key: ${YOUTOPIA_CONTROL_SERVICE_KEY:youtopia}
+    hmac-key: ${YOUTOPIA_CONTROL_HMAC_KEY:}
+    datasource:
+      jdbc-url: ${YOUTOPIA_CONTROL_JDBC_URL:}
+      username: ${YOUTOPIA_CONTROL_DB_USER:}
+      password: ${YOUTOPIA_CONTROL_DB_PASSWORD:}
+
+  games:
+    enabled: ${YOUTOPIA_GAMES_ENABLED:false}
+    video-associations-enabled: ${YOUTOPIA_QUERY_ASSOCIATIONS_ENABLED:false}

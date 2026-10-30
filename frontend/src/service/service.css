@@ -1,0 +1,214 @@
+/* Game views reuse the demo tokens, typography, cards and controls. */
+.service-shell {
+  min-width: 320px;
+}
+.service-shell .app-main,
+.service-screen {
+  min-width: 0;
+}
+.game-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin: 20px 0;
+}
+.game-filters label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.game-filters input,
+.game-filters select,
+.game-filters select:focus {
+  min-height: 38px;
+  max-width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  font: inherit;
+}
+.game-table-wrap {
+  overflow: auto;
+}
+.game-table-scroll-hint {
+  display: none;
+}
+.game-table-wrap:focus-visible {
+  outline: 2px solid var(--accent-primary);
+}
+.game-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: left;
+}
+.game-table th,
+.game-table td {
+  padding: 14px;
+  border-bottom: 1px solid var(--border-default);
+}
+.game-table a {
+  color: var(--text-link);
+  font-weight: 600;
+}
+.game-table small {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-muted);
+}
+.game-table tbody tr[tabindex] {
+  cursor: pointer;
+}
+.game-table tbody tr[tabindex]:hover {
+  background: var(--interaction-selected-background);
+}
+.game-table tbody tr:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
+}
+.game-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  font-size: 12px;
+}
+.service-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.product-screen > .trend-chart-panel {
+  margin-top: 18px;
+}
+.observed-plot {
+  position: relative;
+  margin-top: 24px;
+}
+.observed-plot svg,
+.service-bar-plot svg,
+.trend-chart-panel > svg {
+  display: block;
+  width: 100%;
+  min-height: 180px;
+}
+.observed-plot svg:focus-visible {
+  outline: 2px solid var(--accent-primary);
+}
+.observed-plot text,
+.service-bar-plot text,
+.trend-chart-panel > svg text {
+  fill: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+}
+.observed-tooltip {
+  position: absolute;
+  top: 0;
+  width: 190px;
+  padding: 8px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 10px;
+  pointer-events: none;
+}
+.trend-chart-panel details {
+  margin-top: 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.service-login-status {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  padding: 12px;
+  background: var(--bg-surface);
+  color: var(--status-error);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+}
+.recovery-codes {
+  overflow-wrap: anywhere;
+}
+.account-dialog select {
+  min-height: 38px;
+  max-width: 100%;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  font: inherit;
+}
+.service-screen .toolbar-actions {
+  flex-wrap: wrap;
+}
+.service-screen button:disabled,
+.login-page button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+@media (max-width: 760px) {
+  .service-chart-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .service-screen {
+    padding: 20px 14px;
+  }
+  .service-screen .product-toolbar {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .service-screen .toolbar-actions {
+    gap: 6px;
+    justify-content: flex-start;
+  }
+  .service-screen .product-heading h1 {
+    font-size: 24px;
+  }
+  .service-screen .insight-metric-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .service-screen .trend-chart-panel {
+    min-width: 0;
+    padding: 14px;
+    overflow-wrap: anywhere;
+  }
+  .game-filters > label {
+    max-width: 100%;
+  }
+  .game-filters input,
+  .game-filters select {
+    min-width: 0;
+    width: 100%;
+  }
+  .game-table th,
+  .game-table td {
+    padding: 10px;
+  }
+  .game-table {
+    min-width: 720px;
+    overflow-wrap: normal;
+  }
+  .game-table th {
+    white-space: nowrap;
+  }
+  .game-table-scroll-hint {
+    display: block;
+    margin: 10px 0;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+  .observed-tooltip {
+    font-size: 9px;
+  }
+}

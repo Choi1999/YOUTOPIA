@@ -1,0 +1,70 @@
+:root,
+:root[data-theme="dark"] {
+  --bg-app: #0b0d11;
+  --bg-surface: #0f1115;
+  --bg-subtle: #111317;
+  --surface-raised: #12151b;
+  --text-primary: #f3f6fb;
+  --text-secondary: #aab2c0;
+  --text-muted: #7c8698;
+  --text-link: #a8b8ff;
+  --accent-primary: #5b7cff;
+  --accent-on: #0f1115;
+  --border-default: #252b36;
+  --separator-default: #262b36;
+  --interaction-selected-background: #17233d;
+  --navigation-selected-background: #141f38;
+  --navigation-selected-border: #5c7dff;
+  --icon-default: #727c8f;
+  --icon-active: #6c8cff;
+  --status-dot-core: #6c8cff;
+  --status-dot-warning-core: #b89a62;
+  --status-warning-text: #e0bd79;
+  --status-normal: #58b7a0;
+  --status-success-text: #73d5bd;
+  --status-error: #c96b78;
+  --chart-bar-primary: #5c7dff;
+  --control-toggle-knob: #f2f4f8;
+  --control-toggle-track-on: #2e4aad;
+  --overlay-backdrop: rgb(5 15 34 / 72%);
+  --shadow-card: 0 18px 60px rgb(0 0 0 / 26%);
+  --spacing-4: 4px;
+  --spacing-8: 8px;
+  --spacing-12: 12px;
+  --spacing-16: 16px;
+  --spacing-24: 24px;
+  --radius-4: 4px;
+  --radius-6: 6px;
+  --radius-10: 10px;
+}
+
+:root[data-theme="light"] {
+  --bg-app: #f5f7fc;
+  --bg-surface: #ffffff;
+  --bg-subtle: #eef2f9;
+  --surface-raised: #f9fafe;
+  --text-primary: #18233b;
+  --text-secondary: #44536b;
+  --text-muted: #5e6d84;
+  --text-link: #4436c9;
+  --accent-primary: #5447e8;
+  --accent-on: #ffffff;
+  --border-default: #dbe2ef;
+  --separator-default: #e0e6f0;
+  --interaction-selected-background: #e6e8ff;
+  --navigation-selected-background: #e4e6ff;
+  --navigation-selected-border: #6254ed;
+  --icon-default: #52627b;
+  --icon-active: #5145e8;
+  --status-dot-core: #148461;
+  --status-dot-warning-core: #a65a0e;
+  --status-warning-text: #713900;
+  --status-normal: #148461;
+  --status-success-text: #0b6048;
+  --status-error: #c63c52;
+  --chart-bar-primary: #4c7cf2;
+  --control-toggle-knob: #ffffff;
+  --control-toggle-track-on: #5447e8;
+  --overlay-backdrop: rgb(20 31 55 / 42%);
+  --shadow-card: 0 18px 60px rgb(39 54 86 / 12%);
+}

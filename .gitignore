@@ -1,0 +1,17 @@
+.gradle/
+build/
+.idea/
+*.iml
+.env
+.env.*
+!.env.example
+*.log
+*.pem
+*.key
+private/
+backups/
+*.zip
+node_modules/
+dist/
+test-results/
+playwright-report/
