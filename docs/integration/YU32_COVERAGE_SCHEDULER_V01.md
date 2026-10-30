@@ -85,3 +85,59 @@ YU-32의 합성 계약과 테스트가 통과한 뒤 Chrome Hover 카드에 조�
 실제 고객용 분석 요청 버튼은 서버 측 요청 자격과 작업 API가 구현·검증된 이후 활성화한다.
 
 기존 Hover Summary v1 메시지 계약과 YU-27·YU-28 기능은 별도 승인 없이 변경하지 않는다.
+
+
+## YU-32 2단계 — Hover 분석 요청 UI 통합
+
+- NOT_FOUND 상태의 VIDEO Hover 카드에 요청 상태 영역을 제공한다.
+- 일반 Chrome 실행에는 분석 요청 기능 준비 중 안내만 표시한다.
+- QA_SYNTHETIC 브리지가 주입된 개발·테스트 환경에서만
+  데모 분석 요청 버튼을 활성화한다.
+- QA 요청은 신뢰된 사용자 클릭과 현재 Hover 대상 일치를 확인한다.
+- Hover 자체는 합성 분석 Job을 생성하지 않는다.
+- QUEUED/RUNNING 상태는 합성 작업 상태이며 실제 분석이 아니다.
+- 기존 더보기, Side Panel PIN, Hover Controller 동작은 유지한다.
+- QA 브리지는 extension/manifest.json에 등록하지 않는다.
+- 운영 API, 실제 YouTube 댓글, 인증, 결제, 추가 Chrome 권한은
+  이번 단계에서 연결하지 않는다.
+
+QA 버튼이 실제 Chrome 사용자에게 제공되는 기능으로
+승격되려면 별도의 제품·보안·백엔드·정책 게이트가 필요하다.
+```
+
+## 5. 로컬 검증
+
+```powershell
+cd C:\Projects\YOUTOPIA
+
+node --check extension/hover-card.js
+node --check extension/tests/hover-card-ui.test.cjs
+
+node --test extension/tests/hover-card-ui.test.cjs
+node --test extension/tests/*.test.cjs
+
+node --test shared/experiments/coverage-scheduler-v0/tests/engine.test.cjs
+node --test shared/contracts/analysis-v1/tests/*.test.cjs
+
+git diff --check
+git status --short
+```
+
+예상 테스트 건수는 다음과 같습니다.
+
+| 대상 | 예상 |
+|---|---:|
+| Hover 카드 UI | 62 |
+| 확장 전체 회귀 | 286 |
+| YU-32 합성 엔진 | 13 |
+| 공유 분석 계약 | 19 |
+
+**이 수치는 예상치이며 아직 실행 검증된 결과가 아닙니다.**
+
+### 완료 기준
+
+이번 단계에서 Chrome 일반 실행은 기존과 동일하게 동작하고, 미분석 영상에는 준비 중 안내만 추가됩니다. QA 버튼의 활성화·클릭·작업 상태 전이는 우선 Node Fake DOM에서 검증합니다.
+
+별도의 실제 Chrome QA 전용 빌드 활성화는 그다음 작업으로 분리합니다. 이 구분을 유지해야 테스트용 분석 요청 기능이 실사용자에게 잘못 노출되는 일을 방지할 수 있습니다.
+
+**현재 판정: YU-32 1단계 종료, 2단계 구현 지침 제공 완료 · 로컬 테스트 대기.**

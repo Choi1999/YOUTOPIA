@@ -1,3 +1,4 @@
+
 /*
  * YUTOPIA Hover Card UI — 작업 26 (개발자 로컬 DEMO)
  *
@@ -17,6 +18,7 @@
   const controller = scope.YUTOPIA_HOVER_CONTROLLER;
   const modelApi = scope.YUTOPIA_HOVER_CARD_MODEL;
   const summaryClient = scope.YUTOPIA_HOVER_SUMMARY_CLIENT;
+  const qaBridge = scope.YUTOPIA_YU32_QA_BRIDGE;
   const doc = scope.document;
   const HOST_ID = "yutopia-extension-hover-card";
   const MARGIN = 8;
@@ -74,6 +76,13 @@
     ".more:disabled, .close:disabled { opacity: .45; cursor: default; }",
     ".more:focus-visible, .close:focus-visible { outline: 3px solid var(--ytp-accent); outline-offset: 2px; }",
     ".more-status { font-size: 11px; color: var(--ytp-muted); }",
+    ".yu32-state { color: var(--ytp-muted); font-size: 11px; margin: 8px 0 0; }",
+    ".yu32-request { margin: 8px 0 0; padding: 8px 11px;",
+    "  color: var(--ytp-ink); background: var(--ytp-soft);",
+    "  border: 1px solid var(--ytp-line); border-radius: 10px;",
+    "  font: 700 12px system-ui; cursor: pointer; }",
+    ".yu32-request:focus-visible { outline: 3px solid var(--ytp-accent); outline-offset: 2px; }",
+    ".yu32-request:disabled { opacity: .5; cursor: default; }",
     "[hidden] { display: none !important; }",
     "@media (prefers-reduced-motion: reduce) { .card { scroll-behavior: auto; } }",
   ].join("\n");
@@ -86,6 +95,7 @@
   let currentState = null;
   let unsubscribe = null;
   let summaryUnsubscribe = null;
+  let qaUnsubscribe = null;
   let summaryArea = null;
   let lastSummaryKind = "UNAVAILABLE";
   let connected = false;
@@ -95,6 +105,7 @@
   let lastAction = null;
   let lastRenderReason = "NO_ACTIVE_TARGET";
   let lastLayout = null;
+
   // 카드가 보이지 않을 때도 마지막 Hover 상태/닫힘 이유를 개발자에게 제공한다.
   let lastHoverPhase = "IDLE";
   let lastHoverReason = "INITIAL";
@@ -114,22 +125,27 @@
     if (host && host.isConnected) return true;
     if (!doc?.body || typeof doc.createElement !== "function") return false;
     if (host) host.remove();
+
     host = el("div");
     host.id = HOST_ID;
     host.setAttribute("data-yutopia-demo", "true");
     host.style.position = "fixed";
     host.style.zIndex = "2147482500";
+
     // 빈 Shadow Host 영역은 YouTube 링크의 포인터 이벤트를 차단하지 않는다.
     host.style.pointerEvents = "none";
     host.style.visibility = "hidden";
     host.style.width = "344px";
     host.style.top = "0px";
     host.style.left = "0px";
+
     shadow = host.attachShadow({mode: "open"});
     shadow.appendChild(el("style", "", CSS));
+
     surface = el("div");
     surface.style.pointerEvents = "none";
     surface.setAttribute("data-yutopia-card-surface", "true");
+
     shadow.appendChild(surface);
     doc.body.appendChild(host);
     return true;
@@ -139,6 +155,167 @@
     if (!host) return;
     const dark = Boolean(doc?.documentElement?.hasAttribute?.("dark"));
     host.dataset.theme = dark ? "dark" : "light";
+  }
+
+  /**
+   * YU-32 — 미분석 VIDEO의 명시적 분석 요청 UX.
+   *
+   * 입력: 현재 Hover 상태와 QA 전용 브리지.
+   * 출력: 일반 환경에서는 준비 중 안내, QA 환경에서는 조건부 버튼.
+   * 실패: 대상/요청 ID 불일치, 비신뢰 클릭, 미승인 모드에서 실행 차단.
+   * 실제 YouTube/API/AI 호출은 수행하지 않는다.
+   */
+  function appendYu32Request(area, state) {
+    if (
+      state?.phase !== "READY" ||
+      state.targetType !== "VIDEO"
+    ) return;
+
+    if (
+      qaBridge?.mode !== "QA_SYNTHETIC" ||
+      typeof qaBridge.getView !== "function" ||
+      typeof qaBridge.request !== "function"
+    ) {
+      area.appendChild(el(
+        "p", "yu32-state",
+        "분석 요청 기능 준비 중 · 실제 댓글 분석은 수행하지 않습니다."
+      ));
+      return;
+    }
+
+    const identity = Object.freeze({
+      requestId: state.requestId,
+      targetType: state.targetType,
+      targetId: state.targetId,
+    });
+
+    const matches = view =>
+      view?.requestId === identity.requestId &&
+      view?.targetType === identity.targetType &&
+      view?.targetId === identity.targetId;
+
+    let view;
+
+    try {
+      view = qaBridge.getView(identity);
+    } catch {
+      view = null;
+    }
+
+    if (!matches(view)) {
+      area.appendChild(el(
+        "p", "yu32-state",
+        "QA 분석 요청 상태를 검증할 수 없습니다."
+      ));
+      return;
+    }
+
+    const labels = {
+      MISS: "이 영상은 아직 분석되지 않았습니다. QA 합성 요청만 가능합니다.",
+      QUEUED: "데모 분석 대기 중 · 실제 댓글 분석 아님",
+      RUNNING: "데모 분석 진행 중 · 실제 댓글 분석 아님",
+      READY: "데모 작업 완료 · 검증된 요약 데이터 연결은 별도 단계",
+      FAILED: "데모 분석 작업 실패",
+      STALE: "데모 분석 갱신 필요",
+    };
+
+    area.appendChild(el(
+      "p", "yu32-state",
+      labels[view.kind] || "QA 분석 요청을 사용할 수 없습니다."
+    ));
+
+    if (
+      view.kind !== "MISS" ||
+      view.action?.type !== "DEMO_REQUEST" ||
+      view.action?.enabled !== true
+    ) return;
+
+    const button = el(
+      "button", "yu32-request",
+      "데모 분석 요청 (시뮬레이션)"
+    );
+
+    button.type = "button";
+    button.disabled = false;
+    button.setAttribute("aria-disabled", "false");
+    button.setAttribute(
+      "aria-label",
+      "이 영상에 대한 QA 합성 분석 작업을 요청합니다. 실제 YouTube 분석은 수행하지 않습니다."
+    );
+
+    area.appendChild(button);
+
+    button.addEventListener("click", event => {
+      // Hover 또는 스크립트 생성 클릭은 작업을 시작할 수 없다.
+      if (
+        event?.isTrusted !== true ||
+        button.disabled === true ||
+        !button.isConnected ||
+        disposed ||
+        !controller?.isCurrentRequest(identity) ||
+        summaryClient?.getView?.(state)?.kind !== "NOT_FOUND"
+      ) return;
+
+      let latest;
+
+      try {
+        latest = qaBridge.getView(identity);
+      } catch {
+        return;
+      }
+
+      // 버튼 표시 이후 권한·대상·작업 상태가 변했을 수 있다.
+      if (
+        !matches(latest) ||
+        latest.kind !== "MISS" ||
+        latest.action?.type !== "DEMO_REQUEST" ||
+        latest.action?.enabled !== true
+      ) return;
+
+      button.disabled = true;
+      button.setAttribute("aria-disabled", "true");
+
+      let result;
+
+      try {
+        // QA 브리지는 동기식 메모리 시뮬레이터만 허용한다.
+        result = qaBridge.request(identity, {
+          explicitClick: true,
+        });
+      } catch {
+        result = null;
+      }
+
+      if (
+        !result ||
+        !["CREATED", "JOINED", "ALREADY_CACHED"].includes(result.kind)
+      ) {
+        // 다른 대상으로 전환했다면 이전 카드에 오류를 표시하지 않는다.
+        if (
+          area === summaryArea &&
+          area.isConnected &&
+          controller?.isCurrentRequest(identity)
+        ) {
+          // 최신 요청 가능 여부로 버튼을 재구성한다. 오래된 버튼은 재사용하지 않는다.
+          renderSummaryArea(area, state);
+          area.appendChild(el(
+            "p", "yu32-state",
+            "데모 분석 요청이 수락되지 않았습니다."
+          ));
+          position();
+        }
+        return;
+      }
+
+      if (
+        area !== summaryArea ||
+        !area.isConnected ||
+        !controller?.isCurrentRequest(identity)
+      ) return;
+
+      renderSummaryArea(area, state);
+      position();
+    });
   }
 
   /**
@@ -234,6 +411,11 @@
       area.replaceChildren(
         el("p", "notice", notice)
       );
+
+      if (kind === "NOT_FOUND") {
+        appendYu32Request(area, state);
+      }
+
       return;
     }
 
@@ -349,13 +531,16 @@
     header.appendChild(el("strong", "brand", "YUTOPIA"));
     header.appendChild(el("span", "tag", "DEMO · 합성 데이터 전용"));
     header.appendChild(el("span", "spacer"));
+
     const close = el("button", "close", "×");
+
     // The card itself is interactive for pointer containment. Stage 27-28
     // Side Panel/CTA actions remain disabled pending their own authorization.
     close.type = "button";
     close.disabled = true;
     close.setAttribute("aria-disabled", "true");
     close.setAttribute("aria-label", "YUTOPIA 카드 닫기");
+
     header.appendChild(close);
     container.appendChild(header);
 
@@ -394,27 +579,33 @@
       more.setAttribute("aria-label", canSendGesture ?
         "클릭한 영상·채널을 Chrome Side Panel에 고정하기 · 합성 데이터" :
         "Chrome 확장 메시징을 사용할 수 없어 상세 보기를 열 수 없음");
+
       const message = el("div", "more-status");
       message.setAttribute("role", "status");
       message.setAttribute("aria-live", "polite");
       message.hidden = true;
+
       if (canSendGesture) {
         const request = Object.freeze({
           type: "YUTOPIA_YU28_PIN_AND_OPEN_V1",
           version: 1, requestId: state.requestId,
           targetType: state.targetType, targetId: state.targetId,
         });
+
         more.addEventListener("click", event => {
           // Browser-created mouse/keyboard clicks only; synthetic .click() is ignored.
           if (event?.isTrusted !== true || disposed ||
               !controller?.isCurrentRequest(request) ||
               !modelApi?.mockForTarget(request)) return;
+
           // Do not open on Hover READY; send ONLY in this synchronous handler.
           message.hidden = false;
           message.textContent = "선택 대상 고정 중 · 합성 데이터";
           lastAction = "YU28_G28_2_REQUESTED";
+
           const settle = response => {
             if (disposed || !controller?.isCurrentRequest(request)) return;
+
             const matched = response?.type === "YUTOPIA_YU28_PIN_RESULT_V1" &&
               response.version === 1 && response.requestId === request.requestId &&
               response.targetType === request.targetType &&
@@ -422,11 +613,13 @@
               response.targetKey === request.targetType + ":" + request.targetId &&
               typeof response.ok === "boolean" &&
               (response.tabId === null || (Number.isSafeInteger(response.tabId) && response.tabId >= 0));
+
             if (!matched) {
               lastAction = "YU28_G28_2_RESPONSE_MISMATCH";
               message.textContent = "패널 열기 확인 실패 · 응답 불일치";
               return;
             }
+
             if (response.ok === true && response.status === "PINNED" &&
                 response.pinned === true && response.pin?.isSynthetic === true &&
                 response.pin?.source === "STATIC_FIXTURE" &&
@@ -440,14 +633,18 @@
                 (response.status || "OPEN_FAILED");
             }
           };
+
           try {
             // Never await anything before the runtime message. Worker must
             // call sidePanel.open synchronously in its message listener.
             Promise.resolve(scope.chrome.runtime.sendMessage(request))
               .then(settle, () => settle(null));
-          } catch (_error) { settle(null); }
+          } catch (_error) {
+            settle(null);
+          }
         });
       }
+
       actions.appendChild(more);
       footer.appendChild(actions);
       footer.appendChild(message);
@@ -455,6 +652,7 @@
       footer.appendChild(el("div", "more-status",
         "채널 ID를 확인한 뒤에만 상세 분석 대상을 지정할 수 있습니다."));
     }
+
     container.appendChild(footer);
     return container;
   }
@@ -468,6 +666,7 @@
     currentKey = null;
     summaryArea = null;
     lastSummaryKind = "IDLE";
+
     if (!preserveState) {
       currentAnchor = null;
       currentState = null;
@@ -493,6 +692,7 @@
     const rect = currentAnchor.getBoundingClientRect();
     const vw = scope.innerWidth || doc.documentElement?.clientWidth || 0;
     const vh = scope.innerHeight || doc.documentElement?.clientHeight || 0;
+
     if (!Number.isFinite(rect.left) || !Number.isFinite(rect.right) ||
         !Number.isFinite(rect.top) || !Number.isFinite(rect.bottom) ||
         rect.width <= 0 || rect.height <= 0 || rect.bottom <= 0 ||
@@ -507,9 +707,11 @@
     host.style.width = width + "px";
     const cardRoot = surface?.childNodes?.[0] || null;
     if (cardRoot?.style) cardRoot.style.maxHeight = fullHeight + "px";
+
     const naturalHeight = Math.min(
       fullHeight, Math.max(1, host.getBoundingClientRect?.().height || fullHeight)
     );
+
     const maxLeft = Math.max(MARGIN, vw - width - MARGIN);
     const maxTop = Math.max(MARGIN, vh - naturalHeight - MARGIN);
     const alignedTop = Math.min(Math.max(MARGIN, rect.top), maxTop);
@@ -518,6 +720,7 @@
     let left = alignedLeft;
     let top = alignedTop;
     let layout = "viewport-fallback";
+
     if (rect.right + ANCHOR_GAP + width <= vw - MARGIN) {
       left = rect.right + ANCHOR_GAP;
       layout = "right";
@@ -546,11 +749,13 @@
 
   function queuePosition() {
     if (disposed || !currentState || moving) return;
+
     if (typeof scope.requestAnimationFrame !== "function") {
       if (host) position();
       else renderState(currentState);
       return;
     }
+
     moving = true;
     frame = scope.requestAnimationFrame(() => {
       moving = false;
@@ -564,6 +769,7 @@
     const unresolved = state.phase === "UNRESOLVED" &&
       state.targetType === "CHANNEL" && state.targetId === null &&
       state.identityStatus === "HANDLE_UNRESOLVED";
+
     const identified = state.phase === "READY" &&
       (state.targetType === "VIDEO" || state.targetType === "CHANNEL") &&
       controller?.isCurrentRequest({
@@ -583,29 +789,35 @@
     const mock = identified ? modelApi?.mockForTarget({
       targetType: state.targetType, targetId: state.targetId,
     }) : null;
+
     if (identified && !mock) {
       removeHost("MODEL_REJECTED", true);
       return;
     }
+
     if (!state.anchor || typeof state.anchor.getBoundingClientRect !== "function") {
       removeHost("ANCHOR_UNAVAILABLE", true);
       return;
     }
+
     if (!ensureHost()) {
       lastRenderReason = "DOCUMENT_BODY_UNAVAILABLE";
       return;
     }
 
     const key = [state.requestId, state.targetType, state.targetId || "UNRESOLVED"].join(":");
+
     if (key !== currentKey) {
       summaryArea = null;
       surface.replaceChildren(buildCard(state, mock));
       currentKey = key;
       lastAction = null;
     }
+
     host.dataset.phase = state.phase;
     host.dataset.targetType = state.targetType;
     theme();
+
     // Register before showing the card so capture-phase document pointer
     // handlers can recognize the host/Shadow card on its first pointerover.
     controller?.setCardRegion?.(host, surface.childNodes[0] || null);
@@ -659,30 +871,47 @@
   function dispose() {
     if (disposed) return;
     disposed = true;
+
     if (frame !== null) scope.cancelAnimationFrame?.(frame);
     frame = null;
     moving = false;
+
     unsubscribe?.();
     summaryUnsubscribe?.();
+    qaUnsubscribe?.();
+
+    qaUnsubscribe = null;
     summaryUnsubscribe = null;
     unsubscribe = null;
+
     scope.removeEventListener?.("scroll", queuePosition, true);
     scope.removeEventListener?.("resize", queuePosition);
     scope.removeEventListener?.("pagehide", dispose);
+
     removeHost("DISPOSED");
     connected = false;
+
     if (scope.YUTOPIA_HOVER_CARD === api) delete scope.YUTOPIA_HOVER_CARD;
   }
 
   const api = Object.freeze({getRuntimeStatus, dispose});
   scope.YUTOPIA_HOVER_CARD = api;
+
   if (controller && modelApi && typeof controller.subscribe === "function") {
     unsubscribe = controller.subscribe(onHoverState);
 
-  if (typeof summaryClient?.subscribe === "function") {
-    summaryUnsubscribe =
-      summaryClient.subscribe(onSummaryUpdate);
-  }
+    if (typeof summaryClient?.subscribe === "function") {
+      summaryUnsubscribe =
+        summaryClient.subscribe(onSummaryUpdate);
+    }
+
+    if (
+      qaBridge?.mode === "QA_SYNTHETIC" &&
+      typeof qaBridge.subscribe === "function"
+    ) {
+      qaUnsubscribe = qaBridge.subscribe(onSummaryUpdate);
+    }
+
     connected = true;
     scope.addEventListener?.("scroll", queuePosition, true);
     scope.addEventListener?.("resize", queuePosition);

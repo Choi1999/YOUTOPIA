@@ -18,6 +18,10 @@ const VIDEO_A = "Ab0_-123xyz";
 const VIDEO_B = "Ab0_-123xyZ";
 const CHANNEL_ID = "UC" + "a".repeat(22);
 
+const { createSimulator } = require(
+  "../../shared/experiments/coverage-scheduler-v0/engine.cjs"
+);
+
 class FakeNode {
   constructor(tag="div", parent=null) {
     this.tagName = tag.toUpperCase();
@@ -134,7 +138,7 @@ function unresolvedState(requestId=1,anchor=null) {
   return {phase:"UNRESOLVED",requestId,targetType:"CHANNEL",targetId:null,
     identityStatus:"HANDLE_UNRESOLVED",anchor,target:null};
 }
-function makeFixture({vw=1200, vh=800, dark=false, cardHeight=260, sendMessage=null, summaryClient=null}={}) {
+function makeFixture({vw=1200, vh=800, dark=false, cardHeight=260, sendMessage=null, summaryClient=null, qaBridge = null}={}) {
   const doc=new FakeNode("document");
   doc._root=true;
   doc.body=new FakeNode("body",doc);
@@ -189,6 +193,7 @@ function makeFixture({vw=1200, vh=800, dark=false, cardHeight=260, sendMessage=n
     YUTOPIA_HOVER_CONTROLLER:controller,
     YUTOPIA_HOVER_SUMMARY_CLIENT: summaryClient || undefined,
     chrome: sendMessage ? {runtime:{sendMessage}} : undefined,
+    YUTOPIA_YU32_QA_BRIDGE: qaBridge || undefined,
   });
   vm.runInContext(modelSource,ctx,{filename:"hover-card-model.js"});
   vm.runInContext(cardSource,ctx,{filename:"hover-card.js"});
@@ -949,4 +954,274 @@ test("Hover 종료 후 진단 상태와 카드 영역을 초기화한다", () =>
     f.api.getRuntimeStatus().summaryKind,
     "IDLE"
   );
+});
+
+/*
+ * YU-32 — 실제 합성 캐시 엔진을 사용하는 QA 브리지.
+ * 이 브리지는 Node 테스트 환경에만 주입한다.
+ * extension/manifest.json에는 등록하지 않는다.
+ */
+
+function makeYu32QaBridge() {
+  const clock = Date.parse("2026-10-08T10:00:00Z");
+
+  const simulator = createSimulator({
+    mode: "QA_SYNTHETIC",
+    now: () => clock,
+    budgetUnits: 3,
+  });
+
+  const listeners = new Set();
+
+  function scopeFor(state) {
+    return {
+      source: "YOUTUBE",
+      targetType: "VIDEO",
+      targetId: state.targetId,
+      analysisSpecVersion: "mock-0",
+      observationWindowId: "20261001-20261008",
+      samplingPolicyVersion: "mock-0",
+      locale: "ko-KR",
+      visibility: "PUBLIC_REUSABLE",
+      tenantId: null,
+    };
+  }
+
+  function notify() {
+    for (const listener of [...listeners]) listener();
+  }
+
+  return {
+    mode: "QA_SYNTHETIC",
+
+    getView(state) {
+      return {
+        ...simulator.action(scopeFor(state), {
+          requestAllowed: true,
+        }),
+        requestId: state.requestId,
+        targetType: state.targetType,
+        targetId: state.targetId,
+      };
+    },
+
+    request(state, options = {}) {
+      const result = simulator.request(scopeFor(state), {
+        explicitClick: options.explicitClick === true,
+        requestAllowed: true,
+      });
+
+      notify();
+      return result;
+    },
+
+    startNext() {
+      const result = simulator.startNext();
+      notify();
+      return result;
+    },
+
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+
+    stats() {
+      return simulator.stats();
+    },
+
+    listenerCount() {
+      return listeners.size;
+    },
+  };
+}
+
+function publishNotFound(summary, targetId, requestId) {
+  summary.publish({
+    kind: "NOT_FOUND",
+    targetType: "VIDEO",
+    targetId,
+    requestId,
+  });
+}
+
+test("YU32: 일반 모드에는 실행 가능한 분석 요청 버튼이 없다", () => {
+  const summary = makeSummaryStub();
+  const f = makeFixture({summaryClient: summary});
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+  publishNotFound(summary, VIDEO_A, 1);
+
+  assert.equal(f.findClass("yu32-request"), null);
+  assert.match(f.cardText(), /분석 요청 기능 준비 중/);
+  assert.equal(f.findClass("bar"), null);
+});
+
+test("YU32: QA 모드에서도 Hover만으로 Job을 생성하지 않는다", () => {
+  const qa = makeYu32QaBridge();
+  const summary = makeSummaryStub();
+
+  const f = makeFixture({
+    summaryClient: summary,
+    qaBridge: qa,
+  });
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+  publishNotFound(summary, VIDEO_A, 1);
+
+  const button = f.findClass("yu32-request");
+
+  assert.ok(button);
+  assert.equal(button.disabled, false);
+  assert.equal(qa.stats().createdJobs, 0);
+  assert.equal(qa.stats().usedUnits, 0);
+});
+
+test("YU32: 신뢰된 명시적 클릭만 합성 Job 하나를 생성한다", () => {
+  const qa = makeYu32QaBridge();
+  const summary = makeSummaryStub();
+
+  const f = makeFixture({
+    summaryClient: summary,
+    qaBridge: qa,
+  });
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+  publishNotFound(summary, VIDEO_A, 1);
+
+  const root = f.cardRegion.card;
+  const more = f.findClass("more");
+  const button = f.findClass("yu32-request");
+
+  button.fire("click", {isTrusted: false});
+  assert.equal(qa.stats().createdJobs, 0);
+
+  button.fire("click", {isTrusted: true});
+
+  assert.equal(qa.stats().createdJobs, 1);
+  assert.equal(qa.stats().usedUnits, 1);
+
+  assert.equal(f.cardRegion.card, root);
+  assert.equal(f.findClass("more"), more);
+  assert.equal(f.findClass("yu32-request"), null);
+  assert.match(f.cardText(), /데모 분석 대기 중/);
+  assert.equal(f.findClass("bar"), null);
+});
+
+test("YU32: 합성 Job 진행 상태가 카드에 반영된다", () => {
+  const qa = makeYu32QaBridge();
+  const summary = makeSummaryStub();
+
+  const f = makeFixture({
+    summaryClient: summary,
+    qaBridge: qa,
+  });
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+  publishNotFound(summary, VIDEO_A, 1);
+
+  f.findClass("yu32-request").fire(
+    "click", {isTrusted: true}
+  );
+
+  assert.equal(qa.startNext().state, "RUNNING");
+  assert.match(f.cardText(), /데모 분석 진행 중/);
+  assert.equal(f.findClass("bar"), null);
+});
+
+test("YU32: 다른 영상 전환 후 오래된 버튼 클릭은 무시한다", () => {
+  const qa = makeYu32QaBridge();
+  const summary = makeSummaryStub();
+
+  const f = makeFixture({
+    summaryClient: summary,
+    qaBridge: qa,
+  });
+
+  const anchor = f.anchor();
+
+  f.emit(videoState(VIDEO_A, 1, anchor));
+  publishNotFound(summary, VIDEO_A, 1);
+
+  const oldButton = f.findClass("yu32-request");
+
+  f.emit(videoState(VIDEO_B, 2, anchor));
+  publishNotFound(summary, VIDEO_B, 2);
+
+  oldButton.fire("click", {isTrusted: true});
+
+  assert.equal(qa.stats().createdJobs, 0);
+  assert.equal(f.api.getRuntimeStatus().targetId, VIDEO_B);
+  assert.ok(f.findClass("yu32-request"));
+});
+
+test("YU32: READY에서는 요청 버튼이 없고 dispose는 QA 구독을 해제한다", () => {
+  const qa = makeYu32QaBridge();
+  const summary = makeSummaryStub();
+
+  const f = makeFixture({
+    summaryClient: summary,
+    qaBridge: qa,
+  });
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+  summary.publish(readySummaryView());
+
+  assert.equal(f.findClass("yu32-request"), null);
+  assert.equal(qa.stats().createdJobs, 0);
+  assert.equal(qa.listenerCount(), 1);
+
+  f.api.dispose();
+
+  assert.equal(qa.listenerCount(), 0);
+});
+
+
+test("YU32: 브리지 예외 후 요청 가능 상태를 다시 평가한다", () => {
+  const summary = makeSummaryStub();
+
+  const qa = {
+    mode: "QA_SYNTHETIC",
+
+    getView(identity) {
+      return {
+        ...identity,
+        kind: "MISS",
+        action: {
+          type: "DEMO_REQUEST",
+          enabled: true,
+        },
+      };
+    },
+
+    request() {
+      throw new Error("Simulated request failure");
+    },
+
+    subscribe() {
+      return () => {};
+    },
+  };
+
+  const f = makeFixture({
+    summaryClient: summary,
+    qaBridge: qa,
+  });
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+  publishNotFound(summary, VIDEO_A, 1);
+
+  const original = f.findClass("yu32-request");
+  original.fire("click", {isTrusted: true});
+
+  assert.match(
+    f.cardText(),
+    /데모 분석 요청이 수락되지 않았습니다/
+  );
+
+  const retry = f.findClass("yu32-request");
+
+  assert.ok(retry);
+  assert.notEqual(retry, original);
+  assert.equal(retry.disabled, false);
 });
