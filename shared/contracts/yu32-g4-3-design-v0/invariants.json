@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "YOUTOPIA YU-32 G4-3 offline design invariants (not a deployable server contract)",
   "version": "G4-3-design-v0.1",
   "phase": "DESIGN_STATIC",
@@ -520,5 +519,8 @@
       "id": "DEC-G43-08",
       "status": "DECISION_REQUIRED"
     }
-  ]
+  ],
+  "documentKind": "YU32_G43_OFFLINE_DESIGN_DATA",
+  "schemaValidation": "NOT_A_JSON_SCHEMA",
+  "$comment": "This is machine-readable design DATA and offline invariant source; no server validation and no schema-validator conformance are claimed."
 }
