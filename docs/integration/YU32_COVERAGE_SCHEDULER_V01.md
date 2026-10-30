@@ -1,8 +1,8 @@
 # YOUTOPIA — YU-32 분석 가용성·캐시·작업 스케줄링 v0.1
 
-**상태:** APPROVED_UX_DIRECTION / SYNTHETIC_EXPERIMENT / NOT_PRODUCTION_READY
+**상태:** SYNTHETIC_EXPERIMENT / STAGES_1_TO_3_VERIFIED / AUDIT_PR_CI_PASSED / CHROME_QA_PENDING / NOT_PRODUCTION_READY
 **기준 브랜치:** frontend
-**기준 커밋:** 44e1726208032f352728c86a0da5ee8ff1ce3a0e
+**감사 기준 커밋:** 53454762b3607360b3d51746df06d257039a5216 (`frontend`)
 
 ## 1. 목적
 
@@ -72,7 +72,7 @@ Hover는 Job을 생성하지 않는다.
 
 ## 7. 검증 범위
 
-합성 실험은 C01~C13 시나리오로 구성한다.
+합성 실험은 최초 C01~C13으로 검증됐고, 감사 보완에서 C14~C15(실패·할당량)를 추가한다.
 
 검증 대상은 캐시 재사용, MISS, 명시적 클릭, 중복 제거, 예산 제한, STALE, Job 완료, 테넌트 격리, NO_DATA, 분석 정의 구분, 출처 거부, 반복 Hover, 대상 불일치이다.
 
@@ -80,13 +80,30 @@ Node 테스트 통과는 운영 백엔드, 분산 작업 중복 방지, 실측 �
 
 ## 8. 후속 작업
 
-YU-32의 합성 계약과 테스트가 통과한 뒤 Chrome Hover 카드에 조건부 데모 분석 요청 UI를 연결한다.
+YU-32 1~3단계의 합성 계약, Hover 카드 QA UI 및 검증된 완료 스냅샷 연결은 Node 테스트로 검증했다. 실제 Chrome QA/운영 승격은 별도 게이트로 유지한다.
 
 실제 고객용 분석 요청 버튼은 서버 측 요청 자격과 작업 API가 구현·검증된 이후 활성화한다.
 
 기존 Hover Summary v1 메시지 계약과 YU-27·YU-28 기능은 별도 승인 없이 변경하지 않는다.
 
-## 11. YU-32 3단계 — QA 완료 Snapshot 연결
+## 9. YU-32 2단계 — Hover 분석 요청 UI 통합
+
+- NOT_FOUND 상태의 VIDEO Hover 카드에 요청 상태 영역을 제공한다.
+- 일반 Chrome 실행에는 분석 요청 기능 준비 중 안내만 표시한다.
+- QA_SYNTHETIC 브리지가 주입된 개발·테스트 환경에서만
+  데모 분석 요청 버튼을 활성화한다.
+- QA 요청은 신뢰된 사용자 클릭과 현재 Hover 대상 일치를 확인한다.
+- Hover 자체는 합성 분석 Job을 생성하지 않는다.
+- QUEUED/RUNNING 상태는 합성 작업 상태이며 실제 분석이 아니다.
+- 기존 더보기, Side Panel PIN, Hover Controller 동작은 유지한다.
+- QA 브리지는 extension/manifest.json에 등록하지 않는다.
+- 운영 API, 실제 YouTube 댓글, 인증, 결제, 추가 Chrome 권한은
+  이번 단계에서 연결하지 않는다.
+
+QA 버튼이 실제 Chrome 사용자에게 제공되는 기능으로
+승격되려면 별도의 제품·보안·백엔드·정책 게이트가 필요하다.
+
+## 10. YU-32 3단계 — QA 완료 Snapshot 연결
 
 - QA Job은 RUNNING 이후에만 완료될 수 있다.
 - Job SUCCEEDED만으로 감성 수치를 표시하지 않는다.
@@ -104,24 +121,7 @@ YU-32의 합성 계약과 테스트가 통과한 뒤 Chrome Hover 카드에 조�
 실제 운영 데이터 연결에는 백엔드 영속 저장, 스냅샷 정합성,
 권한, 출처·보존 정책 및 별도의 데이터 사용 승인이 필요하다.
 
-## YU-32 2단계 — Hover 분석 요청 UI 통합
-
-- NOT_FOUND 상태의 VIDEO Hover 카드에 요청 상태 영역을 제공한다.
-- 일반 Chrome 실행에는 분석 요청 기능 준비 중 안내만 표시한다.
-- QA_SYNTHETIC 브리지가 주입된 개발·테스트 환경에서만
-  데모 분석 요청 버튼을 활성화한다.
-- QA 요청은 신뢰된 사용자 클릭과 현재 Hover 대상 일치를 확인한다.
-- Hover 자체는 합성 분석 Job을 생성하지 않는다.
-- QUEUED/RUNNING 상태는 합성 작업 상태이며 실제 분석이 아니다.
-- 기존 더보기, Side Panel PIN, Hover Controller 동작은 유지한다.
-- QA 브리지는 extension/manifest.json에 등록하지 않는다.
-- 운영 API, 실제 YouTube 댓글, 인증, 결제, 추가 Chrome 권한은
-  이번 단계에서 연결하지 않는다.
-
-QA 버튼이 실제 Chrome 사용자에게 제공되는 기능으로
-승격되려면 별도의 제품·보안·백엔드·정책 게이트가 필요하다.
-
-## 5. 로컬 검증
+## 11. 로컬 검증
 
 ```powershell
 cd C:\Projects\YOUTOPIA
@@ -139,16 +139,16 @@ git diff --check
 git status --short
 ```
 
-예상 테스트 건수는 다음과 같습니다.
+2026-10-30 GitHub Actions의 합성·확장 자동 검증 결과는 다음과 같습니다.
 
-| 대상 | 예상 |
+| 대상 | PR CI |
 |---|---:|
-| Hover 카드 UI | 62 |
-| 확장 전체 회귀 | 286 |
-| YU-32 합성 엔진 | 13 |
+| Hover 카드 UI | 72 |
+| 확장 전체 회귀 | 296 |
+| YU-32 합성 엔진 | 15 |
 | 공유 분석 계약 | 19 |
 
-**이 수치는 예상치이며 아직 실행 검증된 결과가 아닙니다.**
+**기준선 실측:** Hover UI 70/70, 확장 294/294, 엔진 13/13, 공유 계약 19/19. **감사 수정 실측:** Hover UI 72건(확장 전체에 포함), 확장 296/296, 합성 엔진 15/15, 분석 계약 19/19, 관리자 계약 7/7, 프런트엔드 Vitest 171/171 및 TypeScript/Vite 빌드 PASS. 증거: [PR #41 CI 실행](https://github.com/Choi1999/YOUTOPIA/actions/runs/41039607823).
 
 ### 완료 기준
 
@@ -156,4 +156,21 @@ git status --short
 
 별도의 실제 Chrome QA 전용 빌드 활성화는 그다음 작업으로 분리합니다. 이 구분을 유지해야 테스트용 분석 요청 기능이 실사용자에게 잘못 노출되는 일을 방지할 수 있습니다.
 
-**현재 판정: YU-32 1단계 종료, 2단계 구현 지침 제공 완료 · 로컬 테스트 대기.**
+**현재 판정:** YU-32 1~3단계 및 감사 수정의 GitHub Actions 자동 검증 PASS. 감사 수정은 Draft PR #41에 격리했고 Chrome 수동 QA·병합은 완료되지 않았다. 실사용자용 분석 요청은 계속 비활성화 상태다.
+
+## 12. 감사 보완 — STALE/FAILED 상태 및 CI
+
+- 스케줄러가 `STALE`에 `DEMO_REQUEST/enabled=true`를 반환하면 QA Hover 카드에 **데모 갱신 요청** 버튼을 표시한다.
+- `FAILED`는 활성 Job 종료 후에도 가장 최근 종료 상태에서 식별한다. 이후 새로운 Job이 성공하면 이전 실패가 현재 상태를 덮어쓰지 않는다.
+- 요청 권한 또는 가상 예산이 없으면 실패·만료 안내는 남기되 실행 버튼은 제공하지 않는다.
+- `STALE`·`FAILED`·`MISS`의 버튼은 각각 최신 상태와 일치해야 하며, 신뢰된 명시적 클릭만 합성 Job을 시작할 수 있다.
+- 캐시가 `STALE`이면 합성 감성 수치 표시를 계속 차단한다. 테스트용 갱신 Job을 생성하더라도 실제 댓글 수집은 수행하지 않는다.
+- 기존 Chrome Manifest, 실제 Worker Summary 응답, Side Panel PIN·Preview 메시지 계약을 변경하지 않는다.
+- GitHub Actions는 확장/공유 계약 Node 테스트와 프런트엔드 Vitest·빌드를 별도 Job으로 검증한다. 브라우저 Playwright 및 실제 YouTube는 이 CI에 포함되지 않는다.
+- 운영 배포·권한·실데이터·백엔드 영속성은 이번 감사 수정의 범위 밖이다.
+
+### 증거 구분
+
+- **기준선 통과:** YU-32 3단계 이전 커밋에 대한 사용자의 Windows Node 테스트 로그.
+- **감사 수정 확인:** PR CI에서 확장 296/296, 스케줄러 15/15, 분석 계약 19/19, 관리자 계약 7/7 및 프런트엔드 171/171 PASS. CI의 확장 테스트 안에 Hover UI 72건이 포함된다.
+- **미검증:** Chrome 확장 실제 브라우저 수동 QA, Playwright 브라우저 E2E 및 운영 백엔드 연계. 이 증거를 자동 CI 통과로 대체하지 않는다.

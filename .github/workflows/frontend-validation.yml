@@ -1,0 +1,77 @@
+name: Frontend and extension validation
+
+on:
+  pull_request:
+    branches:
+      - frontend
+  push:
+    branches:
+      - frontend
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  extension-and-contracts:
+    name: Extension and shared contracts (Node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Check extension JavaScript syntax
+        run: |
+          for file in extension/*.js; do
+            node --check "$file"
+          done
+
+      - name: Extension regression tests
+        run: node --test extension/tests/*.test.cjs
+
+      - name: Analysis contract tests
+        run: node --test shared/contracts/analysis-v1/tests/*.test.cjs
+
+      - name: Admin contract tests
+        run: node --test shared/contracts/admin-v1/tests/*.test.cjs
+
+      - name: Synthetic scheduler tests
+        run: node --test shared/experiments/coverage-scheduler-v0/tests/*.test.cjs
+
+  frontend:
+    name: React frontend tests and build (Node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm from the locked package manager version
+        uses: pnpm/action-setup@v4
+        with:
+          version: "12.9.1"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install frozen frontend dependencies
+        run: pnpm --dir frontend install --frozen-lockfile
+
+      - name: Frontend unit tests
+        run: pnpm --dir frontend test
+
+      - name: Frontend type check and build
+        run: pnpm --dir frontend build
