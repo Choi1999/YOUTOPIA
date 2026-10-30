@@ -615,6 +615,7 @@
             "INVALID_REQUEST",
             "AUTHENTICATION_REQUIRED",
             "POLICY_BLOCKED",
+            "FEATURE_DISABLED",
             "ENTITLEMENT_LIMITED",
             "RESOURCE_UNAVAILABLE",
             "IDEMPOTENCY_CONFLICT",
