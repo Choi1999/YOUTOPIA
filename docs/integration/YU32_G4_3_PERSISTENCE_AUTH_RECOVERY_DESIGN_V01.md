@@ -154,7 +154,7 @@ flowchart TD
 3. Heartbeat·완료·실패·Snapshot 발행은 `job_id + lease_owner + lease_epoch + expected_version + state + nonexpired_lease`의 CAS 조건을 만족해야 한다. 0 rows updated이면 오래된 Worker를 차단한다.
 4. 수치 Snapshot은 메모리 생성만으로 공개되지 않는다. 결과 검증과 Job 완료 및 `ScopeLatest` 발행은 한 DB 트랜잭션에서 묶되, 이전 상태/정책 epoch를 다시 검증한다.
 5. `RUNNING`이 만료되면 watchdog이 같은 Job을 새 lease_epoch로 재할당하거나 복구 한도 초과 시 `FAILED` 처리한다. 영구 RUNNING 방치는 금지한다.
-6. **경합 보증 범위:** 중복 Worker가 실행될 수는 있지만, **구버전 Worker는 결과를 덮어쓰지 못한다**. 외부 API의 exactly-once 실행은 이 설계만으로 보장하지 않는다.
+6. **경합 보증 범위:** 중복 Worker가 실행될 수는 있지만, **구버전 Worker는 결과를 덮어쓰지 못한다**. 검증에는 lease epoch뿐 아니라 Job의 **예상 version**도 포함하며, heartbeat가 새 version을 반환하면 구 version은 무효가 된다. 외부 API의 exactly-once 실행은 이 설계만으로 보장하지 않는다.
 7. Lease/heartbeat/retry 수치와 Worker 동시성은 미정. 임의 운영 TTL/재시도 횟수를 이번 단계에 상수로 정하지 않는다.
 
 ### 5.3 재시작·장애별 안전 결과
@@ -199,7 +199,7 @@ flowchart TD
 
 ## 8. G4-3 검증과 수용 기준
 
-검증 정본: [G4-3 검증 매트릭스](./YU32_G4_3_VERIFICATION_MATRIX_V01.md). 머신 판독 설계: `shared/contracts/yu32-g4-3-design-v0/invariants.json`. 해당 JSON의 오프라인 부정 시험은 **개념 모델**이며 실제 데이터베이스·인가·분산 Worker 증거가 아니다.
+검증 정본: [G4-3 검증 매트릭스](./YU32_G4_3_VERIFICATION_MATRIX_V01.md). 머신 판독 설계: `shared/contracts/yu32-g4-3-design-v0/invariants.json`. 이 파일은 **JSON Schema가 아닌 설계 데이터**다. 오프라인 불변식·반례 시험 **33건**은 개념 모델 검증일 뿐 실제 데이터베이스·인가·분산 Worker 증거가 아니다.
 
 | 수준 | 가능/필수 검증 | 판정 기준 |
 |---|---|---|
