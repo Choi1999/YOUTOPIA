@@ -1,0 +1,641 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:youtopia:yu32-operations-v0-candidate",
+  "title": "YOUTOPIA YU-32 G4-2 offline API candidate; not a deployed server contract",
+  "$comment": "PROPOSED, NOT_IMPLEMENTED, POLICY_HOLD. No runtime authority or actual API permission. Approved_test_only values must never be issued on wire.",
+  "x-youtopia-phase": "G4-2 DRAFT_CONTRACT",
+  "x-youtopia-exposed-api": false,
+  "x-youtopia-policy-gate": "POLICY_HOLD",
+  "x-youtopia-operations": {
+    "summaryGet": "GET /api/v1/analysis/videos/{videoId}/summary",
+    "createJobPost": "POST /api/v1/analysis/jobs",
+    "jobGet": "GET /api/v1/analysis/jobs/{jobId}",
+    "snapshotGet": "GET /api/v1/analysis/snapshots/{snapshotId}",
+    "postHeadersProposed": [
+      "Idempotency-Key",
+      "X-CSRF-TOKEN"
+    ],
+    "serverDerivedOnly": [
+      "tenantId",
+      "visibility",
+      "role",
+      "entitlements",
+      "policyApproved"
+    ],
+    "noAutomaticHoverPost": true
+  },
+  "$defs": {
+    "Target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "targetType",
+        "targetId"
+      ],
+      "properties": {
+        "source": {
+          "const": "YOUTUBE"
+        },
+        "targetType": {
+          "const": "VIDEO"
+        },
+        "targetId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{11}$"
+        }
+      }
+    },
+    "Scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "targetType",
+        "targetId",
+        "analysisSpecVersion",
+        "observationWindowId",
+        "samplingPolicyVersion",
+        "locale",
+        "visibility",
+        "tenantId"
+      ],
+      "properties": {
+        "source": {
+          "const": "YOUTUBE"
+        },
+        "targetType": {
+          "const": "VIDEO"
+        },
+        "targetId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{11}$"
+        },
+        "analysisSpecVersion": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,80}$"
+        },
+        "observationWindowId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,80}$"
+        },
+        "samplingPolicyVersion": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,80}$"
+        },
+        "locale": {
+          "type": "string",
+          "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+        },
+        "visibility": {
+          "enum": [
+            "PUBLIC_REUSABLE",
+            "TENANT_PRIVATE"
+          ]
+        },
+        "tenantId": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "visibility": {
+                "const": "PUBLIC_REUSABLE"
+              }
+            },
+            "required": [
+              "visibility"
+            ]
+          },
+          "then": {
+            "properties": {
+              "tenantId": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "tenantId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "CreateJobRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "analysisSpecVersion",
+        "observationWindowId",
+        "samplingPolicyVersion",
+        "locale"
+      ],
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/Target"
+        },
+        "analysisSpecVersion": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,80}$"
+        },
+        "observationWindowId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,80}$"
+        },
+        "samplingPolicyVersion": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,80}$"
+        },
+        "locale": {
+          "type": "string",
+          "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+        }
+      }
+    },
+    "SummaryLookup": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/LookupMiss"
+        },
+        {
+          "$ref": "#/$defs/LookupFresh"
+        },
+        {
+          "$ref": "#/$defs/LookupNoData"
+        },
+        {
+          "$ref": "#/$defs/LookupStale"
+        }
+      ]
+    },
+    "LookupMiss": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "const": "MISS"
+        }
+      }
+    },
+    "LookupFresh": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "snapshotId",
+        "status",
+        "analyzedAt"
+      ],
+      "properties": {
+        "kind": {
+          "const": "FRESH"
+        },
+        "snapshotId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+        },
+        "status": {
+          "enum": [
+            "READY",
+            "PARTIAL"
+          ]
+        },
+        "analyzedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "LookupNoData": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "snapshotId",
+        "status",
+        "analyzedAt"
+      ],
+      "properties": {
+        "kind": {
+          "const": "NO_DATA"
+        },
+        "snapshotId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+        },
+        "status": {
+          "const": "NO_DATA"
+        },
+        "analyzedAt": {
+          "type": "null"
+        }
+      }
+    },
+    "LookupStale": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "snapshotId",
+        "analyzedAt"
+      ],
+      "properties": {
+        "kind": {
+          "const": "STALE"
+        },
+        "snapshotId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+        },
+        "analyzedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "JobSubmitResult": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/JobAccepted"
+        },
+        {
+          "$ref": "#/$defs/AlreadyCached"
+        }
+      ]
+    },
+    "JobAccepted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "jobId",
+        "disposition",
+        "state",
+        "version",
+        "updatedAt",
+        "snapshotId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "JOB_ACCEPTED"
+        },
+        "jobId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+        },
+        "disposition": {
+          "enum": [
+            "CREATED",
+            "JOINED"
+          ]
+        },
+        "state": {
+          "enum": [
+            "QUEUED",
+            "RUNNING"
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "snapshotId": {
+          "type": "null"
+        }
+      }
+    },
+    "AlreadyCached": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "snapshotId"
+      ],
+      "properties": {
+        "kind": {
+          "const": "ALREADY_CACHED"
+        },
+        "snapshotId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+        }
+      }
+    },
+    "JobStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "jobId",
+        "state",
+        "version",
+        "updatedAt",
+        "snapshotId",
+        "retryable"
+      ],
+      "properties": {
+        "kind": {
+          "const": "JOB"
+        },
+        "jobId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+        },
+        "state": {
+          "enum": [
+            "QUEUED",
+            "RUNNING",
+            "SUCCEEDED",
+            "FAILED"
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "snapshotId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "SUCCEEDED"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "snapshotId": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "snapshotId": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "SnapshotReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "snapshotId",
+        "scope",
+        "status",
+        "sourceType",
+        "isSynthetic",
+        "analyzedAt",
+        "payloadContract"
+      ],
+      "properties": {
+        "kind": {
+          "const": "SNAPSHOT_REFERENCE"
+        },
+        "snapshotId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+        },
+        "scope": {
+          "$ref": "#/$defs/Scope"
+        },
+        "status": {
+          "enum": [
+            "READY",
+            "PARTIAL",
+            "NO_DATA",
+            "STALE"
+          ]
+        },
+        "sourceType": {
+          "enum": [
+            "STATIC_FIXTURE",
+            "APPROVED_PROVIDER"
+          ]
+        },
+        "isSynthetic": {
+          "type": "boolean"
+        },
+        "analyzedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payloadContract": {
+          "const": "analysis-v1-candidate"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "sourceType": {
+                "const": "STATIC_FIXTURE"
+              }
+            },
+            "required": [
+              "sourceType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "isSynthetic": {
+                "const": true
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "isSynthetic": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "NO_DATA"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "analyzedAt": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "READY",
+                  "PARTIAL"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "analyzedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Problem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title",
+        "status",
+        "detail",
+        "instance",
+        "code"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "pattern": "^urn:youtopia:problem:"
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "type": "integer",
+          "enum": [
+            400,
+            401,
+            403,
+            404,
+            409,
+            429,
+            503
+          ]
+        },
+        "detail": {
+          "type": "string"
+        },
+        "instance": {
+          "type": "string"
+        },
+        "code": {
+          "enum": [
+            "INVALID_REQUEST",
+            "AUTHENTICATION_REQUIRED",
+            "POLICY_BLOCKED",
+            "FEATURE_DISABLED",
+            "ENTITLEMENT_LIMITED",
+            "RESOURCE_UNAVAILABLE",
+            "IDEMPOTENCY_CONFLICT",
+            "QUOTA_DEFERRED",
+            "UNAVAILABLE"
+          ]
+        },
+        "traceId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fieldErrors": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

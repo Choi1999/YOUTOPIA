@@ -1,6 +1,6 @@
 # YOUTOPIA — YU-32 분석 가용성·캐시·작업 스케줄링 v0.1
 
-**상태:** SYNTHETIC_EXPERIMENT / STAGES_1_TO_3_VERIFIED / AUDIT_PR_CI_PASSED / CHROME_QA_PENDING / NOT_PRODUCTION_READY
+**상태:** SYNTHETIC_EXPERIMENT / STAGES_1_TO_3_VERIFIED / AUDIT_MERGED / CHROME_GENERAL_QA_USER_REPORTED_PASS / NOT_PRODUCTION_READY
 **기준 브랜치:** frontend
 **감사 기준 커밋:** 53454762b3607360b3d51746df06d257039a5216 (`frontend`)
 
@@ -156,7 +156,7 @@ git status --short
 
 별도의 실제 Chrome QA 전용 빌드 활성화는 그다음 작업으로 분리합니다. 이 구분을 유지해야 테스트용 분석 요청 기능이 실사용자에게 잘못 노출되는 일을 방지할 수 있습니다.
 
-**현재 판정:** YU-32 1~3단계 및 감사 수정의 GitHub Actions 자동 검증 PASS. 감사 수정은 Draft PR #41에 격리했고 Chrome 수동 QA·병합은 완료되지 않았다. 실사용자용 분석 요청은 계속 비활성화 상태다.
+**현재 판정:** YU-32 1~3단계 및 감사 수정의 GitHub Actions 자동 검증 PASS. 감사 수정은 PR #41로 frontend에 병합했고 사용자는 Chrome 일반 Hover/Side Panel QA 이상 없음을 보고했다. QA_SYNTHETIC의 실제 Chrome 전용 빌드 검증은 별개다. 실사용자용 분석 요청은 계속 비활성화 상태다.
 
 ## 12. 감사 보완 — STALE/FAILED 상태 및 CI
 
@@ -173,4 +173,13 @@ git status --short
 
 - **기준선 통과:** YU-32 3단계 이전 커밋에 대한 사용자의 Windows Node 테스트 로그.
 - **감사 수정 확인:** PR CI에서 확장 296/296, 스케줄러 15/15, 분석 계약 19/19, 관리자 계약 7/7 및 프런트엔드 171/171 PASS. CI의 확장 테스트 안에 Hover UI 72건이 포함된다.
-- **미검증:** Chrome 확장 실제 브라우저 수동 QA, Playwright 브라우저 E2E 및 운영 백엔드 연계. 이 증거를 자동 CI 통과로 대체하지 않는다.
+- **증거 구분:** 일반 Chrome 수동 Hover/Side Panel은 사용자 보고로 이상 없음. QA_SYNTHETIC Chrome 전용 빌드, Playwright E2E 및 운영 백엔드 연계는 미검증. 실데이터 사용권/승격은 별도 Gate다.
+
+## 13. G4-2 운영 API·인가 계약 초안으로의 인계
+
+- 후보 문서: [YU32_G4_2_API_AUTHORIZATION_CONTRACT_V01.md](./YU32_G4_2_API_AUTHORIZATION_CONTRACT_V01.md).
+- 머신 판독 후보: `shared/contracts/yu32-operations-v0/yu32-operations.schema.json`.
+- 독립 합성 부정 테스트: `shared/contracts/yu32-operations-v0/tests/contract.test.cjs`.
+- API는 조회/명시적 Job 생성/Job 조회/Snapshot 조회를 분리하고, 서버가 visibility/tenant·정책·이용권을 판정한다.
+- G4-2 승인은 **계약 설계 착수 승인**이며 운영 API 구현·실데이터 수집·파생 감성 지표 제공·YouTube 사용권 승인과 무관하다.
+- `frontend`의 현재 합성 QA 동작과 `feat/backend-bootstrap`은 이 계약 단계에서 수정하지 않는다.
