@@ -1121,6 +1121,13 @@ function makeYu32QaBridge() {
       return result;
     },
 
+    // 완료되지 않은 합성 Job 실패를 현재 Hover 카드에 알린다.
+    fail(jobId) {
+      const result = simulator.fail(jobId);
+      notify();
+      return result;
+    },
+
     /*
     * 합성 Job 완료:
     * 고정된 READY Fixture가 존재하는 영상에만 완료를 허용한다.
@@ -1663,4 +1670,74 @@ test("YU32-3: 위조된 QA 응답은 기존 계약에서 거부한다", () => {
     f.api.getRuntimeStatus().summaryKind,
     "NOT_FOUND"
   );
+});
+
+test("YU32-AUDIT: STALE 합성 결과에는 명시적 갱신 버튼만 표시한다", () => {
+  const qa = makeYu32QaBridge();
+  const summary = makeSummaryStub();
+  const f = makeFixture({summaryClient: summary, qaBridge: qa});
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+  publishNotFound(summary, VIDEO_A, 1);
+
+  f.findClass("yu32-request").fire("click", {isTrusted: true});
+  const started = qa.startNext();
+  assert.equal(qa.complete(started.jobId).kind, "SUCCEEDED");
+  assert.ok(f.findClass("bar"));
+
+  qa.advanceTime(48 * 60 * 60 * 1000);
+
+  assert.equal(f.findClass("bar"), null);
+  assert.match(f.cardText(), /데모 분석 갱신 필요/);
+  const refresh = f.findClass("yu32-request");
+  assert.ok(refresh);
+  assert.match(refresh.textContent, /데모 갱신 요청/);
+  assert.equal(qa.stats().createdJobs, 1);
+
+  refresh.fire("click", {isTrusted: false});
+  assert.equal(qa.stats().createdJobs, 1);
+
+  refresh.fire("click", {isTrusted: true});
+  assert.equal(qa.stats().createdJobs, 2);
+  assert.equal(f.findClass("yu32-request"), null);
+  assert.match(f.cardText(), /데모 분석 대기 중/);
+  assert.equal(f.findClass("bar"), null);
+});
+
+test("YU32-AUDIT: 실패한 합성 Job은 실패를 표시하고 사용자 재시도만 허용한다", () => {
+  const qa = makeYu32QaBridge();
+  const summary = makeSummaryStub();
+  const f = makeFixture({summaryClient: summary, qaBridge: qa});
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+  publishNotFound(summary, VIDEO_A, 1);
+
+  const root = f.cardRegion.card;
+  const more = f.findClass("more");
+  f.findClass("yu32-request").fire("click", {isTrusted: true});
+
+  const started = qa.startNext();
+  assert.equal(qa.fail(started.jobId).kind, "FAILED");
+
+  assert.equal(f.cardRegion.card, root);
+  assert.equal(f.findClass("more"), more);
+  assert.equal(f.findClass("bar"), null);
+  assert.match(f.cardText(), /데모 분석 작업 실패/);
+
+  const retry = f.findClass("yu32-request");
+  assert.ok(retry);
+  assert.match(retry.textContent, /재시도/);
+  assert.equal(qa.stats().createdJobs, 1);
+
+  retry.fire("click", {isTrusted: false});
+  assert.equal(qa.stats().createdJobs, 1);
+
+  retry.fire("click", {isTrusted: true});
+  assert.equal(qa.stats().createdJobs, 2);
+  assert.match(f.cardText(), /데모 분석 대기 중/);
+  assert.equal(f.findClass("bar"), null);
+
+  // 이미 제거된 버튼은 Job을 추가 생성할 수 없다.
+  retry.fire("click", {isTrusted: true});
+  assert.equal(qa.stats().createdJobs, 2);
 });
