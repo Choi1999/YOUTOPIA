@@ -181,6 +181,52 @@ function mayTransitionJob(from, to, verifiedSnapshotId = null) {
   return verifiedSnapshotId === null;
 }
 
+/**
+ * 후보 Snapshot 메타데이터만 검증한다. 원문/서명/출처 사용권 또는
+ * analysis-v1 전체 분모 검증을 대체하지 않는다.
+ */
+function parseSnapshotReference(value) {
+  const fields=[
+    "kind", "snapshotId", "scope", "status", "sourceType",
+    "isSynthetic", "analyzedAt", "payloadContract",
+  ];
+  try {
+    if (!exactRecord(value,fields) ||
+        value.kind !== "SNAPSHOT_REFERENCE" ||
+        typeof value.snapshotId !== "string" ||
+        !/^[A-Za-z0-9._:-]{1,128}$/.test(value.snapshotId) ||
+        value.payloadContract !== "analysis-v1-candidate") return null;
+
+    const scope=normalizeScope(value.scope);
+    if (!scope) return null;
+
+    if (!["READY","PARTIAL","STALE","NO_DATA"].includes(value.status)) return null;
+    if (!["STATIC_FIXTURE","APPROVED_PROVIDER"].includes(value.sourceType)) return null;
+    if (value.isSynthetic !== (value.sourceType === "STATIC_FIXTURE")) return null;
+
+    const hasTime=typeof value.analyzedAt === "string" &&
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value.analyzedAt) &&
+      Number.isFinite(Date.parse(value.analyzedAt));
+
+    if (value.status === "NO_DATA" && value.analyzedAt !== null) return null;
+    if (["READY","PARTIAL"].includes(value.status) && !hasTime) return null;
+    if (value.status === "STALE" && value.analyzedAt !== null && !hasTime) return null;
+
+    return Object.freeze({
+      kind:"SNAPSHOT_REFERENCE",
+      snapshotId:value.snapshotId,
+      scope,
+      status:value.status,
+      sourceType:value.sourceType,
+      isSynthetic:value.isSynthetic,
+      analyzedAt:value.analyzedAt,
+      payloadContract:"analysis-v1-candidate",
+    });
+  } catch {
+    return null;
+  }
+}
+
 // 참조가 동일 Scope에 속하는지만 확인한다. 검증된 Snapshot 본문/서명을 대체하지 않는다.
 function matchesSnapshotScope(scope, snapshot) {
   try {
@@ -208,5 +254,6 @@ module.exports = Object.freeze({
   evaluateOfflineGate,
   canShowSyntheticMetrics,
   mayTransitionJob,
+  parseSnapshotReference,
   matchesSnapshotScope,
 });
