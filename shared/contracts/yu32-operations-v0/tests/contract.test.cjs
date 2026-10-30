@@ -201,20 +201,34 @@ test("T15: 가상 승인 네 Gate가 모두 충족될 때만 ALLOWED_TEST_ONLY",
   assert.equal(approveJob({policyState:true}).reason,"POLICY_BLOCKED");
 });
 
-test("T16: 검증된 FRESH READY/PARTIAL 외에는 수치 표시를 거부한다", () => {
+test("T16: 검증된 동일 Scope 합성 FRESH READY/PARTIAL 외에는 수치 표시를 거부한다", () => {
   const gate=approveRead();
-  const ready={kind:"FRESH",status:"READY",snapshotId:"synthetic-one-video-001"};
-  assert.equal(canShowSyntheticMetrics({lookup:ready,verifiedSnapshot:true,gate}),true);
+  const analyzedAt="2026-10-08T09:20:00Z";
+  const reference={
+    kind:"SNAPSHOT_REFERENCE",
+    snapshotId:"synthetic-one-video-001",
+    scope:{...SCOPE},
+    status:"READY",
+    sourceType:"STATIC_FIXTURE",
+    isSynthetic:true,
+    analyzedAt,
+    payloadContract:"analysis-v1-candidate",
+  };
+  const ready={kind:"FRESH",status:"READY",snapshotId:reference.snapshotId,analyzedAt};
+  const allowed={lookup:ready,verifiedSnapshot:reference,expectedScope:SCOPE,gate};
+  assert.equal(canShowSyntheticMetrics(allowed),true);
   assert.equal(canShowSyntheticMetrics({
-    lookup:{...ready,status:"PARTIAL"},verifiedSnapshot:true,gate,
+    ...allowed,lookup:{...ready,status:"PARTIAL"},
+    verifiedSnapshot:{...reference,status:"PARTIAL"},
   }),true);
   for(const data of [
     {kind:"MISS"}, {kind:"NO_DATA",status:"NO_DATA"},
-    {kind:"STALE",snapshotId:"synthetic-one-video-001"},
+    {kind:"STALE",snapshotId:reference.snapshotId},
     {...ready,status:"NO_DATA"},
-  ])assert.equal(canShowSyntheticMetrics({lookup:data,verifiedSnapshot:true,gate}),false);
-  assert.equal(canShowSyntheticMetrics({lookup:ready,verifiedSnapshot:false,gate}),false);
-  assert.equal(canShowSyntheticMetrics({lookup:ready,verifiedSnapshot:true,
+  ])assert.equal(canShowSyntheticMetrics({...allowed,lookup:data}),false);
+  assert.equal(canShowSyntheticMetrics({...allowed,verifiedSnapshot:true}),false);
+  assert.equal(canShowSyntheticMetrics({...allowed,verifiedSnapshot:false}),false);
+  assert.equal(canShowSyntheticMetrics({...allowed,
     gate:{kind:"DENIED",reason:"POLICY_BLOCKED"}}),false);
 });
 
@@ -354,4 +368,64 @@ test("T26: JSON Schema에서 Snapshot 출처·NO_DATA 시각·READY 시각을 �
   assert.equal(constraints[0].else.properties.isSynthetic.const,false);
   assert.equal(constraints[1].then.properties.analyzedAt.type,"null");
   assert.equal(constraints[2].then.properties.analyzedAt.format,"date-time");
+});
+
+test("T27: 캐시와 Snapshot ID·상태·시각·테넌트 범위 불일치를 거부한다", () => {
+  const reference={
+    kind:"SNAPSHOT_REFERENCE",
+    snapshotId:"synthetic-one-video-001",
+    scope:{...SCOPE},
+    status:"READY",
+    sourceType:"STATIC_FIXTURE",
+    isSynthetic:true,
+    analyzedAt:"2026-10-08T09:20:00Z",
+    payloadContract:"analysis-v1-candidate",
+  };
+  const lookup={
+    kind:"FRESH",status:"READY",snapshotId:reference.snapshotId,
+    analyzedAt:reference.analyzedAt,
+  };
+  const common={lookup,verifiedSnapshot:reference,expectedScope:SCOPE,gate:approveRead()};
+  assert.equal(canShowSyntheticMetrics(common),true);
+  assert.equal(canShowSyntheticMetrics({...common,lookup:{...lookup,snapshotId:"synthetic-other"}}),false);
+  assert.equal(canShowSyntheticMetrics({...common,lookup:{...lookup,status:"PARTIAL"}}),false);
+  assert.equal(canShowSyntheticMetrics({...common,lookup:{...lookup,analyzedAt:"2026-10-08T09:21:00Z"}}),false);
+  assert.equal(canShowSyntheticMetrics({...common,expectedScope:{...SCOPE,analysisSpecVersion:"mock-1"}}),false);
+  assert.equal(canShowSyntheticMetrics({...common,expectedScope:{
+    ...SCOPE,visibility:"TENANT_PRIVATE",tenantId:"tenant-A",
+  }}),false);
+  assert.equal(canShowSyntheticMetrics({...common,
+    verifiedSnapshot:{...reference,sourceType:"APPROVED_PROVIDER",isSynthetic:false},
+  }),false);
+});
+
+test("T28: 비정상 Job 상태 및 Object.prototype 키는 안전하게 거부한다", () => {
+  for(const source of ["__proto__","constructor","toString","hasOwnProperty",null,42]) {
+    assert.equal(mayTransitionJob(source,"RUNNING"),false,String(source));
+  }
+  assert.equal(mayTransitionJob("RUNNING","SUCCEEDED","synthetic-001"),true);
+});
+
+test("T29: 존재하지 않는 날짜·과도한 timezone offset은 Snapshot 시각으로 거부한다", () => {
+  const reference={
+    kind:"SNAPSHOT_REFERENCE",
+    snapshotId:"synthetic-one-video-001",
+    scope:{...SCOPE},status:"READY",
+    sourceType:"STATIC_FIXTURE",isSynthetic:true,
+    analyzedAt:"2026-10-08T09:20:00Z",payloadContract:"analysis-v1-candidate",
+  };
+  for(const date of [
+    "2026-02-30T09:20:00Z",
+    "2026-02-29T09:20:00Z",
+    "2026-10-08T09:20:00+15:00",
+    "2026-10-08T09:20:00+14:01",
+    "2026-10-08T25:20:00Z",
+  ])assert.equal(parseSnapshotReference({...reference,analyzedAt:date}),null,date);
+  assert.ok(parseSnapshotReference({...reference,analyzedAt:"2024-02-29T09:20:00Z"}));
+  assert.ok(parseSnapshotReference({...reference,analyzedAt:"2026-10-08T09:20:00+14:00"}));
+});
+
+test("T30: API 오류 Schema는 feature-off 거부 이유도 표현할 수 있다", () => {
+  const codes=schema.$defs.Problem.properties.code.enum;
+  assert.equal(codes.includes("FEATURE_DISABLED"),true);
 });
