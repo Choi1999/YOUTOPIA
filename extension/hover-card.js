@@ -224,23 +224,30 @@
       labels[view.kind] || "QA 분석 요청을 사용할 수 없습니다."
     ));
 
+    // MISS, STALE, FAILED 모두 스케줄러가 명시적으로 허용한 경우에만 요청한다.
+    // 실제 운영 Worker에서는 QA 브리지가 제공되지 않아 버튼이 생성되지 않는다.
+    const requestableKinds = ["MISS", "STALE", "FAILED"];
+
     if (
-      view.kind !== "MISS" ||
+      !requestableKinds.includes(view.kind) ||
       view.action?.type !== "DEMO_REQUEST" ||
       view.action?.enabled !== true
     ) return;
 
-    const button = el(
-      "button", "yu32-request",
-      "데모 분석 요청 (시뮬레이션)"
-    );
+    const actionText = view.kind === "STALE"
+      ? "데모 갱신 요청 (시뮬레이션)"
+      : view.kind === "FAILED"
+        ? "데모 분석 재시도 (시뮬레이션)"
+        : "데모 분석 요청 (시뮬레이션)";
+
+    const button = el("button", "yu32-request", actionText);
 
     button.type = "button";
     button.disabled = false;
     button.setAttribute("aria-disabled", "false");
     button.setAttribute(
       "aria-label",
-      "이 영상에 대한 QA 합성 분석 작업을 요청합니다. 실제 YouTube 분석은 수행하지 않습니다."
+      "이 영상에 대해 " + actionText + "을 실행합니다. 실제 YouTube 분석은 수행하지 않습니다."
     );
 
     area.appendChild(button);
@@ -267,7 +274,8 @@
       // 버튼 표시 이후 권한·대상·작업 상태가 변했을 수 있다.
       if (
         !matches(latest) ||
-        latest.kind !== "MISS" ||
+        // 오래된 버튼으로 다른 단계의 요청을 실행하지 않는다.
+        latest.kind !== view.kind ||
         latest.action?.type !== "DEMO_REQUEST" ||
         latest.action?.enabled !== true
       ) return;
