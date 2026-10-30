@@ -16,6 +16,7 @@ const {
   evaluateOfflineGate,
   canShowSyntheticMetrics,
   mayTransitionJob,
+  parseSnapshotReference,
   matchesSnapshotScope,
 } = require("../contract.cjs");
 
@@ -276,4 +277,81 @@ test("T21: HTTP 오류 계약의 주요 실패 코드가 서로 분리된다", (
     assert.equal(codes.includes(name),true,name);
   }
   assert.equal(schema.$defs.Problem.additionalProperties,false);
+});
+test("T22: 적격 합성 Snapshot 참조는 복제·동결된 Scope와 함께 반환한다", () => {
+  const reference={
+    kind:"SNAPSHOT_REFERENCE",
+    snapshotId:"synthetic-one-video-001",
+    scope:{...SCOPE},
+    status:"READY",
+    sourceType:"STATIC_FIXTURE",
+    isSynthetic:true,
+    analyzedAt:"2026-10-08T09:20:00+09:00",
+    payloadContract:"analysis-v1-candidate",
+  };
+  const result=parseSnapshotReference(reference);
+  assert.ok(result);
+  assert.equal(Object.isFrozen(result),true);
+  assert.equal(Object.isFrozen(result.scope),true);
+  assert.deepEqual(result.scope,SCOPE);
+});
+
+test("T23: Snapshot의 비합성/합성 출처 표시가 불일치하면 거부한다", () => {
+  const reference={
+    kind:"SNAPSHOT_REFERENCE",
+    snapshotId:"synthetic-one-video-001",
+    scope:{...SCOPE},
+    status:"READY",
+    sourceType:"STATIC_FIXTURE",
+    isSynthetic:false,
+    analyzedAt:"2026-10-08T09:20:00Z",
+    payloadContract:"analysis-v1-candidate",
+  };
+  assert.equal(parseSnapshotReference(reference),null);
+  assert.equal(parseSnapshotReference({...reference,sourceType:"APPROVED_PROVIDER",isSynthetic:true}),null);
+  assert.ok(parseSnapshotReference({...reference,sourceType:"APPROVED_PROVIDER",isSynthetic:false}));
+});
+
+test("T24: NO_DATA는 분석 수치·시각을 승격하지 않으며 STALE는 과거 시각만 허용한다", () => {
+  const reference={
+    kind:"SNAPSHOT_REFERENCE",
+    snapshotId:"synthetic-one-video-001",
+    scope:{...SCOPE},
+    status:"NO_DATA",
+    sourceType:"STATIC_FIXTURE",
+    isSynthetic:true,
+    analyzedAt:null,
+    payloadContract:"analysis-v1-candidate",
+  };
+  assert.ok(parseSnapshotReference(reference));
+  assert.equal(parseSnapshotReference({...reference,analyzedAt:"2026-10-08T09:20:00Z"}),null);
+  assert.ok(parseSnapshotReference({...reference,status:"STALE"}));
+  assert.ok(parseSnapshotReference({...reference,status:"STALE",analyzedAt:"2026-10-08T09:20:00Z"}));
+  assert.equal(parseSnapshotReference({...reference,status:"READY"}),null);
+});
+
+test("T25: Snapshot 참조에는 Scope 조작과 원문/비밀 필드 삽입이 허용되지 않는다", () => {
+  const reference={
+    kind:"SNAPSHOT_REFERENCE",
+    snapshotId:"synthetic-one-video-001",
+    scope:{...SCOPE},
+    status:"READY",
+    sourceType:"STATIC_FIXTURE",
+    isSynthetic:true,
+    analyzedAt:"2026-10-08T09:20:00Z",
+    payloadContract:"analysis-v1-candidate",
+  };
+  assert.equal(parseSnapshotReference({...reference,commentText:"private"}),null);
+  assert.equal(parseSnapshotReference({...reference,scope:{...SCOPE,tenantId:"tenant-B"}}),null);
+  assert.equal(parseSnapshotReference({...reference,scope:{...SCOPE,extraFlag:true}}),null);
+  assert.equal(parseSnapshotReference({...reference,payloadContract:"custom"}),null);
+});
+
+test("T26: JSON Schema에서 Snapshot 출처·NO_DATA 시각·READY 시각을 조건부 제약한다", () => {
+  const constraints=schema.$defs.SnapshotReference.allOf;
+  assert.equal(constraints.length,3);
+  assert.equal(constraints[0].then.properties.isSynthetic.const,true);
+  assert.equal(constraints[0].else.properties.isSynthetic.const,false);
+  assert.equal(constraints[1].then.properties.analyzedAt.type,"null");
+  assert.equal(constraints[2].then.properties.analyzedAt.format,"date-time");
 });
