@@ -4,6 +4,70 @@
 
 이 폴더는 YUTOPIA **YouTube 홈에서 썸네일 Hover → 간략 반응 카드 → 더보기 → Chrome Side Panel**을 구현하기 위한 독립 PoC 영역입니다.
 
+## 현재 구현 기준 — 18단계 완료 / 19단계 안정화
+
+기준 브랜치: `frontend`
+18단계 확정 커밋: `ddff69adbbd1e8eaa19f7ca1d9c40f09fa664880`
+
+### 현재 동작
+
+- Chrome MV3에서 YouTube 영상·채널 Hover 대상을 식별한다.
+- Summary Client가 Worker에 `YUTOPIA_HOVER_SUMMARY_GET_V1`을 전송한다.
+- Worker는 개발용 합성 공급자만 호출한다.
+- 검증된 `SNAPSHOT`과 분모가 있는 READY/PARTIAL에서만 합성 감성 비율을 표시한다.
+- STALE/NO_DATA/COMMENTS_DISABLED/ENTITLEMENT_LIMITED/
+  POLICY_BLOCKED/ERROR에서는 검증되지 않은 수치를 표시하지 않는다.
+- NOT_FOUND와 REJECTED는 구분한다.
+- 기존 `더보기 → Side Panel → Web 상세` 선택 기능을 보존한다.
+
+### 데이터 공급자 교체 경계
+
+현재 공급자는 `demo-hover-summary-provider.js`이며
+정적 합성 fixture만 제공한다.
+
+운영 공급자로 전환하려면 별도의 승인과 검증이 필요하다.
+
+1. 실제 데이터의 합법적 수집·사용 범위 및 정책 검토
+2. 인증·권한·테넌트 격리 계약 확정
+3. 서버 측 분석 스냅샷 구조와 provenance 확정
+4. 운영 API와 오류·지연·갱신 정책 검증
+5. 새로운 응답 계약 및 버전 호환성 테스트
+6. 실제 Chrome 설치형 E2E와 개인정보 보호 검증
+
+`analysis-v1-candidate`는 아직 운영 승인 계약이 아니다.
+현재의 `STATIC_FIXTURE / PUBLIC_REUSABLE / isSynthetic=true`
+조건을 실데이터에 임의로 재사용해서는 안 된다.
+
+운영 데이터 연결을 위해 Chrome 권한, 외부 API,
+사용자 정보 저장을 임의로 추가하지 않는다.
+
+### Worker 요청 순서
+
+Summary Worker는 탭 ID와 documentId를 기준으로
+Worker 메모리에 최신 requestId를 추적한다.
+
+- 같은 문서의 오래된 requestId는 거부한다.
+- 다른 documentId는 독립적으로 취급한다.
+- Worker 재시작 후에는 메모리 요청 순서가 초기화될 수 있다.
+- 실제 Chrome의 재시작·동시 요청·연결 해제는 별도 E2E가 필요하다.
+- 개발자 도구에서 임의의 큰 requestId로 직접 전송하면
+  같은 문서의 정상 Hover 요청이 오래된 요청으로 거부될 수 있다.
+- 수동 진단은 새 테스트 탭에서 수행하고 실제 Hover 확인에는
+  별도의 새 YouTube 탭을 사용한다.
+
+### 검증 근거
+
+18단계 기준:
+- 확장 프로그램 Node 테스트: 262/262 PASS
+- 공유 분석 계약: 19/19 PASS
+- 프론트엔드: 171/171 PASS
+- Chrome 핵심 기능: 사용자 수동 검수 PASS
+
+19단계의 추가 테스트 결과와 커밋 SHA는 검증 후 기록한다.
+
+아래 20~26번 설명은 초기 구현 및 과거 QA 이력을 포함한다.
+현재 실행 사양은 이 섹션과 최신 코드·테스트를 우선한다.
+
 ## 기술 경계
 
 - 기존 `frontend/` React 데모와 별개로 작동합니다.

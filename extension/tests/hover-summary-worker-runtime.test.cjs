@@ -476,3 +476,65 @@ test("기존 YU-28 Side Panel 선택 고정을 유지한다", async () => {
   assert.equal(selected.status, "READY");
   assert.equal(selected.pin.targetId, VIDEO);
 });
+
+/*
+ * 19단계 — Worker 재생성 및 개발용 요청 순서 회귀.
+ */
+
+test("Worker 재생성 후 메모리 요청 순서를 새로 시작한다", async () => {
+  const before = startWorker();
+
+  const first = await before.send(
+    summaryRequest(VIDEO, 50)
+  );
+
+  assert.equal(first.result.kind, "SNAPSHOT");
+
+  // 재시작 전의 동일 문서에는 더 작은 요청이 허용되지 않는다.
+  const stale = await before.send(
+    summaryRequest(VIDEO, 1)
+  );
+
+  assert.equal(stale, null);
+
+  // 새로운 격리 Worker 인스턴스는 이전 메모리를 상속하지 않는다.
+  const restarted = startWorker();
+
+  const after = await restarted.send(
+    summaryRequest(VIDEO, 1)
+  );
+
+  assert.equal(after.result.kind, "SNAPSHOT");
+  assert.equal(after.requestId, 1);
+  assert.equal(after.result.summary.provenance.isSynthetic, true);
+});
+
+test("동일 문서의 고번호 진단 요청과 새 문서의 요청 순서를 구별한다", async () => {
+  const worker = startWorker();
+
+  const probe = await worker.send(
+    summaryRequest(VIDEO, 100)
+  );
+
+  assert.equal(probe.result.kind, "SNAPSHOT");
+
+  // 같은 문서에서 100 이후의 요청 ID 1은 오래된 요청이다.
+  assert.equal(
+    await worker.send(summaryRequest(VIDEO_B, 1)),
+    null
+  );
+
+  // 다른 documentId는 독립적인 요청 순서를 갖는다.
+  const newDocument = {
+    ...SENDER,
+    documentId: "newDoc012345",
+  };
+
+  const fresh = await worker.send(
+    summaryRequest(VIDEO_B, 1),
+    newDocument
+  );
+
+  assert.equal(fresh.result.kind, "NOT_FOUND");
+  assert.equal(fresh.requestId, 1);
+});

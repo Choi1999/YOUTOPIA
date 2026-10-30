@@ -174,11 +174,26 @@
         "SNAPSHOT_DERIVED_SYNTHETIC" &&
       summary.provenance?.sourceType === "STATIC_FIXTURE" &&
       summary.provenance?.isSynthetic === true &&
+      summary.provenance?.visibility === "PUBLIC_REUSABLE" &&
+      summary.provenance?.tenantId === null &&
       summary.target?.source === "YOUTUBE" &&
       summary.target?.targetType === state.targetType &&
       summary.target?.targetId === state.targetId &&
       Number.isSafeInteger(metrics?.denominator) &&
       metrics.denominator > 0 &&
+      Array.isArray(summary.topTopics) &&
+      summary.topTopics.length <= 2 &&
+      summary.topTopics.every(topic =>
+        topic !== null &&
+        typeof topic === "object" &&
+        typeof topic.topicId === "string" &&
+        Number.isSafeInteger(topic.mentionCount) &&
+        topic.mentionCount >= 0
+      ) &&
+      typeof summary.observationScope?.mode === "string" &&
+      typeof summary.observationScope?.windowStart === "string" &&
+      typeof summary.observationScope?.windowEnd === "string" &&
+      typeof summary.analyzedAt === "string" &&
       percentages.length === 3 &&
       percentages.every(value =>
         typeof value === "number" &&
@@ -452,6 +467,7 @@
     surface = null;
     currentKey = null;
     summaryArea = null;
+    lastSummaryKind = "IDLE";
     if (!preserveState) {
       currentAnchor = null;
       currentState = null;

@@ -265,3 +265,134 @@ test("Worker 미사용 및 Hover 종료는 fail-closed로 처리한다", async (
     undefined
   );
 });
+
+/*
+ * 19단계 — 거부 응답, 무분모 상태, 연속 Hover 전환.
+ */
+
+test("REJECTED는 사유만 전달하고 분석 수치를 공개하지 않는다", async () => {
+  const f = bootstrap({
+    respond: (request, context) =>
+      Promise.resolve(
+        context.YUTOPIA_HOVER_SUMMARY_CONTRACT.makeResponse(
+          request,
+          { kind: "REJECTED", reason: "SOURCE_ERROR" }
+        )
+      ),
+  });
+
+  const active = state(VIDEO_A, 1);
+  f.emit(active);
+  await tick();
+
+  const view = f.client.getView(active);
+
+  assert.equal(view.kind, "REJECTED");
+  assert.equal(view.reason, "SOURCE_ERROR");
+  assert.equal(view.summary, null);
+});
+
+for (const status of ["PARTIAL", "STALE", "NO_DATA"]) {
+  test(`${status} 스냅샷을 무분모 상태 그대로 전달한다`, async () => {
+    const f = bootstrap({
+      respond: async (request, context) => {
+        const provider =
+          context.YOUTOPIA_DEMO_HOVER_SUMMARY_PROVIDER;
+
+        const original = await provider.getSummary({
+          source: "YOUTUBE",
+          targetType: request.targetType,
+          targetId: request.targetId,
+        });
+
+        const safe = {
+          ...original.summary,
+          status,
+          sentimentPercent: null,
+          topTopics: [],
+          observedAt: status === "NO_DATA"
+            ? null : original.summary.observedAt,
+          analyzedAt: status === "NO_DATA"
+            ? null : original.summary.analyzedAt,
+        };
+
+        return context.YUTOPIA_HOVER_SUMMARY_CONTRACT
+          .makeResponse(request, {
+            kind: "SNAPSHOT",
+            summary: safe,
+          });
+      },
+    });
+
+    const active = state(VIDEO_A, 1);
+    f.emit(active);
+    await tick();
+
+    const view = f.client.getView(active);
+
+    assert.equal(view.kind, "SNAPSHOT");
+    assert.equal(view.summary.status, status);
+    assert.equal(view.summary.sentimentPercent, null);
+    assert.deepEqual(
+      JSON.parse(JSON.stringify(view.summary.topTopics)),
+      []
+    );
+  });
+}
+
+test("40회 연속 Hover 후 최신 요청만 결과를 유지한다", async () => {
+  const pending = new Map();
+
+  const f = bootstrap({
+    respond: request =>
+      new Promise(resolve => {
+        pending.set(request.requestId, { request, resolve });
+      }),
+  });
+
+  for (let requestId = 1; requestId <= 40; requestId++) {
+    f.emit(state(
+      requestId % 2 === 1 ? VIDEO_A : VIDEO_B,
+      requestId
+    ));
+  }
+
+  assert.equal(f.sent.length, 40);
+
+  const contract =
+    f.context.YUTOPIA_HOVER_SUMMARY_CONTRACT;
+
+  const latest = pending.get(40);
+
+  latest.resolve(
+    contract.makeResponse(
+      latest.request,
+      { kind: "NOT_FOUND" }
+    )
+  );
+
+  await tick();
+
+  const active = state(VIDEO_B, 40);
+  assert.equal(f.client.getView(active).kind, "NOT_FOUND");
+
+  // 나머지 응답은 최신 요청 이후에 역순으로 도착한다.
+  for (let requestId = 39; requestId >= 1; requestId--) {
+    const old = pending.get(requestId);
+
+    old.resolve(
+      contract.makeResponse(
+        old.request,
+        { kind: "NOT_FOUND" }
+      )
+    );
+  }
+
+  await tick();
+
+  assert.equal(f.client.getView(active).kind, "NOT_FOUND");
+  assert.equal(f.client.getView(state(VIDEO_A, 39)), null);
+  assert.ok(
+    f.client.getRuntimeStatus().ignoredResponses >= 39
+  );
+});

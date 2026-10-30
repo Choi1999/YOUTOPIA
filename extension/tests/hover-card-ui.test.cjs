@@ -713,6 +713,8 @@ function readySummaryView(requestId = 1) {
       provenance: {
         sourceType: "STATIC_FIXTURE",
         isSynthetic: true,
+        visibility: "PUBLIC_REUSABLE",
+        tenantId: null,
       },
 
       sentimentPercent: {
@@ -799,6 +801,152 @@ test("이전 A의 늦은 갱신은 현재 B 카드에 적용하지 않는다", (
   assert.equal(f.findClass("bar"), null);
 
   f.api.dispose();
-
   assert.equal(summary.listenerCount(), 0);
+});
+
+/*
+ * 19단계 — 상태별 비노출·출처 검증·진단 상태 회귀.
+ * 기존 makeFixture, makeSummaryStub, readySummaryView를 사용한다.
+ */
+
+const NO_METRIC_STATUSES = [
+  "PARTIAL",
+  "STALE",
+  "NO_DATA",
+  "COMMENTS_DISABLED",
+  "ENTITLEMENT_LIMITED",
+  "POLICY_BLOCKED",
+  "ERROR",
+];
+
+for (const status of NO_METRIC_STATUSES) {
+  test(`${status} 상태에서는 미검증 감성 비율을 표시하지 않는다`, () => {
+    const summary = makeSummaryStub();
+    const f = makeFixture({ summaryClient: summary });
+
+    f.emit(videoState(VIDEO_A, 1, f.anchor()));
+    summary.publish(readySummaryView());
+
+    const originalRoot = f.cardRegion.card;
+    assert.ok(f.findClass("bar"));
+
+    const view = readySummaryView();
+    view.summary.status = status;
+
+    // STALE은 잘못된 숫자가 Client 검증을 우회했다고 가정한다.
+    // 렌더러에서도 차단되어야 한다.
+    if (status !== "STALE") {
+      view.summary.sentimentPercent = null;
+      view.summary.topTopics = [];
+    }
+
+    summary.publish(view);
+
+    assert.equal(f.cardRegion.card, originalRoot);
+    assert.equal(f.findClass("bar"), null);
+    assert.doesNotMatch(f.cardText(), /긍정 62\.5%/);
+    assert.match(
+      f.cardText(),
+      new RegExp("분석 상태: " + status)
+    );
+    assert.equal(
+      f.api.getRuntimeStatus().summaryKind,
+      "SNAPSHOT"
+    );
+  });
+}
+
+test("PARTIAL에서 검증된 분모가 존재하면 상태와 수치를 함께 표시한다", () => {
+  const summary = makeSummaryStub();
+  const f = makeFixture({ summaryClient: summary });
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+
+  const view = readySummaryView();
+  view.summary.status = "PARTIAL";
+
+  summary.publish(view);
+
+  assert.ok(f.findClass("bar"));
+  assert.match(f.cardText(), /긍정 62\.5%/);
+  assert.match(f.cardText(), /분모: 80건/);
+  assert.match(f.cardText(), /분석 상태: PARTIAL/);
+});
+
+test("비공개·Tenant 지정·비합성 출처를 카드에서도 거부한다", () => {
+  const summary = makeSummaryStub();
+  const f = makeFixture({ summaryClient: summary });
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+  summary.publish(readySummaryView());
+
+  const card = f.cardRegion.card;
+  assert.ok(f.findClass("bar"));
+
+  const invalidProvenances = [
+    { visibility: "TENANT_PRIVATE" },
+    { tenantId: "tenant-123" },
+    { isSynthetic: false },
+    { sourceType: "LIVE_API" },
+  ];
+
+  for (const patch of invalidProvenances) {
+    const view = readySummaryView();
+
+    Object.assign(view.summary.provenance, patch);
+    summary.publish(view);
+
+    assert.equal(f.cardRegion.card, card);
+    assert.equal(f.findClass("bar"), null);
+    assert.doesNotMatch(f.cardText(), /62\.5%/);
+  }
+
+  summary.publish(readySummaryView());
+  assert.ok(f.findClass("bar"));
+});
+
+test("잘못된 주제 배열은 렌더링 예외 없이 차단한다", () => {
+  const summary = makeSummaryStub();
+  const f = makeFixture({ summaryClient: summary });
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+
+  const malformed = readySummaryView();
+  malformed.summary.topTopics = null;
+
+  assert.doesNotThrow(() => summary.publish(malformed));
+  assert.equal(f.findClass("bar"), null);
+
+  const negative = readySummaryView();
+  negative.summary.topTopics = [
+    { topicId: "RECIPE", mentionCount: -1 },
+  ];
+
+  assert.doesNotThrow(() => summary.publish(negative));
+  assert.equal(f.findClass("bar"), null);
+
+  summary.publish(readySummaryView());
+  assert.ok(f.findClass("bar"));
+});
+
+test("Hover 종료 후 진단 상태와 카드 영역을 초기화한다", () => {
+  const summary = makeSummaryStub();
+  const f = makeFixture({ summaryClient: summary });
+
+  f.emit(videoState(VIDEO_A, 1, f.anchor()));
+  summary.publish(readySummaryView());
+
+  assert.equal(
+    f.api.getRuntimeStatus().summaryKind,
+    "SNAPSHOT"
+  );
+
+  f.emit({ phase: "IDLE" });
+
+  assert.equal(f.host(), null);
+  assert.equal(f.cardRegion, null);
+  assert.equal(
+    f.api.getRuntimeStatus().summaryKind,
+    "IDLE"
+  );
 });
