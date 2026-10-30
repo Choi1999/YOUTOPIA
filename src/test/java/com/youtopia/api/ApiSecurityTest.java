@@ -52,6 +52,13 @@ class ApiSecurityTest {
         verifyNoInteractions(repository);
     }
 
+    @ParameterizedTest @ValueSource(strings={"4294967296","9223372036854775807","9223372036854775808","570%27%20OR%201=1--"})
+    void outOfDomainOrInjectedIdsNeverConsumeBudgetOrReachSql(String id)throws Exception {
+        mvc.perform(get("/api/v1/steam/apps/"+id+"/ccu"))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("code").value("INVALID_REQUEST"));
+        verifyNoInteractions(repository,budget);
+    }
+
     @Test
     void sourcePermissionFailureIsNotDisguisedAsEmptyAndDoesNotLeakSql() throws Exception {
         when(repository.findObservations(anyLong(), any(), any()))

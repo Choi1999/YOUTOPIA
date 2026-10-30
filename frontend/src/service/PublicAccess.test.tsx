@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ServiceApp } from "./ServiceApp";
-import { ApiError, serviceApi, type Identity, type Listing } from "./api";
+import { ApiError, serviceApi, type Identity, type Listing, type RankReport } from "./api";
 
 const listing: Listing = {
   content: [], page: { number: 0, size: 20, totalElements: 0, totalPages: 0 },
@@ -75,6 +75,45 @@ it("selects a source NULL category without conflating it with literal category n
   fireEvent.change(scope,{target:{value:JSON.stringify(["weekly_native",null])}});
   await waitFor(()=>expect(rankings.mock.lastCall![0].has("category")).toBe(false));
   expect(window.location.pathname).toBe("/charts/steam");
+});
+it("keeps source weekly end separate from a later query time and labels observed names", async () => {
+  vi.spyOn(serviceApi,"periods").mockResolvedValue({dataStatus:"AVAILABLE",content:[
+    {source:"weekly_native",category:null,start:"2026-10-13T00:00:00Z",end:"2026-10-20T00:00:00Z"}]});
+  const region={country:"KR",availability:"AVAILABLE",comparable:1,uncomparable:0,up:1,down:0,same:0,upRatio:1,downRatio:0,sameRatio:0,deltaHistogram:{"5":1},topRisers:[{appId:570,name:"Observed earlier title",previous:10,current:5,positionChange:5}],topFallers:[]};
+  const report:RankReport={source:"weekly_native",category:null,asOf:"2026-10-30T00:00:00Z",freshness:"UNASSESSED",calculationVersion:"source-weekly-rank-v1",charts:{rankOneAtTop:true,weeks:[{periodStart:"2026-10-13T00:00:00Z",kr:region,unspecified:{...region,country:"UNSPECIFIED"},pairAvailability:"UNAVAILABLE",pairs:[],largestGaps:[]}],lastThreeWeekTrends:[],top20Continuity:[]}};
+  vi.spyOn(serviceApi,"rankings").mockResolvedValue(report);
+  window.history.replaceState({},"","/charts/steam");render(<ServiceApp />);
+  const end=await screen.findByText(/선택 원천의 관측 주간 종료/);
+  expect(end).toHaveTextContent("2026. 10. 20.");
+  expect(end).not.toHaveTextContent("2026. 10. 30.");
+  const query=await screen.findByText(/조회 시각/);
+  expect(query).toHaveTextContent("2026. 10. 30.");expect(query).toHaveTextContent("신선도 판정 전");
+  expect(screen.getByText(/순위 게임명은 관측 당시 원천 표기/)).toBeVisible();
+  expect(screen.getAllByText("Observed earlier title").length).toBeGreaterThan(0);
+  expect(serviceApi.detail).not.toHaveBeenCalled();
+});
+it("keeps a missing release date unavailable instead of substituting the query date", async () => {
+  window.history.replaceState({},"","/games/steam:570");render(<ServiceApp />);
+  expect(await screen.findByText(/출시일 정보 없음/)).toBeVisible();
+  expect(screen.queryByText(/출시일 미지원/)).toBeNull();
+});
+it("shows unverified game-video linkage and returns to the exact native game detail",async()=>{
+  window.history.replaceState({},"","/games/steam:570/youtube");render(<ServiceApp />);
+  expect(await screen.findByText(/Steam 앱 ID 570 · 게임별 YouTube 연결 미확인/)).toBeVisible();
+  const back=screen.getByRole("link",{name:"← 게임 상세"});expect(back).toHaveAttribute("href","/games/steam:570");
+  fireEvent.click(back);expect(await screen.findByRole("heading",{name:"Synthetic Game"})).toBeVisible();
+  expect(window.location.pathname).toBe("/games/steam:570");
+});
+it.each([false,true])("keeps native video observation time and absent observations distinct (empty=%s)",async empty=>{
+  const observations=empty?[]:[{id:1,slot:"2026-10-27T00:00:00Z",receivedAt:"2026-10-27T00:00:01Z",views:0}];
+  vi.spyOn(serviceApi,"video").mockResolvedValue({from:"2026-10-23T00:00:00Z",to:"2026-10-30T00:00:00Z",freshness:"UNASSESSED",mappingBasis:"NATIVE_VIDEO_ID_NO_GAME_MAPPING",comparison:{availability:"UNAVAILABLE",reason:"INSUFFICIENT_OBSERVATIONS",elapsedSeconds:null,cumulativeDifference:null,first:empty?null:{views:0,slot:observations[0].slot},last:null},observations});
+  window.history.replaceState({},"","/charts/youtube");render(<ServiceApp />);
+  fireEvent.change(await screen.findByLabelText("YouTube 영상 ID"),{target:{value:"abcdefghijk"}});
+  fireEvent.click(screen.getByRole("button",{name:"실제 영상 관측 조회"}));
+  const caption=await screen.findByText(/마지막 영상 관측/);
+  expect(caption).toHaveTextContent("조회 시각 2026. 10. 30.");expect(caption).toHaveTextContent("신선도 판정 전");
+  expect(caption).toHaveTextContent(empty?"관측 시각 없음":"2026. 10. 27.");
+  expect(serviceApi.associations).not.toHaveBeenCalled();
 });
 it("returns from login to public browsing and keeps browsing public after logout", async () => {
   const identity: Identity={kind:"USER",id:"00000000-0000-0000-0000-000000000123",emailVerified:false};

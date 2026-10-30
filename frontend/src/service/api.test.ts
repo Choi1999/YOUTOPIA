@@ -89,6 +89,27 @@ describe("same-origin session API contract", () => {
     await assertion;
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
+  it.each([200,503])("preserves a timeout while reading a %s response body",async status=>{
+    vi.useFakeTimers();
+    const fetcher=vi.fn<typeof fetch>().mockImplementation(async(_url,options)=>({
+      ok:status===200,status,headers:new Headers(),
+      json:()=>new Promise((_resolve,reject)=>options!.signal!.addEventListener("abort",()=>reject(new DOMException("body cancelled","AbortError")),{once:true})),
+    }) as Response);
+    const request=new ServiceApi(fetcher,20).request("/api/v1/games");
+    const assertion=expect(request).rejects.toMatchObject({code:"REQUEST_TIMEOUT"});
+    await vi.advanceTimersByTimeAsync(21);await assertion;
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it("preserves explicit cancellation after response headers without turning it into invalid JSON",async()=>{
+    const cancel=new AbortController();let bodyStarted!:()=>void;
+    const ready=new Promise<void>(resolve=>{bodyStarted=resolve;});
+    const fetcher=vi.fn<typeof fetch>().mockImplementation(async(_url,options)=>({
+      ok:true,status:200,headers:new Headers(),json:()=>{bodyStarted();return new Promise((_resolve,reject)=>options!.signal!.addEventListener("abort",()=>reject(new DOMException("cancelled","AbortError")),{once:true}));},
+    }) as Response);
+    const request=new ServiceApi(fetcher).request("/api/v1/games",{signal:cancel.signal});
+    const assertion=expect(request).rejects.toMatchObject({name:"AbortError"});
+    await ready;cancel.abort();await assertion;expect(fetcher).toHaveBeenCalledTimes(1);
+  });
   it("refuses arbitrary origins and keeps native identifiers encoded", async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(response({}));
     const api = new ServiceApi(fetcher);

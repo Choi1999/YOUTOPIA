@@ -24,8 +24,8 @@ public class CcuService {
 
     @Transactional(readOnly = true, timeout = 8)
     public CcuResponse get(long appId, int days) {
-        if (appId <= 0 || (days != 7 && days != 30)) {
-            throw new IllegalArgumentException("Only positive Steam app IDs and 7/30 days are supported");
+        if (appId <= 0 || appId > 4294967295L || (days != 7 && days != 30)) {
+            throw new IllegalArgumentException("Native Steam app IDs and 7/30 days are required");
         }
         budget.acquire();
         var to = clock.instant();

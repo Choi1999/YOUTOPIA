@@ -100,6 +100,7 @@ export type RankReport = {
   source: string;
   category: string | null;
   asOf: string;
+  freshness: string;
   calculationVersion: string;
   charts: {
     rankOneAtTop: boolean;
@@ -169,6 +170,7 @@ export type VideoReport = {
   from: string;
   to: string;
   mappingBasis: string;
+  freshness: string;
   comparison: {
     availability: string;
     reason: string | null;
@@ -299,7 +301,8 @@ export class ServiceApi {
             code = problem.code;
           if (typeof problem.traceId === "string")
             traceId = problem.traceId.slice(0, 80);
-        } catch {
+        } catch (error) {
+          if (controller.signal.aborted) throw error;
           /* Never render arbitrary proxy/server text. */
         }
         if (
@@ -327,7 +330,8 @@ export class ServiceApi {
       if (response.status === 204) return undefined as T;
       try {
         return (await response.json()) as T;
-      } catch {
+      } catch (error) {
+        if (controller.signal.aborted) throw error;
         throw new ApiError(0, "INVALID_RESPONSE");
       }
     } catch (error) {

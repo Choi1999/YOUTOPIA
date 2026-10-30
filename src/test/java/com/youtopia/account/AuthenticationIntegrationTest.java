@@ -911,6 +911,62 @@ class AuthenticationIntegrationTest {
         browser.get("/api/v1/charts/steam/ranking-periods?source=fabricated",400);new Browser().get("/api/v1/charts/steam/ranking-periods",200);
     }
 
+    @Test void duplicateJsonMembersAreRejectedBeforeSignupOrNestedSettingsChanges()throws Exception {
+        var browser=new Browser();browser.token();
+        var headers=new HttpHeaders();headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Cookie",browser.cookie);headers.set("X-CSRF-TOKEN",browser.csrf);
+        String duplicate="{\"email\":\"first@example.invalid\",\"email\":\"second@example.invalid\",\"password\":\""+PASSWORD+"\"}";
+        var result=http.exchange("/api/v1/auth/signup",HttpMethod.POST,new HttpEntity<>(duplicate,headers),String.class);
+        assertThat(result.getStatusCode().value()).isEqualTo(400);
+        assertThat(json.readTree(result.getBody()).path("code").asText()).isEqualTo("INVALID_REQUEST");
+        try(var c=DriverManager.getConnection(URL,"postgres","");var q=c.createStatement();var count=q.executeQuery("SELECT count(*) FROM auth.service_user")){
+            count.next();assertThat(count.getLong(1)).isZero();
+        }
+        browser.signup();browser.login();browser.token();
+        headers.set("Cookie",browser.cookie);headers.set("X-CSRF-TOKEN",browser.csrf);
+        String nested="{\"expectedVersion\":0,\"changes\":{\"theme\":\"dark\",\"theme\":\"light\"}}";
+        var patch=http.exchange("/api/v1/me/settings",HttpMethod.PATCH,new HttpEntity<>(nested,headers),String.class);
+        assertThat(patch.getStatusCode().value()).isEqualTo(400);
+        assertThat(browser.get("/api/v1/me/settings",200).at("/values/theme").asText()).isEqualTo("system");
+        assertThat(browser.get("/api/v1/me/settings",200).path("version").asLong()).isZero();
+    }
+
+    @Test void publicSearchTreatsInjectionSyntaxAndWildcardCharactersAsLiteralData()throws Exception {
+        gameFixtures();var guest=new Browser();
+        for(String query:List.of("' OR 1=1 --","'; SELECT pg_sleep(30); --","100%_literal","%","_")){
+            var found=guest.post("/api/v1/games/search",Map.of("q",query,"clientEventId",UUID.randomUUID()),200);
+            long expected=List.of("100%_literal","%","_").contains(query)?1:0;
+            assertThat(found.at("/page/totalElements").asLong()).isEqualTo(expected);
+        }
+        var intact=guest.get("/api/v1/games",200);
+        assertThat(intact.at("/page/totalElements").asLong()).isEqualTo(3);
+        guest.get("/api/v1/me/settings",401);guest.get("/api/v1/admin/members",401);
+    }
+
+    @Test void invalidProductEventIdsAreRejectedWithoutPersistingAnEvent()throws Exception {
+        var guest=new Browser();
+        for(long id:List.of(4294967296L,Long.MAX_VALUE))
+            guest.post("/api/v1/events",Map.of("clientEventId",UUID.randomUUID(),"eventType","GAME_VIEW","actionKey","game.detail.view","properties",Map.of("appId",id,"source","DIRECT")),400);
+        try(var c=DriverManager.getConnection(URL,"postgres","");var q=c.createStatement();var count=q.executeQuery("SELECT count(*) FROM telemetry.product_event")){
+            count.next();assertThat(count.getLong(1)).isZero();
+        }
+    }
+
+    @Test void videoSeriesAndComparisonChooseTheSameLatestReceiptAndIdForDuplicateSlots()throws Exception {
+        chartFixtures();
+        try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var q=c.createStatement()){
+            q.execute("INSERT INTO collector.video_chart_fixture SELECT 4,video_id,scheduled_at,artifact_received_at+interval '1 second',180 FROM collector.video_chart_fixture WHERE stats_result_id=2");
+            q.execute("INSERT INTO collector.video_chart_fixture SELECT 5,video_id,scheduled_at,artifact_received_at,175 FROM collector.video_chart_fixture WHERE stats_result_id=4");
+        }
+        var report=new Browser().get("/api/v1/youtube/videos/abcdefghijk/observations",200);
+        assertThat(report.path("observations")).hasSize(2);
+        assertThat(report.at("/observations/1/id").asLong()).isEqualTo(5);
+        assertThat(report.at("/observations/1/views").asLong()).isEqualTo(175);
+        assertThat(report.at("/comparison/last/views").asLong()).isEqualTo(175);
+        assertThat(report.at("/comparison/cumulativeDifference").asLong()).isEqualTo(-25);
+        assertThat(report.path("freshness").asText()).isEqualTo("UNASSESSED");
+    }
+
     @Test void uncategorizedWeeklySourceRemainsDistinctFromNamedCategoriesAndDailyRuns() throws Exception {
         Instant first=chartFixtures();
         try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var statement=c.createStatement()){

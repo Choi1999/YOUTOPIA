@@ -35,6 +35,8 @@ spring:
         repository-type: indexed
         flush-mode: immediate
   jackson2:
+    parser:
+      strict-duplicate-detection: true
     deserialization:
       fail-on-unknown-properties: true
 server:

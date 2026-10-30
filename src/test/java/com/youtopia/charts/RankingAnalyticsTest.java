@@ -54,4 +54,13 @@ class RankingAnalyticsTest {
             assertThatThrownBy(()->RankingAnalytics.calculate(List.of(invalid),first,first,now)).isInstanceOf(IllegalArgumentException.class);
         }
     }
+    @Test void observedNameChangesDoNotChangeIdentityOrBorrowAnotherGamesPreviousRank(){
+        var old=new RankingAnalytics.Entry(1,"Earlier observed title",10);
+        var renamed=new RankingAnalytics.Entry(1,"Later observed title",5);
+        var unrelated=new RankingAnalytics.Entry(2,"Earlier observed title",1);
+        var result=RankingAnalytics.calculate(List.of(run(1,"KR",-1,old),run(2,"KR",0,renamed,unrelated)),first,first,now).weeks().getFirst().kr();
+        assertThat(result.comparable()).isEqualTo(1);assertThat(result.uncomparable()).isEqualTo(1);
+        assertThat(result.topRisers()).containsExactly(new RankingAnalytics.Move(1,"Later observed title",10,5,5));
+        assertThat(result.excluded().getFirst().appId()).isEqualTo(2);
+    }
 }

@@ -14,7 +14,8 @@ public final class ApiProblems {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
         problem.setType(URI.create("urn:youtopia:problem:" + code.toLowerCase(java.util.Locale.ROOT).replace('_', '-')));
         // Do not include query strings or rejected values in error responses.
-        problem.setInstance(URI.create(request.getRequestURI()));
+        try { problem.setInstance(URI.create(request.getRequestURI())); }
+        catch(IllegalArgumentException rejectedPath) { problem.setInstance(URI.create("/")); }
         problem.setProperty("code", code);
         problem.setProperty("traceId", request.getAttribute(TraceFilter.ATTRIBUTE));
         problem.setProperty("fieldErrors", Map.of());

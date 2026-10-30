@@ -20,6 +20,12 @@ public class SecurityConfiguration {
     org.springframework.beans.factory.ObjectProvider<com.youtopia.account.AccountSessionFilter> accountFilter;
 
     @Bean
+    org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer rejectedRequests(ObjectMapper mapper) {
+        return web -> web.requestRejectedHandler((request,response,error) ->
+            write(mapper,request,response,HttpStatus.BAD_REQUEST,"INVALID_REQUEST","Request parameters are invalid."));
+    }
+
+    @Bean
     SecurityFilterChain apiSecurity(HttpSecurity http, ObjectMapper mapper) throws Exception {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, "/api/v1/auth/csrf", "/api/v1/steam/apps/*/ccu").permitAll()

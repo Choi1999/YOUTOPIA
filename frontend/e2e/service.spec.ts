@@ -16,6 +16,9 @@ test.describe("real isolated Spring/PostgreSQL/Redis browser flow", () => {
     expect(new URL(response.url()).searchParams.has("category")).toBe(false);
     expect((await response.json()).category).toBeNull();
     await expect(page.getByText(/weekly_uncategorized \/ 범주 미지정 · 마지막 선택 주차/)).toBeVisible();
+    await expect(page.getByText(/선택 원천의 관측 주간 종료/)).toContainText("KST");
+    await expect(page.getByText(/조회 시각/)).toContainText("신선도 판정 전");
+    await expect(page.getByText(/순위 게임명은 관측 당시 원천 표기/)).toBeVisible();
     await expect(page.getByRole("heading",{name:"08 · TOP20 진입 및 매주 유지"})).toBeVisible();
     await expect(page.getByRole("link",{name:"로그인",exact:true})).toBeVisible();
   });
@@ -156,6 +159,7 @@ test.describe("real isolated Spring/PostgreSQL/Redis browser flow", () => {
       page.getByRole("heading", { name: "10 · 영상 최초·마지막 누적 조회수" }),
     ).toBeVisible();
     await expect(page.getByText(/차이 200/)).toBeVisible();
+    await expect(page.getByText(/마지막 영상 관측/)).toContainText("신선도 판정 전");
     await expect(page.getByText(/0%를 뜻하지 않습니다/)).toBeVisible();
     await page.getByRole("button", { name: "설정", exact: true }).click();
     await expect(
@@ -259,6 +263,7 @@ test.describe("real isolated Spring/PostgreSQL/Redis browser flow", () => {
     await expect(page.getByLabel("YouTube 영상 ID",{exact:true})).toBeVisible();
     await page.goto("/games/steam:570/youtube");
     await expect(page.getByRole("heading",{name:"Browser Arena · YouTube",exact:true})).toBeVisible();
+    await expect(page.getByText(/Steam 앱 ID 570 · 게임별 YouTube 연결 미확인/)).toBeVisible();
     await page.getByLabel("YouTube 영상 ID",{exact:true}).fill("abcdefghijk");
     await page.getByRole("button",{name:"실제 영상 관측 조회",exact:true}).click();
     await expect(page.getByRole("group",{name:"10 · 영상 최초·마지막 누적 조회수 관측점 탐색"})).toBeVisible();

@@ -32,14 +32,20 @@ public final class ObservationAnalytics {
         return new DirectionCounts(appIds.size(),appIds.size()-excluded,up,down,same,excluded,List.copyOf(comparisons));
     }
     public static VideoComparison video(String id,List<VideoPoint> values,Instant from,Instant to){
+        var points=videoObservations(values,from,to);
+        if(points.size()<2)return new VideoComparison(id,"UNAVAILABLE","INSUFFICIENT_OBSERVATIONS",points.isEmpty()?null:points.getFirst(),null,null,null);
+        var first=points.getFirst();var last=points.getLast();
+        return new VideoComparison(id,"AVAILABLE",null,first,last,Duration.between(first.slot(),last.slot()).getSeconds(),last.views()-first.views());
+    }
+    /** The rendered series and comparison use the same representative for repeated slots. */
+    public static List<VideoPoint> videoObservations(List<VideoPoint> values,Instant from,Instant to){
+        if(from.isAfter(to))throw new IllegalArgumentException("Invalid video observation interval");
         var slots=new TreeMap<Instant,VideoPoint>();
         for(var p:values){if(p.id()<=0||p.slot()==null||p.receivedAt()==null||p.views()<0)throw new IllegalArgumentException("Invalid canonical video observation");
             if(p.slot().isBefore(from)||p.slot().isAfter(to)||p.receivedAt().isAfter(to))continue;
             slots.merge(p.slot(),p,(a,b)->Comparator.comparing(VideoPoint::receivedAt).thenComparingLong(VideoPoint::id).compare(a,b)>=0?a:b);
         }
-        if(slots.size()<2)return new VideoComparison(id,"UNAVAILABLE","INSUFFICIENT_OBSERVATIONS",slots.isEmpty()?null:slots.firstEntry().getValue(),null,null,null);
-        var first=slots.firstEntry().getValue();var last=slots.lastEntry().getValue();
-        return new VideoComparison(id,"AVAILABLE",null,first,last,Duration.between(first.slot(),last.slot()).getSeconds(),last.views()-first.views());
+        return List.copyOf(slots.values());
     }
     public static Composition composition(List<AppType> values){
         Map<Long,String> types=new HashMap<>();

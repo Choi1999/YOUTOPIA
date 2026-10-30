@@ -67,6 +67,18 @@ class CcuServiceTest {
         verifyNoInteractions(repository);
     }
 
+    @ParameterizedTest @ValueSource(longs={-1,4294967296L,Long.MAX_VALUE})
+    void refusesOutsideNativeSteamIdBoundsBeforeBudgetOrQuery(long id){
+        assertThatThrownBy(()->service.get(id,7)).isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(repository,budget);
+    }
+
+    @Test void acceptsTheLargestNativeSteamIdWithoutNarrowingIt(){
+        when(repository.findObservations(anyLong(),any(),any())).thenReturn(List.of());
+        assertThat(service.get(4294967295L,7).appId()).isEqualTo(4294967295L);
+        verify(repository).findObservations(eq(4294967295L),any(),any());
+    }
+
     @Test
     void exhaustedOrUnavailableBudgetNeverQueriesPostgres() {
         doThrow(new CcuRequestBudget.BudgetExceededException(20)).when(budget).acquire();

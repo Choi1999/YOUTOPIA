@@ -33,4 +33,9 @@ class EventContractTest {
         assertThatThrownBy(()->catalog.validate(event("KEYWORD_SELECTED","keyword.select",Map.of("keywordId","madeUp")))).isInstanceOf(AccountProblem.class);
         assertThatThrownBy(()->catalog.validate(event("EVENT_VIEW","game_event.view",Map.of("eventId","madeUp")))).isInstanceOf(AccountProblem.class);
     }
+    @Test void productEventNativeIdsUseTheSameBoundsAsPublicGameReads(){
+        assertThat(catalog.validate(event("GAME_VIEW","game.detail.view",Map.of("appId",4294967295L,"source","DIRECT"))).values()).containsEntry("appId",4294967295L);
+        for(long id:List.of(-1L,0L,4294967296L,Long.MAX_VALUE))
+            assertThatThrownBy(()->catalog.validate(event("GAME_VIEW","game.detail.view",Map.of("appId",id,"source","DIRECT")))).isInstanceOf(AccountProblem.class);
+    }
 }

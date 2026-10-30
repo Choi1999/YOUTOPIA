@@ -47,4 +47,18 @@ class ObservationAnalyticsTest {
         assertThatThrownBy(()->ObservationAnalytics.composition(List.of(new ObservationAnalytics.AppType(1,"game"),new ObservationAnalytics.AppType(1,"dlc")))).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(()->ObservationAnalytics.recent(1,List.of(point(1,0,-1)),now)).isInstanceOf(IllegalArgumentException.class);
     }
+    @Test void renderedVideoSlotsKeepInclusiveBoundsLatestReceiptAndIdAndExcludeFutureReceipts(){
+        Instant from=now.minusSeconds(60);
+        var points=List.of(new ObservationAnalytics.VideoPoint(1,from.minusSeconds(1),from,1),
+            new ObservationAnalytics.VideoPoint(2,from,from,0),
+            new ObservationAnalytics.VideoPoint(3,now,now,100),
+            new ObservationAnalytics.VideoPoint(4,now,now,90),
+            new ObservationAnalytics.VideoPoint(5,now.minusSeconds(1),now.plusSeconds(1),999));
+        var selected=ObservationAnalytics.videoObservations(points,from,now);
+        assertThat(selected.stream().map(ObservationAnalytics.VideoPoint::id)).containsExactly(2L,4L);
+        assertThat(selected.getFirst().views()).isZero();
+        assertThat(ObservationAnalytics.videoObservations(points,now,now)).containsExactly(selected.getLast());
+        assertThatThrownBy(()->selected.clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(()->ObservationAnalytics.videoObservations(points,now,from)).isInstanceOf(IllegalArgumentException.class);
+    }
 }

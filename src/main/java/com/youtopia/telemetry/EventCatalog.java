@@ -41,7 +41,7 @@ public class EventCatalog {
     }
     private Object value(String key,JsonNode value){
         if(value==null||value.isNull())throw invalid();
-        if(key.equals("appId")){if(!value.isIntegralNumber()||!value.canConvertToLong()||value.asLong()<=0)throw invalid();return value.asLong();}
+        if(key.equals("appId")){if(!value.isIntegralNumber()||!value.canConvertToLong()||value.asLong()<=0||value.asLong()>4294967295L)throw invalid();return value.asLong();}
         if(key.equals("totalResultCount")||key.equals("resultPosition")){if(!value.isIntegralNumber()||!value.canConvertToInt()||value.asInt()<(key.equals("resultPosition")?1:0))throw invalid();return value.asInt();}
         if(key.equals("searchContextId")){if(!value.isTextual())throw invalid();try{return UUID.fromString(value.textValue());}catch(IllegalArgumentException e){throw invalid();}}
         if(key.equals("filterKeys")){

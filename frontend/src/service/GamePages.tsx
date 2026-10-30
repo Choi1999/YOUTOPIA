@@ -395,7 +395,7 @@ export function GameDetailPage() {
             ·{" "}
             {data.game.releaseAt.value
               ? time(data.game.releaseAt.value)
-              : "출시일 미지원"}{" "}
+              : "출시일 정보 없음"}{" "}
             · Steam{" "}
             {data.game.steamConnection === "CONNECTED"
               ? "연결"

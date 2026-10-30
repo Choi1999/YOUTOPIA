@@ -231,11 +231,21 @@ function RankCharts() {
           </select>
         </label>
       </div>
+      {dates.length > 0 && (
+        <p className="chart-caption">
+          선택 원천의 관측 주간 종료 {time(dates.at(-1)?.end)}
+        </p>
+      )}
       {data && last && region && (
         <>
           <p className="chart-caption">
             {data.source} / {data.category ?? "범주 미지정"} · 마지막 선택 주차{" "}
-            {time(last.periodStart)} · {data.calculationVersion}
+            {time(last.periodStart)} · 조회 시각 {time(data.asOf)} · 신선도{" "}
+            {data.freshness === "UNASSESSED" ? "판정 전" : data.freshness} ·{" "}
+            {data.calculationVersion}
+          </p>
+          <p className="chart-caption">
+            순위 게임명은 관측 당시 원천 표기이며 현재 카탈로그명과 다를 수 있습니다.
           </p>
           <label className="game-filters">
             3주 관측 게임
@@ -501,9 +511,15 @@ export function YoutubePage() {
       }
     >
       {gameId && (
-        <Link className="back-button" to={"/games/" + gameId}>
-          ← 게임 상세
-        </Link>
+        <>
+          <Link className="back-button" to={"/games/" + gameId}>
+            ← 게임 상세
+          </Link>
+          <p className="chart-caption">
+            Steam 앱 ID {appId} · 게임별 YouTube 연결{" "}
+            {context.data?.game.youtubeConnection === "CONNECTED" ? "연결됨" : "미확인"}
+          </p>
+        </>
       )}
       <div className="service-chart-grid">
         <Unavailable
@@ -558,6 +574,11 @@ export function YoutubePage() {
       />
       {videos.data && (
         <>
+          <p className="chart-caption">
+            마지막 영상 관측 {time(videos.data.observations.at(-1)?.slot)} · 조회 시각{" "}
+            {time(videos.data.to)} · 신선도{" "}
+            {videos.data.freshness === "UNASSESSED" ? "판정 전" : videos.data.freshness}
+          </p>
           <ObservedChart
             title="10 · 영상 최초·마지막 누적 조회수"
             unit="회"

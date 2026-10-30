@@ -31,7 +31,7 @@ public class ObservationChartService {
     public VideoReport video(String videoId,int days){
         if(!videoId.matches("[A-Za-z0-9_-]{11}")||days!=7&&days!=30)throw new IllegalArgumentException("Invalid video or period");
         budget.acquire();Instant now=clock.instant(),from=now.minusSeconds(days*86400L);
-        var rows=repository.video(videoId,from,now);
+        var rows=ObservationAnalytics.videoObservations(repository.video(videoId,from,now),from,now);
         return new VideoReport(from,now,"NATIVE_VIDEO_ID_NO_GAME_MAPPING","UNASSESSED",ObservationAnalytics.video(videoId,rows,from,now),List.copyOf(rows));
     }
     @Transactional(readOnly=true,timeout=8)

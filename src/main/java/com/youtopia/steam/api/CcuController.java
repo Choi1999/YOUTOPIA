@@ -3,6 +3,7 @@ package com.youtopia.steam.api;
 import com.youtopia.steam.service.CcuService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Max;
 import java.util.Collections;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,7 @@ public class CcuController {
     public CcuController(CcuService service) { this.service = service; }
 
     @GetMapping("/api/v1/steam/apps/{appId}/ccu")
-    ResponseEntity<CcuResponse> get(@PathVariable @Positive long appId,
+    ResponseEntity<CcuResponse> get(@PathVariable @Positive @Max(4294967295L) long appId,
                                   @RequestParam(defaultValue = "7") int days,
                                   HttpServletRequest request) {
         if (Collections.list(request.getParameterNames()).stream().anyMatch(p -> !p.equals("days"))
