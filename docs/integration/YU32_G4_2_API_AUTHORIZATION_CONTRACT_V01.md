@@ -99,6 +99,7 @@ DDL, 인덱스, Redis 여부, 복제/암호화/보존/삭제 정책 및 배포 �
 | Guest Job POST | `401 AUTHENTICATION_REQUIRED`, 생성 0 |
 | 다른 테넌트의 Job/Snapshot | `404 RESOURCE_UNAVAILABLE`, 존재 여부 은닉 |
 | 데이터 수집·파생 정책 미승인 | `403 POLICY_BLOCKED`, 생성/수치 0 |
+| 기능 플래그 비활성 | `403 FEATURE_DISABLED` (후보) |
 | 이용권 범위 밖 | `403 ENTITLEMENT_LIMITED` |
 | 요청/소스 할당량 소진 | `429 QUOTA_DEFERRED` |
 | 멱등 키 재사용 + 본문 불일치 | `409 IDEMPOTENCY_CONFLICT` |
@@ -111,7 +112,7 @@ DDL, 인덱스, Redis 여부, 복제/암호화/보존/삭제 정책 및 배포 �
 
 ## 8. G4-2E — 계약·부정 테스트
 
-코드: `shared/contracts/yu32-operations-v0/contract.cjs`, `yu32-operations.schema.json`, `tests/contract.test.cjs`. 모두 **합성 오프라인 계약 검사**이며 운영 Authorization 로직이 아니다. 머신 판독·출처·상태 부정 검증은 현재 **T01~T26(26건)**으로 구성한다. 아래 A01~A12는 별도의 장기 서버 수용 시나리오이며 T번호와 일대일 대응하지 않는다.
+코드: `shared/contracts/yu32-operations-v0/contract.cjs`, `yu32-operations.schema.json`, `tests/contract.test.cjs`. 모두 **합성 오프라인 계약 검사**이며 운영 Authorization 로직이 아니다. 머신 판독·출처·상태 부정 검증은 현재 **T01~T30(30건)**으로 구성한다. 아래 A01~A12는 별도의 장기 서버 수용 시나리오이며 T번호와 일대일 대응하지 않는다.
 
 | 수용 시나리오 | 검증 사항 | 범위 |
 |---|---|---|
@@ -125,7 +126,7 @@ DDL, 인덱스, Redis 여부, 복제/암호화/보존/삭제 정책 및 배포 �
 | A11 | Chrome Hover GET-only, Side Panel 정상 | 기존 수동 QA, 운영 API E2E 별도 |
 | A12 | 새 API Adapter·기존 Summary v1 wire 검증 | Consumer/Provider 미구현 |
 
-오프라인 테스트에서는 `APPROVED_TEST_ONLY`를 사용하지만 이는 실제 승인 값이나 서버 기능 플래그가 아니다.
+오프라인 테스트에서는 `APPROVED_TEST_ONLY`를 사용하지만 이는 실제 승인 값이나 서버 기능 플래그가 아니다. 독립 검수에서 캐시 조회와 Snapshot 참조의 **ID·Scope·status·analyzedAt 일치**를 강제하고, 임의 상태 키(`__proto__`), 비정상 날짜 및 `FEATURE_DISABLED` 오류 계약의 부정 테스트를 추가했다. 이 참조 검증은 전체 Snapshot 분석 분모·출처 권리·서명 검증을 대체하지 않는다.
 
 ## 9. YouTube 외부 정책 확인 (2026-10-30)
 
@@ -141,3 +142,11 @@ DDL, 인덱스, Redis 여부, 복제/암호화/보존/삭제 정책 및 배포 �
 - 고객용 `extension/manifest.json`·현재 Worker·Side Panel·프런트엔드 합성 UX는 이 단계에서 변경하지 않는다.
 
 **현재 판정: 문서/테스트 후보. 운영 API 없음, 고객 분석 요청 비활성, 외부 정책 Gate 유지.**
+
+### 독립 검수 보완 기록 (2026-10-30)
+
+- V01 최초 테스트 26건에서 메타데이터 결속/비정상 상태/유효 날짜/오류 매핑 사례를 추가해 **30건**으로 확장했다.
+- `canShowSyntheticMetrics`는 단순 Boolean 검증 플래그가 아니라 `expectedScope` 및 `SNAPSHOT_REFERENCE`의 ID·Scope·status·분석 시각이 일치해야 통과한다. 여전히 **오프라인 합성 판단 보조 함수**일 뿐 실제 수치를 렌더링할 승인 권한은 없다.
+- 상태 전이 검사는 `Object.prototype` 상속 키를 거부한다. 스냅샷 시간은 RFC3339 표기와 실제 달력을 분리 검증한다.
+- `FEATURE_DISABLED`를 후보 오류 스키마의 코드로 포함하고 실제 기능 비활성 정책은 계속 `POLICY_HOLD`로 유지한다.
+- GitHub Actions의 성공은 스키마 전체를 표준 JSON Schema 검증기로 검사하거나 서버 권한/원자성 테스트를 수행했다는 뜻이 아니다. 실제 schema validator·DB/API Provider 검증은 G4-3에서 별도로 필요하다.
