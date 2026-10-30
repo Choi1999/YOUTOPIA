@@ -1,6 +1,6 @@
 # YOUTOPIA — YU-32 분석 가용성·캐시·작업 스케줄링 v0.1
 
-**상태:** SYNTHETIC_EXPERIMENT / STAGES_1_TO_3_VERIFIED / AUDIT_FIXES_PENDING_CI / NOT_PRODUCTION_READY
+**상태:** SYNTHETIC_EXPERIMENT / STAGES_1_TO_3_VERIFIED / AUDIT_PR_CI_PASSED / CHROME_QA_PENDING / NOT_PRODUCTION_READY
 **기준 브랜치:** frontend
 **감사 기준 커밋:** 53454762b3607360b3d51746df06d257039a5216 (`frontend`)
 
@@ -139,16 +139,16 @@ git diff --check
 git status --short
 ```
 
-예상 테스트 건수는 다음과 같습니다.
+2026-10-30 GitHub Actions의 합성·확장 자동 검증 결과는 다음과 같습니다.
 
-| 대상 | 예상 |
+| 대상 | PR CI |
 |---|---:|
 | Hover 카드 UI | 72 |
 | 확장 전체 회귀 | 296 |
 | YU-32 합성 엔진 | 15 |
 | 공유 분석 계약 | 19 |
 
-**기준선 실측:** Hover UI 70/70, 확장 294/294, 엔진 13/13, 공유 계약 19/19. 위 표는 이번 감사 수정 후 **목표치**이며 PR CI/로컬 재검증이 필요하다.
+**기준선 실측:** Hover UI 70/70, 확장 294/294, 엔진 13/13, 공유 계약 19/19. **감사 수정 실측:** Hover UI 72건(확장 전체에 포함), 확장 296/296, 합성 엔진 15/15, 분석 계약 19/19, 관리자 계약 7/7, 프런트엔드 Vitest 171/171 및 TypeScript/Vite 빌드 PASS. 증거: [PR #41 CI 실행](https://github.com/Choi1999/YOUTOPIA/actions/runs/41039607823).
 
 ### 완료 기준
 
@@ -156,7 +156,7 @@ git status --short
 
 별도의 실제 Chrome QA 전용 빌드 활성화는 그다음 작업으로 분리합니다. 이 구분을 유지해야 테스트용 분석 요청 기능이 실사용자에게 잘못 노출되는 일을 방지할 수 있습니다.
 
-**현재 판정:** YU-32 1~3단계의 기존 기준선 자동 테스트 완료. 감사 수정은 별도 브랜치 및 PR 검증 대상이며, 실사용자용 분석 요청은 여전히 비활성화 상태다.
+**현재 판정:** YU-32 1~3단계 및 감사 수정의 GitHub Actions 자동 검증 PASS. 감사 수정은 Draft PR #41에 격리했고 Chrome 수동 QA·병합은 완료되지 않았다. 실사용자용 분석 요청은 계속 비활성화 상태다.
 
 ## 12. 감사 보완 — STALE/FAILED 상태 및 CI
 
@@ -172,5 +172,5 @@ git status --short
 ### 증거 구분
 
 - **기준선 통과:** YU-32 3단계 이전 커밋에 대한 사용자의 Windows Node 테스트 로그.
-- **감사 수정 목표:** Hover UI 72/72, 확장 296/296, 스케줄러 15/15, 분석 계약 19/19.
-- **미검증:** 원격 PR CI의 실제 실행 결과와 Chrome 수동 QA. 결과가 확인되기 전에는 완료 처리하지 않는다.
+- **감사 수정 확인:** PR CI에서 확장 296/296, 스케줄러 15/15, 분석 계약 19/19, 관리자 계약 7/7 및 프런트엔드 171/171 PASS. CI의 확장 테스트 안에 Hover UI 72건이 포함된다.
+- **미검증:** Chrome 확장 실제 브라우저 수동 QA, Playwright 브라우저 E2E 및 운영 백엔드 연계. 이 증거를 자동 CI 통과로 대체하지 않는다.
