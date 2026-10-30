@@ -140,7 +140,6 @@ function createSimulator({
     if (!scope) {
       return {kind: "REJECTED", reason: "INVALID_SCOPE"};
     }
-    
     if (
     !snapshot ||
     typeof snapshot.snapshotId !== "string" ||

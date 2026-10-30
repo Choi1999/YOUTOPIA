@@ -1,7 +1,7 @@
 # YOUTOPIA — YU-32 분석 가용성·캐시·작업 스케줄링 v0.1
 
-**상태:** APPROVED_UX_DIRECTION / SYNTHETIC_EXPERIMENT / NOT_PRODUCTION_READY  
-**기준 브랜치:** frontend  
+**상태:** APPROVED_UX_DIRECTION / SYNTHETIC_EXPERIMENT / NOT_PRODUCTION_READY
+**기준 브랜치:** frontend
 **기준 커밋:** 44e1726208032f352728c86a0da5ee8ff1ce3a0e
 
 ## 1. 목적
