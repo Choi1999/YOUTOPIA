@@ -7,11 +7,11 @@ import java.time.Instant;
 /** Explicit disposable browser fixtures; hardcoded loopback test DBs, never production bindings. */
 public final class BrowserFixtureCommand {
     public static void main(String[] args)throws Exception {
-        try(var connection=DriverManager.getConnection("jdbc:postgresql://127.0.0.1:25432/youtopia_auth_test?connectTimeout=5","postgres","");var query=connection.prepareStatement("INSERT INTO auth.admin_account(admin_login_name,password_hash) VALUES('browser_operator',?) ON CONFLICT(admin_login_name) DO UPDATE SET password_hash=excluded.password_hash")){
+        try(var connection=DriverManager.getConnection(IsolatedTestServices.url("youtopia_auth_test")+"?connectTimeout=5","postgres","");var query=connection.prepareStatement("INSERT INTO auth.admin_account(admin_login_name,password_hash) VALUES('browser_operator',?) ON CONFLICT(admin_login_name) DO UPDATE SET password_hash=excluded.password_hash")){
             query.setString(1,AccountPasswordEncoders.create().encode("synthetic browser operator password 1234"));query.executeUpdate();
         }
         Instant now=Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS),first=now.minusSeconds(28*86400L);
-        try(var connection=DriverManager.getConnection("jdbc:postgresql://127.0.0.1:25432/youtopia_test?connectTimeout=5","postgres","");var query=connection.createStatement()){
+        try(var connection=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test")+"?connectTimeout=5","postgres","");var query=connection.createStatement()){
             connection.setAutoCommit(false);
             query.execute("TRUNCATE service.game_catalog_fixture,collector.ccu_fixture,collector.video_chart_fixture,service.app_type_fixture,service.ranking_chart_fixture,service.video_association_fixture");
             query.execute("INSERT INTO service.game_catalog_fixture(app_id,steam_name,developers,steam_tracked) VALUES(570,'Browser Arena','[\"Synthetic Studio\"]',true),(730,'Browser Counter','[]',true),(900,'Browser Indie',null,false)");

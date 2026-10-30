@@ -1,0 +1,13 @@
+**
+!gradlew
+!gradle/
+!gradle/**
+!build.gradle
+!settings.gradle
+!gradle.lockfile
+!src/
+!src/**
+!tools/
+!tools/**
+**/__pycache__/**
+**/*.pyc

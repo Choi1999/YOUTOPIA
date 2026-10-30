@@ -1,5 +1,7 @@
 package com.youtopia.account;
 
+import com.youtopia.integration.IsolatedTestServices;
+
 import com.fasterxml.jackson.databind.*;
 import java.nio.file.*;
 import java.sql.*;
@@ -20,7 +22,7 @@ import static org.assertj.core.api.Assertions.*;
 @SpringBootTest(webEnvironment=SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(AuthenticationIntegrationTest.Time.class)
 class AuthenticationIntegrationTest {
-    static final String URL="jdbc:postgresql://127.0.0.1:25432/youtopia_auth_test";
+    static final String URL=IsolatedTestServices.url("youtopia_auth_test");
     static final String PASSWORD="synthetic test pass phrase 1234";
     static final String EMAIL="member@example.invalid";
     @Autowired TestRestTemplate http;
@@ -50,9 +52,9 @@ class AuthenticationIntegrationTest {
         public Instant instant(){return now;}
     }
     @DynamicPropertySource static void properties(DynamicPropertyRegistry p) throws Exception {
-        p.add("spring.datasource.url",()->"jdbc:postgresql://127.0.0.1:25432/youtopia_test");
+        p.add("spring.datasource.url",()->IsolatedTestServices.url("youtopia_test"));
         p.add("spring.datasource.username",()->"ytp_test_data_ro");p.add("spring.datasource.password",()->"");
-        p.add("spring.data.redis.host",()->"127.0.0.1");p.add("spring.data.redis.port",()->26379);
+        p.add("spring.data.redis.host",()->"127.0.0.1");p.add("spring.data.redis.port",IsolatedTestServices::redisPort);
         p.add("spring.data.redis.username",()->"");p.add("spring.data.redis.password",()->"");p.add("spring.data.redis.ssl.enabled",()->false);
         p.add("spring.session.data.redis.namespace",()->"youtopia:p0-auth-tests");
         p.add("youtopia.accounts.enabled",()->true);
@@ -61,7 +63,7 @@ class AuthenticationIntegrationTest {
         p.add("youtopia.control.enabled",()->true);
         p.add("youtopia.control.service-key",()->"p0-test");
         p.add("youtopia.control.hmac-key",()->Base64.getEncoder().encodeToString(new byte[32]));
-        p.add("youtopia.control.datasource.jdbc-url",()->"jdbc:postgresql://127.0.0.1:25432/youtopia_control_test");
+        p.add("youtopia.control.datasource.jdbc-url",()->IsolatedTestServices.url("youtopia_control_test"));
         p.add("youtopia.control.datasource.username",()->"ytp_test_control_app");
         p.add("youtopia.control.datasource.password",()->"");
         p.add("youtopia.accounts.deletion-enabled",()->true);
@@ -106,7 +108,7 @@ class AuthenticationIntegrationTest {
                 insert.setString(1,passwords.encode(PASSWORD));insert.executeUpdate();
             }
         }
-        try(var main=DriverManager.getConnection(URL,"postgres","");var control=DriverManager.getConnection("jdbc:postgresql://127.0.0.1:25432/youtopia_control_test","postgres","");var ms=main.createStatement();var cs=control.createStatement()){
+        try(var main=DriverManager.getConnection(URL,"postgres","");var control=DriverManager.getConnection(IsolatedTestServices.url("youtopia_control_test"),"postgres","");var ms=main.createStatement();var cs=control.createStatement()){
             ms.execute("UPDATE service.restore_marker SET journal_sequence=0");
             cs.execute("TRUNCATE restore_control.deletion_journal,restore_control.restore_run,restore_control.service_fence");
             cs.execute("UPDATE restore_control.policy_item SET approval_status='APPROVED',approval_ref='SYNTHETIC_TEST_ONLY',approved_at=current_timestamp,legal_basis='SYNTHETIC_FIXTURE_NOT_LEGAL_APPROVAL',duration_rule='SYNTHETIC_RULE_NOT_PRODUCTION_RETENTION',separate_storage_ref='ISOLATED_TEST_ONLY'");
@@ -535,7 +537,7 @@ class AuthenticationIntegrationTest {
     }
     @Test void unapprovedRetentionPolicyCannotEnableNewDeletionOrReactivateExpiredPendingAccount() throws Exception {
         var b=new Browser();b.signup();b.login();
-        try(var c=DriverManager.getConnection("jdbc:postgresql://127.0.0.1:25432/youtopia_control_test","postgres","");var st=c.createStatement()) {st.execute("UPDATE restore_control.policy_item SET approval_status='REVIEW'");}
+        try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_control_test"),"postgres","");var st=c.createStatement()) {st.execute("UPDATE restore_control.policy_item SET approval_status='REVIEW'");}
         b.post("/api/v1/me/deletion",Map.of("requestKey",UUID.randomUUID(),"currentPassword",PASSWORD,"confirmed",true),503);
         b.get("/api/v1/auth/me",200);
         expireAccountWithRecoveredHistory();b.get("/api/v1/auth/me",401);
@@ -543,7 +545,7 @@ class AuthenticationIntegrationTest {
     }
 
     private org.springframework.jdbc.core.JdbcTemplate rootJdbc(String database) {
-        var source=new org.springframework.jdbc.datasource.DriverManagerDataSource("jdbc:postgresql://127.0.0.1:25432/"+database,"postgres","");
+        var source=new org.springframework.jdbc.datasource.DriverManagerDataSource(IsolatedTestServices.url(database),"postgres","");
         return new org.springframework.jdbc.core.JdbcTemplate(source);
     }
     private com.youtopia.restore.RestoreCoordinator restoreCoordinator(){
@@ -553,7 +555,7 @@ class AuthenticationIntegrationTest {
             new org.springframework.jdbc.support.JdbcTransactionManager(main.getDataSource()));
     }
     private void isolatedDockerCommand(Path input,Path output,String... arguments) throws Exception {
-        var command=new ArrayList<>(List.of("docker","--host=unix:///var/run/docker.sock","exec","-i","youtopia-bootstrap-pg"));
+        var command=new ArrayList<>(List.of("docker","--host=unix:///var/run/docker.sock","exec","-i",IsolatedTestServices.postgresContainer()));
         command.addAll(List.of(arguments));var process=new ProcessBuilder(command);
         if(input!=null)process.redirectInput(input.toFile());
         if(output!=null)process.redirectOutput(output.toFile());else process.redirectOutput(ProcessBuilder.Redirect.DISCARD);
@@ -630,7 +632,7 @@ class AuthenticationIntegrationTest {
         control.update("UPDATE restore_control.service_fence SET key_fingerprint=decode(repeat('ff',32),'hex') WHERE service_key='p0-test'");
         assertThatThrownBy(()->coordinator.begin("synthetic-wrong-key")).isInstanceOf(IllegalStateException.class);
         assertThat(journal.servingAllowed()).isFalse();
-        try(var c=DriverManager.getConnection("jdbc:postgresql://127.0.0.1:25432/youtopia_control_test","ytp_test_control_app","");var s=c.createStatement()){
+        try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_control_test"),"ytp_test_control_app","");var s=c.createStatement()){
             assertThatThrownBy(()->s.execute("UPDATE restore_control.service_fence SET state='OPEN'")).isInstanceOf(SQLException.class);
             assertThatThrownBy(()->s.execute("DELETE FROM restore_control.deletion_journal")).isInstanceOf(SQLException.class);
         }
@@ -768,7 +770,7 @@ class AuthenticationIntegrationTest {
     }
 
     private void gameFixtures() throws Exception {
-        try(var c=DriverManager.getConnection("jdbc:postgresql://127.0.0.1:25432/youtopia_test","postgres","");var statement=c.createStatement()){
+        try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var statement=c.createStatement()){
             statement.execute("TRUNCATE service.game_catalog_fixture,collector.ccu_fixture");
             statement.execute("INSERT INTO service.game_catalog_fixture(app_id,steam_name,developers,steam_tracked) VALUES(570,'Synthetic Arena','[\"Synthetic Studio\"]',true),(730,'Synthetic Arena',null,false),(900,'100%_literal',null,true)");
             try(var insert=c.prepareStatement("INSERT INTO collector.ccu_fixture(observation_id,app_id,scheduled_at,observed_at,player_count) VALUES(?,?,?,?,?)")){
@@ -811,7 +813,7 @@ class AuthenticationIntegrationTest {
         var admin=new Browser();admin.post("/api/v1/admin/auth/login",Map.of("login","operator","password",PASSWORD),200);admin.get("/api/v1/games",200);admin.get("/api/v1/me/settings",403);
         var b=new Browser();b.signup();b.login();
         assertThat(http.postForEntity("/api/v1/games/search",Map.of("q","Synthetic","clientEventId",UUID.randomUUID()),String.class).getStatusCode().value()).isEqualTo(403);
-        try(var c=DriverManager.getConnection("jdbc:postgresql://127.0.0.1:25432/youtopia_test","postgres","");var statement=c.createStatement()){
+        try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var statement=c.createStatement()){
             statement.execute("REVOKE SELECT ON service.v_game_catalog FROM ytp_test_data_ro");
             try{guest.get("/api/v1/games",503);b.get("/api/v1/games",503);b.get("/api/v1/me/account",200);}
             finally{statement.execute("GRANT SELECT ON service.v_game_catalog TO ytp_test_data_ro");}
@@ -820,7 +822,7 @@ class AuthenticationIntegrationTest {
 
     private Instant chartFixtures() throws Exception {
         gameFixtures();Instant first=clock.now.truncatedTo(java.time.temporal.ChronoUnit.MICROS).minusSeconds(4*604800L);
-        try(var c=DriverManager.getConnection("jdbc:postgresql://127.0.0.1:25432/youtopia_test","postgres","");var statement=c.createStatement()){
+        try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var statement=c.createStatement()){
             statement.execute("TRUNCATE collector.video_chart_fixture,service.app_type_fixture,service.ranking_chart_fixture");
             statement.execute("INSERT INTO service.app_type_fixture VALUES(570,'game'),(570,'game'),(730,'dlc'),(900,null)");
             try(var insert=c.prepareStatement("INSERT INTO collector.video_chart_fixture VALUES(?,?,?,?,?)")){
@@ -856,7 +858,7 @@ class AuthenticationIntegrationTest {
         assertThat(charts.at("/weeks/2/unspecified/country").asText()).isEqualTo("UNSPECIFIED");assertThat(charts.at("/weeks/2/pairs").size()).isEqualTo(2);
         assertThat(charts.at("/top20Continuity/0/everyWeekTop20").asLong()).isEqualTo(1);
         b.get("/api/v1/charts/steam/rankings?source=weekly_native&category=sales&from=2026-10-01&to=2026-10-08",400);
-        try(var c=DriverManager.getConnection("jdbc:postgresql://127.0.0.1:25432/youtopia_test","postgres","");var statement=c.createStatement()){
+        try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var statement=c.createStatement()){
             statement.execute("REVOKE SELECT ON service.v_weekly_rank_observation FROM ytp_test_data_ro");
             try{b.get(base,503);}finally{statement.execute("GRANT SELECT ON service.v_weekly_rank_observation TO ytp_test_data_ro");}
         }
@@ -864,7 +866,7 @@ class AuthenticationIntegrationTest {
 
     @Test void youtubeQueryAssociationsDeduplicateLinksAndKeepAccelerationPolicyUnavailable() throws Exception {
         chartFixtures();var b=new Browser();b.signup();b.login();
-        try(var c=DriverManager.getConnection("jdbc:postgresql://127.0.0.1:25432/youtopia_test","postgres","");var statement=c.createStatement()){
+        try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var statement=c.createStatement()){
             statement.execute("TRUNCATE service.video_association_fixture");
             statement.execute("INSERT INTO service.video_association_fixture VALUES(570,'abcdefghijk',current_timestamp-interval '1 day',current_timestamp),(570,'abcdefghijk',current_timestamp-interval '1 day',current_timestamp),(570,'missing1234',current_timestamp-interval '1 day',current_timestamp)");
         }
@@ -877,7 +879,7 @@ class AuthenticationIntegrationTest {
     @Test void malformedChartSourceIsServiceFailureRatherThanBadClientInputOrEmptyData() throws Exception {
         Instant first=chartFixtures();var browser=new Browser();browser.signup();browser.login();
         String ranking="/api/v1/charts/steam/rankings?source=weekly_native&category=sales&from="+first+"&to="+first.plusSeconds(2*604800L);
-        try(var connection=DriverManager.getConnection("jdbc:postgresql://127.0.0.1:25432/youtopia_test","postgres","");var statement=connection.createStatement()){
+        try(var connection=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var statement=connection.createStatement()){
             statement.execute("INSERT INTO service.app_type_fixture VALUES(570,'dlc')");
             browser.get("/api/v1/charts/steam/app-types",503);
             statement.execute("DELETE FROM service.app_type_fixture WHERE app_id=570 AND app_type='dlc'");

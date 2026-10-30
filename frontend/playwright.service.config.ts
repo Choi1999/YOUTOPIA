@@ -1,4 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
+const webPort = process.env.YOUTOPIA_TEST_WEB_PORT ?? "4173";
+if (!/^[0-9]{4,5}$/.test(webPort) || Number(webPort) < 1024 || Number(webPort) > 65535)
+  throw new Error("A loopback browser-test port is required");
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "test-results/service",
@@ -12,15 +15,15 @@ export default defineConfig({
   ],
   timeout: 45000,
   use: {
-    baseURL: "http://127.0.0.1:4173",
+    baseURL: "http://127.0.0.1:" + webPort,
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
     video: "off",
   },
   webServer: {
-    command: "pnpm exec vite --host 127.0.0.1 --port 4173",
-    url: "http://127.0.0.1:4173",
-    reuseExistingServer: true,
+    command: "pnpm exec vite --host 127.0.0.1 --strictPort --port " + webPort,
+    url: "http://127.0.0.1:" + webPort,
+    reuseExistingServer: false,
   },
   projects: [
     {

@@ -3,24 +3,25 @@
 Java 21, Spring Boot 4.0.9, Gradle Wrapper 8.14.3, PostgreSQL 16 and Redis sessions.
 Jackson 2 uses Spring Boot's compatibility module to preserve the JSON contract.
 
-Spring Boot and Gradle functional tests do not require Python. The two scripts under tools/ are optional dependency and external-process checks; no Python or operational migration SQL is packaged in the JAR.
+The application does not require Python. The complete test harness uses Python 3
+and local Docker to prepare disposable synthetic services; no Python or operational
+migration SQL is packaged in the JAR.
 
 The React frontend uses same-origin service APIs. Its preserved historical prototype has an explicit /demo entry. Production requires same-origin HTTPS and configured external services. Browser E2E uses disposable local data; run the opt-in tools/verify_packaged_sessions.py --with-browser after preparing isolated fixtures.
 
 ```sh
-./gradlew test bootJar
-./gradlew integrationTest
+python3 tools/test_services.py verify
 python3 tools/check_dependencies.py
-python3 tools/verify_packaged_sessions.py
 ```
 
-`test` runs domain and MVC security tests. `integrationTest` requires disposable
-PostgreSQL 16 at loopback port 25432 and Redis at loopback port 26379, with prepared
-synthetic fixtures, databases (`youtopia_test`, `youtopia_auth_test`,
-`youtopia_control_test`, `youtopia_operator_audit_20261030`) and restricted test logins. Restore tests also require
-Docker access to the isolated `youtopia-bootstrap-pg` container. They execute an
-actual backup and restore of fake data. Tests never read production DB variables;
-missing dependencies fail the integration task. The separate dependency check
+`check` runs unit/MVC tests, integration tests, and fixture-tool safety tests.
+The public harness creates its own labelled PostgreSQL 16/Redis containers on
+dynamic loopback ports; it does not require old containers, populated caches,
+private SQL or private workspace paths. Restore tests execute an actual backup
+and restore of fake data. Tests never read production DB variables; missing
+fixtures fail instead of skipping integration. Preparation, cleanup, complete
+frontend/browser commands and cold-cache acceptance are in [docs/testing.md](docs/testing.md).
+The separate dependency check
 queries OSV using public Maven coordinates and reports unavailable checks explicitly.
 It does not scan a deployment image or the JDK.
 

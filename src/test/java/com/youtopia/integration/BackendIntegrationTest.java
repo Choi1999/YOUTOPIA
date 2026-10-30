@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.*;
 @org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class BackendIntegrationTest {
-    static final String URL = "jdbc:postgresql://127.0.0.1:25432/youtopia_test";
+    static final String URL = IsolatedTestServices.url("youtopia_test");
     @Autowired TestRestTemplate http;
     @Autowired ObjectMapper mapper;
     @Autowired SessionRepository<? extends Session> sessions;
@@ -37,7 +37,7 @@ class BackendIntegrationTest {
         properties.add("spring.datasource.username", () -> "ytp_test_data_ro");
         properties.add("spring.datasource.password", () -> "");
         properties.add("spring.data.redis.host", () -> "127.0.0.1");
-        properties.add("spring.data.redis.port", () -> 26379);
+        properties.add("spring.data.redis.port", IsolatedTestServices::redisPort);
         properties.add("spring.data.redis.username", () -> "");
         properties.add("spring.data.redis.password", () -> "");
         properties.add("spring.data.redis.ssl.enabled", () -> false);

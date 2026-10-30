@@ -13,6 +13,8 @@ import urllib.error
 import urllib.request
 import uuid
 import argparse
+import socket
+from test_services import load_state
 
 arguments = argparse.ArgumentParser(description=__doc__)
 arguments.add_argument('--with-browser', action='store_true', help='Run saved React browser E2E against these isolated JAR processes')
@@ -21,7 +23,13 @@ arguments = arguments.parse_args()
 root = Path(__file__).resolve().parent.parent
 reports = root / 'build/reports/packaged-sessions'
 reports.mkdir(parents=True, exist_ok=True)
-cli = ['docker', '--host=unix:///var/run/docker.sock', 'exec', '-i', 'youtopia-bootstrap-pg',
+services = load_state()
+jdbc_prefix = 'jdbc:postgresql://127.0.0.1:' + str(services['postgres_port']) + '/'
+with socket.socket() as first_socket, socket.socket() as second_socket, socket.socket() as web_socket:
+    first_socket.bind(('127.0.0.1', 0)); second_socket.bind(('127.0.0.1', 0)); web_socket.bind(('127.0.0.1', 0))
+    FIRST_PORT = first_socket.getsockname()[1]; SECOND_PORT = second_socket.getsockname()[1]
+    WEB_PORT = web_socket.getsockname()[1]
+cli = ['docker', '--host=unix:///var/run/docker.sock', 'exec', '-i', services['postgres'],
        'psql', '-X', '-q', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres', '-d']
 
 def isolated_sql(database, query):
@@ -36,23 +44,23 @@ isolated_sql('youtopia_auth_test', "TRUNCATE auth.service_user,auth.admin_accoun
 isolated_sql('youtopia_control_test', "DELETE FROM restore_control.deletion_journal WHERE service_key='p0-smoke'; DELETE FROM restore_control.restore_run WHERE service_key='p0-smoke'; DELETE FROM restore_control.service_fence WHERE service_key='p0-smoke'; INSERT INTO restore_control.service_fence(service_key,state,generation,key_fingerprint) VALUES('p0-smoke','OPEN','" + generation + "',decode('" + fingerprint + "','hex')); ")
 isolated_sql('youtopia_test', "TRUNCATE service.game_catalog_fixture,collector.ccu_fixture; INSERT INTO service.game_catalog_fixture(app_id,steam_name,developers,steam_tracked) VALUES(570,'Packaged Synthetic Game','[]',true); INSERT INTO collector.ccu_fixture(observation_id,app_id,scheduled_at,observed_at,player_count) VALUES(1,570,current_timestamp-interval '10 minutes',current_timestamp-interval '10 minutes',0);")
 env = {k: v for k, v in os.environ.items() if not k.startswith(('DB_', 'YOUTOPIA_'))}
-env.update(YOUTOPIA_DATA_JDBC_URL='jdbc:postgresql://127.0.0.1:25432/youtopia_test',
+env.update(YOUTOPIA_DATA_JDBC_URL=jdbc_prefix + 'youtopia_test',
     YOUTOPIA_DATA_DB_USER='ytp_test_data_ro', YOUTOPIA_DATA_DB_PASSWORD='',
-    YOUTOPIA_SESSION_REDIS_HOST='127.0.0.1', YOUTOPIA_SESSION_REDIS_PORT='26379',
+    YOUTOPIA_SESSION_REDIS_HOST='127.0.0.1', YOUTOPIA_SESSION_REDIS_PORT=str(services['redis_port']),
     YOUTOPIA_SESSION_REDIS_TLS='false', YOUTOPIA_ACCOUNTS_ENABLED='true',
     YOUTOPIA_GAMES_ENABLED='true',
     YOUTOPIA_ACCOUNT_HMAC_KEY=base64.b64encode(bytes(32)).decode(),
     YOUTOPIA_CONTROL_ENABLED='true', YOUTOPIA_CONTROL_SERVICE_KEY='p0-smoke',
     YOUTOPIA_CONTROL_HMAC_KEY=base64.b64encode(bytes(32)).decode(),
-    YOUTOPIA_CONTROL_JDBC_URL='jdbc:postgresql://127.0.0.1:25432/youtopia_control_test',
+    YOUTOPIA_CONTROL_JDBC_URL=jdbc_prefix + 'youtopia_control_test',
     YOUTOPIA_CONTROL_DB_USER='ytp_test_control_app', YOUTOPIA_CONTROL_DB_PASSWORD='')
 for kind in ['MEMBER', 'ADMIN', 'AUDIT']:
-    env['YOUTOPIA_' + kind + '_JDBC_URL'] = 'jdbc:postgresql://127.0.0.1:25432/youtopia_auth_test'
+    env['YOUTOPIA_' + kind + '_JDBC_URL'] = jdbc_prefix + 'youtopia_auth_test'
     env['YOUTOPIA_' + kind + '_DB_USER'] = 'ytp_test_' + kind.lower()
     env['YOUTOPIA_' + kind + '_DB_PASSWORD'] = ''
 if arguments.with_browser:
     for module, role in [('DIRECTORY', 'directory'), ('EVENT', 'event'), ('REPORT', 'report')]:
-        env['YOUTOPIA_' + module + '_JDBC_URL'] = 'jdbc:postgresql://127.0.0.1:25432/youtopia_auth_test'
+        env['YOUTOPIA_' + module + '_JDBC_URL'] = jdbc_prefix + 'youtopia_auth_test'
         env['YOUTOPIA_' + module + '_DB_USER'] = 'ytp_test_' + role
         env['YOUTOPIA_' + module + '_DB_PASSWORD'] = ''
     env.update(YOUTOPIA_DIRECTORY_ENABLED='true', YOUTOPIA_EVENTS_ENABLED='true', YOUTOPIA_REPORTING_ENABLED='true')
@@ -132,42 +140,44 @@ try:
         env['YOUTOPIA_PASSWORD_BLOCKLIST'] = blocklist.name
         if arguments.with_browser:
             subprocess.run(['bash', str(root / 'gradlew'), '--offline', '--no-daemon', '--max-workers=2', 'prepareBrowserFixtures'], cwd=root, env=env, check=True, timeout=90)
-        first = start(28080)
-        start(28081)
+        first = start(FIRST_PORT)
+        start(SECOND_PORT)
         fake = {'email': 'packaged@example.invalid', 'password': 'fake packaged test password 1234'}
-        post(28080, '/api/v1/auth/signup', fake, 201)
-        identity, headers = post(28080, '/api/v1/auth/login', {'login': fake['email'], 'password': fake['password']}, 200)
+        post(FIRST_PORT, '/api/v1/auth/signup', fake, 201)
+        identity, headers = post(FIRST_PORT, '/api/v1/auth/login', {'login': fake['email'], 'password': fake['password']}, 200)
         assert identity['kind'] == 'USER'
         set_cookie = headers.get('Set-Cookie', '')
         assert all(flag in set_cookie for flag in ['Secure', 'HttpOnly', 'SameSite=Lax'])
-        assert request(28081, '/api/v1/auth/me', cookie=cookie)[0] == 200
-        status, listing, _ = request(28081, '/api/v1/games', cookie=cookie)
+        assert request(SECOND_PORT, '/api/v1/auth/me', cookie=cookie)[0] == 200
+        status, listing, _ = request(SECOND_PORT, '/api/v1/games', cookie=cookie)
         assert status == 200 and listing['page']['totalElements'] == (3 if arguments.with_browser else 1)
         assert listing['content'][0]['gameId'] == 'steam:570'
-        status, detail, _ = request(28080, '/api/v1/games/steam:570', cookie=cookie)
+        status, detail, _ = request(FIRST_PORT, '/api/v1/games/steam:570', cookie=cookie)
         assert status == 200 and detail['game']['currentCcu']['value'] == 0
         assert detail['steamPreview']['days'] == 30
-        search, _ = post(28080, '/api/v1/games/search', {'q': 'Browser Arena' if arguments.with_browser else 'Packaged Synthetic', 'clientEventId': str(uuid.uuid4())}, 200)
+        search, _ = post(FIRST_PORT, '/api/v1/games/search', {'q': 'Browser Arena' if arguments.with_browser else 'Packaged Synthetic', 'clientEventId': str(uuid.uuid4())}, 200)
         assert search['page']['totalElements'] == 1
         assert search['searchTracking']['availability'] == ('AVAILABLE' if arguments.with_browser else 'UNAVAILABLE')
-        assert request(28080, '/api/v1/games')[0] == 200
-        assert request(28080, '/api/v1/me/settings')[0] == 401
-        assert request(28080, '/api/v1/admin/members')[0] == 401
-        assert request(28080, '/api/v1/games/search', 'POST', {'q': 'Packaged Synthetic', 'clientEventId': str(uuid.uuid4())}, cookie)[0] == 403
+        assert request(FIRST_PORT, '/api/v1/games')[0] == 200
+        assert request(FIRST_PORT, '/api/v1/me/settings')[0] == 401
+        assert request(FIRST_PORT, '/api/v1/admin/members')[0] == 401
+        assert request(FIRST_PORT, '/api/v1/games/search', 'POST', {'q': 'Packaged Synthetic', 'clientEventId': str(uuid.uuid4())}, cookie)[0] == 403
         result.update(game_list_detail_search=True, real_zero_preserved=True, optional_telemetry_absence_preserves_search=True, game_authorization_and_csrf=True)
         result["optional_telemetry_absence_preserves_search"] = "NOT_EXECUTED_THIS_PROFILE" if arguments.with_browser else "PASS"
         result.update(packaged_jar_started=True, real_password_login=True, csrf_and_secure_cookie=True, two_instances_share_session=True)
         stop(first)
-        start(28080)
-        assert request(28080, '/api/v1/auth/me', cookie=cookie)[0] == 200
+        start(FIRST_PORT)
+        assert request(FIRST_PORT, '/api/v1/auth/me', cookie=cookie)[0] == 200
         result['restart_preserves_session'] = True
-        post(28081, '/api/v1/auth/logout', {}, 204)
-        assert request(28080, '/api/v1/auth/me', cookie=cookie)[0] == 401
-        assert request(28080, '/api/v1/games', cookie=cookie)[0] == 200
+        post(SECOND_PORT, '/api/v1/auth/logout', {}, 204)
+        assert request(FIRST_PORT, '/api/v1/auth/me', cookie=cookie)[0] == 401
+        assert request(FIRST_PORT, '/api/v1/games', cookie=cookie)[0] == 200
         result['logout_revokes_other_instance'] = True
         if arguments.with_browser:
             browser_env = env.copy()
             browser_env['YOUTOPIA_REAL_E2E'] = 'true'
+            browser_env['YOUTOPIA_TEST_HTTP_PORT'] = str(FIRST_PORT)
+            browser_env['YOUTOPIA_TEST_WEB_PORT'] = str(WEB_PORT)
             # The saved browser cases explicitly verify opted-in telemetry.
             browser_env['VITE_PRODUCT_EVENTS_ENABLED'] = 'true'
             completed = subprocess.run(['pnpm', 'exec', 'playwright', 'test', '--config=playwright.service.config.ts'],

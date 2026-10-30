@@ -27,24 +27,49 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+def syntheticProcessEnvironment = {
+    System.getenv().findAll { name, value ->
+        !['DB_', 'PG', 'YOUTOPIA_', 'DOCKER_HOST', 'DOCKER_CONTEXT', 'DOCKER_TLS', 'DOCKER_CERT_PATH'].any { name.startsWith(it) }
+    }
+}
 tasks.withType(Test).configureEach {
+    setEnvironment(syntheticProcessEnvironment())
     useJUnitPlatform()
     maxParallelForks = 1
     testLogging { events 'failed', 'skipped'; exceptionFormat = 'full' }
 }
 tasks.named('test') { exclude '**/*IntegrationTest.class' }
 tasks.register('integrationTest', Test) {
-    description = 'Requires isolated PostgreSQL 16 and Redis; never point at production.'
+    description = 'Uses owned disposable PostgreSQL 16 and Redis prepared by tools/test_services.py.'
     group = 'verification'
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath
     include '**/*IntegrationTest.class'
     shouldRunAfter test
+    // Database/Redis state is external to Gradle's file inputs: never reuse a cached test result.
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+    doFirst { configureSyntheticServices(delegate) }
+}
+// check is the complete backend gate; missing fixtures fail instead of skipping integration.
+tasks.named('check') { dependsOn 'integrationTest', 'testFixtureTools' }
+tasks.register('testFixtureTools', Exec) {
+    setEnvironment(syntheticProcessEnvironment())
+    commandLine 'python3', '-m', 'unittest', 'discover', '-s', 'tools', '-p', 'test_test_services.py'
+}
+def configureSyntheticServices(task) {
+    exec { commandLine 'python3', 'tools/test_services.py', 'status', '--quiet' }
+    def state = new groovy.json.JsonSlurper().parse(file('build/test-services.json'))
+    task.systemProperty 'youtopia.test.postgresPort', state.postgres_port
+    task.systemProperty 'youtopia.test.redisPort', state.redis_port
+    task.systemProperty 'youtopia.test.postgresContainer', state.postgres
 }
 tasks.register('prepareBrowserFixtures', JavaExec) {
+    setEnvironment(syntheticProcessEnvironment())
     description = 'Explicit disposable loopback fixtures for browser E2E; never uses production variables.'
     group = 'verification'
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.youtopia.integration.BrowserFixtureCommand'
+    doFirst { configureSyntheticServices(delegate) }
 }

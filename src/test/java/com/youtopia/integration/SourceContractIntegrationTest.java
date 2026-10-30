@@ -8,12 +8,12 @@ import static org.assertj.core.api.Assertions.*;
 /** Requires the separately prepared synthetic producer fixture. Never accepts production environment variables. */
 class SourceContractIntegrationTest {
     private Connection reader()throws SQLException {
-        var connection=DriverManager.getConnection("jdbc:postgresql://127.0.0.1:25432/youtopia_operator_audit_20261030?connectTimeout=5&socketTimeout=10","ytp_app_data_ro","");
+        var connection=DriverManager.getConnection(IsolatedTestServices.url("youtopia_source_test")+"?connectTimeout=5&socketTimeout=10","ytp_test_source_reader","");
         connection.setReadOnly(true);connection.setAutoCommit(false);return connection;
     }
     @Test void dedicatedReaderAllowsOnlyApprovedProjectionsAndColumns()throws Exception {
         try(var connection=reader()){
-            var result=new SourceReadinessVerifier().verify(connection,"youtopia_operator_audit_20261030","ytp_app_data_ro");
+            var result=new SourceReadinessVerifier().verify(connection,"youtopia_source_test","ytp_test_source_reader");
             assertThat(result.ready()).isTrue();assertThat(result.probes()).hasSize(15);
             assertThat(result.probes().stream().filter(p->p.expected().equals("DENY_SELECT"))).allMatch(p->p.status().equals("PASS")&&p.sqlState().equals("42501"));connection.rollback();
         }
@@ -34,26 +34,26 @@ class SourceContractIntegrationTest {
         try(var connection=reader()){
             assertThatThrownBy(()->new SourceReadinessVerifier().verify(connection,"youtopia","ytp_codex")).isInstanceOf(IllegalArgumentException.class);
             connection.rollback();connection.setAutoCommit(true);connection.setReadOnly(false);
-            assertThatThrownBy(()->new SourceReadinessVerifier().verify(connection,"youtopia_operator_audit_20261030","ytp_app_data_ro")).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(()->new SourceReadinessVerifier().verify(connection,"youtopia_source_test","ytp_test_source_reader")).isInstanceOf(IllegalArgumentException.class);
         }
     }
     @Test void probeDetectsUnapprovedCollectorAccessBeyondTheFiveNegativeExamples()throws Exception {
-        try(var owner=DriverManager.getConnection("jdbc:postgresql://127.0.0.1:25432/youtopia_operator_audit_20261030","postgres","");var query=owner.createStatement()){
-            try(var before=query.executeQuery("SELECT has_table_privilege('ytp_app_data_ro','collector.youtube_query','SELECT')")){before.next();assertThat(before.getBoolean(1)).isFalse();}
-            query.execute("GRANT SELECT ON collector.youtube_query TO ytp_app_data_ro");
+        try(var owner=DriverManager.getConnection(IsolatedTestServices.url("youtopia_source_test"),"postgres","");var query=owner.createStatement()){
+            try(var before=query.executeQuery("SELECT has_table_privilege('ytp_test_source_reader','collector.youtube_query','SELECT')")){before.next();assertThat(before.getBoolean(1)).isFalse();}
+            query.execute("GRANT SELECT ON collector.youtube_query TO ytp_test_source_reader");
             try(var connection=reader()){
-                var result=new SourceReadinessVerifier().verify(connection,"youtopia_operator_audit_20261030","ytp_app_data_ro");
+                var result=new SourceReadinessVerifier().verify(connection,"youtopia_source_test","ytp_test_source_reader");
                 assertThat(result.ready()).isFalse();assertThat(result.probes()).anyMatch(p->p.name().equals("all_other_source_member_security_columns")&&p.status().equals("UNEXPECTED_ACCESS"));
-            }finally{query.execute("REVOKE SELECT ON collector.youtube_query FROM ytp_app_data_ro");}
+            }finally{query.execute("REVOKE SELECT ON collector.youtube_query FROM ytp_test_source_reader");}
         }
     }
     @Test void probeDetectsSchemaCreateEvenWithoutOwnershipOrRoleMembership()throws Exception {
-        try(var owner=DriverManager.getConnection("jdbc:postgresql://127.0.0.1:25432/youtopia_operator_audit_20261030","postgres","");var query=owner.createStatement()){
-            try(var before=query.executeQuery("SELECT has_schema_privilege('ytp_app_data_ro','service','CREATE')")){before.next();assertThat(before.getBoolean(1)).isFalse();}
-            query.execute("GRANT CREATE ON SCHEMA service TO ytp_app_data_ro");
+        try(var owner=DriverManager.getConnection(IsolatedTestServices.url("youtopia_source_test"),"postgres","");var query=owner.createStatement()){
+            try(var before=query.executeQuery("SELECT has_schema_privilege('ytp_test_source_reader','service','CREATE')")){before.next();assertThat(before.getBoolean(1)).isFalse();}
+            query.execute("GRANT CREATE ON SCHEMA service TO ytp_test_source_reader");
             try(var connection=reader()){
-                var result=new SourceReadinessVerifier().verify(connection,"youtopia_operator_audit_20261030","ytp_app_data_ro");assertThat(result.ready()).isFalse();assertThat(result.probes()).anyMatch(p->p.name().equals("database_and_schema_create")&&p.status().equals("UNEXPECTED_PRIVILEGE"));
-            }finally{query.execute("REVOKE CREATE ON SCHEMA service FROM ytp_app_data_ro");}
+                var result=new SourceReadinessVerifier().verify(connection,"youtopia_source_test","ytp_test_source_reader");assertThat(result.ready()).isFalse();assertThat(result.probes()).anyMatch(p->p.name().equals("database_and_schema_create")&&p.status().equals("UNEXPECTED_PRIVILEGE"));
+            }finally{query.execute("REVOKE CREATE ON SCHEMA service FROM ytp_test_source_reader");}
         }
     }
 }
