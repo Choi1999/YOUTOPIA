@@ -160,25 +160,52 @@ function evaluateOfflineGate({
 }
 
 /**
- * 'verifiedSnapshot'은 테스트 보조 값이며 출처/서명/분모의 검증기가 아니다.
- * 실제 화면은 trusted provider + analysis-v1 검증 결과만을 사용해야 한다.
+ * 단순 검증 통과 플래그만으로 캐시 수치를 표시하도록 허용하지 않는다.
+ * 반드시 동일 Snapshot ID·상태·시각·9필드 Scope로 묶인 합성 참조가 필요하다.
+ * 주의: 참조 메타데이터 검사이며 원본/분모 검증을 대체하지 않는다.
  */
-function canShowSyntheticMetrics({lookup, verifiedSnapshot, gate} = {}) {
-  return gate?.kind === "ALLOWED_TEST_ONLY" &&
-    verifiedSnapshot === true &&
-    lookup?.kind === "FRESH" &&
-    (lookup.status === "READY" || lookup.status === "PARTIAL") &&
-    typeof lookup.snapshotId === "string" &&
-    lookup.snapshotId.length > 0;
+function canShowSyntheticMetrics({lookup, verifiedSnapshot, expectedScope, gate} = {}) {
+  if (gate?.kind !== "ALLOWED_TEST_ONLY" ||
+      lookup?.kind !== "FRESH" ||
+      !["READY", "PARTIAL"].includes(lookup.status)) return false;
+
+  const scope = normalizeScope(expectedScope);
+  const reference = parseSnapshotReference(verifiedSnapshot);
+  if (!scope || !reference ||
+      reference.sourceType !== "STATIC_FIXTURE" ||
+      reference.isSynthetic !== true ||
+      reference.snapshotId !== lookup.snapshotId ||
+      reference.status !== lookup.status ||
+      reference.analyzedAt !== lookup.analyzedAt) return false;
+
+  return Object.keys(scope).every(key => reference.scope[key] === scope[key]);
 }
 
 function mayTransitionJob(from, to, verifiedSnapshotId = null) {
-  if (!TRANSITIONS[from]?.includes(to)) return false;
+  // "__proto__"/"constructor"가 Object.prototype의 메서드를 호출하지 않도록 차단.
+  if (!Object.hasOwn(TRANSITIONS, from) ||
+      !TRANSITIONS[from].includes(to)) return false;
   if (to === "SUCCEEDED") {
     return typeof verifiedSnapshotId === "string" &&
       /^[A-Za-z0-9._:-]{1,128}$/.test(verifiedSnapshotId);
   }
   return verifiedSnapshotId === null;
+}
+
+/**
+ * Date.parse()는 존재하지 않는 날짜(예: 2월 30일)를 보정할 수 있으므로
+ * 달력과 RFC3339 UTC offset을 먼저 독립 검증한다.
+ */
+function validRfc3339(value) {
+  if (typeof value !== "string") return false;
+  const match = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|[+-](?:(?:0\d|1[0-3]):[0-5]\d|14:00))$/.exec(value);
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return day <= days[month - 1] && Number.isFinite(Date.parse(value));
 }
 
 /**
@@ -204,9 +231,7 @@ function parseSnapshotReference(value) {
     if (!["STATIC_FIXTURE","APPROVED_PROVIDER"].includes(value.sourceType)) return null;
     if (value.isSynthetic !== (value.sourceType === "STATIC_FIXTURE")) return null;
 
-    const hasTime=typeof value.analyzedAt === "string" &&
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value.analyzedAt) &&
-      Number.isFinite(Date.parse(value.analyzedAt));
+    const hasTime = validRfc3339(value.analyzedAt);
 
     if (value.status === "NO_DATA" && value.analyzedAt !== null) return null;
     if (["READY","PARTIAL"].includes(value.status) && !hasTime) return null;
