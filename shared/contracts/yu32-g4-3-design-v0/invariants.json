@@ -1,0 +1,526 @@
+{
+  "title": "YOUTOPIA YU-32 G4-3 offline design invariants (not a deployable server contract)",
+  "version": "G4-3-design-v0.1",
+  "phase": "DESIGN_STATIC",
+  "status": "DESIGN_DRAFT",
+  "source": {
+    "frontendBase": "082942b48d0a23c81c3388ebdc320d73e5e12734",
+    "backendReference": "4e2714ef5107acab44fa79075840e463e5df8f39",
+    "apiContract": "docs/integration/YU32_G4_2_API_AUTHORIZATION_CONTRACT_V01.md"
+  },
+  "safety": {
+    "runtimeEnabled": false,
+    "apiImplemented": false,
+    "dbMigrationImplemented": false,
+    "externalRequestsEnabled": false,
+    "youtubeProcessingEnabled": false,
+    "productionTTLDefined": false,
+    "productionQuotaDefined": false,
+    "policyState": "POLICY_HOLD",
+    "simulatedPolicyMarker": "APPROVED_TEST_ONLY",
+    "evidenceClass": "DESIGN_ONLY",
+    "checkoutOrPayment": false
+  },
+  "scope": {
+    "exactFields": [
+      "source",
+      "targetType",
+      "targetId",
+      "analysisSpecVersion",
+      "observationWindowId",
+      "samplingPolicyVersion",
+      "locale",
+      "visibility",
+      "tenantId"
+    ],
+    "defaultSource": "YOUTUBE",
+    "supportedTargetTypes": [
+      "VIDEO"
+    ],
+    "videoIdPattern": "^[A-Za-z0-9_-]{11}$",
+    "visibility": [
+      "PUBLIC_REUSABLE",
+      "TENANT_PRIVATE"
+    ],
+    "publicTenantId": null,
+    "privateTenantIdRequired": true,
+    "canonicalKeyRequiresFullTuple": true,
+    "hashAloneSufficient": false,
+    "serverDerivedOnly": [
+      "visibility",
+      "tenantId",
+      "role",
+      "entitlements",
+      "policyApproved",
+      "requestAllowed"
+    ],
+    "executionPartition": {
+      "default": "SAME_AUTHORIZED_ACTOR_OR_TENANT",
+      "crossPrincipalJoinAllowed": false,
+      "requiresDecision": "DEC-G43-03",
+      "note": "Full Scope identity alone must not leak cross-principal active Job state"
+    }
+  },
+  "backendBoundary": {
+    "baselinePool": "dataSource",
+    "baselineReadOnly": true,
+    "baselineRole": "ytp_app_data_ro",
+    "prohibitedPoolReuse": [
+      "dataSource",
+      "memberDataSource",
+      "adminDataSource",
+      "auditDataSource",
+      "controlDataSource",
+      "privacyDataSource"
+    ],
+    "proposedWritePool": "candidateAnalysisWriter",
+    "createOrConfigurePool": false,
+    "startupGuardRequired": "RuntimeDataSourceGuard",
+    "restoreFenceRequired": "RestoreFenceFilter",
+    "identityFilterRequired": "AccountSessionFilter",
+    "unauthorizedRoutesDefault": "DENY_ALL"
+  },
+  "persistence": {
+    "entities": [
+      {
+        "name": "AnalysisScope",
+        "key": [
+          "scope_id"
+        ],
+        "unique": [
+          "canonical_scope_tuple"
+        ],
+        "mutation": "IMMUTABLE"
+      },
+      {
+        "name": "AnalysisJob",
+        "key": [
+          "job_id"
+        ],
+        "uniqueActive": [
+          "scope_id",
+          "execution_partition"
+        ],
+        "activePredicate": [
+          "QUEUED",
+          "RUNNING"
+        ],
+        "mutation": "VERSIONED_CAS"
+      },
+      {
+        "name": "IdempotencyRecord",
+        "key": [
+          "principal_tag",
+          "idempotency_key_hash"
+        ],
+        "mutation": "IMMUTABLE_DECISION"
+      },
+      {
+        "name": "BudgetReservation",
+        "key": [
+          "reservation_id"
+        ],
+        "unique": [
+          "job_id",
+          "cost_class"
+        ],
+        "mutation": "LEDGER"
+      },
+      {
+        "name": "AnalysisSnapshot",
+        "key": [
+          "snapshot_id"
+        ],
+        "mutation": "IMMUTABLE"
+      },
+      {
+        "name": "ScopeLatest",
+        "key": [
+          "scope_id"
+        ],
+        "mutation": "VERSIONED_CAS"
+      },
+      {
+        "name": "JobOutbox",
+        "key": [
+          "event_id"
+        ],
+        "mutation": "AT_LEAST_ONCE_DISPATCH"
+      },
+      {
+        "name": "PolicyDecisionAudit",
+        "key": [
+          "decision_id"
+        ],
+        "mutation": "MINIMAL_AUDIT"
+      },
+      {
+        "name": "PrivacyRevocation",
+        "key": [
+          "subject_tag"
+        ],
+        "mutation": "MONOTONE_REVOCATION"
+      }
+    ],
+    "atomicCreateSet": [
+      "AnalysisJob",
+      "IdempotencyRecord",
+      "BudgetReservation",
+      "JobOutbox"
+    ],
+    "externalProviderCallInsideTransaction": false,
+    "redisAndPostgresAtomic": false,
+    "externalExactlyOnceGuaranteed": false,
+    "duplicateJobCreationAllowed": false,
+    "duplicateOutboxDeliveryPossible": true,
+    "databaseClockForLease": true,
+    "rowLockPattern": "FOR_UPDATE_SKIP_LOCKED",
+    "uniqueIndexType": "PARTIAL_UNIQUE",
+    "migrationApplied": false
+  },
+  "job": {
+    "states": [
+      "QUEUED",
+      "RUNNING",
+      "SUCCEEDED",
+      "FAILED"
+    ],
+    "terminal": [
+      "SUCCEEDED",
+      "FAILED"
+    ],
+    "transitions": [
+      {
+        "from": "QUEUED",
+        "to": "RUNNING",
+        "requires": [
+          "claim",
+          "fence"
+        ]
+      },
+      {
+        "from": "QUEUED",
+        "to": "FAILED",
+        "requires": [
+          "failure_record"
+        ]
+      },
+      {
+        "from": "RUNNING",
+        "to": "SUCCEEDED",
+        "requires": [
+          "live_policy",
+          "current_lease",
+          "validated_snapshot",
+          "atomic_publish"
+        ]
+      },
+      {
+        "from": "RUNNING",
+        "to": "FAILED",
+        "requires": [
+          "current_lease",
+          "failure_record"
+        ]
+      }
+    ],
+    "autoRecovery": {
+      "from": "RUNNING",
+      "to": "RUNNING",
+      "sameJob": true,
+      "newLeaseEpoch": true,
+      "requires": [
+        "expired_lease",
+        "limit_not_exceeded",
+        "live_policy"
+      ]
+    },
+    "userRetry": {
+      "sameJob": false,
+      "newJob": true,
+      "newAttempt": true,
+      "explicitIntentRequired": true
+    },
+    "lease": {
+      "requiredCompareAndSwap": [
+        "job_id",
+        "lease_owner",
+        "lease_epoch",
+        "expected_version",
+        "state",
+        "nonexpired_lease"
+      ],
+      "monotoneEpoch": true,
+      "staleWorkerCanPublish": false,
+      "heartbeatRequiresCurrentOwner": true,
+      "ttlNumeric": null,
+      "retryLimitNumeric": null
+    }
+  },
+  "authorization": {
+    "operations": [
+      "READ_SUMMARY",
+      "CREATE_JOB",
+      "READ_JOB",
+      "READ_SNAPSHOT",
+      "WORKER_CLAIM",
+      "WORKER_COMPLETE"
+    ],
+    "allowedPrincipals": [
+      "GUEST",
+      "CUSTOMER",
+      "INTERNAL_WORKER"
+    ],
+    "guestAllowed": [
+      "READ_SUMMARY",
+      "READ_SNAPSHOT"
+    ],
+    "customerAllowed": [
+      "READ_SUMMARY",
+      "CREATE_JOB",
+      "READ_JOB",
+      "READ_SNAPSHOT"
+    ],
+    "internalWorkerAllowed": [
+      "WORKER_CLAIM",
+      "WORKER_COMPLETE"
+    ],
+    "clientTrustedFlags": [],
+    "clientTenantRoleFieldsAllowed": false,
+    "policyCheckAt": [
+      "request",
+      "idempotency_replay",
+      "dispatch",
+      "completion",
+      "publication",
+      "read"
+    ],
+    "tenantCheckAt": [
+      "request",
+      "job_read",
+      "snapshot_read",
+      "publication"
+    ],
+    "entitlementCheckAt": [
+      "create",
+      "replay",
+      "dispatch",
+      "publication"
+    ],
+    "resourceExistsLeakAllowed": false,
+    "policyHoldsDenyAllRealCalls": true,
+    "restoreFenceMustBeServing": true
+  },
+  "snapshot": {
+    "jobSuccessImpliesDisplay": false,
+    "immutable": true,
+    "requiredBinding": [
+      "snapshot_id",
+      "scope_id",
+      "provenance",
+      "schema_version",
+      "policy_epoch",
+      "observed_at",
+      "analyzed_at"
+    ],
+    "latestPublishedAtomicallyWithJob": true,
+    "denyStatusesForCurrentMetrics": [
+      "MISS",
+      "STALE",
+      "NO_DATA",
+      "POLICY_BLOCKED",
+      "ENTITLEMENT_LIMITED"
+    ],
+    "syntheticPromotionAllowed": false,
+    "readRequiresFreshAuthorization": true,
+    "revokedPolicyEpochCanBePublished": false,
+    "commentsOrPersonalDataStoredByDefault": false
+  },
+  "privacy": {
+    "sourceRawStorageApproved": false,
+    "retentionPeriodApproved": false,
+    "backendRestoreJournalBypassAllowed": false,
+    "deletedAccountCanReadAfterRestore": false,
+    "revocationCheckedBeforePublishAndRead": true,
+    "auditMayContainTokensOrRawComments": false
+  },
+  "scenarios": [
+    {
+      "id": "G43-O01",
+      "layer": "OFFLINE",
+      "expected": "READ_NEVER_CREATES_JOB"
+    },
+    {
+      "id": "G43-O02",
+      "layer": "OFFLINE",
+      "expected": "NINE_FIELD_SCOPE_ISOLATION"
+    },
+    {
+      "id": "G43-O03",
+      "layer": "OFFLINE",
+      "expected": "PUBLIC_TENANT_NULL"
+    },
+    {
+      "id": "G43-O04",
+      "layer": "OFFLINE",
+      "expected": "CROSS_TENANT_DENIED"
+    },
+    {
+      "id": "G43-O05",
+      "layer": "DB_NOT_RUN",
+      "expected": "IDEMPOTENCY_REPLAY"
+    },
+    {
+      "id": "G43-O06",
+      "layer": "DB_NOT_RUN",
+      "expected": "IDEMPOTENCY_CONFLICT"
+    },
+    {
+      "id": "G43-O07",
+      "layer": "DB_NOT_RUN",
+      "expected": "ONE_ACTIVE_JOB"
+    },
+    {
+      "id": "G43-O08",
+      "layer": "SECURITY_NOT_RUN",
+      "expected": "EXECUTION_PARTITION_ISOLATION"
+    },
+    {
+      "id": "G43-O09",
+      "layer": "DB_NOT_RUN",
+      "expected": "COMMIT_REPLY_LOSS_REPLAY"
+    },
+    {
+      "id": "G43-O10",
+      "layer": "DB_NOT_RUN",
+      "expected": "ATOMIC_ROLLBACK"
+    },
+    {
+      "id": "G43-O11",
+      "layer": "OFFLINE",
+      "expected": "REDIS_NOT_ACCOUNTING_LEDGER"
+    },
+    {
+      "id": "G43-O12",
+      "layer": "OFFLINE",
+      "expected": "POLICY_HOLD_BLOCK"
+    },
+    {
+      "id": "G43-O13",
+      "layer": "OFFLINE",
+      "expected": "GUEST_POST_DENIED"
+    },
+    {
+      "id": "G43-O14",
+      "layer": "DB_NOT_RUN",
+      "expected": "SINGLE_LEASE_OWNER"
+    },
+    {
+      "id": "G43-O15",
+      "layer": "DB_NOT_RUN",
+      "expected": "RECLAIM_INCREASES_EPOCH"
+    },
+    {
+      "id": "G43-O16",
+      "layer": "DB_NOT_RUN",
+      "expected": "STALE_WORKER_CAS_DENIED"
+    },
+    {
+      "id": "G43-O17",
+      "layer": "DB_NOT_RUN",
+      "expected": "EXPIRED_HEARTBEAT_DENIED"
+    },
+    {
+      "id": "G43-O18",
+      "layer": "SECURITY_NOT_RUN",
+      "expected": "REVOKE_BEFORE_PUBLISH_DENIED"
+    },
+    {
+      "id": "G43-O19",
+      "layer": "DB_NOT_RUN",
+      "expected": "SCOPE_MISMATCH_NO_LATEST"
+    },
+    {
+      "id": "G43-O20",
+      "layer": "OFFLINE",
+      "expected": "NO_DATA_STALE_NOT_READY"
+    },
+    {
+      "id": "G43-O21",
+      "layer": "SECURITY_NOT_RUN",
+      "expected": "RESTORE_NO_RESURRECTION"
+    },
+    {
+      "id": "G43-O22",
+      "layer": "SECURITY_NOT_RUN",
+      "expected": "BOLA_404"
+    },
+    {
+      "id": "G43-O23",
+      "layer": "SECURITY_NOT_RUN",
+      "expected": "READ_POLICY_RECHECK"
+    },
+    {
+      "id": "G43-O24",
+      "layer": "POLICY_HOLD",
+      "expected": "EXTERNAL_EXACTLY_ONCE_UNPROVEN"
+    },
+    {
+      "id": "G43-O25",
+      "layer": "DB_NOT_RUN",
+      "expected": "READ_ONLY_POOL_DENIES_WRITE"
+    },
+    {
+      "id": "G43-O26",
+      "layer": "SECURITY_NOT_RUN",
+      "expected": "STARTUP_DB_ROLE_GUARD"
+    },
+    {
+      "id": "G43-O27",
+      "layer": "DB_NOT_RUN",
+      "expected": "OUTBOX_AT_LEAST_ONCE_WITH_DEDUP"
+    },
+    {
+      "id": "G43-O28",
+      "layer": "OFFLINE",
+      "expected": "TEST_APPROVAL_NOT_PRODUCTION"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "DEC-G43-01",
+      "status": "DECISION_REQUIRED"
+    },
+    {
+      "id": "DEC-G43-02",
+      "status": "DECISION_REQUIRED"
+    },
+    {
+      "id": "DEC-G43-03",
+      "status": "DECISION_REQUIRED"
+    },
+    {
+      "id": "DEC-G43-04",
+      "status": "DECISION_REQUIRED"
+    },
+    {
+      "id": "DEC-G43-05",
+      "status": "DECISION_REQUIRED"
+    },
+    {
+      "id": "DEC-G43-06",
+      "status": "POLICY_HOLD"
+    },
+    {
+      "id": "DEC-G43-07",
+      "status": "DECISION_REQUIRED"
+    },
+    {
+      "id": "DEC-G43-08",
+      "status": "DECISION_REQUIRED"
+    }
+  ],
+  "documentKind": "YU32_G43_OFFLINE_DESIGN_DATA",
+  "schemaValidation": "NOT_A_JSON_SCHEMA",
+  "$comment": "This is machine-readable design DATA and offline invariant source; no server validation and no schema-validator conformance are claimed."
+}

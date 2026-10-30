@@ -47,6 +47,9 @@ jobs:
       - name: YU-32 operations API candidate tests (offline only)
         run: node --test shared/contracts/yu32-operations-v0/tests/*.test.cjs
 
+      - name: YU-32 G4-3 persistence and recovery design tests (offline only)
+        run: node --test shared/contracts/yu32-g4-3-design-v0/tests/*.test.cjs
+
       - name: Synthetic scheduler tests
         run: node --test shared/experiments/coverage-scheduler-v0/tests/*.test.cjs
 
