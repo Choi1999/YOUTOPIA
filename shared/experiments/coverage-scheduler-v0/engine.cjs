@@ -242,15 +242,27 @@ function createSimulator({
 
     const isStale = result.kind === "STALE";
 
+    // 종료한 Job은 activeJobs에서 빠진다. 가장 최근 실패를 MISS로
+    // 오인하지 않도록 종료 기록을 읽되, 최신 성공 이후의 실패만 표시한다.
+    // 메모리 Job 수는 합성 예산으로 제한되며 운영 영속 큐가 아니다.
+    const lastTerminal = [...jobs.values()].reverse().find(
+      job => job.key === checked.key &&
+        (job.state === "FAILED" || job.state === "SUCCEEDED")
+    );
+    const isFailed = lastTerminal?.state === "FAILED";
+
     return {
-      kind: result.kind,
+      kind: isFailed ? "FAILED" : result.kind,
+      ...(isFailed ? {jobId: lastTerminal.id} : {}),
       analyzedAt: result.analyzedAt ?? null,
       action: canSimulate
         ? {
             type: "DEMO_REQUEST",
-            label: isStale
-              ? "데모 갱신 요청 (시뮬레이션)"
-              : "데모 분석 요청 (시뮬레이션)",
+            label: isFailed
+              ? "데모 분석 재시도 (시뮬레이션)"
+              : isStale
+                ? "데모 갱신 요청 (시뮬레이션)"
+                : "데모 분석 요청 (시뮬레이션)",
             enabled: true,
           }
         : {
