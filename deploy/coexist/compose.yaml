@@ -1,0 +1,31 @@
+name: youtopia-app-cache
+services:
+  redis:
+    # Redis 7.2 uses BSD-3-Clause; resolve and review exact version/digest before installation.
+    image: public.ecr.aws/docker/library/redis:7.2.13-alpine@sha256:9907ac0c435717b4d95697cb4d0ce77d100b1d21269a01a0ce66f27335184c38
+    user: "999:999"
+    command: [redis-server, /usr/local/etc/redis/redis.conf]
+    restart: unless-stopped
+    ports: ["127.0.0.1:6379:6379"]
+    cpus: 0.5
+    mem_limit: 1g
+    memswap_limit: 1g
+    pids_limit: 128
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - /etc/youtopia-app/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - /etc/youtopia-app/redis-users.acl:/usr/local/etc/redis/users.acl:ro
+      - /srv/youtopia-data/redis:/data
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+    healthcheck:
+      # An unauthenticated PING must be denied, demonstrating a live protected listener.
+      # Authenticated PING/SET/expiry must additionally pass the operator acceptance probe.
+      test: [CMD-SHELL, 'redis-cli ping 2>&1 | grep -q NOAUTH']
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 10s

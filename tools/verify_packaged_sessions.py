@@ -18,6 +18,7 @@ from test_services import load_state
 
 arguments = argparse.ArgumentParser(description=__doc__)
 arguments.add_argument('--with-browser', action='store_true', help='Run saved React browser E2E against these isolated JAR processes')
+arguments.add_argument('--deployment-redis-state', type=Path, help='Owned disposable deployment Redis descriptor; never a production endpoint')
 arguments = arguments.parse_args()
 
 root = Path(__file__).resolve().parent.parent
@@ -43,7 +44,7 @@ fingerprint = hmac.new(bytes(32), b'journal-key-v1\0p0-smoke', hashlib.sha256).h
 isolated_sql('youtopia_auth_test', "TRUNCATE auth.service_user,auth.admin_account,auth.security_operation,security.security_audit_event,telemetry.product_event,service.signup_daily_count CASCADE; UPDATE service.restore_marker SET journal_sequence=0,generation='" + generation + "';")
 isolated_sql('youtopia_control_test', "DELETE FROM restore_control.deletion_journal WHERE service_key='p0-smoke'; DELETE FROM restore_control.restore_run WHERE service_key='p0-smoke'; DELETE FROM restore_control.service_fence WHERE service_key='p0-smoke'; INSERT INTO restore_control.service_fence(service_key,state,generation,key_fingerprint) VALUES('p0-smoke','OPEN','" + generation + "',decode('" + fingerprint + "','hex')); ")
 isolated_sql('youtopia_test', "TRUNCATE service.game_catalog_fixture,collector.ccu_fixture; INSERT INTO service.game_catalog_fixture(app_id,steam_name,developers,steam_tracked) VALUES(570,'Packaged Synthetic Game','[]',true); INSERT INTO collector.ccu_fixture(observation_id,app_id,scheduled_at,observed_at,player_count) VALUES(1,570,current_timestamp-interval '10 minutes',current_timestamp-interval '10 minutes',0);")
-env = {k: v for k, v in os.environ.items() if not k.startswith(('DB_', 'YOUTOPIA_'))}
+env = {k: v for k, v in os.environ.items() if not k.startswith(('DB_', 'PG', 'YOUTOPIA_', 'DOCKER_HOST', 'DOCKER_CONTEXT', 'DOCKER_TLS', 'DOCKER_CERT_PATH'))}
 env.update(YOUTOPIA_DATA_JDBC_URL=jdbc_prefix + 'youtopia_test',
     YOUTOPIA_DATA_DB_USER='ytp_test_data_ro', YOUTOPIA_DATA_DB_PASSWORD='',
     YOUTOPIA_SESSION_REDIS_HOST='127.0.0.1', YOUTOPIA_SESSION_REDIS_PORT=str(services['redis_port']),
@@ -54,6 +55,20 @@ env.update(YOUTOPIA_DATA_JDBC_URL=jdbc_prefix + 'youtopia_test',
     YOUTOPIA_CONTROL_HMAC_KEY=base64.b64encode(bytes(32)).decode(),
     YOUTOPIA_CONTROL_JDBC_URL=jdbc_prefix + 'youtopia_control_test',
     YOUTOPIA_CONTROL_DB_USER='ytp_test_control_app', YOUTOPIA_CONTROL_DB_PASSWORD='')
+if arguments.deployment_redis_state:
+    # Only an owned, local, loopback-published test container may override Redis.
+    descriptor = json.loads(arguments.deployment_redis_state.read_text())
+    import re
+    assert re.fullmatch('[0-9a-f]{32}', descriptor['token'])
+    assert descriptor['container'] == 'youtopia-coexist-redis-test-'+descriptor['token'][:12]
+    info = json.loads(subprocess.check_output(['docker','--host=unix:///var/run/docker.sock',
+        'inspect',descriptor['container']], text=True))[0]
+    assert info['Config']['Labels'].get('io.youtopia.coexist-test') == descriptor['token']
+    bindings = info['NetworkSettings']['Ports']['6379/tcp']
+    assert len(bindings) == 1 and bindings[0]['HostIp'] == '127.0.0.1'
+    assert int(bindings[0]['HostPort']) == descriptor['port']
+    env.update(YOUTOPIA_SESSION_REDIS_PORT=str(descriptor['port']),
+        YOUTOPIA_SESSION_REDIS_USERNAME='youtopia', YOUTOPIA_SESSION_REDIS_PASSWORD=descriptor['password'])
 for kind in ['MEMBER', 'ADMIN', 'AUDIT']:
     env['YOUTOPIA_' + kind + '_JDBC_URL'] = jdbc_prefix + 'youtopia_auth_test'
     env['YOUTOPIA_' + kind + '_DB_USER'] = 'ytp_test_' + kind.lower()
@@ -69,6 +84,7 @@ jar = root / 'build/libs/youtopia-backend-0.1.0-SNAPSHOT.jar'
 opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 processes = []
 logs = []
+session_namespace = "youtopia:sessions" if arguments.deployment_redis_state else "youtopia:p0-smoke"
 
 def request(port, path, method='GET', body=None, cookie=None, csrf=None):
     headers = {}
@@ -86,13 +102,21 @@ def request(port, path, method='GET', body=None, cookie=None, csrf=None):
         response = failure
     with response:
         raw = response.read()
-        return response.status, json.loads(raw) if raw else None, response.headers
+        try:
+            body = json.loads(raw) if raw else None
+        except json.JSONDecodeError:
+            if response.status < 400:
+                raise
+            # Session filter failures may be rendered by the servlet container.
+            # Preserve the failure status without logging its response body.
+            body = {'non_json_error': True}
+        return response.status, body, response.headers
 
 def start(port):
     log = (reports / ('process-' + str(port) + '-' + str(len(logs)) + '.log')).open('w')
     logs.append(log)
     process = subprocess.Popen([java, '-jar', str(jar), '--server.address=127.0.0.1',
-        '--server.port=' + str(port), '--spring.session.data.redis.namespace=youtopia:p0-smoke'],
+        '--server.port=' + str(port), '--spring.session.data.redis.namespace='+session_namespace],
         env=env, stdout=log, stderr=subprocess.STDOUT)
     processes.append(process)
     deadline = time.monotonic() + 45
@@ -180,12 +204,47 @@ try:
             browser_env['YOUTOPIA_TEST_WEB_PORT'] = str(WEB_PORT)
             # The saved browser cases explicitly verify opted-in telemetry.
             browser_env['VITE_PRODUCT_EVENTS_ENABLED'] = 'true'
-            completed = subprocess.run(['pnpm', 'exec', 'playwright', 'test', '--config=playwright.service.config.ts'],
-                cwd=root / 'frontend', env=browser_env, timeout=240)
-            assert completed.returncode == 0, 'Saved browser E2E failed'
+            assert not arguments.deployment_redis_state, 'Deployment ACL profile uses a fixed namespace; run browser separately'
+            # Give each browser project its own real session/limiter namespace.
+            # Keep the production-default request threshold; aggregate UI projects
+            # must not consume each other's per-minute budget or require disabling it.
+            projects = ['real-service', 'visual-desktop-dark', 'visual-mobile-dark',
+                        'visual-desktop-light', 'visual-mobile-light']
+            for project in projects:
+                for process in list(processes):
+                    stop(process)
+                session_namespace = 'youtopia:p0-browser:' + project + ':' + uuid.uuid4().hex
+                start(FIRST_PORT)
+                completed = subprocess.run(['pnpm', 'exec', 'playwright', 'test',
+                    '--config=playwright.service.config.ts', '--project='+project],
+                    cwd=root / 'frontend', env=browser_env, timeout=240)
+                import shutil
+                report = root / 'frontend/test-results/service-results.json'
+                if report.is_file():
+                    shutil.copyfile(report, reports / ('browser-'+project+'.json'))
+                assert completed.returncode == 0, 'Saved browser E2E failed: '+project
+            result['browser_projects'] = projects
             result['saved_real_browser_e2e'] = True
             result['browser_ui_verified'] = True
             result['browser_scope'] = 'ISOLATED_SYNTHETIC_DATA_REAL_CHROMIUM; fault-injection cases explicitly stubbed'
+        if arguments.deployment_redis_state:
+            # Stop ONLY the container whose identity/ownership was validated above.
+            # A Redis failure must never become successful authentication or an unlimited public query.
+            csrf_status, token, csrf_headers = request(FIRST_PORT, '/api/v1/auth/csrf')
+            assert csrf_status == 200
+            if csrf_headers.get('Set-Cookie'):
+                cookie = csrf_headers['Set-Cookie'].split(';', 1)[0]
+            owned_id = info['Id']
+            subprocess.run(['docker','--host=unix:///var/run/docker.sock','stop',owned_id],check=True,stdout=subprocess.DEVNULL,timeout=30)
+            try:
+                assert request(FIRST_PORT, '/api/v1/games')[0] >= 500, 'Public limiter bypassed Redis failure'
+                status, body, _ = request(FIRST_PORT, '/api/v1/auth/login', 'POST',
+                    {'login':fake['email'],'password':fake['password']}, cookie, token['token'])
+                assert status >= 400, 'Authentication bypassed Redis failure'
+                assert not isinstance(body, dict) or 'kind' not in body
+                result['redis_outage_fails_closed'] = True
+            finally:
+                subprocess.run(['docker','--host=unix:///var/run/docker.sock','start',owned_id],check=True,stdout=subprocess.DEVNULL,timeout=30)
         result['status'] = 'PASS'
 finally:
     for process in processes:

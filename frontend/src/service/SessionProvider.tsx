@@ -22,6 +22,8 @@ export const ServiceSessionContext = createContext<Session | null>(null);
 export function SessionProvider({ children }: { children: ReactNode }) {
   const epoch = useRef(0),
     channel = useRef<BroadcastChannel | null>(null);
+  const mutations = useRef(Promise.resolve());
+  const pendingMutations = useRef(0);
   const [state, setState] = useState<State>({
     status: "checking",
     identity: null,
@@ -33,6 +35,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return generation;
   }, []);
   const refresh = useCallback(async () => {
+    if (pendingMutations.current > 0) return;
     const generation = clear();
     try {
       const identity = await serviceApi.me();
@@ -66,39 +69,36 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       channel.current?.close();
     };
   }, [refresh]);
-  async function login(login: string, password: string, admin = false) {
-    clear();
-    try {
-      const identity = await serviceApi.login(login, password, admin);
-      setState({
-        status: "authenticated",
-        identity,
-        generation: ++epoch.current,
-      });
-      channel.current?.postMessage("changed");
-    } catch (e) {
-      await refresh();
-      throw e;
-    }
+  // Serialize cookie-changing requests, and invalidate responses at intent time.
+  // Focus/refresh must not cancel an in-flight login or observe an older cookie.
+  function mutate(operation: () => Promise<Identity | null>) {
+    const generation = clear();
+    ++pendingMutations.current;
+    const result = mutations.current.then(async () => {
+      try {
+        const identity = await operation();
+        if (generation === epoch.current) {
+          setState({ status: identity ? "authenticated" : "guest", identity, generation });
+        }
+        channel.current?.postMessage("changed");
+      } catch (error) {
+        if (generation === epoch.current) {
+          setState({ status: "unavailable", identity: null, generation });
+        }
+        throw error;
+      } finally {
+        --pendingMutations.current;
+      }
+    });
+    // A failed operation must not prevent a later logout/login from running.
+    mutations.current = result.catch(() => {});
+    return result;
   }
-  async function logout() {
-    clear();
-    try {
-      await serviceApi.logout();
-      setState({
-        status: "guest",
-        identity: null,
-        generation: ++epoch.current,
-      });
-      channel.current?.postMessage("changed");
-    } catch (e) {
-      setState({
-        status: "unavailable",
-        identity: null,
-        generation: epoch.current,
-      });
-      throw e;
-    }
+  function login(login: string, password: string, admin = false) {
+    return mutate(() => serviceApi.login(login, password, admin));
+  }
+  function logout() {
+    return mutate(async () => { await serviceApi.logout(); return null; });
   }
   return (
     <ServiceSessionContext.Provider
