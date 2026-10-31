@@ -65,13 +65,16 @@ DB 호스트가 아니다. 운영 확인은 앱의 실제 역할로 SELECT1·cur
    비공개 기록한다. Docker 전체 inspect는 비밀 env를 노출하므로 필요한 필드만 선택한다.
 2. Codex: 격리 check/bootJar·frontend test/build·실브라우저·Redis 배치 검증 결과와
    공개 diff를 제출한다. 공개 브랜치만 commit/push한다. 빌드·테스트는 운영에서 하지 않는다.
-3. 사용자/root: 승인 이후 Ubuntu 패키지 버전/추가디스크 필요 여부를 확인하고
-   Java21, Docker Compose v2, nginx, logrotate를 검토한 버전으로 설치한다.
-   패키지 설치의 nginx 자동기동/기본80번 사이트 생성 효과도 먼저 확인하고 승인 범위에 넣는다.
-   이 준비 스크립트는 apt 설치·자동기동 정책 변경을 실행하지 않는다.
-   `prepare-host.sh --approved`는 충돌 시 중단하고 새 계정·경로·unit만 만든다.
-   파일들은 deploy/coexist를 현재 디렉터리로 실행한다. 부분 실패 시 재실행하지 말고
-   생성된 항목을 대조한다. 기존 항목을 자동 삭제하거나 소유권을 덮지 않는다.
+3. 사용자/root: 먼저 [SSH-BOOTSTRAP.md](SSH-BOOTSTRAP.md)에 따라 전용 SSH 계정·공개키와
+   읽기 전용 접속만 확인한다. Java/nginx 설치와 prepare-host.sh를 SSH 선행 조건으로 두지 않는다.
+   앱 호스트 준비는 [INSTALL-ORDER.md](INSTALL-ORDER.md)의 승인 후 순서를 따른다:
+   **기존 자원 관측 → 포트 검사/prepare-host.sh → 런타임 점검 → nginx 설치(자동기동 차단)**.
+   prepare-host.sh는 Java/Docker/nginx 설치를 요구하지 않으며 별도 SSH 계정도 건드리지 않는다.
+   기존 Docker가 있으므로 Docker 재설치·업그레이드를 기본 순서에 넣지 않는다.
+   nginx 신규 설치는 정확한 패키지 transaction을 검토한 뒤 install-nginx-staged.sh로 수행한다.
+   새 nginx mask와 임시 policy-rc.d로 자동기동을 차단하고80/443이 비어 있음을 확인한다.
+   기존 policy-rc.d/nginx/포트가 있으면 수정·중지하지 않고 별도 검토로 중단한다.
+   부분 실패는 생성 항목을 대조하고, 기존 항목을 자동 삭제하거나 소유권을 덮지 않는다.
 4. 비밀 app.env/ACL/blocklist를 root가 설치한다. `make-redis-acl.py`는 stdin으로
    비밀을 받아 verifier만 출력한다. 비밀을 명령 인자/채팅/셸 history에 넣지 않는다.
    `umask 077; python3 make-redis-acl.py < /root/redis-password-input > /root/redis-users.acl`
@@ -94,6 +97,8 @@ DB 호스트가 아니다. 운영 확인은 앱의 실제 역할로 SELECT1·cur
 8. 도메인 결정 뒤 DNS A/AAAA·도달성·인증서 경로를 확인하고 nginx 템플릿을 렌더한다.
    임의 인증서 발급은 하지 않는다. 비밀변수 검토와 control 검증 후 root가 승인 기록을
    RELEASE_APPROVED에 두고 `systemctl daemon-reload`, 승인된 전환 스크립트를 실행한다.
+   nginx 기본 enabled 사이트와 검토한 설정의 차이를 먼저 확인하고 신규 구성만 적용한다.
+   별도 기동 승인 후에만 새 nginx mask를 해제하고 기동한다(INSTALL-ORDER.md).
    외부 ingress를 열기 전 검증을 완료한다. 앱이 예외로 죽으면 보호 장치를 끄지 않는다.
 9. HTTPS에서 로그인·로그아웃·새로고침·다중탭, SPA 직접경로, Secure/HttpOnly/SameSite,
    CSRF token+쿠키 전송/누락403, 미로그인401, Redis/control 중단 시 차단을 확인한다.

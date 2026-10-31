@@ -34,3 +34,33 @@ Chromium 누락은 설치 후 해결했다. Redis 채널 ACL은 현재 Spring Se
 호스트 DB loopback의 실제 앱 실행 연결, 기존 수집과 웹 동시 피크, 운영 control
 독립성·최신 journal 전체복원, Redis 운영 유실·AOF rewrite 부하와 모니터링 수용.
 이 항목을 위 합성 테스트 성공으로 대신하지 않는다. 11월3일 개시 확정 판정도 아니다.
+
+## 배포 전 절차 검수 — 같은 날 추가 실행
+
+기준 커밋192df9e는 보존하고 후속 변경으로 검수했다. 이번 범위는 SSH/호스트 준비 절차이며,
+위 Java/프런트/브라우저 전체 테스트를 이번 문서 수정 때문에 다시 실행한 것으로 표시하지 않는다.
+
+- `verify-static.py`: 10개 Python 테스트 통과. 기존 릴리스 보안3개 + CONNECT/포트7개.
+  HTTP200은 인증 성공이 아님,403/503 원인 미확정,로컬 권한 오류 분리,응답 불완전·timeout,
+  잘못된 주소 거부,예약 포트 충돌 및 ss 실패 시 중단을 검증했다. 모든 shell 문법도 통과했다.
+- `verify-host-prep.sh`: 고정 Ubuntu24.04 이미지의 일회용 rootfs에서 통과했다.
+  nginx/nginx-common **1.24.0-2ubuntu7.19** 실제 패키지 설치 로그에
+  `invoke-rc.d: policy-rc.d denied execution of start.`가 기록됐고 영속 mask 유지·예약 포트
+  비공개·임시 policy 제거를 확인했다. apt 실패를 주입한 경우에도 임시 policy만 정리하고
+  mask는 유지되는 것을 추가 검증했다. 이 버전을 운영 설치 승인 버전으로 정한 것은 아니다.
+- 같은 컨테이너에서 nginx를 직접 기동하자80번 충돌을 실제 검출했다. 검사 도구가 nginx를
+  중지하지 않았음을 확인한 뒤 테스트가 생성한 프로세스만 정리했다.
+- 합성 ed25519 키로 실제 SSH 로그인 통과(신뢰한 합성 hostkey, BatchMode, restrict 키).
+  개인키 입력·중복 계정·중복 authorized_keys·기존 policy 덮어쓰기는 거부됐다.
+- Java/Docker/nginx가 없고 전용 SSH 계정이 이미 있는 상태에서 prepare-host가 성공했다.
+  cwd를 바꿔도 source 파일을 찾았고 기존 합성 DB/cron hash·DB 경로 권한·SSH 키는 불변이었다.
+- 컨테이너는 host network/privileged/호스트 Docker socket/운영 비밀 없이 실행했다.
+  소유 라벨·종료코드0·정지 상태를 확인하고 해당 컨테이너만 제거했다.
+
+실제 목적지 CONNECT는 일반 경로에서 PermissionError, 동일 승인 경로에서 HTTP503이었다.
+이는 SSH 인증·호스트키 확인 성공이나 VPN/정책/원격 리스너 원인 확정이 아니다. 빈 TCP
+배열만으로 차단·재게시 필요를 판정하지 않았다. 실제 서버 SSH 명령은 실행하지 않았다.
+
+운영 계정/키 등록·설치·기동/재시작·배포·방화벽·DB 변경은 미실행이다. Windows PowerShell
+절차는 작성·검수했으며 Windows에서 실행했다고 주장하지 않는다. 컨테이너는 Ubuntu 패키지와
+sshd 동작을 검증한 것으로 운영 VM의 systemd 부팅/재부팅·기존 sshd Match 정책을 대체하지 않는다.

@@ -13,4 +13,16 @@ exec ssh -F /dev/null -T -o BatchMode=yes -o IdentitiesOnly=yes \
   -o ConnectTimeout=10 -o ConnectionAttempts=1 \
   -o "ProxyCommand=$YOUTOPIA_SOCAT - PROXY:proxy:$YOUTOPIA_SSH_HOST:22,proxyport=8088,resolve=0" \
   -i "$YOUTOPIA_SSH_KEY_FILE" "youtopia-deploy@$YOUTOPIA_SSH_HOST" \
-  'id; hostname; uname -r; free -h; df -h / /srv/youtopia-data; ss -ltn; stat -c "%U %G %a %n" /srv/youtopia-data/postgres; systemctl is-active docker; test -r /etc/cron.d/youtopia-collector && sha256sum /etc/cron.d/youtopia-collector'
+  'set -eu
+   test "$(id -un)" = youtopia-deploy
+   test "$(hostname -s)" = youtopia-main
+   id; hostname; uname -r; free -h
+   df -h / /srv/youtopia-data || printf "DISK_OBSERVATION_UNAVAILABLE\n"
+   ss -ltn || printf "LISTENER_OBSERVATION_UNAVAILABLE\n"
+   stat -c "%U %G %a %n" /srv/youtopia-data/postgres || printf "POSTGRES_PATH_NOT_READABLE\n"
+   systemctl is-active docker || printf "DOCKER_STATUS_UNAVAILABLE_OR_INACTIVE\n"
+   if test -r /etc/cron.d/youtopia-collector; then
+     sha256sum /etc/cron.d/youtopia-collector
+   else
+     printf "COLLECTOR_CRON_NOT_READABLE\n"
+   fi'

@@ -1,87 +1,69 @@
-# SSH 준비: 실행 위치를 분리한다
+# SSH 경로 진단과 Codex 설정
 
-운영 계정/키 생성·등록은 아직 실행하지 않는다. 아래는 검토 후 사용자 승인 단계다.
-이미 root@youtopia-main에 접속한 터미널은 그대로 사용한다.
+운영 계정·공개키 등록부터 읽기 전용 접속까지는 별도 [SSH-BOOTSTRAP.md](SSH-BOOTSTRAP.md)의
+A(Windows PowerShell) → B(기존 서버 root 터미널) → A(전용 계정 확인) → C/D(Codex) 순서다.
+이 절차는 Java/Docker/nginx 설치 및 prepare-host.sh와 독립이다. 운영 작업은 아직 실행하지 않는다.
 
-## A. Windows PowerShell
+## 정책 스냅샷과 실제 연결을 구분한다
 
-새 전용 키를 PC의 안전한 경로에 만들고 기존 키를 덮어쓰지 않는다.
+`/etc/codex/network-policy.json`의 빈 `domains`/`ip_ranges` 배열만으로 접속 불가,
+허용 목록 추가 필요, 재게시·환경 교체 필요를 판정하지 않는다. `automatic_tailscale_access`
+같은 런타임 설정과 실제 실행 경로도 확인한다. `vpn_configured=true`나 환경 상태의
+connected 역시 목적지 TCP22 연결 성공을 보장하지 않는다.
 
-```powershell
-ssh-keygen -t ed25519 -f "$env:USERPROFILE\.ssh\youtopia_codex_deploy" -C "youtopia-codex-deploy"
-Get-Content "$env:USERPROFILE\.ssh\youtopia_codex_deploy.pub"
-```
-
-정상: 개인키와 .pub 파일이 새로 생긴다. 마지막 명령은 공개키만 표시한다.
-기존 파일 충돌·키 생성 실패 시 여기서 중단한다. 개인키는 채팅/로그에 출력하지 않는다.
-자동화용 무암호 키를 선택한다면 전용 키로 한정하고 비밀파일 저장/폐기·교체 정책을 둔다.
-암호화 키를 사용하면 비대화형 SSH에 안전한 agent 공급이 별도로 필요하다.
-
-## B. 서버 root@youtopia-main
-
-기존 연결에서 먼저 `hostname; id; ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`를
-실행한다. 지문을 PC에서 별도 기록한다. 이 기존 신뢰 연결로 아래 공개 호스트키도 확인한다.
+먼저 환경 상태와 현재 정책을 기록하고 승인된 목적지에 제한 시간 있는 CONNECT를 측정한다.
+`probe-ssh-connect.py`는 proxy:8088에 HTTP CONNECT만 전송하며 SSH 인증·원격 명령을
+실행하지 않는다. 목적지 값과 raw 응답 본문·비밀은 출력하지 않는다.
 
 ```sh
-awk -v host="<승인된 서버 Tailscale IPv4>" '{print host " " $1 " " $2}' /etc/ssh/ssh_host_ed25519_key.pub
+python3 deploy/coexist/probe-ssh-connect.py
 ```
 
-출력은 공개 호스트키의 known_hosts 한 줄이다. SSH scan 결과만으로 신뢰하지 않는다.
-실행 승인을 받은 뒤 prepare-host.sh로 계정/경로를 만들고, A의 .pub 한 줄을
-/home/youtopia-deploy/.ssh/authorized_keys에 `restrict ` 접두사와 함께 등록한다.
-경로 소유자 youtopia-deploy, .ssh0700/authorized_keys0600으로 한다.
-비밀번호 로그인은 잠금 상태이며 root 비밀번호를 공유하지 않는다.
-`sshd -T -C user=youtopia-deploy,host=youtopia-main,addr=<승인된 tailnet source>`로
-공개키 인증·계정 접근 정책을 확인한다. 기존 sshd/방화벽/Tailscale ACL 변경은 별도 검토다.
+`YOUTOPIA_SSH_HOST`는 비공개 운영 인계의 승인된 Tailscale IPv4다.
+일반 실행이 로컬 socket PermissionError 등으로 막히면 동일 프록시 경로의 승인 실행으로
+구분한다. 목적지 정책에 의해 명시적으로 거부된 경우 우회하지 않는다.
+현재 스냅샷만 보고 환경을 재게시하거나 기존 디스크를 변경하지 않는다.
 
-정상: 정확한 호스트/비특권 계정/키파일 권한, 검증된 호스트키, TCP22 리스너가 확인된다.
-계정·경로 충돌·호스트 불일치·공개키 불일치 시 중단한다. youtopia-deploy에는 sudo와
-docker 그룹을 주지 않는다. Docker 그룹은 호스트 root 수준의 영향이 있으므로 배제한다.
-배포 계정은 incoming 업로드만 하며 root가 검토한 고정 명령으로 승격/서비스 조작한다.
-
-## C. Codex 환경 설정
-
-앱 DB7개 비밀은 현재 전달됐으며 재등록하지 않는다. 별도 SSH 비밀파일 설정에:
-
-| 설정 항목 | 내용 |
+| 관측 | 판정 가능한 범위와 다음 확인 |
 |---|---|
-| YOUTOPIA_SSH_KEY_FILE | A에서 만든 개인키를 비밀파일로 등록한 런타임 절대경로 |
-| YOUTOPIA_SSH_KNOWN_HOSTS_FILE | B에서 독립 검증한 known_hosts 한 줄의 비밀/설정파일 경로 |
-| YOUTOPIA_SSH_HOST | 비공개 운영 인계에 기록한 서버 Tailscale IPv4(비밀 아님, 공개 문서에는 제외) |
-| YOUTOPIA_SOCAT | 런타임 스킬 ensure-socat.sh가 출력한 실행파일 절대경로(비밀 아님) |
+| proxy 연결 전 PermissionError/접속 거절/DNS 오류 | 실행 제한·proxy 도달성 단계. 원격 SSH 인증/호스트키 오류로 해석하지 않음 |
+| CONNECT HTTP200 | TCP 터널 성립. SSH 호스트 신뢰·계정 인증·명령 성공은 별도 검증 |
+| CONNECT HTTP403 | 프록시가 요청을 거부함. 요청 형식·목적지·실제 거부 사유를 확인. 빈 배열 때문이라고 단정하지 않음 |
+| CONNECT HTTP503 | 프록시가503을 응답한 사실만 확인됨. VPN readiness·정책 상태·원격 경로/리스너 등 어느 원인인지 실측 없이 단정하지 않음 |
+| CONNECT timeout/응답 불완전 | 실행 경로·proxy·목적지 도달성을 분리해 조사. 방화벽/ACL/sshd 중 하나로 단정하지 않음 |
+| SSH host key verification failed/changed | SSH 서버 식별 검증 단계. 기존 신뢰 root 연결과 지문 대조 전 중단 |
+| SSH Permission denied(publickey) | SSH 인증 단계. 전용 계정·공개키·키파일 권한·sshd Match/PAM 정책 확인 |
+| SSH 인증 후 원격 명령 nonzero | 원격 검사 권한·명령 실패를 확인. CONNECT/인증 실패와 구별 |
 
-파일 바인딩 기능이 없으면 개인키를 보안 환경변수 YOUTOPIA_SSH_PRIVATE_KEY에 등록하고,
-값을 출력하지 않는 로컬 도구로 저장소 밖0700 폴더/0600 파일에 기록한 뒤 KEY_FILE에
-그 경로를 지정한다. 변수를 app.env에 복사하거나 키를 Git에 넣지 않는다.
-호스트키 파일은 root가 확인한 줄을 등록한다. 불일치 시 StrictHostKeyChecking을 끄지 않는다.
+503은 상태코드만으로 원인을 확정할 수 없다. 프록시의 구체적 error code와 같은 시각의
+운영자 관측이 추가되면 그 근거 범위에서 진단한다. 원시 오류를 공유할 때에도 비밀·내부
+식별자를 가린다. 명시적 정책 거부가 확인된 경우에만 지원 설정 절차로 필요한 변경과
+적용 조건을 검토하며, 새 환경이나 재게시를 미리 요구하지 않는다.
 
-현재 /etc/codex/network-policy.json은 vpn_configured=true지만 TCP grants가 비어 있다.
-TCP 목적지 승인된 서버 Tailscale IPv4/32를 환경 설정의 검토 절차로 허용해야 한다. 허용은 현재
-런타임 규격상 모든 TCP 포트에 적용되므로 tailnet ACL에서는 배포 접근을22로 제한한다.
-TCP grant 변경은 새 구성 버전의 교체 환경이 필요하다. 기존 디스크/작업은 삭제하지 말고
-공개 SHA·비공개 인계 경로를 먼저 보존해 새 환경에 첨부한다. 이는 현재 환경 장애를
-이유로 재생성을 요구하는 것이 아니라 TCP 정책 변경의 런타임 제한이다.
-VPN 설정·grant만으로 연결 정상이라 판단하지 않는다. 이 단계에서 새 구성을 만들거나
-기존 환경을 교체하지 않았다.
+## Codex 비밀 설정과 실행 위치
 
-## D. Codex 작업에서 실행할 명령
+| 설정 항목 | 등록 내용 |
+|---|---|
+| YOUTOPIA_SSH_KEY_FILE | Windows에서 만든 전용 개인키의 **비밀파일 바인딩 절대경로** |
+| YOUTOPIA_SSH_KNOWN_HOSTS_FILE | 기존 신뢰 root 연결에서 검증한 공개 호스트키 한 줄의 파일 경로 |
+| YOUTOPIA_SSH_HOST | 비공개 인계의 서버 Tailscale IPv4. 공개 Git에 실제 주소를 넣지 않음 |
+| YOUTOPIA_SOCAT | 런타임 스킬 installer/기존 maintained socat의 실행파일 절대경로 |
 
-환경 상태/정책과 비밀파일 존재·권한만 확인한다(내용 출력 금지).
-런타임 스킬의 ensure-socat.sh를 읽고 저장소 밖에 저장·실행해 경로를 얻는다.
-현재 환경에 이미 있는 /workspace/.youtopia-env/ensure-socat.sh는 변경하지 않는다.
-확인한 maintained socat 또는 스킬의 checksum 고정 installer를 새 경로에서 사용한다.
+개인키는 비밀파일 업로드 UI로만 전달하고 채팅/셸 출력/Git에 붙이지 않는다. 파일 바인딩이
+없으면 비밀 설정 항목 `YOUTOPIA_SSH_PRIVATE_KEY`로 공급하고, 값 출력 없이 저장소 밖0700
+디렉터리/0600 파일에 기록한 후 KEY_FILE에 경로를 지정한다. 이것은 앱 app.env와 별개다.
+기존 앱 DB7개 바인딩을 SSH 설정 때문에 변경하거나 재등록하지 않는다.
+암호화 키를 쓰면 비대화형 SSH에 안전한 agent 공급이 별도로 필요하다.
+
+Codex 작업에서 환경 상태·정책·파일 존재/권한만 확인한 뒤 런타임 스킬의 maintained socat를
+준비한다. 기존 /workspace/.youtopia-env 경로는 변경하지 않는다. CONNECT200 뒤에만:
 
 ```sh
 bash deploy/coexist/ssh-readonly.sh
 ```
 
-스크립트는 `ProxyCommand=socat - PROXY:proxy:$YOUTOPIA_SSH_HOST:22,proxyport=8088,resolve=0`
-CONNECT 경로를 사용하며 직접 VPN IP 접속/프록시 우회/TLS·호스트키 검증 해제를 하지 않는다.
-정상: 호스트 youtopia-main, uid=전용 계정, 읽기 전용 자원·리스너 결과가 나온다.
-권한 때문에 Docker/cron 상세를 못 읽으면 root의 선택 필드 관측을 별도로 받아 비교한다.
-read-only 확인 때문에 Docker 그룹이나 임의 sudo 권한을 부여하지 않는다.
-
-중단: CONNECT403은 grant/목적지 정책,503은 sidecar/VPN readiness,
-timeout은 tailnet ACL/서버 리스너/방화벽을 구분한다. hostkey mismatch는 신뢰 확인 전 중단,
-Permission denied(publickey)는 키·계정·sshd 정책을 확인한다. 프록시 자체 접근 차단이면
-동일 경로의 승인 실행으로 한 번 확인한다. 운영 설치/재시작은 이 진단에 포함하지 않는다.
+이 도구는 `ProxyCommand=socat - PROXY:proxy:$YOUTOPIA_SSH_HOST:22,proxyport=8088,resolve=0`
+경로를 사용한다. 직접 VPN IP 접속/프록시 우회/호스트키 검증 해제는 하지 않는다.
+정상: 검증된 호스트키, youtopia-deploy 계정과 youtopia-main 호스트 확인, 읽기 전용 관측.
+cron/DB 경로를 전용 계정이 읽지 못하는 경우 별도 NOT_READABLE 표식으로 남긴다.
+관측 권한을 늘리기 위해 sudo/docker 그룹을 주지 않는다. Docker 그룹은 root 수준 영향을 갖는다.
