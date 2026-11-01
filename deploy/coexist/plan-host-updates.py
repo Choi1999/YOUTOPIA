@@ -30,7 +30,7 @@ def main():
     cache=[{'file':p.name,'mtime_epoch':int(p.stat().st_mtime)} for p in Path('/var/lib/apt/lists').glob('*InRelease')]
     print(json.dumps({'packages':packages,'apt_cache_files':cache,'cache_refreshed_by_this_tool':False,
         'simulation_command':command if targets else None,'simulation':simulation,'proposed_changed_packages':changes,
-        'execution_command_after_separate_review':[x for x in command if x!='--simulate'] if targets else None,
+        'execution_command_after_separate_review':['env','NEEDRESTART_MODE=l',*[x for x in command if x!='--simulate']] if targets else None,
         'approval_granted':False,'operating_upgrade_performed':False},indent=2))
 
 if __name__=='__main__':main()

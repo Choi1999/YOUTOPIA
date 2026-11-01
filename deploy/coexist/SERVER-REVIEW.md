@@ -98,6 +98,10 @@ python3 "$review/tools/plan-host-updates.py" > "$review/packages-after-refresh.j
 실행한다. 제거 또는 Docker/containerd/runc/PostgreSQL/libpq/Tailscale/수집기 변경이
 있으면 거부한다. 다른 의존 패키지 변화·maintainer script·needrestart 영향도 사람이 검토한다.
 실제 실행 명령은 JSON에 **미승인 변경안**으로만 남긴다. full-upgrade/무조건 autoremove는 없다.
+후보 실행안의 `NEEDRESTART_MODE=l`은 needrestart를 목록 출력 모드로 한정해
+기존 Docker/DB/수집기의 자동 재시작을 피한다. 이 값은 해당 명령에만 적용한다.
+패키지 자체 maintainer script의 start/restart까지 차단하는 옵션은 아니므로 그 동작과
+현재 nginx mask/inactive 상태도 별도로 대조한 뒤 정확한 transaction을 승인한다.
 
 검토 전 `apt-get -s` 결과만 편집해 실행하지 않는다. 기존 nginx mask/inactive,
 Java 실제 binary/다른 Java 프로세스, 수집 기준선·디스크 여유를 기록한다.
