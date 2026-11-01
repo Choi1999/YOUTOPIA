@@ -251,5 +251,8 @@ finally:
         stop(process)
     for log in logs:
         log.close()
-    (reports / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
+    serialized = json.dumps(result, indent=2) + '\n'
+    (reports / 'result.json').write_text(serialized)
+    profile = 'browser' if arguments.with_browser else 'deployment-redis' if arguments.deployment_redis_state else 'sessions'
+    (reports / ('result-' + profile + '.json')).write_text(serialized)
 print(json.dumps(result))

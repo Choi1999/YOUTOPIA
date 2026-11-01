@@ -45,4 +45,20 @@ class ReleaseSafety(unittest.TestCase):
                 path,digest=self.archive(base,extra)
                 with self.assertRaises(SystemExit): self.invoke(path,digest,base)
                 self.assertFalse((base/SHA).exists())
+    def test_unmanifested_nested_manifest_and_duplicate_members_rejected(self):
+        for name in (SHA+'/frontend/manifest.json',SHA+'/app.jar'):
+            with self.subTest(name=name),tempfile.TemporaryDirectory() as tmp:
+                base=Path(tmp);path,_=self.archive(base)
+                with tarfile.open(path,'r:gz') as original: members=[(m,original.extractfile(m).read()) for m in original.getmembers()]
+                with tarfile.open(path,'w:gz') as archive:
+                    for member,data in members:archive.addfile(member,io.BytesIO(data))
+                    extra=tarfile.TarInfo(name);extra.size=1;archive.addfile(extra,io.BytesIO(b'x'))
+                digest=hashlib.sha256(path.read_bytes()).hexdigest()
+                with self.assertRaises(SystemExit):self.invoke(path,digest,base)
+                self.assertFalse((base/SHA).exists())
+    def test_release_directory_itself_is_owned_by_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base=Path(tmp);path,digest=self.archive(base)
+            with patch.object(staging.os,'chown') as chown:staging.stage(path,digest,SHA,base)
+            self.assertTrue(any(call.args[0].name==SHA and call.args[1:]==(0,0) for call in chown.call_args_list))
 if __name__=='__main__': unittest.main()

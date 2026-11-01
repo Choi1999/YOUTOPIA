@@ -1,0 +1,15 @@
+{
+  "source_sha": "",
+  "release_sha256": "",
+  "phase": "public-ingress",
+  "operator": null,
+  "execution_approval_reference": null,
+  "real_https_login_logout_refresh_multitab_and_spa_reference": null,
+  "secure_httponly_samesite_csrf_401_403_reference": null,
+  "control_open_freshness_watermark_and_pending_reference": null,
+  "redis_memory_aof_no_oom_eviction_and_loss_recovery_reference": null,
+  "collector_recent_success_db_mount_cron_tailscale_baseline_unchanged_reference": null,
+  "observed_collector_peak_load_latency_error_memory_slo_reference": null,
+  "rollback_previous_release_or_first_deployment_stop_reference": null,
+  "security_prestart_review_reference": null
+}

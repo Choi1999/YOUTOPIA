@@ -8,6 +8,7 @@ import re
 import sys
 import tarfile
 import tempfile
+from release_provenance import validate_manifest_provenance
 def stage(archive_path, expected, sha, base):
     if not re.fullmatch('[0-9a-f]{64}', expected) or not re.fullmatch('[0-9a-f]{40}', sha):
         raise SystemExit('Invalid digest or source SHA')
@@ -17,6 +18,9 @@ def stage(archive_path, expected, sha, base):
     if (base/sha).exists(): raise SystemExit('Release already exists; never overwrite')
     with tempfile.TemporaryDirectory(dir=base, prefix='.stage-') as temp:
         with tarfile.open(archive_path, 'r:gz') as archive:
+            names = [member.name for member in archive.getmembers()]
+            if len(names) != len(set(names)):
+                raise SystemExit('Duplicate archive member')
             for member in archive.getmembers():
                 p = Path(member.name)
                 if not p.parts or p.is_absolute() or '..' in p.parts or p.parts[0] != sha or not (member.isfile() or member.isdir()):
@@ -25,12 +29,16 @@ def stage(archive_path, expected, sha, base):
         release = Path(temp)/sha
         manifest = json.loads((release/'manifest.json').read_text())
         actual = {str(p.relative_to(release)): hashlib.sha256(p.read_bytes()).hexdigest()
-                  for p in release.rglob('*') if p.is_file() and p.name != 'manifest.json'}
+                  for p in release.rglob('*') if p.is_file() and p != release/'manifest.json'}
         if manifest['source_sha'] != sha or manifest['files'] != actual or 'app.jar' not in actual or 'frontend/index.html' not in actual:
             raise SystemExit('Release manifest mismatch')
+        try:
+            validate_manifest_provenance(manifest, actual)
+        except ValueError as error:
+            raise SystemExit(str(error))
         for p in release.rglob('*'):
             p.chmod(0o755 if p.is_dir() else 0o644); os.chown(p, 0, 0)
-        release.chmod(0o755); release.rename(base/sha)
+        release.chmod(0o755); os.chown(release, 0, 0); release.rename(base/sha)
 
 if __name__ == '__main__':
     if len(sys.argv) != 4: raise SystemExit('Usage: stage-release.py ARCHIVE SHA256 SOURCE_SHA')

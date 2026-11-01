@@ -13,8 +13,9 @@ import subprocess
 import tempfile
 import time
 import uuid
+from redis_contract import deployment_image, image_version
 ROOT = Path(__file__).resolve().parent
-IMAGE = 'public.ecr.aws/docker/library/redis:7.2.13-alpine@sha256:9907ac0c435717b4d95697cb4d0ce77d100b1d21269a01a0ce66f27335184c38'
+IMAGE = deployment_image()
 DOCKER = ['docker', '--host=unix:///var/run/docker.sock']
 token = uuid.uuid4().hex
 name = 'youtopia-coexist-redis-test-'+token[:12]
@@ -44,7 +45,7 @@ with tempfile.TemporaryDirectory(prefix='youtopia-coexist-redis-') as temp:
     try:
         run(['pull',IMAGE])
         run(['run','-d','--name',name,'--label','io.youtopia.coexist-test='+token,
-             '--user','999:999','--memory','1g','--memory-swap','1g','--cpus','0.5',
+             '--user','999:999','--memory','1g','--memory-swap','1g','--cpus','0.5','--pids-limit','128',
              '--read-only','--cap-drop','ALL','--security-opt','no-new-privileges:true',
              '--publish','127.0.0.1::6379',
              '--mount',f'type=bind,src={temp}/redis.conf,dst=/usr/local/etc/redis/redis.conf,readonly',
@@ -56,10 +57,20 @@ with tempfile.TemporaryDirectory(prefix='youtopia-coexist-redis-') as temp:
             if cli('PING') == 'PONG': break
             time.sleep(.1)
         else: raise RuntimeError('Authenticated Redis startup failed')
+        require('v='+image_version(IMAGE)+' ' in run(['exec',name,'redis-server','--version']), 'Running Redis version differs from pinned image tag')
         require('NOAUTH' in cli('PING',auth=False),'Anonymous access not rejected')
         require('NOPERM' in cli('SET','outside:scope','x'),'Key ACL not enforced')
         require('NOPERM' in cli('CONFIG','SET','maxmemory','0'),'App can change CONFIG')
         require('NOPERM' in cli('FLUSHALL'),'App can flush database')
+        require('NOPERM' in cli('RESTORE','youtopia:blocked','0','not-a-serialized-payload'),'App can invoke RESTORE')
+        require('NOPERM' in cli('ACL','LIST'),'App can inspect ACL verifiers')
+        require('NOPERM' in cli('PUBLISH','outside:channel','synthetic'),'Channel ACL not enforced')
+        require('NOPERM' in cli('EVAL',"return redis.call('GET',KEYS[1])",'1','outside:scope'),'Lua key ACL not enforced')
+        cli('LPUSH','youtopia:sort-input','1')
+        require('NOPERM' in cli('SORT','youtopia:sort-input','STORE','outside:destination'),'SORT destination ACL not enforced')
+        require('NOPERM' in cli('XREAD','STREAMS','outside:stream','0'),'XREAD stream ACL not enforced')
+        require('ERR' in cli('EVAL','return 1','2','youtopia:one'),'Invalid EVAL arity was not rejected')
+        require(cli('PING')=='PONG','Server failed after invalid-arity input')
         require(cli('SET','youtopia:persist','survives')=='OK','Write failed')
         require(cli('EVAL',"local n=redis.call('INCR',KEYS[1]);redis.call('EXPIRE',KEYS[1],60);return n",'1','youtopia:budget')=='1','Lua budget failed')
         listener = subprocess.Popen(DOCKER+['exec','-e','REDISCLI_AUTH='+password,name,'redis-cli','--no-auth-warning','--user','youtopia','--raw','PSUBSCRIBE','__keyevent@0__:expired'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,env=env)
@@ -112,7 +123,12 @@ with tempfile.TemporaryDirectory(prefix='youtopia-coexist-redis-') as temp:
         require(budget_oom,'Budget write did not report OOM after remaining memory was filled')
         info=json.loads(run(['inspect',name]))[0]
         require(info['HostConfig']['PortBindings']['6379/tcp'][0]['HostIp']=='127.0.0.1','Nonloopback publication')
-        print(json.dumps({'status':'PASS','image':IMAGE,'anonymous_denied':True,'acl_scope':True,'lua_budget':True,
+        require(info['HostConfig']['Memory']==1073741824 and info['HostConfig']['MemorySwap']==1073741824,'Memory/swap cap mismatch')
+        require(info['HostConfig']['NanoCpus']==500000000 and info['HostConfig']['PidsLimit']==128,'CPU/PID cap mismatch')
+        require(not info['State']['OOMKilled'] and info['RestartCount']==0,'Container OOM/restart detected')
+        print(json.dumps({'status':'PASS','image':IMAGE,'redis_version':image_version(IMAGE),'anonymous_denied':True,'acl_scope':True,'lua_budget':True,
+              'restore_and_acl_management_denied':True,'cross_scope_sort_xread_lua_denied':True,'invalid_eval_arity_survives':True,
+              'exact_container_resource_limits':True,'container_oom_killed':False,
               'expiry_notification':True,'aof_restart':True,'noeviction_oom':True,'production_server_accessed':False,
               'maxmemory_test_override':'4mb (deployment 512mb)','persistence_loss_window':'everysec; up to roughly 1s, not zero RPO'}))
     finally:

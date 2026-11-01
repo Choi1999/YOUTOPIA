@@ -12,12 +12,14 @@ import time
 import uuid
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT/'deploy/coexist'))
+from redis_contract import deployment_image
 STATE = ROOT / 'build/test-services.json'
 DOCKER = ['docker', '--host=unix:///var/run/docker.sock']
 PROJECT = hashlib.sha256(str(ROOT).encode()).hexdigest()
 IMAGES = {
     'postgres': 'postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab',
-    'redis': 'public.ecr.aws/docker/library/redis:7@sha256:b6b6e3dc0c0952737748e55d5d885272840c7e42ba41ab1d5489f693419882f5',
+    'redis': deployment_image(),
 }
 FIXTURES = [('postgres', '00-cluster.sql'), ('youtopia_auth_test', '10-accounts.sql'),
     ('youtopia_auth_test', '11-reporting.sql'), ('youtopia_control_test', '20-control.sql'),
@@ -83,7 +85,8 @@ def load_state():
     for kind, internal in [('postgres', '5432/tcp'), ('redis', '6379/tcp')]:
         info = inspect_owned(state, kind)
         bindings = info['NetworkSettings']['Ports'].get(internal)
-        if (not info['State']['Running'] or not bindings or len(bindings) != 1
+        if (info['Config'].get('Image') != IMAGES[kind]
+                or not info['State']['Running'] or not bindings or len(bindings) != 1
                 or bindings[0]['HostIp'] != '127.0.0.1'
                 or int(bindings[0]['HostPort']) != state[kind+'_port']):
             raise ValueError('Test container/loopback port identity mismatch')

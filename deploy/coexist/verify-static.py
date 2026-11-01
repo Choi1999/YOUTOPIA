@@ -4,11 +4,13 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import json
 root=Path(__file__).resolve().parents[2]
 d=root/'deploy/coexist'
 keys=set(re.findall(r'\$\{(YOUTOPIA_[A-Z_]+)',(root/'src/main/resources/application.yml').read_text()))
 example=(d/'app.env.example').read_text()
 provided=set(re.findall(r'^(YOUTOPIA_[A-Z_]+)=',example,re.M))
+assert set(json.loads((d/'app-input.example.json').read_text()))==provided, 'Runtime JSON template drift'
 assert keys<=provided, 'Missing runtime variable names'
 assert 'YOUTOPIA_PRIVACY_ENABLED=false' in example
 assert 'YOUTOPIA_ACCOUNTS_DELETION_ENABLED=false' in example

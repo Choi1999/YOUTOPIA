@@ -10,6 +10,7 @@ COPY gradlew build.gradle settings.gradle gradle.lockfile ./
 COPY gradle ./gradle
 COPY src ./src
 COPY tools ./tools
+COPY deploy/coexist/compose.yaml deploy/coexist/redis_contract.py ./deploy/coexist/
 RUN chmod +x gradlew
 ENV DOCKER_TLS_CERTDIR="" GRADLE_USER_HOME=/tmp/cold-gradle
 ENTRYPOINT ["sh", "tools/cold-test-entrypoint.sh"]

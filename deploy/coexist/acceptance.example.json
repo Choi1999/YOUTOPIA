@@ -1,0 +1,21 @@
+{
+  "source_sha": "",
+  "release_sha256": "",
+  "phase": "prestart",
+  "operator": null,
+  "execution_approval_reference": null,
+  "baseline_db_collector_tailscale_preserved_reference": null,
+  "exact_package_transaction_review_reference": null,
+  "domain_dns_tls_chain_and_key_reference": null,
+  "redis_acl_authenticated_ping_negative_privileges_reference": null,
+  "redis_persistence_memory_loss_recovery_reference": null,
+  "control_external_authoritative_endpoint_and_durable_latest_journal_reference": null,
+  "control_separate_web_and_restore_principals_reference": null,
+  "control_initial_blocked_enrollment_replay_verify_open_reference": null,
+  "control_key_recovery_and_generation_watermark_pending_check_reference": null,
+  "root_only_runtime_secrets_and_approved_password_blocklist_reference": null,
+  "ingress_isolation_during_acceptance_reference": null,
+  "collector_peak_observation_and_load_slo_plan_reference": null,
+  "previous_release_or_first_deployment_and_rollback_reference": null,
+  "security_prestart_review_reference": null
+}

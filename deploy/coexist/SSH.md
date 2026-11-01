@@ -56,7 +56,8 @@ python3 deploy/coexist/probe-ssh-connect.py
 암호화 키를 쓰면 비대화형 SSH에 안전한 agent 공급이 별도로 필요하다.
 
 Codex 작업에서 환경 상태·정책·파일 존재/권한만 확인한 뒤 런타임 스킬의 maintained socat를
-준비한다. 기존 /workspace/.youtopia-env 경로는 변경하지 않는다. CONNECT200 뒤에만:
+준비한다. 이전 작업의 경로/캐시가 존재한다고 가정하지 않고 현재 실행파일의 경로·버전을
+다시 확인한다. 기존 캐시는 덮거나 지우지 않는다. CONNECT200 뒤에만:
 
 ```sh
 bash deploy/coexist/ssh-readonly.sh

@@ -9,5 +9,9 @@
 !src/**
 !tools/
 !tools/**
+!deploy/
+!deploy/coexist/
+!deploy/coexist/compose.yaml
+!deploy/coexist/redis_contract.py
 **/__pycache__/**
 **/*.pyc

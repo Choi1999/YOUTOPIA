@@ -22,7 +22,7 @@ class OwnershipTests(unittest.TestCase):
 
     def inspect(self, kind, **changes):
         internal='5432/tcp' if kind=='postgres' else '6379/tcp'
-        data={'Config':{'Labels':{'io.youtopia.synthetic':self.state['token'],'io.youtopia.test-project':services.PROJECT}},
+        data={'Config':{'Image':services.IMAGES[kind],'Labels':{'io.youtopia.synthetic':self.state['token'],'io.youtopia.test-project':services.PROJECT}},
             'State':{'Running':True},'NetworkSettings':{'Ports':{internal:[{'HostIp':'127.0.0.1','HostPort':str(self.state[kind+'_port'])}]}}}
         data.update(changes);return data
 
@@ -50,6 +50,11 @@ class OwnershipTests(unittest.TestCase):
         for ip,port in [('0.0.0.0','31001'),('127.0.0.1','31003')]:
             info=self.inspect('postgres');info['NetworkSettings']['Ports']['5432/tcp'][0].update(HostIp=ip,HostPort=port)
             with patch.object(services,'inspect_owned',return_value=info),self.assertRaises(ValueError):services.load_state()
+
+    def test_owned_labels_do_not_allow_a_stale_or_different_image(self):
+        info=self.inspect('redis');info['Config']['Image']='redis:unreviewed-floating-tag'
+        with patch.object(services,'inspect_owned',side_effect=lambda state,kind:info if kind=='redis' else self.inspect(kind)):
+            with self.assertRaises(ValueError):services.load_state()
 
     def test_cleanup_checks_all_labels_before_deleting_anything(self):
         good=self.inspect('postgres');bad=self.inspect('redis');bad['Config']['Labels']['io.youtopia.synthetic']='another-task'
