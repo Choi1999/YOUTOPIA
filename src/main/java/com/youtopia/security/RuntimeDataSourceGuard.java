@@ -19,7 +19,12 @@ public class RuntimeDataSourceGuard implements ApplicationRunner {
         "privacyDataSource","ytp_app_privacy");
     private final Map<String,DataSource> sources;
     private final String environment;
-    public RuntimeDataSourceGuard(Map<String,DataSource> sources,@Value("${youtopia.environment:LOCAL}") String environment){this.sources=Map.copyOf(sources);this.environment=environment;}
+    private final String restoreScope,controlConnectionPolicy;
+    public RuntimeDataSourceGuard(Map<String,DataSource> sources,@Value("${youtopia.environment:LOCAL}") String environment,
+        @Value("${youtopia.control.restore-scope:UNREVIEWED}") String restoreScope,
+        @Value("${youtopia.control.connection-policy:UNREVIEWED}") String controlConnectionPolicy){
+        this.sources=Map.copyOf(sources);this.environment=environment;this.restoreScope=restoreScope;this.controlConnectionPolicy=controlConnectionPolicy;
+    }
     @Override public void run(ApplicationArguments ignored)throws SQLException {
         for(var entry:sources.entrySet()){
             DataSource source=entry.getValue();
@@ -27,11 +32,15 @@ public class RuntimeDataSourceGuard implements ApplicationRunner {
                 String url=hikari.getJdbcUrl();
                 if(url!=null&&java.util.regex.Pattern.compile("(?i)(password|token|secret)=").matcher(url).find())
                     throw new IllegalStateException("Database credentials must be provided separately from JDBC URLs");
+                if("PRODUCTION".equals(environment)&&entry.getKey().equals("controlDataSource")){
+                    ControlDatabasePolicy.verifyEndpoint(url,restoreScope,controlConnectionPolicy);
+                    if(hikari.getMaximumPoolSize()>3)throw new IllegalStateException("Reviewed control pool maximum is three connections");
+                }
             }
             try(var connection=source.getConnection()){
                 verifyPoolIdentity(connection,entry.getKey(),environment);
                 verify(connection);
-                if(source instanceof com.zaxxer.hikari.HikariDataSource hikari&&"independent-deletion-journal".equals(hikari.getPoolName()))try(var query=connection.createStatement();var row=query.executeQuery("SELECT has_table_privilege(current_user,'restore_control.service_fence','UPDATE') OR has_table_privilege(current_user,'restore_control.deletion_journal','DELETE')")){
+                if(entry.getKey().equals("controlDataSource"))try(var query=connection.createStatement();var row=query.executeQuery("SELECT has_table_privilege(current_user,'restore_control.service_fence','UPDATE') OR has_table_privilege(current_user,'restore_control.deletion_journal','DELETE')")){
                     row.next();if(row.getBoolean(1))throw new IllegalStateException("Web control credentials must not open restore fences or delete the independent journal");
                 }
             }
@@ -50,8 +59,8 @@ public class RuntimeDataSourceGuard implements ApplicationRunner {
                     throw new IllegalStateException("Production pool identity does not match its assigned role");
                 String database=row.getString(3);
                 if(beanName.equals("controlDataSource")){
-                    if(row.getBoolean(4)||database.equals("youtopia")||database.equals("postgres")||database.startsWith("template"))
-                        throw new IllegalStateException("Production control pool requires the explicitly provisioned control database");
+                    if(row.getBoolean(4)||!database.equals("youtopia_control"))
+                        throw new IllegalStateException("Production control pool requires the youtopia_control control database");
                 }else if(!database.equals("youtopia"))throw new IllegalStateException("Production service pools require the service database");
             }
         }

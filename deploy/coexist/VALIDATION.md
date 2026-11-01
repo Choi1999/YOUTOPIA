@@ -49,5 +49,11 @@ stdin의 LF/인용부호/치환과 Windows형 CRLF trailer는 로컬 POSIX shell
 
 새 digest 검증은 이전 버전의 성공 기록을 재사용하지 않는다. 보고 시 source SHA,
 실제 JAR hash/build SHA, 이미지 index/platform digest, 각 검증의 실행 여부를 구분한다.
-실행하지 않은 운영 SSH/설치/HTTPS/실제 역할 loopback/control 독립성/수집 피크와
+실행하지 않은 운영 SSH/설치/HTTPS/실제 역할 loopback/control 복원 범위·최신성/수집 피크와
 파일시스템·vendored 전체 보안 검사를 통과했다고 표시하지 않는다.
+
+`serviceDatabaseOnlyRestorePreservesSameInstanceControlAndRequiresReplayBeforeOpen`은
+한 PostgreSQL의 서로 다른 두 합성 DB를 사용한다. 서비스 DB 전체 pg_dump/pg_restore 후
+control journal/fence/run/policy의 모든 행이 그대로인지 비교한다. 503·조기 open 거부,
+재적용·독립 verify/open·구 세션/복구코드 거부를 확인한다. schema만 복원한 결과를
+DB 단독 복원으로 부르지 않는다. 인스턴스/VM/디스크 전체 복원 시험·자동 탐지는 포함하지 않는다.

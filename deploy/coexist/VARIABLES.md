@@ -4,7 +4,7 @@ Codex의 DB7비밀 전달은 서버 실행 설정 완료가 아니다. 운영 �
 
 | 변수 | 처리 |
 |---|---|
-| YOUTOPIA_DATA_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 독립 endpoint/별도 DB. 원격은 verify-full+신뢰CA |
+| YOUTOPIA_DATA_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 같은 인스턴스의 loopback5432/youtopia_control. 명시한 HOST_LOOPBACK 또는 VERIFY_FULL 정책 |
 | YOUTOPIA_DATA_DB_USER | 전용 역할명: app.env.example 참조. 관리자·owner·ytp_codex 금지 |
 | YOUTOPIA_DATA_DB_PASSWORD | 비밀. 값은 공개하지 않음; 해당 기능 활성화 시 필수 |
 | YOUTOPIA_SESSION_REDIS_HOST | 호스트 Spring에서 127.0.0.1 |
@@ -15,38 +15,38 @@ Codex의 DB7비밀 전달은 서버 실행 설정 완료가 아니다. 운영 �
 | YOUTOPIA_ACCOUNTS_ENABLED | 검증 전 false. PRIVACY는 LEGAL_REVIEW로 계속 false; control 미해결 상태 accounts 활성화 금지 |
 | YOUTOPIA_ACCOUNT_HMAC_KEY | 비밀. 값은 공개하지 않음; 해당 기능 활성화 시 필수 |
 | YOUTOPIA_PASSWORD_BLOCKLIST | SHA256 한 줄당64hex, 비어 있지 않은 승인 파일. 최대256MiB; 앱 읽기 전용. 테스트용 소량 목록을 운영용으로 쓰지 않음 |
-| YOUTOPIA_MEMBER_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 독립 endpoint/별도 DB. 원격은 verify-full+신뢰CA |
+| YOUTOPIA_MEMBER_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 같은 인스턴스의 loopback5432/youtopia_control. 명시한 HOST_LOOPBACK 또는 VERIFY_FULL 정책 |
 | YOUTOPIA_MEMBER_DB_USER | 전용 역할명: app.env.example 참조. 관리자·owner·ytp_codex 금지 |
 | YOUTOPIA_MEMBER_DB_PASSWORD | 비밀. 값은 공개하지 않음; 해당 기능 활성화 시 필수 |
-| YOUTOPIA_ADMIN_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 독립 endpoint/별도 DB. 원격은 verify-full+신뢰CA |
+| YOUTOPIA_ADMIN_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 같은 인스턴스의 loopback5432/youtopia_control. 명시한 HOST_LOOPBACK 또는 VERIFY_FULL 정책 |
 | YOUTOPIA_ADMIN_DB_USER | 전용 역할명: app.env.example 참조. 관리자·owner·ytp_codex 금지 |
 | YOUTOPIA_ADMIN_DB_PASSWORD | 비밀. 값은 공개하지 않음; 해당 기능 활성화 시 필수 |
-| YOUTOPIA_AUDIT_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 독립 endpoint/별도 DB. 원격은 verify-full+신뢰CA |
+| YOUTOPIA_AUDIT_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 같은 인스턴스의 loopback5432/youtopia_control. 명시한 HOST_LOOPBACK 또는 VERIFY_FULL 정책 |
 | YOUTOPIA_AUDIT_DB_USER | 전용 역할명: app.env.example 참조. 관리자·owner·ytp_codex 금지 |
 | YOUTOPIA_AUDIT_DB_PASSWORD | 비밀. 값은 공개하지 않음; 해당 기능 활성화 시 필수 |
 | YOUTOPIA_DIRECTORY_ENABLED | 검증 전 false. PRIVACY는 LEGAL_REVIEW로 계속 false; control 미해결 상태 accounts 활성화 금지 |
-| YOUTOPIA_DIRECTORY_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 독립 endpoint/별도 DB. 원격은 verify-full+신뢰CA |
+| YOUTOPIA_DIRECTORY_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 같은 인스턴스의 loopback5432/youtopia_control. 명시한 HOST_LOOPBACK 또는 VERIFY_FULL 정책 |
 | YOUTOPIA_DIRECTORY_DB_USER | 전용 역할명: app.env.example 참조. 관리자·owner·ytp_codex 금지 |
 | YOUTOPIA_DIRECTORY_DB_PASSWORD | 비밀. 값은 공개하지 않음; 해당 기능 활성화 시 필수 |
 | YOUTOPIA_EVENTS_ENABLED | 검증 전 false. PRIVACY는 LEGAL_REVIEW로 계속 false; control 미해결 상태 accounts 활성화 금지 |
-| YOUTOPIA_EVENT_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 독립 endpoint/별도 DB. 원격은 verify-full+신뢰CA |
+| YOUTOPIA_EVENT_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 같은 인스턴스의 loopback5432/youtopia_control. 명시한 HOST_LOOPBACK 또는 VERIFY_FULL 정책 |
 | YOUTOPIA_EVENT_DB_USER | 전용 역할명: app.env.example 참조. 관리자·owner·ytp_codex 금지 |
 | YOUTOPIA_EVENT_DB_PASSWORD | 비밀. 값은 공개하지 않음; 해당 기능 활성화 시 필수 |
 | YOUTOPIA_ACTIVE_SESSION_WINDOW_SECONDS | 기존 코드 기본값 유지; app.env.example 참조 |
 | YOUTOPIA_REPORTING_ENABLED | 검증 전 false. PRIVACY는 LEGAL_REVIEW로 계속 false; control 미해결 상태 accounts 활성화 금지 |
-| YOUTOPIA_REPORT_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 독립 endpoint/별도 DB. 원격은 verify-full+신뢰CA |
+| YOUTOPIA_REPORT_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 같은 인스턴스의 loopback5432/youtopia_control. 명시한 HOST_LOOPBACK 또는 VERIFY_FULL 정책 |
 | YOUTOPIA_REPORT_DB_USER | 전용 역할명: app.env.example 참조. 관리자·owner·ytp_codex 금지 |
 | YOUTOPIA_REPORT_DB_PASSWORD | 비밀. 값은 공개하지 않음; 해당 기능 활성화 시 필수 |
 | YOUTOPIA_PRIVACY_ENABLED | 검증 전 false. PRIVACY는 LEGAL_REVIEW로 계속 false; control 미해결 상태 accounts 활성화 금지 |
 | YOUTOPIA_RETENTION_APPROVAL_REF | 정책 미정: 비워두고 탈퇴/파기 기능 비활성 유지 |
 | YOUTOPIA_RETENTION_PLAN | 정책 미정: 비워두고 탈퇴/파기 기능 비활성 유지 |
-| YOUTOPIA_PRIVACY_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 독립 endpoint/별도 DB. 원격은 verify-full+신뢰CA |
+| YOUTOPIA_PRIVACY_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 같은 인스턴스의 loopback5432/youtopia_control. 명시한 HOST_LOOPBACK 또는 VERIFY_FULL 정책 |
 | YOUTOPIA_PRIVACY_DB_USER | 전용 역할명: app.env.example 참조. 관리자·owner·ytp_codex 금지 |
 | YOUTOPIA_PRIVACY_DB_PASSWORD | 비밀. 값은 공개하지 않음; 해당 기능 활성화 시 필수 |
 | YOUTOPIA_CONTROL_ENABLED | 검증 전 false. PRIVACY는 LEGAL_REVIEW로 계속 false; control 미해결 상태 accounts 활성화 금지 |
 | YOUTOPIA_CONTROL_SERVICE_KEY | youtopia; journal에 등록된 식별자와 일치 |
 | YOUTOPIA_CONTROL_HMAC_KEY | 비밀. 값은 공개하지 않음; 해당 기능 활성화 시 필수 |
-| YOUTOPIA_CONTROL_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 독립 endpoint/별도 DB. 원격은 verify-full+신뢰CA |
+| YOUTOPIA_CONTROL_JDBC_URL | 역할별 JDBC URL. 서비스7개는 호스트 loopback5432/youtopia; control은 같은 인스턴스의 loopback5432/youtopia_control. 명시한 HOST_LOOPBACK 또는 VERIFY_FULL 정책 |
 | YOUTOPIA_CONTROL_DB_USER | 전용 역할명: app.env.example 참조. 관리자·owner·ytp_codex 금지 |
 | YOUTOPIA_CONTROL_DB_PASSWORD | 비밀. 값은 공개하지 않음; 해당 기능 활성화 시 필수 |
 | YOUTOPIA_GAMES_ENABLED | 검증 전 false. PRIVACY는 LEGAL_REVIEW로 계속 false; control 미해결 상태 accounts 활성화 금지 |
@@ -55,6 +55,14 @@ Codex의 DB7비밀 전달은 서버 실행 설정 완료가 아니다. 운영 �
 추가 Spring relaxed-binding 변수: YOUTOPIA_ENVIRONMENT=PRODUCTION, YOUTOPIA_ACCOUNTS_DELETION_ENABLED=false, YOUTOPIA_ACCOUNTS_RECONCILIATION_ENABLED=false(별도 운영 승인 전), YOUTOPIA_ACCOUNTS_RECONCILIATION_DELAY_MS=60000. 서버 unit의 SERVER_ADDRESS=127.0.0.1, SERVER_PORT=8080, SERVER_FORWARD_HEADERS_STRATEGY=framework. API max-request-bytes32768/CCU requests-per-minute120 및 기존 로그인 제한 기본값을 유지한다.
 
 DB 역할 매핑: DATA=ytp_app_data_ro, MEMBER=ytp_app_member, ADMIN=ytp_app_admin_auth, AUDIT=ytp_app_audit, EVENT=ytp_app_event, DIRECTORY=ytp_app_directory, REPORT=ytp_app_report. CONTROL=ytp_control_app은 기존7개와 별도다. PRIVACY 자격증명은 이번에 공급하지 않는다.
+
+control은 같은 PostgreSQL의 별도 DB `youtopia_control`을 사용한다. 새 필수 선언은
+`YOUTOPIA_CONTROL_RESTORE_SCOPE=SERVICE_DATABASE_ONLY`와 검토한
+`YOUTOPIA_CONTROL_CONNECTION_POLICY=HOST_LOOPBACK` 또는 `VERIFY_FULL`이다.
+HOST_LOOPBACK의 유일한 control URL은 `jdbc:postgresql://127.0.0.1:5432/youtopia_control?sslmode=disable`이다.
+VERIFY_FULL은 같은 주소/DB에 `?sslmode=verify-full&sslrootcert=/etc/youtopia-app/control-ca.crt`를 사용한다.
+현재 선택과 차이·연결 수·복원 제외 범위는 CONTROL.md에 명시했다.
+기존 JSON/env/receipt에 새 필드를 자동 승인해 붙이지 말고 새 보호 파일로 재검토한다.
 
 브라우저 빌드 VITE_*는 모두 공개 가능 값이다. 비밀 주입 금지. VITE_PRODUCT_EVENTS_ENABLED는 기존 동의/기능 정책에 맞춰 결정하고 synthetic 테스트용 true를 그대로 운영에 복사하지 않는다. React API는 같은 origin의 /api를 사용한다.
 

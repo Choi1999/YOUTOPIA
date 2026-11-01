@@ -602,7 +602,7 @@ class AuthenticationIntegrationTest {
         try {assertThat(running.waitFor(30,java.util.concurrent.TimeUnit.SECONDS)).isTrue();assertThat(running.exitValue()).as("isolated PostgreSQL backup/restore command").isZero();}
         finally {running.destroyForcibly();Files.deleteIfExists(error);}
     }
-    @Test void stalePostgresBackupReplaysIndependentDeletionStateIdempotentlyBeforeReopening() throws Exception {
+    @Test void serviceDatabaseOnlyRestorePreservesSameInstanceControlAndRequiresReplayBeforeOpen() throws Exception {
         var purged=new Browser();UUID purgedId=UUID.fromString(purged.signup().path("userId").asText());purged.login();
         purged.post("/api/v1/auth/recovery-codes",Map.of("requestKey",UUID.randomUUID(),"currentPassword",PASSWORD),200);
         var pending=new Browser();UUID pendingId=UUID.fromString(pending.post("/api/v1/auth/signup",Map.of("email","pending@example.invalid","password",PASSWORD),201).path("userId").asText());
@@ -613,7 +613,8 @@ class AuthenticationIntegrationTest {
         String staleCode=active.post("/api/v1/auth/recovery-codes",Map.of("requestKey",UUID.randomUUID(),"currentPassword",PASSWORD),200).path("codes").get(0).asText();
         Path backup=Files.createTempFile("youtopia-fake-personal-data-backup-",".dump");
         try {
-            isolatedDockerCommand(null,backup,"pg_dump","-U","postgres","-Fc","--schema=auth","--schema=service","--schema=security","--schema=telemetry","youtopia_auth_test");
+            // One complete logical database. No schema filter, globals or control DB.
+            isolatedDockerCommand(null,backup,"pg_dump","-U","postgres","-Fc","--dbname=youtopia_auth_test");
             var main=rootJdbc("youtopia_auth_test");
             // A post-backup session can have the same integer authVersion as backupVersion+1.
             main.update("UPDATE auth.service_user SET auth_version=auth_version+1,row_version=row_version+1 WHERE user_id=?",activeId);
@@ -634,11 +635,17 @@ class AuthenticationIntegrationTest {
             long externalCount=rootJdbc("youtopia_control_test").queryForObject("SELECT count(*) FROM restore_control.deletion_journal",Long.class);
             var coordinator=restoreCoordinator();UUID run=coordinator.begin("synthetic-old-backup");
             assertThat(journal.servingAllowed()).isFalse();assertThat(http.getForEntity("/api/v1/auth/csrf",String.class).getStatusCode().value()).isEqualTo(503);
-            main.execute("DROP SCHEMA auth,service,security,telemetry CASCADE");
-            isolatedDockerCommand(backup,null,"pg_restore","-U","postgres","-d","youtopia_auth_test","--exit-on-error");
+            var control=rootJdbc("youtopia_control_test");
+            String controlSnapshot=controlState(control);
+            assertThat(main.queryForObject("SELECT system_identifier::text FROM pg_control_system()",String.class))
+                .isEqualTo(control.queryForObject("SELECT system_identifier::text FROM pg_control_system()",String.class));
+            assertThat(main.queryForObject("SELECT current_database()",String.class)).isNotEqualTo(control.queryForObject("SELECT current_database()",String.class));
+            isolatedDockerCommand(backup,null,"pg_restore","-U","postgres","--dbname=youtopia_auth_test","--clean","--if-exists","--single-transaction","--exit-on-error");
             assertThat(main.queryForObject("SELECT count(*) FROM auth.service_user",Long.class)).isEqualTo(3);
             assertThat(rootJdbc("youtopia_control_test").queryForObject("SELECT count(*) FROM restore_control.deletion_journal",Long.class)).isEqualTo(externalCount);
+            assertThat(controlState(control)).isEqualTo(controlSnapshot);
             assertThat(journal.servingAllowed()).isFalse();
+            assertThatThrownBy(()->coordinator.open(run)).isInstanceOf(IllegalStateException.class);
             coordinator.replay(run);
             long restoredVersion=main.queryForObject("SELECT auth_version FROM auth.service_user WHERE user_id=?",Long.class,activeId);
             coordinator.replay(run);
@@ -650,12 +657,19 @@ class AuthenticationIntegrationTest {
             for(String table:List.of("auth.user_credential","auth.analytics_identity","auth.recovery_code","service.user_setting"))assertThat(main.queryForObject("SELECT count(*) FROM "+table+" WHERE user_id=?",Long.class,purgedId)).isZero();
             assertThat(main.queryForObject("SELECT count(*) FROM telemetry.product_event",Long.class)).isZero();
             assertThat(main.queryForObject("SELECT count(*) FROM security.security_audit_event WHERE actor_kind='USER' AND actor_id=? OR subject_user_id=?",Long.class,purgedId,purgedId)).isZero();
-            assertThat(journal.servingAllowed()).isFalse();coordinator.verify(run,true);assertThat(journal.servingAllowed()).isFalse();coordinator.open(run);assertThat(journal.servingAllowed()).isTrue();
+            assertThat(journal.servingAllowed()).isFalse();
+            assertThatThrownBy(()->coordinator.open(run)).isInstanceOf(IllegalStateException.class);
+            assertThat(http.getForEntity("/api/v1/auth/csrf",String.class).getStatusCode().value()).isEqualTo(503);
+            coordinator.verify(run,true);assertThat(journal.servingAllowed()).isFalse();coordinator.open(run);assertThat(journal.servingAllowed()).isTrue();
             active.get("/api/v1/auth/me",401);coincidentEpoch.get("/api/v1/auth/me",401);
             new Browser().post("/api/v1/auth/password-reset",Map.of("requestKey",UUID.randomUUID(),"email","active@example.invalid","recoveryCode",staleCode,"newPassword","fake restored stale code attempt 5678"),401);
             new Browser().post("/api/v1/auth/login",Map.of("login","pending@example.invalid","password",PASSWORD),401);
             assertThat(rootJdbc("youtopia_control_test").queryForObject("SELECT bool_and(octet_length(subject_tag)=32) FROM restore_control.deletion_journal",Boolean.class)).isTrue();
         } finally {Files.deleteIfExists(backup);}
+    }
+    private String controlState(org.springframework.jdbc.core.JdbcTemplate control) {
+        // Deterministic complete row comparison; no key/journal dump is logged.
+        return control.queryForObject("SELECT jsonb_build_object('journal',(SELECT jsonb_agg(to_jsonb(t) ORDER BY sequence_id) FROM restore_control.deletion_journal t),'fence',(SELECT jsonb_agg(to_jsonb(t) ORDER BY service_key) FROM restore_control.service_fence t),'runs',(SELECT jsonb_agg(to_jsonb(t) ORDER BY run_id) FROM restore_control.restore_run t),'policies',(SELECT jsonb_agg(to_jsonb(t) ORDER BY item_key) FROM restore_control.policy_item t))::text",String.class);
     }
     @Test void restoreFailuresWrongKeyAndUnresolvedIntentsKeepEveryApiFenced() throws Exception {
         var b=new Browser();b.signup();

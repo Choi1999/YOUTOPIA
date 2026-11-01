@@ -4,13 +4,12 @@ This does not establish control independence, fence state, or operator acceptanc
 """
 import base64
 import json
-import ipaddress
 import os
 from pathlib import Path
 import re
 import stat
 import sys
-from urllib.parse import parse_qs, urlsplit
+from control_contract import validate_connection
 
 ROLES = {'DATA':'ytp_app_data_ro', 'MEMBER':'ytp_app_member', 'ADMIN':'ytp_app_admin_auth',
          'AUDIT':'ytp_app_audit', 'EVENT':'ytp_app_event', 'DIRECTORY':'ytp_app_directory',
@@ -57,23 +56,7 @@ def validate(config, expected_keys):
     require(config['YOUTOPIA_ACCOUNT_HMAC_KEY'] != config['YOUTOPIA_CONTROL_HMAC_KEY'], 'Account and control keys must be distinct')
     require(config['YOUTOPIA_CONTROL_DB_USER'] == 'ytp_control_app' and bool(config['YOUTOPIA_CONTROL_DB_PASSWORD']), 'Separate restricted control application login required')
     require(bool(config['YOUTOPIA_CONTROL_SERVICE_KEY']), 'Existing approved control service identity required')
-    url = config['YOUTOPIA_CONTROL_JDBC_URL']
-    require(url.startswith('jdbc:postgresql://'), 'Explicit control JDBC endpoint required')
-    parsed = urlsplit(url[5:])
-    query = parse_qs(parsed.query, keep_blank_values=True)
-    require(parsed.hostname and parsed.username is None and parsed.password is None,
-            'External authoritative control endpoint required by this VM-restoration plan')
-    host=parsed.hostname.lower().rstrip('.')
-    require(host != 'localhost' and not host.endswith('.localhost'), 'Control must not use loopback')
-    try:
-        address=ipaddress.ip_address(host)
-    except ValueError:
-        address=None
-    require(address is None or not (address.is_loopback or address.is_unspecified or address.is_link_local), 'Control must not use loopback or unspecified/link-local addresses')
-    database = parsed.path.lstrip('/')
-    require(bool(database) and database not in ('youtopia','postgres') and not database.startswith('template'), 'Control requires its provisioned non-service database')
-    require(query.get('sslmode') == ['verify-full'] and query.get('sslrootcert') == ['/etc/youtopia-app/control-ca.crt'], 'Control TLS verification and reviewed CA path are required')
-    require(not any(re.search(r'password|token|secret|user', k, re.I) for k in query), 'JDBC credentials must be separate')
+    validate_connection(config['YOUTOPIA_CONTROL_JDBC_URL'],config['YOUTOPIA_CONTROL_RESTORE_SCOPE'],config['YOUTOPIA_CONTROL_CONNECTION_POLICY'])
     return config
 
 def encode(config):
@@ -101,7 +84,7 @@ def main():
     fd = os.open(output_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
     with os.fdopen(fd,'w') as file:
         file.write(encode(config))
-    print('CONFIG_STRUCTURE_VALIDATED; control independence, fence, credentials and HTTPS still require operational acceptance')
+    print('CONFIG_STRUCTURE_VALIDATED; service-only restore boundary, fence, credentials and HTTPS still require operational acceptance')
 
 if __name__ == '__main__':
     try:

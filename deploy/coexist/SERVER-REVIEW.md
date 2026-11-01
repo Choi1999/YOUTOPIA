@@ -180,16 +180,39 @@ docker --host=unix:///var/run/docker.sock compose -f "$review/tools/compose.yaml
 연결·공존 부하를 확인해야 한다. 전용 배포 계정에 Docker 권한을 주지 않는다.
 비어 있지 않은 Redis 데이터를 삭제/다운그레이드해 문제를 해결하지 않는다.
 
-회원/관리자 기동은 독립 authoritative control/최신 journal·key와 초기 BLOCKED→
+회원/관리자 기동은 같은 인스턴스의 별도 youtopia_control/최신 journal·key와 초기 BLOCKED→
 replay→독립 verify→open 근거가 없으면 보류한다. control=false/직접 OPEN은 대안이 아니다.
-현재 무료 기존 자원으로 확보한 범위와 미충족 조건을 CONTROL.md에서 확인한다.
+보호 범위는 youtopia 단독 논리 복원이다. control DB는 그 복원에서 제외하며,
+인스턴스/VM/디스크 전체 복원은 별도 사고 검토 전 재개하지 않는다. 자동 탐지는 지원하지 않는다.
+확정한 연결·역할·상한과 비공개 생성안 범위를 CONTROL.md에서 확인한다.
 초기 관리자 생성도 ADMIN.md의 구체적 절차 확인 후 별도 실행한다.
+
+control DB/신규 역할/GRANT의 정확한 SQL과 실행 계정은 별도 비공개 검토 묶음으로 제공한다.
+기존 서비스 DB DDL/GRANT/RLS를 재실행하지 않는다. 새 이름 충돌은 중단 사유다.
+기존 PostgreSQL max_connections/reserved와 수집 피크를 앱26·복원 CLI2의 예산과 대조한다.
+
+root 운영자 입력/조회 예시(입력 파일은 새0600, 비밀을 인자로 넣지 않음):
+
+```sh
+python3 "$review/tools/restore-operator.py" --input /root/NEW_RESTORE_INPUT.json prepare-input
+python3 "$review/tools/restore-operator.py" --input /root/NEW_RESTORE_INPUT.json \
+  --jar /opt/youtopia-app/releases/SOURCE_SHA/app.jar --sha256 JAR_SHA256 \
+  --service-database-only inspect
+```
+
+생성/ACL/실제 LOGIN 검증과 별도 등록 승인이 끝난 후 같은 명령의 inspect를
+`enroll --reviewed`로 바꾸면 control에 BLOCKED만 등록한다.
+최초 begin/replay도 서비스의 기존 auth_version/세션/복구코드를 바꿀 수 있으므로
+서비스 DB 읽기 전용 조회·변경 대상 수·복원 계정과 별도 검토한다.
+`begin --reference OPAQUE_BACKUP_REF --reviewed`, `replay --run-id RUN_UUID --reviewed`,
+`verify --run-id RUN_UUID --credential-state-reviewed --reviewed`, `open --run-id RUN_UUID --reviewed`
+순서이며 전체 인스턴스/VM 복원의 재개 절차로 사용하지 않는다. 서비스 DB 논리 복원만 대상으로 한다.
 
 모든 수용 근거와 실제 기동 승인이 끝나야 기존 approval marker와 activate-release를
 검토할 수 있다. 이 문서/receipt 구조 검사로 marker를 자동 만들지 않는다.
 current 전환 후 앱 오류 시 새 ingress를 차단하고 이전 SHA/config/control 호환성부터
 확인한다. 첫 배포라면 앱을 정지 상태로 보존한다. 구 비밀번호/auth_version을 복구하거나
-DB/DDL/GRANT/RLS를 역적용하지 않는다. VM 복원에는 별도 최신 control이 필요하다.
+DB/DDL/GRANT/RLS를 역적용하지 않는다. 전체 VM/인스턴스 복원을 이 기동 절차로 처리하지 않는다.
 
 | 변경 | 영향 | 검토한 복구 범위 |
 |---|---|---|

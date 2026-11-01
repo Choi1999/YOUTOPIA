@@ -20,7 +20,8 @@ class OperatorBoundaryTests(unittest.TestCase):
             YOUTOPIA_SESSION_REDIS_PASSWORD='synthetic-redis-password-at-least-32bytes',
             YOUTOPIA_ACCOUNT_HMAC_KEY=base64.b64encode(b'A'*32).decode(),
             YOUTOPIA_CONTROL_HMAC_KEY=base64.b64encode(b'B'*32).decode(),
-            YOUTOPIA_CONTROL_JDBC_URL='jdbc:postgresql://control.example.invalid:5432/independent_control?sslmode=verify-full&sslrootcert=/etc/youtopia-app/control-ca.crt')
+            YOUTOPIA_CONTROL_RESTORE_SCOPE='SERVICE_DATABASE_ONLY',YOUTOPIA_CONTROL_CONNECTION_POLICY='HOST_LOOPBACK',
+            YOUTOPIA_CONTROL_JDBC_URL='jdbc:postgresql://127.0.0.1:5432/youtopia_control?sslmode=disable')
         self.input=self.root/'input.json';self.output=self.root/'output.env'
     def tearDown(self):self.temp.cleanup()
     def render(self):
@@ -39,8 +40,13 @@ class OperatorBoundaryTests(unittest.TestCase):
         self.config['YOUTOPIA_CONTROL_MANAGER_DB_PASSWORD']='synthetic-manager-secret'
         result=self.render();self.assertNotEqual(result.returncode,0)
         self.assertNotIn('synthetic-manager-secret',result.stdout+result.stderr)
-    def test_remote_control_tls_cannot_be_disabled(self):
-        self.config['YOUTOPIA_CONTROL_JDBC_URL']=self.config['YOUTOPIA_CONTROL_JDBC_URL'].replace('verify-full','disable')
+    def test_transport_requires_explicit_policy_and_cannot_fall_back_from_verify_full(self):
+        self.config['YOUTOPIA_CONTROL_CONNECTION_POLICY']='VERIFY_FULL'
+        self.assertNotEqual(self.render().returncode,0)
+        self.config['YOUTOPIA_CONTROL_JDBC_URL']='jdbc:postgresql://127.0.0.1:5432/youtopia_control?sslmode=verify-full&sslrootcert=/etc/youtopia-app/control-ca.crt'
+        self.assertEqual(self.render().returncode,0)
+    def test_scope_cannot_claim_whole_instance_protection(self):
+        self.config['YOUTOPIA_CONTROL_RESTORE_SCOPE']='WHOLE_INSTANCE'
         self.assertNotEqual(self.render().returncode,0)
     def test_existing_secret_output_is_not_overwritten(self):
         self.output.write_text('existing-protected-file')
@@ -49,9 +55,10 @@ class OperatorBoundaryTests(unittest.TestCase):
     def test_same_keys_are_rejected(self):
         self.config['YOUTOPIA_CONTROL_HMAC_KEY']=self.config['YOUTOPIA_ACCOUNT_HMAC_KEY']
         self.assertNotEqual(self.render().returncode,0)
-    def test_loopback_alias_and_empty_url_password_are_not_control_independence(self):
+    def test_other_hosts_databases_and_extra_url_options_are_rejected(self):
         original=self.config['YOUTOPIA_CONTROL_JDBC_URL']
-        for value in (original.replace('control.example.invalid','127.0.0.2'),original+'&password='):
+        for value in (original.replace('127.0.0.1','127.0.0.2'),original.replace('127.0.0.1','control.example.invalid'),
+                      original.replace('/youtopia_control','/youtopia'),original.replace('/youtopia_control','/staging'),original+'&password='):
             self.config['YOUTOPIA_CONTROL_JDBC_URL']=value
             self.assertNotEqual(self.render().returncode,0)
     def test_duplicate_variables_are_not_silently_overwritten(self):

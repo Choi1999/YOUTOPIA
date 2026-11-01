@@ -101,6 +101,8 @@ youtopia:
       password: ${YOUTOPIA_PRIVACY_DB_PASSWORD:}
 
   control:
+    restore-scope: ${YOUTOPIA_CONTROL_RESTORE_SCOPE:UNREVIEWED}
+    connection-policy: ${YOUTOPIA_CONTROL_CONNECTION_POLICY:UNREVIEWED}
     enabled: ${YOUTOPIA_CONTROL_ENABLED:false}
     service-key: ${YOUTOPIA_CONTROL_SERVICE_KEY:youtopia}
     hmac-key: ${YOUTOPIA_CONTROL_HMAC_KEY:}

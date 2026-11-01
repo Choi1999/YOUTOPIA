@@ -63,13 +63,15 @@ python3 prepare-runtime-config.py ROOT_ONLY_INPUT.json NEW_OUTPUT.env
 
 입력 이름은 `app-input.example.json`을 따른다. 출력은 새0600 파일이며 기존 파일을
 덮지 않는다. env를 source/eval하지 않는다. 이 도구는 설정 구조만 검사하며 운영
-접속·실제 자격·control 독립성·fence/최신 journal·blocklist 승인을 증명하지 않는다.
+접속·실제 자격·control DB의 서비스 복원 대상 제외·fence/최신 journal·blocklist 승인을 증명하지 않는다.
 출력의 설치/변경도 별도 운영 승인 범위다. 현재 설정이 이미 있다면 먼저 값 출력 없이 대조한다.
 
-회원 기동은 accounts/control을 함께 검토하고 독립 authoritative control·별도 앱/복원
-관리자 권한·최신 journal/key 외부 복구·초기 BLOCKED 및 replay/독립 verify/open 근거를 요구한다.
-같은 VM의 별도 DB/폴더, control=false, 직접OPEN 또는 필터 제거로 우회하지 않는다.
-추가 비용 없이 필요한 독립성을 입증할 수 없으면 회원 기동을 보류한다.
+회원 기동은 accounts/control을 함께 검토하고 같은 인스턴스의 별도 youtopia_control DB·
+별도 앱/복원 관리자 권한·서비스 DB 단독 복원에서 제외된 최신 journal/key·초기 BLOCKED 및
+replay/독립 verify/open 근거를 요구한다. CONTROL_RESTORE_SCOPE와 CONNECTION_POLICY를
+새 입력에 명시한다. 기존 입력/receipt를 덮어쓰거나 자동 승인하지 않는다.
+schema/staging DB 대체, control=false, 직접OPEN 또는 필터 제거로 우회하지 않는다.
+인스턴스/VM/디스크 전체 복원은 지원 밖이며 자동 탐지하지 못하므로 별도 사고 검토 전 기동을 보류한다.
 개발/owner/manager 자격을 app.env에 복사하지 않는다. LEGAL_REVIEW 기능은 off를 유지한다.
 
 실제 Domain/TLS chain·키/갱신, Redis 인증/ACL·영속화·유실 복구·메모리,

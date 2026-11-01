@@ -68,11 +68,12 @@ known_hosts를 재사용한다([MANUAL-TRANSFER.md](MANUAL-TRANSFER.md)).
 ## 기동 전 게이트
 
 실제 Domain/HTTPS·비밀 설정·Redis 인증/영속화/자원·수집 공존 수용이 필요하다.
-회원 기능은 독립 authoritative control·최신 journal/키 복구·별도 운영자 권한과
-fence 검증을 요구한다([CONTROL.md](CONTROL.md)). 같은 VM의 별도 DB/폴더만으로
-VM 전체 복원 독립성을 주장하지 않는다. 조건 미충족 시 회원 기동을 보류한다.
+회원 기능은 같은 PostgreSQL의 별도 `youtopia_control` DB·최신 journal/키·별도
+운영자 권한과 fence 검증을 요구한다([CONTROL.md](CONTROL.md)). 보호 범위는
+youtopia 서비스 DB의 단독 논리 복원이며 인스턴스/VM/디스크 전체 복원은 지원하지 않는다.
+별도 schema/staging DB로 대체하지 않는다. 범위/게이트 미확인 시 회원 기동을 보류한다.
 control=false, 직접OPEN 또는 보호 필터 제거로 우회하지 않는다.
 
 추가 유료 자원·구독·도메인을 자동 구매하지 않는다. `LEGAL_REVIEW`의
 신규 탈퇴·최종 파기·reconciliation과 선택 query association은 별도 검토 전 off다.
-구조 검사·합성 테스트는 운영 자격·control 독립성·전수 보안 검사·운영 수용을 대체하지 않는다.
+구조 검사·합성 테스트는 운영 자격·control의 서비스 복원 대상 제외·전수 보안 검사·운영 수용을 대체하지 않는다.

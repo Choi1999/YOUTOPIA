@@ -24,6 +24,7 @@ TOOLS=(
     'admin-operator.py','unpack-tools.py','plan-host-updates.py','render-ip-https.py',
     'nginx-acme.conf.template','certbot-image.txt','certbot-ip.sh',
     'youtopia-acme-renew.service','youtopia-acme-renew.timer',
+    'control_contract.py','restore-operator.py','restore-input.example.json',
 )
 
 def digest(path):return hashlib.sha256(path.read_bytes()).hexdigest()
