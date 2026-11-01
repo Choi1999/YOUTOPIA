@@ -20,6 +20,13 @@ public class AccountRepository {
         var result=jdbc(kind).query(sql+(lock?(kind==Account.Kind.USER?" FOR UPDATE OF service_user":" FOR UPDATE"):""),(r,n)->new Account(r.getObject("id",UUID.class),r.getString("login"),r.getString("password_hash"),r.getString("account_status"),r.getLong("auth_version"),r.getLong("row_version")),login);
         return result.isEmpty()?null:result.getFirst();
     }
+    public record AdministratorForRecovery(UUID id,String status) {}
+    public AdministratorForRecovery administratorForRecovery(String login) {
+        // Recovery never needs to retrieve the previous password encoding.
+        var rows=admin.query("SELECT admin_id,account_status FROM auth.admin_account WHERE admin_login_name=? FOR UPDATE",
+            (r,n)->new AdministratorForRecovery(r.getObject(1,UUID.class),r.getString(2)),login);
+        return rows.isEmpty()?null:rows.getFirst();
+    }
     public boolean current(SessionIdentity identity,String sessionId,AccountSecrets secrets) {
         if(identity.kind()==Account.Kind.USER)
             return Boolean.TRUE.equals(member.queryForObject("SELECT EXISTS(SELECT FROM auth.service_user WHERE user_id=? AND account_status='ACTIVE' AND auth_version=?)",Boolean.class,identity.id(),identity.authVersion()));

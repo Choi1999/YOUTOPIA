@@ -1,0 +1,9 @@
+[Unit]
+Description=Renew the reviewed short-lived YOUTOPIA IP certificate
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /etc/youtopia-acme/certbot-ip.sh renew
+UMask=0077

@@ -16,6 +16,13 @@ python3 deploy/coexist/verify-redis-memory.py
 Windows 전송 도구의 파서·mock 경계는 별도 PowerShell 프로세스에서
 `pwsh -NoProfile -File deploy/coexist/test_upload_release.ps1`로 확인한다.
 실제 SSH/SCP·키를 사용하지 않으며 Windows native 전송 성공을 대신하지 않는다.
+stdin의 LF/인용부호/치환과 Windows형 CRLF trailer는 로컬 POSIX shell에서도 확인한다.
+
+`test_prestart_tools.py`는 새 IP 설정 생성/기존 경로 보존, 정확한 package candidate
+파싱·보호 인프라 변경 거부, 도구 archive 검증, 갱신 시 인증서/활성 nginx/nginx -t
+조건과 reload 실패 경계를 확인한다. 실제 ACME/운영 TLS/운영 갱신 성공은 별도다.
+관리자 recovery는 integration에서 auth_version·실제 해시·이전 세션 거부·감사·부분 실패
+재처리를 확인한다. root TTY 운영자 입력/계정 변경은 운영에서 자동 실행하지 않는다.
 
 `test_services`와 `verify-redis.py --with-app`은 같은 체크아웃에서 동시에 실행하지 않는다.
 새로운 소유 label·합성 DB·동적 loopback 포트로 시작하고 자신의 자원만 정리한다.

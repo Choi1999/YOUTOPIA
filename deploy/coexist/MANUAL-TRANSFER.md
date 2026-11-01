@@ -33,5 +33,11 @@ PowerShell의 기존 실행 정책을 전역 완화하는 명령은 제공하지
 방식으로 먼저 스크립트를 검토한다. Windows OpenSSH/파일 권한·기존 키 경로는 실제 PC에서 확인한다.
 이 저장소의 파서/mock 검증을 실제 Windows 전송 성공으로 표시하지 않는다.
 
+새 업로드 도구는 WinPS5.1에서 원격 따옴표가 깨지는 경로를 피하도록 shell source를
+UTF8/BOM 없는 stdin으로 보낸다. 고정 remote command는 `sh -se`이고, 내부 source는
+ASCII/LF다. Windows pipeline CRLF 앞의 명시적 exit도 실제 POSIX shell로 검증한다.
+이 수정을 사용한 Windows5.1 실제 전달 성공 여부는 운영자의 실행 결과로만 확정한다.
+
 서버 root는 별도 신뢰한 SHA256과 도구 manifest를 대조하고 [RESUME.md](RESUME.md)부터
 진행한다. 완료한 계정·폴더·Java·nginx 설치를 처음부터 반복하지 않는다.
+상세한 root 명령·대상 파일·서비스·복구 범위는 [SERVER-REVIEW.md](SERVER-REVIEW.md)에 있다.

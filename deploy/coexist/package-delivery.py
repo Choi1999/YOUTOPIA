@@ -20,6 +20,10 @@ TOOLS=(
     'inspect-host.sh','stage-release.py','release_provenance.py','activate-release.sh',
     'youtopia-app.service','journald-youtopia.conf','nginx.conf.template','nginx-resources.conf','youtopia-logrotate',
     'RESUME.md','SECURITY.md','MANUAL-TRANSFER.md','CONTROL.md',
+    'ADMIN.md','ACCESS-MATRIX.md','IP-HTTPS.md','SERVER-REVIEW.md',
+    'admin-operator.py','unpack-tools.py','plan-host-updates.py','render-ip-https.py',
+    'nginx-acme.conf.template','certbot-image.txt','certbot-ip.sh',
+    'youtopia-acme-renew.service','youtopia-acme-renew.timer',
 )
 
 def digest(path):return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -60,7 +64,7 @@ def main():
               'artifacts':{release.name:digest(release),tools.name:digest(tools)}}
     (output/'delivery.json').write_text(json.dumps(metadata,indent=2)+'\n')
     shutil.copyfile(DEPLOY/'upload-release.ps1',output/'upload-release.ps1')
-    for name in ('RESUME.md','SECURITY.md','MANUAL-TRANSFER.md'):
+    for name in ('RESUME.md','SECURITY.md','MANUAL-TRANSFER.md','ADMIN.md','ACCESS-MATRIX.md','IP-HTTPS.md','SERVER-REVIEW.md'):
         shutil.copyfile(DEPLOY/name,output/name)
     (output/'README.txt').write_text(
         'Public YOUTOPIA delivery; existing-host resume only. No operating action is authorized by packaging.\n'

@@ -316,12 +316,45 @@ test.describe("real isolated Spring/PostgreSQL/Redis browser flow", () => {
     await expect(page.locator(".game-table")).not.toContainText(
       "password_hash",
     );
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "관리자 · 회원 조회" })).toBeVisible();
+    expect((await page.request.get("/api/v1/admin/auth/me")).status()).toBe(200);
+    expect((await page.request.get("/api/v1/admin/members")).status()).toBe(200);
+    const savedAdminState = await page.context().storageState();
     await page.goto("/games");
     await expect(page.getByRole("heading", { name: "관측 게임 탐색", exact: true })).toBeVisible();
     await page.goto("/settings");
     await expect(
       page.getByRole("heading", { name: "접근 권한이 없습니다." }),
     ).toBeVisible();
+    await page.goto("/admin");
+    await page.getByRole("button", { name: "로그아웃", exact: true }).click();
+    await page.goto("/admin/users");
+    await expect(page).toHaveURL(/\/admin\/login$/);
+    // Replay the old cookie through an independent browser context after logout.
+    const oldContext = await page.context().browser()!.newContext({storageState: savedAdminState});
+    expect((await oldContext.request.get(new URL("/api/v1/admin/members", page.url()).href)).status()).toBe(401);
+    await oldContext.close();
+  });
+  test("claimed upper test grade cannot grant administrator access", async ({page}) => {
+    await page.goto("/login");
+    const email = "grade-" + Date.now() + "@example.invalid";
+    const password = "synthetic grade boundary password 1234";
+    async function post(path: string, data: object) {
+      const token = await (await page.request.get("/api/v1/auth/csrf")).json();
+      return page.request.post(path, {data, headers:{"X-CSRF-TOKEN":token.token}});
+    }
+    expect((await post("/api/v1/auth/signup", {email,password,grade:"TEST_UPPER"})).status()).toBe(400);
+    expect((await post("/api/v1/auth/signup", {email,password})).status()).toBe(201);
+    const identity = await post("/api/v1/auth/login", {login:email,password});
+    expect((await identity.json()).kind).toBe("USER");
+    await page.addInitScript(() => localStorage.setItem("youtopia-test-grade", "TEST_UPPER"));
+    await page.context().setExtraHTTPHeaders({"X-Youtopia-Test-Grade":"TEST_UPPER","X-Role":"ADMIN"});
+    await page.goto("/admin/users");
+    await expect(page.getByRole("heading", {name:"접근 권한이 없습니다."})).toBeVisible();
+    for (const path of ["/api/v1/admin/auth/me","/api/v1/admin/members","/api/v1/admin/usage"])
+      expect((await page.request.get(path)).status()).toBe(403);
+    expect((await page.request.get("/api/v1/games")).status()).toBe(200);
   });
 });
 

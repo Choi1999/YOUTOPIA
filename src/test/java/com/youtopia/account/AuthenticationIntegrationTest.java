@@ -317,6 +317,44 @@ class AuthenticationIntegrationTest {
         } finally {Files.deleteIfExists(file);}
         var browser=new Browser();browser.post("/api/v1/admin/auth/login",Map.of("login","first_operator","password",PASSWORD),200);
     }
+    @Test void administratorPasswordChangeAndOperatorRecoveryUseRevocationAuditAndIdempotency() throws Exception {
+        var admin=new Browser();admin.post("/api/v1/admin/auth/login",Map.of("login","operator","password",PASSWORD),200);
+        var old=new Browser();old.cookie=admin.cookie;
+        String changed="synthetic changed administrator password 5678";
+        admin.post("/api/v1/admin/auth/password",Map.of("requestKey",UUID.randomUUID(),"currentPassword",PASSWORD,"newPassword",changed),200);
+        old.get("/api/v1/admin/auth/me",401);
+        var next=new Browser();next.post("/api/v1/admin/auth/login",Map.of("login","operator","password",changed),200);
+        String recovered="synthetic operator recovery password 9012";UUID key=UUID.randomUUID();
+        var outcome=lifecycle.resetAdministratorFromOperator("operator",recovered,key);
+        next.get("/api/v1/admin/auth/me",401);
+        assertThat(lifecycle.resetAdministratorFromOperator("operator",recovered,key).operationId()).isEqualTo(outcome.operationId());
+        assertThatThrownBy(()->lifecycle.resetAdministratorFromOperator("operator",changed,key)).isInstanceOf(AccountProblem.class);
+        var verified=new Browser();verified.post("/api/v1/admin/auth/login",Map.of("login","operator","password",changed),401);
+        verified.post("/api/v1/admin/auth/login",Map.of("login","operator","password",recovered),200);
+        try(var c=DriverManager.getConnection(URL,"postgres","");var st=c.createStatement();
+                var rows=st.executeQuery("SELECT (SELECT count(*) FROM security.security_audit_event WHERE event_type='PASSWORD_RESET'),(SELECT auth_version FROM auth.admin_account WHERE admin_login_name='operator')")) {
+            rows.next();assertThat(rows.getLong(1)).isEqualTo(1);assertThat(rows.getLong(2)).isEqualTo(3);
+        }
+    }
+    @Test void operatorRecoveryAuditFailureRemainsRetryableAndCannotRestoreOldSession() throws Exception {
+        var admin=new Browser();admin.post("/api/v1/admin/auth/login",Map.of("login","operator","password",PASSWORD),200);
+        org.mockito.Mockito.doThrow(new org.springframework.dao.DataAccessResourceFailureException("synthetic audit outage"))
+            .when(audit).write(org.mockito.ArgumentMatchers.eq("PASSWORD_RESET"),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.any());
+        UUID key=UUID.randomUUID();String next="synthetic retry administrator password 1234";
+        assertThatThrownBy(()->lifecycle.resetAdministratorFromOperator("operator",next,key)).isInstanceOf(AccountProblem.class);
+        admin.get("/api/v1/admin/auth/me",401);
+        org.mockito.Mockito.reset(audit);
+        assertThat(lifecycle.resetAdministratorFromOperator("operator",next,key).replay()).isTrue();
+        var verified=new Browser();verified.post("/api/v1/admin/auth/login",Map.of("login","operator","password",next),200);
+    }
+    @Test void operatorStatusNeedsOnlyReadOnlyMetadataAndGradeClaimsDoNotElevate() throws Exception {
+        try(var c=DriverManager.getConnection(URL,"ytp_test_admin","")) {
+            c.setReadOnly(true);c.setAutoCommit(false);AdminOperatorCommand.printStatus(c,"operator");c.rollback();
+        }
+        var member=new Browser();
+        member.post("/api/v1/auth/signup",Map.of("email",EMAIL,"password",PASSWORD,"grade","TEST_UPPER"),400);
+        member.signup();member.login();member.get("/api/v1/admin/members",403);member.get("/api/v1/admin/usage",403);
+    }
 
     Map<String,Object> pageEvent(UUID id,String route){return Map.of("clientEventId",id,"eventType","PAGE_VIEW","actionKey","route.view","properties",Map.of("routeKey",route));}
     @Test void productEventsDeduplicateConcurrentRetriesAndRejectChangedContentAndPii() throws Exception {

@@ -131,7 +131,9 @@ def start():
             state[kind+'_port'] = int(info['NetworkSettings']['Ports'][str(port)+'/tcp'][0]['HostPort'])
             save(state)
         for _ in range(100):
-            if run(DOCKER+['exec', state['postgres'], 'pg_isready', '-q', '-U', 'postgres'], check=False).returncode == 0:
+            # The image's initialization server accepts Unix sockets before the
+            # final server exists. TCP readiness excludes that temporary server.
+            if run(DOCKER+['exec', state['postgres'], 'pg_isready', '-h', '127.0.0.1', '-p', '5432', '-q', '-U', 'postgres'], check=False).returncode == 0:
                 break
             time.sleep(.2)
         else:

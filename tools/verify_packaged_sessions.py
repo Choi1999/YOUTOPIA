@@ -198,6 +198,19 @@ try:
         assert request(FIRST_PORT, '/api/v1/games', cookie=cookie)[0] == 200
         result['logout_revokes_other_instance'] = True
         if arguments.with_browser:
+            admin, _ = post(FIRST_PORT, '/api/v1/admin/auth/login',
+                {'login':'browser_operator','password':'synthetic browser operator password 1234'}, 200)
+            assert admin['kind'] == 'ADMIN'
+            assert request(SECOND_PORT, '/api/v1/admin/members', cookie=cookie)[0] == 200
+            assert request(FIRST_PORT, '/api/v1/admin/auth/me', cookie=cookie)[0] == 200
+            old_admin_cookie = cookie
+            post(FIRST_PORT, '/api/v1/auth/logout', {}, 204)
+            assert request(SECOND_PORT, '/api/v1/admin/members', cookie=old_admin_cookie)[0] == 401
+            post(FIRST_PORT, '/api/v1/auth/login', {'login':fake['email'],'password':fake['password']}, 200)
+            assert request(SECOND_PORT, '/api/v1/admin/members', cookie=cookie)[0] == 403
+            post(FIRST_PORT, '/api/v1/auth/logout', {}, 204)
+            result['admin_api_login_directory_refresh_logout_stale_cookie_denied'] = True
+            result['member_admin_api_denied'] = True
             browser_env = env.copy()
             browser_env['YOUTOPIA_REAL_E2E'] = 'true'
             browser_env['YOUTOPIA_TEST_HTTP_PORT'] = str(FIRST_PORT)

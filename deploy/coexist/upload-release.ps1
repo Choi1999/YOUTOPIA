@@ -40,6 +40,20 @@ $options=@('-F','NUL','-i',$KeyFile,'-o','BatchMode=yes','-o','IdentitiesOnly=ye
     '-o','StrictHostKeyChecking=yes','-o',$knownOption,'-o','GlobalKnownHostsFile=NUL','-o','UpdateHostKeys=no',
     '-o','HostKeyAlgorithms=ssh-ed25519','-o','PreferredAuthentications=publickey',
     '-o','PasswordAuthentication=no','-o','KbdInteractiveAuthentication=no','-o','ForwardAgent=no','-o','ConnectTimeout=15')
+function Invoke-RemoteScript([string]$Script) {
+    # WinPS5.1 changes native argument quoting. Send shell source through stdin;
+    # the only remote command arguments are the fixed words "sh -se".
+    # All substituted identifiers were restricted to ASCII above. An explicit
+    # LF-terminated exit precedes WinPS's extra pipeline CRLF, so sh never reads it.
+    $payload=$Script.Replace("`r",'').TrimEnd([char]10)+"`nexit 0`n"
+    if ($payload -match '[^\x00-\x7f]') { throw 'Remote script must be ASCII' }
+    $previousEncoding=$OutputEncoding
+    try {
+        $OutputEncoding=New-Object System.Text.UTF8Encoding($false)
+        $payload | & ssh @options -T "youtopia-deploy@$Server" sh -se
+        $script:RemoteExitCode=$LASTEXITCODE
+    } finally { $OutputEncoding=$previousEncoding }
+}
 $batch='release-'+$SourceSha
 $prepare=@'
 set -eu
@@ -52,15 +66,19 @@ test ! -e "$destination" && test ! -L "$destination"
 mkdir -m 700 "$destination"
 '@
 $prepare=$prepare.Replace('__EXPECTED_HOST__',$ExpectedHost).Replace('__BATCH__',$batch).Replace("`r",'')
-& ssh @options -T "youtopia-deploy@$Server" $prepare
-if ($LASTEXITCODE -ne 0) { throw 'Account/host/upload-directory check failed; preserve existing preparation' }
+Invoke-RemoteScript $prepare
+if ($RemoteExitCode -ne 0) { throw 'Account/host/upload-directory check failed; preserve existing preparation' }
 $artifacts=Join-Path $BundleRoot 'artifacts'
-$sums=Join-Path $artifacts 'UPLOAD_SHA256SUMS.txt'
+$sumDirectory=Join-Path ([IO.Path]::GetTempPath()) ('youtopia-upload-'+[guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $sumDirectory | Out-Null
+$sums=Join-Path $sumDirectory 'UPLOAD_SHA256SUMS.txt'
 $content=($names | ForEach-Object { $expected[$_]+'  '+$_ }) -join "`n"
-[IO.File]::WriteAllText($sums,$content+"`n",(New-Object System.Text.UTF8Encoding($false)))
-& scp @options (Join-Path $artifacts $names[0]) (Join-Path $artifacts $names[1]) $sums "youtopia-deploy@${Server}:incoming/$batch/"
-if ($LASTEXITCODE -ne 0) { throw 'Upload failed; no root action was run' }
+try {
+    [IO.File]::WriteAllText($sums,$content+"`n",(New-Object System.Text.UTF8Encoding($false)))
+    & scp @options (Join-Path $artifacts $names[0]) (Join-Path $artifacts $names[1]) $sums "youtopia-deploy@${Server}:incoming/$batch/"
+    if ($LASTEXITCODE -ne 0) { throw 'Upload failed; no root action was run' }
+} finally { Remove-Item -LiteralPath $sumDirectory -Recurse -Force }
 $verify='set -eu; cd "$HOME/incoming/'+$batch+'"; sha256sum --check --strict UPLOAD_SHA256SUMS.txt'
-& ssh @options -T "youtopia-deploy@$Server" $verify
-if ($LASTEXITCODE -ne 0) { throw 'Server upload hashes differ; do not stage or activate' }
+Invoke-RemoteScript $verify
+if ($RemoteExitCode -ne 0) { throw 'Server upload hashes differ; do not stage or activate' }
 Write-Host "UPLOAD_VERIFIED source=$SourceSha; no privileged operation performed"

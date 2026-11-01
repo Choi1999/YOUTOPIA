@@ -17,10 +17,10 @@ accounts/control 조건을 제거해 서비스 개시를 우회하지 않는다.
 따라서 같은 서버 control 후보는 서비스 DB 단독 복원 범위에서만 검토 가능하다.
 VM 전체 복원도 다루려면 최소 외부 독립 PostgreSQL endpoint와 동기 내구성이 필요하다.
 기존 별도 신뢰 호스트가 있으면 그곳에 전용 DB/최소권한 역할을 쓰는 안을 먼저 비교한다.
-새 VM 필요 시 1vCPU/1GiB·작은 영속 디스크를 견적 출발점으로만 사용하고 WAL·journal
-증가량·암호화·백업·접근·가용성 검증으로 조정한다. 가격은 리전/상품/보관/트래픽이
-미정이므로 숫자를 만들지 않는다. **현재 승인된 추가 비용은 0원, 외부 구성 비용은 미견적**.
-외부 프로비저닝은 견적과 필요 이유 검토 후 승인받기 전 실행하지 않는다.
+추가 유료 VM/구독/관리형 DB는 이번 범위에서 생성하지 않는다. 별도 기존 PC/서버도
+상시 가동·독립 복원·동기 영속화·접근제어·TLS·journal/key 복구가 확인돼야 자원으로
+셈한다. 확정되지 않은 개인 PC, 절전/일시중지/삭제될 수 있는 무료 DB를 확보된
+authoritative control로 쓰지 않는다. 추가 비용 없이 충족할 자원이 없으면 회원 기동을 보류한다.
 
 비동기 dump/일일 외부 백업만으로는 최신 journal 무손실을 보장할 수 없다.
 현재 코드는 동기 외부 archive 확인이나 외부 watermark 대조를 구현하지 않았으므로,
@@ -78,6 +78,30 @@ java -Dloader.main=com.youtopia.restore.RestoreCommand -cp /opt/youtopia-app/cur
 앱 env와 합치지 말고 운영자 전용 프로세스 환경으로 공급한다.
 실제 복원 SQL·journal dump는 Git에 포함하지 않는다.
 
-추가512MiB control 예산과 복원 CLI256MiB는 README 자원표에 반영했다.
+control 서버의 자원·journal 증가량·백업/가용성과 복원 CLI 예산은 실제 호스트에서 별도 검토한다.
 LEGAL_REVIEW 신규 탈퇴·최종 파기는 계속 비활성이다. 정책이 미정인 보관기간/산식/
 외부 journal 폐기시점은 임의 결정하지 않는다.
+
+## 회원 기동의 최소 조건과 현재 코드의 한계
+
+accounts=true에는 control=true가 필요하다. 별도 제한 역할/비서비스 DB와
+운영 TLS verify-full·CA, 서버가 보존한 journal HMAC 키가 필요하다.
+매 요청마다 fence=OPEN, pending intent 없음, 키 fingerprint·generation 일치,
+서비스 marker sequence가 최신 committed journal 이상인지 검사한다.
+최초 등록은 BLOCKED이며 검토한 begin/replay/독립 verify/open을 거쳐야 한다.
+신규 탈퇴/파기 기능이 off라고 이 조건이 사라지지 않는다. 반대로 회원 로그인만을 위해
+미정인8개 보관 정책을 임의 APPROVED로 바꾸는 절차도 요구하지 않는다.
+
+방지하려는 것은 오래된 서비스 DB/세션 복원으로 삭제·파기한 계정/구 자격/복구코드가
+되살아나거나, 검증 전 복원된 앱이 서비스를 재개하는 위험이다. 독립 최신 journal로
+변경을 재적용하고 세션/복구코드를 폐기한 뒤에만 연다. 일상적인 password change 전체의
+최신 credential hash를 외부 journal에 보관하는 기능은 없으며 복원 후 credential 확인도 필요하다.
+
+단일 VM 안의 별도 control DB/볼륨은 **서비스 DB만** 복원할 때 복원 범위에서 빠져 있으면
+보호할 수 있다. VM/디스크 전체 snapshot에서 marker/control/키까지 함께 과거로 되돌면
+서로 일치해 보일 수 있어 현재 코드의 비교만으로 탐지할 수 없다. URL을 Tailscale/public IP로
+바꾸는 것으로 독립성이 생기지 않는다. 외부 최신성 watermark/archive 확인은 현재 미구현이다.
+
+추가 구매 없는 선택지는 검증할 기존 상시 호스트를 확정하거나 회원 기동을 보류하는 것이다.
+공개 관측만의 별도 단계가 필요하면 그 범위·설정·수용을 별도 결정한다. 현재 승인 범위에서
+control 검사를 삭제하거나 accounts=true/control=false로 기동하는 변경은 하지 않는다.

@@ -30,6 +30,10 @@ function global:ssh-keygen {
 }
 function global:ssh {
     $global:UploadCalls.Add('ssh');$global:LASTEXITCODE=0
+    $payload=($input | Out-String)
+    if ($args[-2] -cne 'sh' -or $args[-1] -cne '-se') { throw 'Shell source must not be a native command argument' }
+    if ($payload -notmatch '(?s)\nexit 0\n') { throw 'LF exit must precede native pipeline terminator' }
+    if ($payload -match 'id -un' -and $payload -notmatch 'test "\$\(id -un\)" = youtopia-deploy') { throw 'Remote shell quotes were lost' }
     foreach ($option in @('StrictHostKeyChecking=yes','IdentitiesOnly=yes','PasswordAuthentication=no','KbdInteractiveAuthentication=no')) {
         if (-not ($args -contains $option)) { throw 'Required SSH guard missing' }
     }
@@ -50,6 +54,7 @@ function Expect-Failure([string]$expectedCalls) {
 }
 try {
     Invoke-Upload
+    if (Test-Path -LiteralPath (Join-Path $root 'artifacts/UPLOAD_SHA256SUMS.txt')) { throw 'Existing artifact directory must not be modified' }
     if (($global:UploadCalls -join ',') -cne 'keygen,ssh,scp,ssh') { throw 'Unexpected successful flow' }
     $global:UploadCalls.Clear();$global:UploadSshFails=$true
     Expect-Failure 'keygen,ssh'
@@ -62,6 +67,14 @@ try {
     Expect-Failure ''
     Write-Output 'PASS: parser, verified upload, SSH failure, SCP failure, missing trust and tampered artifact boundaries'
     Write-Output 'MOCK_ONLY: Windows native upload not executed'
+    if (Test-Path -LiteralPath '/bin/sh') {
+        # Execute the stdin design through a real shell with a WinPS-style CRLF
+        # pipeline trailer. No SSH/network is involved in this extra check.
+        $nativeScript='test "$(printf synthetic)" = synthetic' + "`n" + 'test "$HOME" != ""' + "`nexit 0`n`r`n"
+        $nativeScript | & /bin/sh -se
+        if ($LASTEXITCODE -ne 0) { throw 'Native stdin shell quoting regression' }
+        Write-Output 'PASS: real POSIX shell preserves substitutions/quotes and ignores the Windows CRLF trailer after exit'
+    }
 } finally {
     Remove-Item -LiteralPath $root -Recurse -Force
     Remove-Item Function:\ssh,Function:\scp,Function:\ssh-keygen

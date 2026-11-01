@@ -53,6 +53,26 @@ public class AccountLifecycleService {
         });
         finish(identity.kind(),identity.id(),result,"PASSWORD_CHANGED");return result;
     }
+    // No HTTP mapping. The explicit root-console command is the sole caller.
+    Outcome resetAdministratorFromOperator(String login,String next,UUID key) {
+        policy.validate(next);String normalized=AuthenticationService.normalize(login);
+        final UUID[] administrator={null};
+        var result=adminTx.execute(status->{
+            var account=repository.administratorForRecovery(normalized);
+            if(account==null || !account.status().equals("ACTIVE"))throw AccountProblem.invalid();
+            administrator[0]=account.id();
+            UUID operation=secrets.operationId(account.id(),key,"PASSWORD_RESET",payload(next));
+            Operation previous=store.find(Account.Kind.ADMIN,account.id(),"PASSWORD_RESET",key);
+            if(previous!=null)return replay(previous,operation,false);
+            Operation op=store.create(Account.Kind.ADMIN,account.id(),"PASSWORD_RESET",key,operation);
+            store.password(Account.Kind.ADMIN,account.id(),passwords.encode(next));
+            store.cancelAdminGuard(account.id());
+            store.versionCommitted(Account.Kind.ADMIN,account.id(),op.id());
+            return new Outcome(op.id(),null,false);
+        });
+        // Existing revoke/audit/retry policy also applies to operator recovery.
+        finish(Account.Kind.ADMIN,administrator[0],result,"PASSWORD_RESET");return result;
+    }
     public Codes issueCodes(SessionIdentity identity,UUID batch,String currentPassword) {
         if(identity.kind()!=Account.Kind.USER)throw AccountProblem.invalid();
         budget.acquire("recovery-codes",identity.id().toString());

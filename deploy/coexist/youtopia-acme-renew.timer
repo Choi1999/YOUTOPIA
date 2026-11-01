@@ -1,0 +1,11 @@
+[Unit]
+Description=Check short-lived YOUTOPIA certificate renewal every six hours
+
+[Timer]
+OnCalendar=*-*-* 00,06,12,18:00:00
+RandomizedDelaySec=20m
+Persistent=true
+Unit=youtopia-acme-renew.service
+
+[Install]
+WantedBy=timers.target

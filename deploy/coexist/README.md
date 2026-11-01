@@ -9,6 +9,11 @@
 초기 준비가 전혀 없는 별도 호스트에만 [INSTALL-ORDER.md](INSTALL-ORDER.md)를 검토한다.
 SSH 실패 때문에 키 재생성이나 환경 재게시를 반복하지 않는다([SSH.md](SSH.md)).
 
+관리자 ID·안전한 암호 입력/복구는 [ADMIN.md](ADMIN.md), 현재 권한/미구현 등급 범위는
+[ACCESS-MATRIX.md](ACCESS-MATRIX.md), 무료 공인 IP HTTPS/자동 갱신은
+[IP-HTTPS.md](IP-HTTPS.md), Windows→root 조회/변경·복구 검토 순서는
+[SERVER-REVIEW.md](SERVER-REVIEW.md)를 따른다.
+
 ## 현재 Redis 계약
 
 `compose.yaml`이 배포 이미지의 단일 기준이다. 테스트 fixture와 ACL/메모리

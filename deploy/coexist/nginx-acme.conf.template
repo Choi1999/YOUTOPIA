@@ -1,0 +1,12 @@
+# Challenge only: no application, API, login, redirect or private files.
+server {
+    listen 80;
+    server_name __DOMAIN__;
+    access_log off;
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/lib/youtopia-acme;
+        default_type text/plain;
+        try_files $uri =404;
+    }
+    location / { return 404; }
+}

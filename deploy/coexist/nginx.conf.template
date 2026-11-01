@@ -1,8 +1,14 @@
-# Render only after domain/certificate approval; do not enable this literal template.
+# Render only after hostname/IP and certificate approval; do not enable this literal template.
 server {
     listen 80;
     server_name __DOMAIN__;
-    return 308 https://__DOMAIN__$request_uri;
+    access_log off;
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/lib/youtopia-acme;
+        default_type text/plain;
+        try_files $uri =404;
+    }
+    location / { return 308 https://__DOMAIN__$request_uri; }
 }
 server {
     listen 443 ssl;
