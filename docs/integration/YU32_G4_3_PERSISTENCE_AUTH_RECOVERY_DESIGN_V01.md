@@ -2,7 +2,7 @@
 
 > **문서 유형:** 제안 설계 / 독립 검수 대상 / 코드 배포 아님
 > **현재 상태:** `DESIGN_DRAFT / OFFLINE_ONLY / API_NOT_IMPLEMENTED / POLICY_HOLD`
-> **Git 기준:** `frontend` @ `082942b48d0a23c81c3388ebdc320d73e5e12734`; 보존 중인 `feat/backend-bootstrap` @ `4e2714ef5107acab44fa79075840e463e5df8f39`
+> **Git 기준:** `frontend` @ `082942b48d0a23c81c3388ebdc320d73e5e12734`; 보존 중인 `feat/backend-bootstrap` @ `b72d47e9565818cc9e248def1c6fd305f870a149`
 > **G4-2 상위 계약:** [G4-2 API·인가 계약](./YU32_G4_2_API_AUTHORIZATION_CONTRACT_V01.md)
 > **명시적 제외:** 서버 구현, DDL/마이그레이션 실행, 외부 API/YouTube 데이터 접근, OAuth/결제/LLM 활성화, Spring Boot 브랜치 병합, 실제 운영 승인
 
@@ -44,16 +44,19 @@ samplingPolicyVersion, locale, visibility, tenantId
 | 후보 엔터티 | 필수 필드/키 | 데이터 정확성·보안 제약 |
 |---|---|---|
 | `AnalysisScope` | scope_id, canonical 9-field tuple, normalization_version, created_at | unique canonical tuple; visibility/tenant CHECK; 변경 불가 |
-| `AnalysisJob` | job_id, scope_id, execution_partition, request_actor_tag, attempt, retry_of_job_id, state, version, lease_epoch, lease_owner, lease_expires_at, current_policy_epoch, snapshot_id, created_at, updated_at | FK scope; terminal state immutable; active-job partial UNIQUE (`scope_id,execution_partition`); 단조 version·epoch |
+| `AnalysisJob` | job_id, scope_id, execution_partition, scope_publication_generation (candidate), request_actor_tag, attempt, retry_of_job_id, state, version, lease_epoch, lease_owner, lease_expires_at, current_policy_epoch, snapshot_id, created_at, updated_at | FK scope; terminal state immutable; active-job partial UNIQUE (`scope_id,execution_partition`); 단조 version·epoch |
 | `IdempotencyRecord` | principal_tag, idempotency_key_hash, canonical_request_digest, decision, job_id, created_at, expiry_policy_ref | UNIQUE (`principal_tag,idempotency_key_hash`); 같은 키 다른 본문 409; 결정 재조회에도 재인가 |
 | `BudgetReservation` | reservation_id, actor_tag, scope_id, job_id, cost_class, window_id, amount, state, created_at | 동일 Job·비용 종류 중복 예약 방지; HELD/COMMITTED/RELEASED 등 회계 기록 (정책값 미확정) |
 | `AnalysisSnapshot` | snapshot_id, scope_id, job_id, immutable payload_ref, schema_version, status, provenance_ref, policy_epoch, observed_at, analyzed_at, created_at | 출처·범위·분모 확인 전 공개 불가; Job↔Snapshot 일치; immutable |
-| `ScopeLatest` | scope_id, snapshot_id, revision, published_at, policy_epoch | 현재 유효한 결과 참조만 CAS 발행; 과거 Worker가 새 Snapshot을 덮지 못함 |
+| `ScopeLatest` | scope_id, snapshot_id, revision, published_scope_generation (candidate), published_at, policy_epoch | 현재 유효한 결과 참조만 scope-wide CAS 발행; 다른 Job의 늦은 완료도 역행 금지 |
 | `JobOutbox` | event_id, job_id, event_type, version, emitted_at, dispatch_state | Job/예산 예약과 같은 DB 트랜잭션에서 기록; 중복 전송은 허용하되 Worker는 중복 claim 차단 |
 | `PolicyDecisionAudit` | actor_tag, action, scope_id, decision, policy_version, entitlement_version, evaluated_at | 비밀·원문·민감 검색어 기록 금지; 수집 권리·철회 이벤트는 별도 증빙 연결 |
 | `PrivacyRevocation` (개념) | subject_tag, policy_epoch, revoked_at, purge_state | 삭제·철회·백업 복구 시 읽기/처리/발행 금지; 독립 삭제 저널과 조정 필요 |
 
 **추가 분리:** `PUBLIC_REUSABLE` Snapshot의 공유 가능성과 **다른 고객의 실행 중 Job을 공유/노출할 권한**은 동일하지 않다. 초기 제안은 동일 actor 또는 승인된 tenant에 한정한 `execution_partition`으로 활성 Job을 중복 제거하고, cross-principal 실행 합류는 **DEC-G43-03** 정책 결정 전 금지한다. 이는 G4-2의 “동일 Scope 활성 Job 합류”를 보안 범위 내에서 구체화하려는 **변경 후보**이므로 제품/계약 리뷰에서 명시적으로 승인해야 한다. 다른 actor에게 원 Job ID/요청 활동을 공개하지 않는다.
+
+**독립 검수 보완 — 공개 Scope의 교차 실행 파티션 발행 경합:** 동일 `PUBLIC_REUSABLE` Scope에서 고객 A/B가 분리된 활성 Job을 실행할 수 있다. 개별 Job의 `lease_epoch`·`version` 또는 `ScopeLatest.revision`만으로는 먼저 생성된 Job이 늦게 완료되어 최신 공개 포인터를 역행시키는 경우를 막지 못한다. 격리 실험 후보로 권위 있는 DB의 Scope 전체 단조 `scope_publication_generation`을 Job 생성 트랜잭션에서 할당하고 `ScopeLatest`에 Scope row lock/CAS를 걸어 `published_scope_generation`보다 작은 Job의 덮어쓰기를 거부한다. 이전 Job은 자체 성공해도 최신 포인터를 교체하지 않는다. **Job 생성 순서 자체는 데이터 신선도·품질·사용권의 증명이 아니다.** 실제 결과 선택·최신성 판단은 `DEC-G43-03`/`DEC-G43-08` 결정과 별도 DB 실험이 필수이며, 확정되기 전 경합한 공유 포인터의 발행은 차단한다. 이는 DDL/동시성 보증이 아니다.
+
 
 ### 3.1 PostgreSQL 16 제약·쿼리 패턴 (예시만, 적용 금지)
 
@@ -99,7 +102,7 @@ UPDATE analysis_job
 5. Open single authoritative PostgreSQL transaction.
 6. Revalidate database-managed policy/entitlement epoch where available.
 7. Lock principal+Idempotency-Key slot (unique constraint).
-   - same digest: reauthorize, replay existing decision; do not charge again
+   - same digest: reauthorize and replay original decision; no second reservation and no reliance on remaining NEW-job budget
    - different digest: 409, no Job/charge
 8. Check verified existing FRESH Snapshot and matching policy.
 9. Insert-or-join active Job via partial UNIQUE constraint within allowed execution partition.
@@ -119,7 +122,7 @@ UPDATE analysis_job
 
 | 경합/실패 | 필수 결과 |
 |---|---|
-| 동일 actor·key·digest 2 POST | 같은 결정/Job; 생성 1·예약 1 |
+| 동일 actor·key·digest 2 POST | 같은 결정/Job; 생성 1·예약 1; 재생 시 현재 인가·정책 재검증, 신규 Job 예산 소진만으로 기존 결정 변경 금지 |
 | 동일 key, 다른 digest | `409 IDEMPOTENCY_CONFLICT` |
 | 다른 key, 동일 scope/partition의 활성 Job | 하나만 생성, 다른 요청은 `JOINED`; 다른 actor 활동 비공개 |
 | 다른 tenant/partition | Job 공유·수치·사용량 노출 금지 |
@@ -199,7 +202,7 @@ flowchart TD
 
 ## 8. G4-3 검증과 수용 기준
 
-검증 정본: [G4-3 검증 매트릭스](./YU32_G4_3_VERIFICATION_MATRIX_V01.md). 머신 판독 설계: `shared/contracts/yu32-g4-3-design-v0/invariants.json`. 이 파일은 **JSON Schema가 아닌 설계 데이터**다. 오프라인 불변식·반례 시험 **33건**은 개념 모델 검증일 뿐 실제 데이터베이스·인가·분산 Worker 증거가 아니다.
+검증 정본: [G4-3 검증 매트릭스](./YU32_G4_3_VERIFICATION_MATRIX_V01.md). 머신 판독 설계: `shared/contracts/yu32-g4-3-design-v0/invariants.json`. 이 파일은 **JSON Schema가 아닌 설계 데이터**다. 오프라인 불변식·반례 시험 **39건**은 개념 모델 검증일 뿐 실제 데이터베이스·인가·분산 Worker 증거가 아니다.
 
 | 수준 | 가능/필수 검증 | 판정 기준 |
 |---|---|---|
@@ -218,7 +221,7 @@ flowchart TD
 |---|---|---|
 | DEC-G43-01 | 분석용 쓰기 DB·역할·운영 Guard | 기존 읽기 전용 풀/관리/삭제 계정 재사용 금지; 역할/DB 승인 |
 | DEC-G43-02 | Scope/업무 정책 원장의 정본과 교차 자원 일관성 | 정책 조회 불가 시 BLOCK; epoch/신원 검증 |
-| DEC-G43-03 | PUBLIC_REUSABLE의 cross-principal 활성 Job 합류 | 초기에 actor/tenant execution_partition 경계; 명시 승인 전 타 고객 공유 금지 |
+| DEC-G43-03 | PUBLIC_REUSABLE의 cross-principal 활성 Job 합류 및 공유 ScopeLatest 우선순위 | 실행 파티션 격리; 타 고객 합류 금지, 미검증 발행 경합 시 공개 포인터 변경 금지 |
 | DEC-G43-04 | 소스별 API·분석 비용 예산/정산·중복 외부 호출 | 정본 원장/공급자 멱등성 결정; Redis throttle는 대체물 아님 |
 | DEC-G43-05 | Lease/heartbeat/복구 한도·운영 TTL/보존 | 임의 수치 고정 금지, 장애 시험/정책 검토 |
 | DEC-G43-06 | 개인정보·파생 지표 정책/보존/삭제/복구 승인 | `POLICY_HOLD` 유지, 책임자·유효 범위·근거 필요 |

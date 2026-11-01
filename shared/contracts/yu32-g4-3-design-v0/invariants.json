@@ -5,7 +5,7 @@
   "status": "DESIGN_DRAFT",
   "source": {
     "frontendBase": "082942b48d0a23c81c3388ebdc320d73e5e12734",
-    "backendReference": "4e2714ef5107acab44fa79075840e463e5df8f39",
+    "backendReference": "b72d47e9565818cc9e248def1c6fd305f870a149",
     "apiContract": "docs/integration/YU32_G4_2_API_AUTHORIZATION_CONTRACT_V01.md"
   },
   "safety": {
@@ -105,7 +105,8 @@
           "QUEUED",
           "RUNNING"
         ],
-        "mutation": "VERSIONED_CAS"
+        "mutation": "VERSIONED_CAS",
+        "publicationGeneration": "MONOTONE_PER_SCOPE_CANDIDATE"
       },
       {
         "name": "IdempotencyRecord",
@@ -138,7 +139,9 @@
         "key": [
           "scope_id"
         ],
-        "mutation": "VERSIONED_CAS"
+        "mutation": "VERSIONED_CAS",
+        "publicationArbiter": "MONOTONE_SCOPE_GENERATION_CAS_CANDIDATE",
+        "olderJobMayOverwriteNewerJob": false
       },
       {
         "name": "JobOutbox",
@@ -176,6 +179,7 @@
     "databaseClockForLease": true,
     "rowLockPattern": "FOR_UPDATE_SKIP_LOCKED",
     "uniqueIndexType": "PARTIAL_UNIQUE",
+    "scopeWideLatestArbitrationRequired": true,
     "migrationApplied": false
   },
   "job": {
@@ -297,6 +301,9 @@
     ],
     "tenantCheckAt": [
       "request",
+      "idempotency_replay",
+      "dispatch",
+      "completion",
       "job_read",
       "snapshot_read",
       "publication"
@@ -332,6 +339,7 @@
       "ENTITLEMENT_LIMITED"
     ],
     "syntheticPromotionAllowed": false,
+    "noDataReportedAsFresh": false,
     "readRequiresFreshAuthorization": true,
     "revokedPolicyEpochCanBePublished": false,
     "commentsOrPersonalDataStoredByDefault": false

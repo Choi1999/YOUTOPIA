@@ -17,7 +17,7 @@
 
 **판정 원칙:** GD-1/2 PASS는 설계 제출만 의미한다. GD-3~5가 PASS이기 전에는 G4-3 운영 구현 PASS, 데이터 수집 PASS, 안전 출시 PASS를 선언할 수 없다.
 
-**오프라인 시험 식별자:** `G43-D01~G43-D33` 총 33건. 이들은 설계 JSON/유한 모델을 검사한다. 아래 `G43-O01~O28`은 향후 실제 서버·DB·보안 구현 수용 시나리오로, 일부 조건만 오프라인 예시에서 다루고 **실행 완료로 승격하지 않는다**.
+**오프라인 시험 식별자:** `G43-D01~G43-D39` 총 39건. 이들은 설계 JSON/유한 모델을 검사한다. 아래 `G43-O01~O28`은 향후 실제 서버·DB·보안 구현 수용 시나리오로, 일부 조건만 오프라인 예시에서 다루고 **실행 완료로 승격하지 않는다**.
 
 ## 2. 설계 시뮬레이션 및 부정 시험
 
@@ -30,7 +30,7 @@
 | G43-O05 | 같은 principal+Idempotency-Key+body 재요청 | 같은 결정, 중복 비용 예약 없음 | 모델 논리 / 실제 DB 미검증 |
 | G43-O06 | 같은 key, 다른 canonical body | 409, Job/차감 없음 | 모델 논리 / 실제 DB 미검증 |
 | G43-O07 | 다른 key, 같은 Scope·partition 동시 POST | 활동 중 Job 최대 1개, 비용 예약 1회 | 모델 설명 / `DB_NOT_RUN` |
-| G43-O08 | 다른 tenant/partition의 public scope | 타 고객 활동/Job ID 유출 금지 | 설계 조건 / `SECURITY_NOT_RUN` |
+| G43-O08 | 다른 tenant/partition의 public scope | 타 고객 활동/Job ID 비노출; 공유 ScopeLatest 발행 우선순위 검증 | 설계 조건 / `SECURITY_NOT_RUN` + `DB_NOT_RUN` |
 | G43-O09 | COMMIT 성공, HTTP 응답 유실 | 다음 POST가 같은 결과 확인, 중복 생성 없음 | `DB_NOT_RUN` |
 | G43-O10 | COMMIT 전 예외 | Job+budget+outbox 모두 롤백 | `DB_NOT_RUN` |
 | G43-O11 | Redis throttling 카운터만 성공 | 분석 비용 예약/과금 성공으로 오인 금지 | 설계 경계 |
@@ -41,7 +41,7 @@
 | G43-O16 | 구 epoch Worker의 늦은 완료 | CAS 거부, Snapshot/Latest 변경 0 | 모델 논리 / `DB_NOT_RUN` |
 | G43-O17 | Lease 만료 후 heartbeat | 무효, Job 상태 허위 연장 불가 | `DB_NOT_RUN` |
 | G43-O18 | 정책 철회가 Job 실행·발행과 경합 | dispatch/publish/read 모두 정책 재검증; 철회 후 수치 없음 | `DB_NOT_RUN` + `SECURITY_NOT_RUN` |
-| G43-O19 | Job SUCCEEDED, Snapshot 대상/버전 불일치 | `ScopeLatest` 발행 금지, 감성 수치 없음 | G4-2 계약 + 서버 미검증 |
+| G43-O19 | Job SUCCEEDED, Snapshot 대상 불일치 또는 다른 Job의 뒤늦은 완료 | `ScopeLatest` 미발행·역행 금지, 감성 수치 없음 | G4-2 계약 + `DB_NOT_RUN` |
 | G43-O20 | NO_DATA/STALE/SYNTHETIC | 확인된 없음/오래됨/합성 출처를 실제 0/READY로 승격 금지 | G4-2 검증 기준 |
 | G43-O21 | 계정 탈퇴/삭제/복구한 DB 스냅샷 | 기존 정책·계정 권한 부활 금지 | `SECURITY_NOT_RUN` + 복구 통합 |
 | G43-O22 | 타 사용자 ID로 GET Job/Snapshot | `404` 비노출, tenant 경계 일치 | `SECURITY_NOT_RUN` |
@@ -81,7 +81,7 @@
 |---|---|---|
 | DEC-G43-01 | 분석 쓰기용 DB 역할/스키마/별도 서비스 | NOT_APPROVED |
 | DEC-G43-02 | 권한·구독·정책 최신 버전을 DB와 어떻게 재검증하나 | FAIL_CLOSED |
-| DEC-G43-03 | 공개 결과의 고객 간 활성 Job 합류가 허용되는가 | ISOLATE_EXECUTION_PARTITIONS |
+| DEC-G43-03 | 공개 결과의 고객 간 활성 Job 합류·발행 우선순위가 허용/정의되는가 | ISOLATE_EXECUTION_PARTITIONS / NO_UNVERIFIED_LATEST_REPLACEMENT |
 | DEC-G43-04 | 외부 호출 중복·비용/환불 처리 | NO_EXTERNAL_CALL |
 | DEC-G43-05 | lease·backoff·운영 TTL/보존 정책 | NO_PRODUCTION_CONSTANTS |
 | DEC-G43-06 | YouTube 사용권·파생지표·삭제/복구 승인 | POLICY_HOLD |

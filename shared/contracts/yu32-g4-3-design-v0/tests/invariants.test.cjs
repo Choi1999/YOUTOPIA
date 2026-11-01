@@ -23,17 +23,28 @@ const SCOPE = Object.freeze({
   visibility:"PUBLIC_REUSABLE",tenantId:null,
 });
 const FULL_SCOPE_KEYS = model.scope.exactFields;
-
+const {normalizeScope} = require("../../../experiments/coverage-scheduler-v0/engine.cjs");
+const {parseCreateJobRequest,requestFingerprint} =
+  require("../../yu32-operations-v0/contract.cjs");
+// Test-owned, trusted session identities; never use caller-provided tenant claims.
+const ACTOR_TENANTS = Object.freeze({
+  "customer-A":"tenant-A",
+  "customer-B":"tenant-B",
+});
+function requestFromScope(s) {
+  return {
+    target:{source:s.source,targetType:s.targetType,targetId:s.targetId},
+    analysisSpecVersion:s.analysisSpecVersion,
+    observationWindowId:s.observationWindowId,
+    samplingPolicyVersion:s.samplingPolicyVersion,
+    locale:s.locale,
+  };
+}
 function scopeKey(s) {
-  if (!s || Object.keys(s).length !== FULL_SCOPE_KEYS.length ||
-      !FULL_SCOPE_KEYS.every(k => Object.hasOwn(s,k))) return null;
-  if (s.source !== "YOUTUBE" || s.targetType !== "VIDEO" ||
-      typeof s.targetId !== "string" ||
-      !/^[A-Za-z0-9_-]{11}$/.test(s.targetId)) return null;
-  if (s.visibility === "PUBLIC_REUSABLE" && s.tenantId !== null) return null;
-  if (s.visibility === "TENANT_PRIVATE" &&
-      (typeof s.tenantId !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(s.tenantId))) return null;
-  if (!model.scope.visibility.includes(s.visibility)) return null;
+  if (!s || typeof s!=="object" || Array.isArray(s) ||
+      Object.keys(s).length!==FULL_SCOPE_KEYS.length ||
+      !FULL_SCOPE_KEYS.every(k=>Object.hasOwn(s,k))) return null;
+  if (!parseCreateJobRequest(requestFromScope(s)) || !normalizeScope(s)) return null;
   return JSON.stringify(FULL_SCOPE_KEYS.map(k=>s[k]));
 }
 
@@ -53,48 +64,63 @@ class FakeDesign {
     this.revoked = false;
   }
 
-  summaryRead({scope=SCOPE,policy="POLICY_HOLD"} = {}) {
-    // Reads never create a Job or reserve any budget.
+  summaryRead({scope=SCOPE,policy="POLICY_HOLD",actor="GUEST"} = {}) {
     if (this.revoked || policy!==ALLOW) return "POLICY_BLOCKED";
     const key=scopeKey(scope);
-    return key===null ? "INVALID_SCOPE" : (this.latest.has(key) ? "FRESH" : "MISS");
+    if (key===null) return "INVALID_SCOPE";
+    if (scope.visibility==="TENANT_PRIVATE" &&
+        (!Object.hasOwn(ACTOR_TENANTS,actor) ||
+         ACTOR_TENANTS[actor]!==scope.tenantId)) return "RESOURCE_UNAVAILABLE";
+    const latest=this.latest.get(key);
+    if (!latest) return "MISS";
+    return latest.status==="NO_DATA" ? "NO_DATA" :
+      latest.status==="STALE" ? "STALE" : "FRESH";
   }
 
-  submit({actor="customer-A",scope=SCOPE,requestKey="key-1",digest="digest-A",
+  submit({actor="customer-A",scope=SCOPE,requestKey="key-1",
     policy="POLICY_HOLD",explicitClick=true,
     featureEnabled=true,entitlement=true,quota=true} = {}) {
-    // Execution partition is server-derived in the design; ignore caller flags.
+    // This actor is injected as a trusted test session, not read from a browser.
     const executionPartition=actor;
     const skey=scopeKey(scope);
     if(!explicitClick)return {kind:"EXPLICIT_CLICK_REQUIRED"};
-    if(actor==="GUEST")return {kind:"AUTHENTICATION_REQUIRED"};
+    if(!Object.hasOwn(ACTOR_TENANTS,actor))return {kind:"AUTHENTICATION_REQUIRED"};
     if(this.revoked || policy!==ALLOW)return {kind:"POLICY_BLOCKED"};
     if(!skey)return {kind:"INVALID_SCOPE"};
+    if(scope.visibility==="TENANT_PRIVATE" &&
+       ACTOR_TENANTS[actor]!==scope.tenantId)return {kind:"RESOURCE_UNAVAILABLE"};
     if(!featureEnabled)return {kind:"FEATURE_DISABLED"};
     if(!entitlement)return {kind:"ENTITLEMENT_LIMITED"};
-    if(!quota)return {kind:"QUOTA_DEFERRED"};
+    // Canonical body fingerprints are server-computed, never caller-supplied.
+    const digest=requestFingerprint(requestFromScope(scope));
     const principalKey=actor+"|"+requestKey;
     const previous=this.idem.get(principalKey);
-    if(previous)return previous.digest===digest
-      ? {kind:"REPLAY",jobId:previous.jobId}
-      : {kind:"IDEMPOTENCY_CONFLICT"};
+    if(previous) {
+      if(previous.digest!==digest)return {kind:"IDEMPOTENCY_CONFLICT"};
+      if(previous.scopeKey!==skey)return {kind:"RESOURCE_UNAVAILABLE"};
+      // An already-reserved response does not need a second NEW-job budget.
+      return {kind:previous.kind,jobId:previous.jobId,replayed:true};
+    }
+    if(!quota)return {kind:"QUOTA_DEFERRED"};
     const active=[...this.jobs.values()].find(j=>
       j.scopeKey===skey && j.partition===executionPartition &&
       ["QUEUED","RUNNING"].includes(j.state));
     if(active){
-      this.idem.set(principalKey,{digest,jobId:active.id});
+      this.idem.set(principalKey,{digest,scopeKey:skey,kind:"JOINED",jobId:active.id});
       return {kind:"JOINED",jobId:active.id};
     }
-    const j={id:"job-"+(++this.nextJob),scopeKey:skey,partition:executionPartition,
-      state:"QUEUED",version:1,leaseEpoch:0,leaseOwner:null,leaseExpiresAt:null};
+    const generation=++this.nextJob;
+    const j={id:"job-"+generation,scopeKey:skey,partition:executionPartition,
+      generation,state:"QUEUED",version:1,leaseEpoch:0,leaseOwner:null,leaseExpiresAt:null};
     this.jobs.set(j.id,j);
-    this.idem.set(principalKey,{digest,jobId:j.id});
+    this.idem.set(principalKey,{digest,scopeKey:skey,kind:"CREATED",jobId:j.id});
     this.reservations.push({jobId:j.id});
     this.outbox.push({jobId:j.id,type:"DISPATCH"});
     return {kind:"CREATED",jobId:j.id};
   }
 
-  claim(id,owner,now,leaseMs=10) {
+  claim(id,owner,now,leaseMs=10,policy=ALLOW) {
+    if(this.revoked || policy!==ALLOW)return null;
     const j=this.jobs.get(id);
     if (!j || (j.state!=="QUEUED" && !(j.state==="RUNNING" && now>=j.leaseExpiresAt)))
       return null;
@@ -127,7 +153,13 @@ class FakeDesign {
       typeof snapshotId!=="string" || !snapshotId)return false;
     j.state="SUCCEEDED";
     j.version++;
-    this.latest.set(j.scopeKey,{snapshotId,status,epoch:j.leaseEpoch});
+    j.snapshotId=snapshotId;
+    // Per-Job lease epoch does not order publications across actors.
+    // Simple scope generation arbitration is test-only, not a freshness policy.
+    const prior=this.latest.get(j.scopeKey);
+    if(!prior || j.generation>prior.generation)
+      this.latest.set(j.scopeKey,{snapshotId,status,epoch:j.leaseEpoch,
+        generation:j.generation});
     return true;
   }
 
@@ -315,10 +347,11 @@ test("G43-D22: Fake Job POST는 Guest/정책 HOLD/명시 클릭 없는 경우 �
 
 test("G43-D23: 같은 principal+key+digest 요청은 Fake Job/예약 1회",()=>{
   const f=new FakeDesign();
-  const options={actor:"customer-A",requestKey:"unique-key",policy:ALLOW,digest:"same"};
+  const options={actor:"customer-A",requestKey:"unique-key",policy:ALLOW};
   const one=f.submit(options),two=f.submit(options);
   assert.equal(one.kind,"CREATED");
-  assert.equal(two.kind,"REPLAY");
+  assert.equal(two.kind,"CREATED");
+  assert.equal(two.replayed,true);
   assert.equal(one.jobId,two.jobId);
   assert.equal(f.jobs.size,1);
   assert.equal(f.reservations.length,1);
@@ -328,7 +361,7 @@ test("G43-D23: 같은 principal+key+digest 요청은 Fake Job/예약 1회",()=>{
 test("G43-D24: 같은 키 다른 본문은 충돌, 다른 키 같은 scope는 합류",()=>{
   const f=new FakeDesign(),opts={policy:ALLOW,requestKey:"idempotency-1"};
   const first=f.submit(opts);
-  assert.equal(f.submit({...opts,digest:"other"}).kind,"IDEMPOTENCY_CONFLICT");
+  assert.equal(f.submit({...opts,scope:{...SCOPE,locale:"en-US"}}).kind,"IDEMPOTENCY_CONFLICT");
   const joined=f.submit({...opts,requestKey:"idempotency-2"});
   assert.equal(joined.kind,"JOINED");
   assert.equal(joined.jobId,first.jobId);
@@ -433,4 +466,75 @@ test("G43-D33: Job version이 뒤바뀐 heartbeat/완료는 같은 owner·epoch�
   assert.equal(f.complete(first,2),false);
   assert.equal(f.complete(renewed,2),true);
   assert.equal(f.latest.size,1);
+});
+
+test("G43-D34: 잘못된 Scope 타입·버전·언어를 상위 G4-2 계약과 같이 거부한다",()=>{
+  for(const scope of [
+    {...SCOPE,analysisSpecVersion:null},
+    {...SCOPE,analysisSpecVersion:undefined},
+    {...SCOPE,observationWindowId:{"toString":()=>"20261001-20261008"}},
+    {...SCOPE,samplingPolicyVersion:"bad version"},
+    {...SCOPE,locale:"KO-kr"},
+  ]) assert.equal(scopeKey(scope),null);
+  assert.ok(scopeKey({...SCOPE,locale:"en-US"}));
+});
+
+test("G43-D35: 타 tenant 주체의 private Job 생성과 조회는 모두 차단된다",()=>{
+  const f=new FakeDesign();
+  const privateScope={...SCOPE,visibility:"TENANT_PRIVATE",tenantId:"tenant-A"};
+  assert.equal(f.submit({actor:"customer-B",scope:privateScope,policy:ALLOW}).kind,
+    "RESOURCE_UNAVAILABLE");
+  assert.equal(f.jobs.size,0);
+  const own=f.submit({actor:"customer-A",scope:privateScope,policy:ALLOW});
+  const token=f.claim(own.jobId,"worker-A",0);
+  assert.equal(f.complete(token,1,{scope:privateScope}),true);
+  assert.equal(f.summaryRead({scope:privateScope,policy:ALLOW,actor:"customer-A"}),"FRESH");
+  assert.equal(f.summaryRead({scope:privateScope,policy:ALLOW,actor:"customer-B"}),
+    "RESOURCE_UNAVAILABLE");
+  assert.equal(f.summaryRead({scope:privateScope,policy:ALLOW,actor:"GUEST"}),
+    "RESOURCE_UNAVAILABLE");
+});
+
+test("G43-D36: NO_DATA는 FRESH가 아니며 가상 0% 수치를 만들지 않는다",()=>{
+  const f=new FakeDesign();
+  const created=f.submit({policy:ALLOW});
+  const token=f.claim(created.jobId,"worker-A",0);
+  assert.equal(f.complete(token,1,{status:"NO_DATA"}),true);
+  assert.equal(f.summaryRead({scope:SCOPE,policy:ALLOW}),"NO_DATA");
+  assert.equal(f.latest.get(scopeKey(SCOPE)).status,"NO_DATA");
+});
+
+test("G43-D37: 멱등 재생은 현재 권한을 재검증하고 원 결정을 재사용한다",()=>{
+  const f=new FakeDesign();
+  const options={policy:ALLOW,requestKey:"replay-key"};
+  const created=f.submit(options);
+  const replay=f.submit({...options,quota:false});
+  assert.equal(replay.kind,"CREATED");
+  assert.equal(replay.replayed,true);
+  assert.equal(created.jobId,replay.jobId);
+  assert.equal(f.reservations.length,1);
+  assert.equal(f.submit({...options,scope:{...SCOPE,locale:"en-US"}}).kind,
+    "IDEMPOTENCY_CONFLICT");
+  assert.equal(f.submit({...options,policy:"POLICY_HOLD"}).kind,"POLICY_BLOCKED");
+});
+
+test("G43-D38: 다른 actor의 오래된 공개 Job은 최신 Scope 참조를 덮지 않는다",()=>{
+  const f=new FakeDesign();
+  const a=f.submit({actor:"customer-A",requestKey:"one",policy:ALLOW});
+  const b=f.submit({actor:"customer-B",requestKey:"two",policy:ALLOW});
+  const ta=f.claim(a.jobId,"worker-A",0);
+  const tb=f.claim(b.jobId,"worker-B",0);
+  assert.equal(f.complete(tb,1,{snapshotId:"newer"}),true);
+  assert.equal(f.complete(ta,2,{snapshotId:"older"}),true);
+  assert.equal(f.jobs.get(a.jobId).state,"SUCCEEDED");
+  assert.equal(f.latest.get(scopeKey(SCOPE)).snapshotId,"newer");
+});
+
+test("G43-D39: 정책 철회 뒤 대기 중인 Job을 Worker가 claim할 수 없다",()=>{
+  const f=new FakeDesign();
+  const j=f.submit({policy:ALLOW});
+  assert.equal(f.claim(j.jobId,"worker-A",0,10,"POLICY_HOLD"),null);
+  f.revoke();
+  assert.equal(f.claim(j.jobId,"worker-A",0),null);
+  assert.equal(f.externalCalls,0);
 });
