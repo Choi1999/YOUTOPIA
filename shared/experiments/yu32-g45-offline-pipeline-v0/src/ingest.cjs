@@ -18,10 +18,16 @@ function boundedText(v,length=10000){
   return typeof v==="string"&&v.length>0&&v.length<=length;
 }
 function utc(v) {
-  if(typeof v!=="string"||!(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(v))||
-     !Number.isFinite(Date.parse(v))||new Date(v).toISOString()!==new Date(Date.parse(v)).toISOString())
+  if(typeof v!=="string"||!(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(v)))
     invalid("invalid timestamp");
-  return Date.parse(v);
+  const parsed=Date.parse(v);
+  if(!Number.isFinite(parsed))invalid("invalid timestamp");
+  const exact=v.includes(".")?v.replace(/\.(\d{1,3})Z$/,(_,digits)=>"."+digits.padEnd(3,"0")+"Z"):
+    v.replace(/Z$/,".000Z");
+  // Date.parse accepts impossible calendar dates on some runtimes; exact round trip
+  // prevents Feb 30, overflow days or normalized hour/minute from silently passing.
+  if(new Date(parsed).toISOString()!==exact)invalid("nonexistent timestamp");
+  return parsed;
 }
 function unsigned(v){return Number.isSafeInteger(v)&&v>=0;}
 function parseSyntheticCommentThreadsPage(source) {
@@ -30,7 +36,10 @@ function parseSyntheticCommentThreadsPage(source) {
     invalid("source provenance or execution gate");
   if(!VIDEO.test(source.videoId||"")) invalid("canonical VIDEO target");
   if(!record(source.scope)||source.scope.locale!=="ko-KR"||
-     source.scope.mode!=="ONE_VIDEO")invalid("scope");
+     source.scope.mode!=="ONE_VIDEO"||
+     Reflect.ownKeys(source.scope).length!==4||
+     !["mode","windowStart","windowEnd","locale"].every(k=>Object.hasOwn(source.scope,k)))
+    invalid("scope");
   const start=utc(source.scope.windowStart),end=utc(source.scope.windowEnd),
         captured=utc(source.observedAt),analyzed=utc(source.analyzedAt);
   if(!(start<end&&end<=analyzed&&captured<=analyzed))invalid("window ordering");
