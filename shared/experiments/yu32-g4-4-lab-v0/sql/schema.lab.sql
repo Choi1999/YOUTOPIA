@@ -1,8 +1,13 @@
 -- YUTOPIA G44 LAB ONLY. Destructive statements permitted ONLY in disposable g44_lab.
 -- Never run against existing/production DB. Lab data is entirely synthetic.
 \set ON_ERROR_STOP on
-SELECT CASE WHEN current_database() = 'g44_lab' AND current_user = 'g44_dba'
-  THEN 'G44_LAB_ONLY' ELSE (1/0)::text END; 
+DO $preflight$
+BEGIN
+  IF current_database() <> 'g44_lab' OR current_user <> 'g44_dba' THEN
+    RAISE EXCEPTION 'G44 LAB ONLY: unexpected database or role';
+  END IF;
+END
+$preflight$;
 BEGIN;
 CREATE SCHEMA g44_lab;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
