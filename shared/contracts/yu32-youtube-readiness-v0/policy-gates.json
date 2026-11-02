@@ -1,0 +1,91 @@
+{
+  "contractVersion": "YU32_G4_5_PROVIDER_GATES_V01",
+  "reviewedOn": "2026-11-02",
+  "status": "POLICY_HOLD",
+  "liveCallsAuthorized": false,
+  "derivedSentimentAuthorized": false,
+  "externalDataCollected": false,
+  "verifiedCount": 0,
+  "evidence": [
+    {
+      "id": "Y45-E01",
+      "status": "UNVERIFIED",
+      "gate": "LIVE_READ",
+      "need": "Google Cloud project ownership and identifier"
+    },
+    {
+      "id": "Y45-E02",
+      "status": "UNVERIFIED",
+      "gate": "LIVE_READ",
+      "need": "YouTube Data API enabled and supported authentication"
+    },
+    {
+      "id": "Y45-E03",
+      "status": "UNVERIFIED",
+      "gate": "LIVE_READ",
+      "need": "Restricted credentials, secret storage and rotation"
+    },
+    {
+      "id": "Y45-E04",
+      "status": "UNVERIFIED",
+      "gate": "LIVE_READ",
+      "need": "Actual available quotas, upper bound and retry limits"
+    },
+    {
+      "id": "Y45-E05",
+      "status": "POLICY_HOLD",
+      "gate": "LIVE_READ",
+      "need": "API ToS, Developer Policies and permitted source use"
+    },
+    {
+      "id": "Y45-E06",
+      "status": "POLICY_HOLD",
+      "gate": "DERIVED_METRICS",
+      "need": "2026 amendment acceptance and approved/audited analytics use case"
+    },
+    {
+      "id": "Y45-E07",
+      "status": "NOT_IMPLEMENTED",
+      "gate": "LIVE_READ",
+      "need": "Raw comments refresh/delete and expiry rules"
+    },
+    {
+      "id": "Y45-E08",
+      "status": "NOT_IMPLEMENTED",
+      "gate": "LIVE_READ",
+      "need": "User erasure/revocation and propagation process"
+    },
+    {
+      "id": "Y45-E09",
+      "status": "NOT_IMPLEMENTED",
+      "gate": "PRODUCTION",
+      "need": "Spring server AuthN, tenant, CSRF and BOLA"
+    },
+    {
+      "id": "Y45-E10",
+      "status": "NOT_IMPLEMENTED",
+      "gate": "PRODUCTION",
+      "need": "Provenance, sampling, NO_DATA/STALE/Snapshot validation"
+    },
+    {
+      "id": "Y45-E11",
+      "status": "NOT_APPROVED",
+      "gate": "LIVE_READ",
+      "need": "Explicitly approved manual first-call target, quota and operator"
+    },
+    {
+      "id": "Y45-E12",
+      "status": "POLICY_HOLD",
+      "gate": "PRODUCTION",
+      "need": "Security, privacy, cost and deployment sign-off"
+    }
+  ],
+  "sourceUrls": [
+    "https://developers.google.com/youtube/terms/developer-policies",
+    "https://developers.google.com/youtube/terms/developer-policies-guide",
+    "https://developers.google.com/youtube/terms/derived-metrics-policy",
+    "https://developers.google.com/youtube/terms/revision-history",
+    "https://developers.google.com/youtube/data/reference/rest/v3/commentThreads/list",
+    "https://developers.google.com/youtube/data/reference/rest/v3/comments/list"
+  ]
+}
