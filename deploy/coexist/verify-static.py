@@ -23,6 +23,8 @@ for p in d.glob('*.sh'): subprocess.run(['bash','-n',str(p)],check=True)
 for line in example.splitlines():
     if '=' in line:
         name,value=line.split('=',1)
-        if re.search('(?:_PASSWORD|_HMAC_KEY)$',name): assert not value, 'Secret placeholder must be empty'
+        if re.search('(?:_PASSWORD|_HMAC_KEY|_API_KEY)$',name): assert not value, 'Secret placeholder must be empty'
 subprocess.run([sys.executable,'-m','unittest','discover','-s',str(d),'-p','test_*.py'],check=True)
+for name,value in json.loads((d/'app-input.example.json').read_text()).items():
+    if re.search('(?:_PASSWORD|_HMAC_KEY|_API_KEY)$',name): assert not value, 'JSON secret placeholder must be empty'
 print('PASS: variable coverage, policy gates, loopback, memory headroom, no DB mount, shell syntax, empty secret placeholders')

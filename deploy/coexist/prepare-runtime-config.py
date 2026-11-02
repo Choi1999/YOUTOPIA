@@ -57,6 +57,14 @@ def validate(config, expected_keys):
     require(config['YOUTOPIA_CONTROL_DB_USER'] == 'ytp_control_app' and bool(config['YOUTOPIA_CONTROL_DB_PASSWORD']), 'Separate restricted control application login required')
     require(bool(config['YOUTOPIA_CONTROL_SERVICE_KEY']), 'Existing approved control service identity required')
     validate_connection(config['YOUTOPIA_CONTROL_JDBC_URL'],config['YOUTOPIA_CONTROL_RESTORE_SCOPE'],config['YOUTOPIA_CONTROL_CONNECTION_POLICY'])
+    require(config['YOUTOPIA_CHAT_ENABLED'] in ('true','false'), 'Explicit chat flag required')
+    require(not config['YOUTOPIA_CHAT_MODEL'] or bool(re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:-]{0,99}',config['YOUTOPIA_CHAT_MODEL'])), 'Invalid chat model')
+    epoch=config['YOUTOPIA_CHAT_BUDGET_EPOCH']
+    require(not epoch or bool(re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',epoch)), 'Invalid budget epoch')
+    require(config['YOUTOPIA_CHAT_BUDGET_FILE'] == ('/var/lib/youtopia-app-chat/'+epoch+'.json' if epoch else ''), 'Budget receipt must be in the persistent chat state directory')
+    require(not config['YOUTOPIA_CHAT_OPENAI_API_KEY'] or all(32<ord(c)<127 for c in config['YOUTOPIA_CHAT_OPENAI_API_KEY']), 'Invalid chat key format')
+    if config['YOUTOPIA_CHAT_ENABLED']=='true':
+        require(all(config[k] for k in ('YOUTOPIA_CHAT_OPENAI_API_KEY','YOUTOPIA_CHAT_MODEL','YOUTOPIA_CHAT_BUDGET_EPOCH','YOUTOPIA_CHAT_BUDGET_FILE')), 'Enabled chat requires all settings')
     return config
 
 def encode(config):

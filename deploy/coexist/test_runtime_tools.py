@@ -27,6 +27,19 @@ class OperatorBoundaryTests(unittest.TestCase):
     def render(self):
         self.input.write_text(json.dumps(self.config));self.input.chmod(0o600)
         return subprocess.run(['python3',str(TOOLS/'prepare-runtime-config.py'),str(self.input),str(self.output)],capture_output=True,text=True)
+    def test_keyless_chat_is_valid_and_enabled_chat_requires_complete_settings(self):
+        self.assertEqual(self.render().returncode,0)
+        self.output.unlink()
+        self.config['YOUTOPIA_CHAT_ENABLED']='true'
+        self.assertNotEqual(self.render().returncode,0)
+        epoch='11111111-1111-4111-8111-111111111111'
+        self.config.update(YOUTOPIA_CHAT_OPENAI_API_KEY='synthetic-never-real-key',YOUTOPIA_CHAT_MODEL='gpt-6-luna',
+            YOUTOPIA_CHAT_BUDGET_EPOCH=epoch,YOUTOPIA_CHAT_BUDGET_FILE='/var/lib/youtopia-app-chat/'+epoch+'.json')
+        result=self.render();self.assertEqual(result.returncode,0)
+        self.assertNotIn('synthetic-never-real-key',result.stdout+result.stderr)
+    def test_chat_budget_path_cannot_be_in_a_release_or_tmp(self):
+        epoch='11111111-1111-4111-8111-111111111111';self.config.update(YOUTOPIA_CHAT_BUDGET_EPOCH=epoch,YOUTOPIA_CHAT_BUDGET_FILE='/tmp/'+epoch+'.json')
+        self.assertNotEqual(self.render().returncode,0)
     def test_sensitive_metacharacters_remain_literal(self):
         self.config['YOUTOPIA_MEMBER_DB_PASSWORD']='synthetic $() `command` # 한글 "quote" \\end'
         result=self.render();self.assertEqual(result.returncode,0)

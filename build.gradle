@@ -49,7 +49,10 @@ tasks.register('integrationTest', Test) {
     // Database/Redis state is external to Gradle's file inputs: never reuse a cached test result.
     outputs.upToDateWhen { false }
     outputs.cacheIf { false }
-    doFirst { configureSyntheticServices(delegate) }
+    doFirst {
+        configureSyntheticServices(delegate)
+        systemProperty 'youtopia.test.runtimeClasspath', sourceSets.test.runtimeClasspath.asPath
+    }
 }
 // check is the complete backend gate; missing fixtures fail instead of skipping integration.
 tasks.named('check') { dependsOn 'integrationTest', 'testFixtureTools' }

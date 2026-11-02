@@ -25,6 +25,7 @@ TOOLS=(
     'nginx-acme.conf.template','certbot-image.txt','certbot-ip.sh',
     'youtopia-acme-renew.service','youtopia-acme-renew.timer',
     'control_contract.py','restore-operator.py','restore-input.example.json',
+    'chat-budget-operator.py','chat-state.conf','CHATBOT.md',
 )
 
 def digest(path):return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -65,7 +66,7 @@ def main():
               'artifacts':{release.name:digest(release),tools.name:digest(tools)}}
     (output/'delivery.json').write_text(json.dumps(metadata,indent=2)+'\n')
     shutil.copyfile(DEPLOY/'upload-release.ps1',output/'upload-release.ps1')
-    for name in ('RESUME.md','SECURITY.md','MANUAL-TRANSFER.md','ADMIN.md','ACCESS-MATRIX.md','IP-HTTPS.md','SERVER-REVIEW.md'):
+    for name in ('RESUME.md','SECURITY.md','MANUAL-TRANSFER.md','ADMIN.md','ACCESS-MATRIX.md','IP-HTTPS.md','SERVER-REVIEW.md','CHATBOT.md'):
         shutil.copyfile(DEPLOY/name,output/name)
     (output/'README.txt').write_text(
         'Public YOUTOPIA delivery; existing-host resume only. No operating action is authorized by packaging.\n'

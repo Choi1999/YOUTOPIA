@@ -52,6 +52,12 @@ server:
         same-site: lax
 
 youtopia:
+  chat:
+    enabled: ${YOUTOPIA_CHAT_ENABLED:false}
+    api-key: ${YOUTOPIA_CHAT_OPENAI_API_KEY:}
+    model: ${YOUTOPIA_CHAT_MODEL:}
+    budget-epoch: ${YOUTOPIA_CHAT_BUDGET_EPOCH:}
+    budget-file: ${YOUTOPIA_CHAT_BUDGET_FILE:}
   accounts:
     enabled: ${YOUTOPIA_ACCOUNTS_ENABLED:false}
     hmac-key: ${YOUTOPIA_ACCOUNT_HMAC_KEY:}

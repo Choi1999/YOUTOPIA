@@ -25,6 +25,11 @@ class AuthenticationIntegrationTest {
     static final String URL=IsolatedTestServices.url("youtopia_auth_test");
     static final String PASSWORD="synthetic test pass phrase 1234";
     static final String EMAIL="member@example.invalid";
+    static final Path CHAT_ROOT=chatRoot();
+    static Path chatRoot(){try{return Files.createTempDirectory("youtopia-synthetic-chat-");}catch(Exception e){throw new IllegalStateException(e);}}
+    static final String CHAT_EPOCH="11111111-1111-4111-8111-111111111111";
+    @org.springframework.test.context.bean.override.mockito.MockitoBean com.youtopia.chat.ChatProvider chatProvider;
+    @Autowired com.youtopia.chat.ChatBudget chatBudget;
     @Autowired TestRestTemplate http;
     @Autowired ObjectMapper json;
     @Autowired StringRedisTemplate redis;
@@ -57,6 +62,11 @@ class AuthenticationIntegrationTest {
         p.add("spring.data.redis.host",()->"127.0.0.1");p.add("spring.data.redis.port",IsolatedTestServices::redisPort);
         p.add("spring.data.redis.username",()->"");p.add("spring.data.redis.password",()->"");p.add("spring.data.redis.ssl.enabled",()->false);
         p.add("spring.session.data.redis.namespace",()->"youtopia:p0-auth-tests");
+        p.add("youtopia.chat.enabled",()->true);
+        p.add("youtopia.chat.api-key",()->"synthetic-chat-api-key-not-real");
+        p.add("youtopia.chat.model",()->"gpt-6-luna");
+        p.add("youtopia.chat.budget-epoch",()->CHAT_EPOCH);
+        p.add("youtopia.chat.budget-file",()->CHAT_ROOT.resolve("receipt.json").toString());
         p.add("youtopia.accounts.enabled",()->true);
         p.add("youtopia.games.enabled",()->true);
         p.add("youtopia.games.video-associations-enabled",()->true);
@@ -99,6 +109,9 @@ class AuthenticationIntegrationTest {
     @BeforeEach void prepare() throws Exception {
         org.mockito.Mockito.reset(sessions,audit,eventPersistence);
         clock.now=Instant.now();
+        org.mockito.Mockito.reset(chatProvider);
+        redis.delete("youtopia:p0-auth-tests:chat-budget:"+CHAT_EPOCH);
+        Files.deleteIfExists(CHAT_ROOT.resolve("receipt.json"));Files.deleteIfExists(CHAT_ROOT.resolve("receipt.json.lock"));
         var abuseKeys=redis.keys("youtopia:p0-auth-tests:auth-abuse:*");if(abuseKeys!=null&&!abuseKeys.isEmpty())redis.delete(abuseKeys);
         var keys=redis.keys("youtopia:p0-auth-tests:account-budget:*");if(keys!=null&&!keys.isEmpty())redis.delete(keys);
         try(var c=DriverManager.getConnection(URL,"postgres","");var s=c.createStatement()) {
@@ -1136,6 +1149,40 @@ class AuthenticationIntegrationTest {
             var boundary=guest.get("/api/v1/steam/apps/1002/ccu?days=7",200);assertThat(boundary.path("points")).hasSize(1);
             assertThat(guest.get("/api/v1/games/steam:1001",200).at("/game/evidence/steam").asText()).isEqualTo("EMPTY");
         }finally{try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var q=c.createStatement()){q.execute("DROP VIEW IF EXISTS service.v_game_published_video");q.execute("DROP TABLE IF EXISTS service.publication_fixture");}}
+    }
+
+    @Test void fixedQuestionChatEnforcesRealAdminCsrfInputLogoutAndSessionExpiryWithoutProviderCallsForDeniedRequests()throws Exception {
+        var guest=new Browser();var body=Map.of("questionId","CCU_BASICS","requestId",UUID.randomUUID());
+        guest.get("/api/v1/chat/status",401);guest.post("/api/v1/chat/answers",body,401);
+        var member=new Browser();member.signup();member.login();member.get("/api/v1/chat/status",403);member.post("/api/v1/chat/answers",body,403);
+        var admin=new Browser();admin.post("/api/v1/admin/auth/login",Map.of("login","operator","password",PASSWORD),200);
+        assertThat(admin.get("/api/v1/chat/status",200).path("available").asBoolean()).isFalse();
+        admin.post("/api/v1/chat/answers",body,503);org.mockito.Mockito.verifyNoInteractions(chatProvider);
+        chatBudget.initializeReviewedNewBudget();assertThat(admin.get("/api/v1/chat/status",200).path("available").asBoolean()).isTrue();
+        var headers=new HttpHeaders();headers.set("Cookie",admin.cookie);headers.setContentType(MediaType.APPLICATION_JSON);
+        assertThat(http.exchange("/api/v1/chat/answers",HttpMethod.POST,new HttpEntity<>(json.writeValueAsString(body),headers),String.class).getStatusCode().value()).isEqualTo(403);
+        for(String field:List.of("prompt","messages","model","apiKey","url","gameId","history")){
+            var invalid=new HashMap<String,Object>(body);invalid.put(field,"untrusted");admin.post("/api/v1/chat/answers",invalid,400);
+        }
+        admin.post("/api/v1/chat/answers",Map.of("questionId","UNRECOGNIZED","requestId",UUID.randomUUID()),400);
+        admin.post("/api/v1/chat/answers",Map.of("questionId","CCU_BASICS","requestId","invalid"),400);
+        admin.post("/api/v1/chat/answers",Map.of("questionId","CCU_BASICS"),400);org.mockito.Mockito.verifyNoInteractions(chatProvider);
+        org.mockito.Mockito.when(chatProvider.answer(com.youtopia.chat.ChatQuestion.CCU_BASICS)).thenReturn("일반적인 CCU 설명 <script>text only</script>");
+        assertThat(admin.post("/api/v1/chat/answers",body,200).path("text").asText()).contains("일반적인 CCU");
+        assertThat(admin.post("/api/v1/chat/answers",body,200).path("replayed").asBoolean()).isTrue();org.mockito.Mockito.verify(chatProvider,org.mockito.Mockito.times(1)).answer(com.youtopia.chat.ChatQuestion.CCU_BASICS);
+        String saved=admin.cookie;admin.post("/api/v1/auth/logout",Map.of(),204);admin.cookie=saved;admin.post("/api/v1/chat/answers",body,401);
+        var again=new Browser();again.post("/api/v1/admin/auth/login",Map.of("login","operator","password",PASSWORD),200);
+        assertThat(again.post("/api/v1/chat/answers",body,200).path("replayed").asBoolean()).isTrue();
+        clock.now=clock.now.plusSeconds(901);again.post("/api/v1/chat/answers",body,401);
+        org.mockito.Mockito.verifyNoMoreInteractions(chatProvider);
+    }
+    @Test void chatProviderFailureReturnsNonSuccessMaintenanceWithoutKeyOrExceptionText()throws Exception {
+        chatBudget.initializeReviewedNewBudget();var admin=new Browser();admin.post("/api/v1/admin/auth/login",Map.of("login","operator","password",PASSWORD),200);
+        org.mockito.Mockito.when(chatProvider.answer(com.youtopia.chat.ChatQuestion.VIDEO_VOLUME)).thenThrow(new com.youtopia.chat.ChatFailure("PROVIDER_QUOTA"));
+        var body=Map.of("questionId","VIDEO_VOLUME","requestId",UUID.randomUUID());
+        var response=admin.post("/api/v1/chat/answers",body,503);assertThat(response.path("detail").asText()).isEqualTo(com.youtopia.chat.ChatFailure.MAINTENANCE);
+        assertThat(response.toString()).doesNotContain("synthetic-chat-api-key-not-real","Authorization","Bearer");
+        admin.post("/api/v1/chat/answers",body,503);org.mockito.Mockito.verify(chatProvider,org.mockito.Mockito.times(1)).answer(com.youtopia.chat.ChatQuestion.VIDEO_VOLUME);
     }
 
 }

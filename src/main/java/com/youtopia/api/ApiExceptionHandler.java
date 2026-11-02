@@ -17,6 +17,11 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(com.youtopia.chat.ChatFailure.class)
+    ProblemDetail chat(com.youtopia.chat.ChatFailure error,HttpServletRequest request){
+        org.slf4j.LoggerFactory.getLogger(ApiExceptionHandler.class).warn("Chat unavailable category={}",error.category);
+        return ApiProblems.create(HttpStatus.SERVICE_UNAVAILABLE,"CHAT_"+error.category,com.youtopia.chat.ChatFailure.MAINTENANCE,request);
+    }
     @ExceptionHandler(com.youtopia.account.AccountProblem.class)
     ResponseEntity<ProblemDetail> account(com.youtopia.account.AccountProblem error, HttpServletRequest request) {
         var builder=ResponseEntity.status(error.status);

@@ -36,7 +36,7 @@ public class SecurityConfiguration {
                     "/api/v1/youtube/videos/*/observations").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/games/search").permitAll()
                  .requestMatchers(HttpMethod.POST,"/api/v1/events","/api/v1/auth/signup","/api/v1/auth/login","/api/v1/admin/auth/login","/api/v1/auth/password-reset","/api/v1/auth/account-recovery").permitAll()
-                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/v1/admin/**", "/api/v1/chat/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/auth/activity","/api/v1/auth/logout").authenticated()
                 .requestMatchers("/api/v1/games","/api/v1/games/**","/api/v1/charts/**","/api/v1/youtube/**","/api/v1/auth/me","/api/v1/me/**","/api/v1/auth/recovery-codes","/api/v1/auth/password").hasRole("USER")
                 .anyRequest().denyAll())

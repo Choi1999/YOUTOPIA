@@ -252,6 +252,7 @@ export class ServiceApi {
       body?: unknown;
       signal?: AbortSignal;
       account?: string;
+      timeoutMs?: number;
     } = {},
   ): Promise<T> {
     if (!path.startsWith("/api/v1/") || path.includes("://"))
@@ -264,7 +265,7 @@ export class ServiceApi {
     const timer = setTimeout(() => {
       timedOut = true;
       controller.abort();
-    }, this.timeoutMs);
+    }, options.timeoutMs ?? this.timeoutMs);
     try {
       const method = options.method ?? "GET",
         headers: Record<string, string> = { Accept: "application/json" };
@@ -381,6 +382,8 @@ export class ServiceApi {
       body: { expectedVersion: version, changes: { theme } },
     });
   }
+  chatStatus(signal?:AbortSignal){return this.request<{available:boolean;state:string;message:string}>("/api/v1/chat/status",{signal});}
+  chatAnswer(questionId:string,requestId:string,account:string,signal?:AbortSignal){return this.request<{requestId:string;questionId:string;text:string;replayed:boolean;basis:string}>("/api/v1/chat/answers",{method:"POST",body:{questionId,requestId},account,signal,timeoutMs:20000});}
   publications(gameId:string,params:URLSearchParams,signal?:AbortSignal){
     return this.request<Publications>("/api/v1/games/"+encodeURIComponent(gameId)+"/youtube-publications?"+params,{signal});
   }

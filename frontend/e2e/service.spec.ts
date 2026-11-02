@@ -428,10 +428,10 @@ test("preparation panel is modal, mobile safe and context resets without chatbot
  await page.setViewportSize({width:390,height:844});await page.goto("/games/steam:570");
  await expect(page.getByRole("heading",{name:"Browser Arena",exact:true})).toBeVisible();
  const trigger=page.getByRole("button",{name:"Youtopia 분석 도우미 열기"});await trigger.click();
- const dialog=page.getByRole("dialog",{name:"Youtopia 분석 도우미"});await expect(dialog).toContainText("Browser Arena");await expect(dialog.getByRole("textbox",{name:"질문"})).toBeDisabled();await expect(dialog.getByRole("button",{name:"전송"})).toBeDisabled();
+ const dialog=page.getByRole("dialog",{name:"Youtopia 분석 도우미"});await expect(dialog).toContainText("Browser Arena");await expect(dialog.getByRole("textbox",{name:"질문"})).toHaveCount(0);await expect(dialog.getByRole("button",{name:"CCU는 무엇인가요?"})).toBeDisabled();
  expect(await page.locator("#root").evaluate(el=>(el as HTMLElement).inert)).toBe(true);
  const box=await dialog.boundingBox();expect(box!.x).toBeGreaterThanOrEqual(0);expect(box!.x+box!.width).toBeLessThanOrEqual(390);
- await page.keyboard.press("Tab");await expect(dialog.getByRole("button",{name:"분석 도우미 닫기"})).toBeFocused();await page.keyboard.press("Escape");await expect(trigger).toBeFocused();expect(await page.locator("#root").evaluate(el=>(el as HTMLElement).inert)).toBe(false);
+ await page.keyboard.press("Shift+Tab");await expect(dialog.getByRole("link",{name:"관리자 로그인"})).toBeFocused();await page.keyboard.press("Tab");await expect(dialog.getByRole("button",{name:"분석 도우미 닫기"})).toBeFocused();await page.keyboard.press("Escape");await expect(trigger).toBeFocused();expect(await page.locator("#root").evaluate(el=>(el as HTMLElement).inert)).toBe(false);
  await page.goto("/games/steam:730");await trigger.click();await expect(page.getByRole("dialog")).toContainText("Browser Counter");await page.keyboard.press("Escape");
  await page.goto("/games");await trigger.click();await expect(page.getByRole("dialog")).toContainText("게임을 선택하지 않았습니다");await expect(page.getByRole("dialog")).not.toContainText("Browser Counter");
  expect(requests.filter(url=>/chatbot|\/chat\/|openai|anthropic/i.test(url))).toEqual([]);
@@ -441,4 +441,15 @@ test("login failure preserves public navigation and admin has no assistant",asyn
  await page.getByLabel("관리자 로그인명",{exact:true}).fill("nonexistent_synthetic_operator");await page.getByLabel("비밀번호",{exact:true}).fill("synthetic wrong password 1234");await page.getByRole("button",{name:"로그인",exact:true}).click();
  await expect(page.getByText("로그인 정보 또는 세션을 확인해 주세요.")).toBeVisible();
  await page.getByRole("link",{name:/로그인 없이 둘러보기/}).click();await expect(page).toHaveURL(/\/games$/);
+});
+
+test("administrator sees keyless maintenance and a mocked fixed-question answer in the public mobile panel",async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.goto("/admin/login");await page.getByLabel("관리자 로그인명",{exact:true}).fill("browser_operator");await page.getByLabel("비밀번호",{exact:true}).fill("synthetic browser operator password 1234");await page.getByRole("button",{name:"로그인",exact:true}).click();await expect(page).toHaveURL(/\/admin$/);
+ await page.goto("/games");const trigger=page.getByRole("button",{name:"Youtopia 분석 도우미 열기"});await trigger.click();const dialog=page.getByRole("dialog");await expect(dialog.getByText("현재 점검 중입니다. 잠시 후 다시 이용해 주세요.")).toBeVisible();await expect(dialog.getByRole("button",{name:"CCU는 무엇인가요?"})).toBeDisabled();
+ let calls=0;await page.route("**/api/v1/chat/status",route=>route.fulfill({json:{available:true,state:"READY",message:"일반적인 지표 설명을 제공합니다."}}));
+ await page.route("**/api/v1/chat/answers",async route=>{calls++;const body=route.request().postDataJSON();expect(Object.keys(body).sort()).toEqual(["questionId","requestId"]);expect(body.questionId).toBe("CCU_BASICS");expect(route.request().headers()["x-csrf-token"]).toBeTruthy();await route.fulfill({json:{...body,text:"<script>plain text only</script> CCU 일반 설명",replayed:false,basis:"GENERAL_METRIC_EXPLANATION_NO_GAME_DATA"}})});
+ await dialog.getByRole("button",{name:"상태 다시 확인"}).click();await dialog.getByRole("button",{name:"CCU는 무엇인가요?"}).click();await expect(dialog.getByRole("status",{name:"LLM 일반 설명 응답"})).toContainText("<script>plain text only</script>");expect(calls).toBe(1);await expect(dialog.locator("script")).toHaveCount(0);await expect(dialog.getByRole("textbox")).toHaveCount(0);
+ await page.keyboard.press("Escape");await expect(trigger).toBeFocused();
+ const token=await(await page.request.get("/api/v1/auth/csrf")).json();expect((await page.request.post("/api/v1/auth/logout",{data:{},headers:{"X-CSRF-TOKEN":token.token}})).status()).toBe(204);
+ await page.unroute("**/api/v1/chat/answers");expect((await page.request.post("/api/v1/chat/answers",{data:{questionId:"CCU_BASICS",requestId:crypto.randomUUID()},headers:{"X-CSRF-TOKEN":token.token}})).status()).not.toBe(200);
 });
