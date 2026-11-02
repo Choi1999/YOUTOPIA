@@ -210,6 +210,41 @@ BEGIN
   RETURN v_id::text||':'||v_epoch::text||':'||v_version::text;
 END $fn$;
 
+-- Synthetic outbox delivery: only the Job referenced by the delivered event may
+-- be claimed. Two independent Workers receiving the same event contend for one
+-- DB advisory lock and fenced Job lease; no broker/real source is involved.
+CREATE FUNCTION g44_lab.claim_from_outbox(
+  p_event BIGINT, p_owner TEXT, p_lease_ms INTEGER
+) RETURNS TEXT LANGUAGE plpgsql AS $fn$
+DECLARE v_id BIGINT; v_epoch BIGINT; v_version BIGINT;
+BEGIN
+  IF p_event IS NULL OR p_event <= 0
+     OR p_owner IS NULL OR p_owner NOT IN ('worker-A','worker-B')
+     OR p_lease_ms IS NULL OR p_lease_ms < 500 OR p_lease_ms > 60000
+  THEN RETURN 'INVALID_REQUEST'; END IF;
+  -- Same-event contention barrier and per-event transaction serialization.
+  PERFORM pg_advisory_xact_lock(
+    hashtextextended('g44-outbox:'||p_event::text, 0));
+  SELECT j.job_id INTO v_id
+    FROM g44_lab.job_outbox AS o
+    JOIN g44_lab.analysis_job AS j ON j.job_id=o.job_id
+    WHERE o.event_id=p_event AND o.event_type='DISPATCH'
+      AND (j.state='QUEUED'
+           OR (j.state='RUNNING' AND j.lease_expires_at <= clock_timestamp()))
+      AND j.policy_epoch=(SELECT policy_epoch FROM g44_lab.policy_gate
+          WHERE approved_test=TRUE AND revoked=FALSE)
+    FOR UPDATE OF j SKIP LOCKED;
+  IF NOT FOUND THEN RETURN 'NONE'; END IF;
+  UPDATE g44_lab.analysis_job
+    SET state='RUNNING', version=version+1, lease_epoch=lease_epoch+1,
+        lease_owner=p_owner,
+        lease_expires_at=clock_timestamp()+
+          (p_lease_ms::double precision/1000.0)*INTERVAL '1 second'
+    WHERE job_id=v_id
+    RETURNING lease_epoch,version INTO v_epoch,v_version;
+  RETURN v_id::text||':'||v_epoch::text||':'||v_version::text;
+END $fn$;
+
 CREATE FUNCTION g44_lab.heartbeat(
   p_job BIGINT,p_owner TEXT,p_epoch BIGINT,p_version BIGINT,p_lease_ms INTEGER
 ) RETURNS TEXT LANGUAGE plpgsql AS $fn$
