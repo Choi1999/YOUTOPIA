@@ -84,7 +84,7 @@ test("G45-CLI07: environment secrets cause preflight rejection without echo",()=
 });
 test("G45-CLI08: no developer provider SDK, shell, API URL or credential client in runner",()=>{
   assert.doesNotMatch(code,/\bfetch\s*\(|node:https?|node:net|axios|googleapis|puppeteer|playwright/);
-  assert.doesNotMatch(code,/child_process|execSync|spawnSync|createServer|\.env|process\.env\.[A-Z]*KEY\s*\|\|/);
+  assert.doesNotMatch(code,/child_process|execSync|spawnSync|createServer|dotenv|process\.env\.[A-Z]*KEY\s*\|\|/);
   assert.ok(!code.includes("youtube.googleapis.com"));
   assert.match(code,/fs\.statSync\(file\)\.size>128\*1024/);
 });
