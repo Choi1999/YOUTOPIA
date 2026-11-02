@@ -67,6 +67,51 @@ function concurrentSql(query, role="g44_writer") {
     proc.stdin.end("SET ROLE "+role+";\n"+query+"\n");
   });
 }
+// A dedicated third psql session holds the same advisory lock used by
+// submit_job until both independent contender sessions are confirmed waiting.
+// This is a deterministic lock barrier, not a sequential Map simulation.
+async function submissionBarrier(scope,actor) {
+  const proc=spawn("docker", [...base,"exec","-T","-u","postgres","db",
+    "psql","-X","-q","-A","-t","-v","ON_ERROR_STOP=1","-U","g44_dba",
+    "-d","g44_lab","-f","-"], {env,stdio:["pipe","pipe","pipe"]});
+  let output="",error="";
+  const ready=new Promise((resolve,reject)=>{
+    const timeout=setTimeout(()=>reject(new Error("Barrier readiness timeout")),15000);
+    proc.stdout.on("data",chunk=>{
+      output+=String(chunk);
+      if(output.includes("G44_LOCK_READY")){clearTimeout(timeout);resolve();}
+    });
+    proc.stderr.on("data",chunk=>error+=String(chunk));
+    proc.on("error",e=>{clearTimeout(timeout);reject(e)});
+    proc.on("exit",code=>{
+      if(!output.includes("G44_LOCK_READY")) {
+        clearTimeout(timeout);
+        reject(new Error("Barrier ended early: "+error.slice(0,150)+" code="+code));
+      }
+    });
+  });
+  const key=scope+":"+actor;
+  proc.stdin.write("SELECT pg_advisory_lock(hashtextextended('"+key+
+    "',0));\nSELECT 'G44_LOCK_READY';\n");
+  await ready;
+  return async()=>{
+    const finished=new Promise((resolve,reject)=>{
+      proc.on("close",code=>code===0?resolve():reject(new Error("Barrier failed: "+error.slice(0,150))));
+    });
+    proc.stdin.end("SELECT pg_advisory_unlock(hashtextextended('"+key+"',0));\n");
+    await finished;
+  };
+}
+async function requireBlockedContenders(count) {
+  for(let retry=0;retry<35;retry++){
+    const blocked=Number(scalar(
+      "SELECT count(*) FROM pg_stat_activity WHERE datname='g44_lab' "+
+      "AND wait_event_type='Lock' AND query LIKE '%g44_lab.submit_job%';"));
+    if(blocked>=count)return blocked;
+    await new Promise(resolve=>setTimeout(resolve,200));
+  }
+  throw new Error("Could not prove two blocked DB connections; INCONCLUSIVE");
+}
 function reset() {
   scalar("TRUNCATE g44_lab.idempotency_record,g44_lab.budget_reservation," +
     "g44_lab.job_outbox,g44_lab.scope_latest,g44_lab.analysis_snapshot," +
@@ -199,6 +244,15 @@ async function tests() {
       "'mock-0','ko-KR','PUBLIC_REUSABLE','tenant-A');",/23514/);
     return "23514 as expected";
   });
+  await verify("G44-T04-DB","PRIVATE scope must have a non-NULL tenant (not an auth test)",()=>{
+    reset();
+    expectSqlFailure("INSERT INTO g44_lab.analysis_scope("+
+      "source,target_type,target_id,analysis_spec_version,observation_window_id,"+
+      "sampling_policy_version,locale,visibility,tenant_id) VALUES ("+
+      "'YOUTUBE','VIDEO','Ab0_-123xyz','mock-0','20261001-20261008',"+
+      "'mock-0','ko-KR','TENANT_PRIVATE',NULL);",/23514/);
+    return "23514 for private NULL tenant; server BOLA NOT_RUN";
+  });
   await verify("G44-T05","Same key/digest replays the same original decision",()=>{
     const id=reset(),key=randomUUID();
     const a=submit(id,"customer-A",key),b=submit(id,"customer-A",key);
@@ -218,16 +272,24 @@ async function tests() {
     assert.equal(count("analysis_job"),1);
     return b;
   });
-  await verify("G44-T07","Two psql connections contend for one active Job",async()=>{
+  await verify("G44-T07","Two concurrently blocked psql connections contend for one active Job",async()=>{
     const id=reset(),key1=randomUUID(),key2=randomUUID(),fp=digest("shared");
     const query=(key)=>"SELECT g44_lab.submit_job("+id+
       ",'customer-A','customer-A','"+key+"','"+fp+"');";
-    const out=await Promise.all([concurrentSql(query(key1)),concurrentSql(query(key2))]);
+    const release=await submissionBarrier(id,"customer-A");
+    const contenders=[concurrentSql(query(key1)),concurrentSql(query(key2))];
+    let blocked;
+    try {
+      blocked=await requireBlockedContenders(2);
+    } finally {
+      await release();
+    }
+    const out=await Promise.all(contenders);
     assert.equal(out.filter(x=>/^CREATED:/.test(x)).length,1);
     assert.equal(out.filter(x=>/^JOINED:/.test(x)).length,1);
     assert.equal(count("analysis_job"),1);
     assert.equal(count("budget_reservation"),1);
-    return out.join(",");
+    return "observed_blocked="+blocked+"; "+out.join(",");
   });
   await verify("G44-T08","Same PUBLIC scope, isolated actors and jobs (DB only)",()=>{
     const id=reset();
