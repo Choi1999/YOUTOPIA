@@ -19,15 +19,15 @@
 
 | ID | 계층 | 상위 대응 | 입력·고장 주입 | 기대 결과 | 필수 증거 | 현재 |
 |---|---|---|---|---|---|---|
-| G44-T01 | LAB_READ | G43-O01 | 합성 Hover GET 100회 반복 | Job·Outbox·예산·외부 요청 증가 0 | read 이전/이후 row counts | NOT_RUN |
+| G44-T01 | LAB_READ | G43-O01 | 합성 Summary 조회 모델 100회 반복(실제 Hover HTTP 제외) | Lab Job·Outbox·예산 증가 0, 가상 provider 호출 0 | synthetic read 전후 row counts; 실제 Hover E2E 별도 | NOT_RUN |
 | G44-T02 | LAB_DB | G43-O02 | version/window/sampling/locale 변경 | Scope 9필드 정규화·격리; 달라진 tuple은 별개 | canonical tuple/unique 결과 | NOT_RUN |
 | G44-T03 | LAB_DB | G43-O03 | PUBLIC_REUSABLE에서 tenantId 문자열 | CHECK 거부, 임의 null 치환 금지 | constraint SQLSTATE/row count | NOT_RUN |
 | G44-T04 | LAB_AUTH_FUTURE | G43-O04 | Guest·타 조직의 TENANT_PRIVATE 접근 | 존재 여부 은닉 및 요청 거부 | Spring session/tenant E2E 필요 | NOT_RUN |
 | G44-T05 | LAB_DB | G43-O05 | 같은 actor·key·body 동시 POST | 원 결정/Job 동일, 예약 1회 | 서로 다른 DB connections와 ledger | NOT_RUN |
-| G44-T06 | LAB_DB | G43-O06 | 동일 actor·key, 다른 body | 409 충돌, Job/charge 증가 0 | idempotency unique와 원장 | NOT_RUN |
+| G44-T06 | LAB_DB | G43-O06 | 동일 actor·key, 다른 canonical body | DB `IDEMPOTENCY_CONFLICT`, Job·예산 증가 0; HTTP 409은 별도 G44-SEC | idempotency unique와 원장; HTTP는 NOT_RUN | NOT_RUN |
 | G44-T07 | LAB_DB | G43-O07 | 다른 key·같은 scope/partition 경쟁 | 활성 Job 1개, 비용 예약 1, 나머지 JOINED | partial UNIQUE와 동시 tx 로그 | NOT_RUN |
 | G44-T08 | LAB_DB+AUTH | G43-O08 | PUBLIC Scope의 서로 다른 actor 동시 POST | 실행 파티션 독립, 타 Job ID 유출 없음 | DB 분리 확인; 서버 비노출은 별도 Gate | NOT_RUN |
-| G44-T09 | LAB_DB | G43-O09 | commit 뒤 HTTP reply loss 주입 | 멱등 replay, 신규 Job·예약 0 | DB commit/reconnect trace | NOT_RUN |
+| G44-T09 | LAB_DB | G43-O09 | COMMIT 직후 합성 응답 버리기(HTTP 서버 미구현) | DB 재연결 후 원 결정 replay, 신규 Job·예약 0; HTTP E2E는 별도 | DB commit/reconnect + synthetic response-loss trace | NOT_RUN |
 | G44-T10 | LAB_DB | G43-O10 | Job 생성·예산 예약 뒤 rollback | Job·idem·budget·outbox 4종 전부 0 | fault barrier 후 row counts | NOT_RUN |
 | G44-T11 | LAB_DB | G43-O11 | Redis throttling만 성공·DB 비용 실패 | Redis 성공으로 비용 정산 성공 판단 금지 | 별도 DB ledger와 mock throttle | NOT_RUN |
 | G44-T12 | LAB_WORKER | G43-O12 | 기능 OFF 또는 정책 epoch 미확정 | claim/공급자 호출 0, fail-closed | DB guard와 externalCalls=0 | NOT_RUN |
@@ -36,7 +36,7 @@
 | G44-T15 | LAB_WORKER | G43-O15 | A crash·lease 만료 후 B 재claim | 같은 Job, epoch·version 증가 | DB 시각/lease token | NOT_RUN |
 | G44-T16 | LAB_WORKER | G43-O16 | B 재claim 뒤 A의 늦은 complete | A CAS 0, 최신 Snapshot 변경 0 | worker tokens/row count | NOT_RUN |
 | G44-T17 | LAB_WORKER | G43-O17 | 만료 heartbeat 및 complete 제출 | 둘 다 거부, expired lease 불변 | expiry/version DB 비교 | NOT_RUN |
-| G44-T18 | LAB_WORKER+AUTH | G43-O18 | 실행 중 정책 철회·완료 경합 | policy epoch 검증, 신규 외부 호출/발행 차단 | DB epoch/Worker trace, 서버 인가 별도 | NOT_RUN |
+| G44-T18 | LAB_WORKER+AUTH | G43-O18 | 합성 정책 철회·완료 경합 | DB 정책 epoch 불일치 시 결과 발행 0·가상 provider 호출 0; 실제 인가는 미검증 | DB epoch/Worker trace, G44-SEC 별도 | NOT_RUN |
 | G44-T19 | LAB_DB | G43-O19 | Snapshot scope 불일치·늦은 과거 Job | ScopeLatest CAS 역행 0, invalid publish 0 | scope_ref/history/revision | NOT_RUN |
 | G44-T20 | LAB_READ | G43-O20 | NO_DATA·STALE·STATIC_FIXTURE 조회 | FRESH/READY/실데이터로 승격 금지 | 상태별 응답/수치 비노출 | NOT_RUN |
 | G44-T21 | LAB_AUTH_FUTURE | G43-O21 | 삭제된 합성 계정 복구와 구 참조 재생 | 세션·권한·Snapshot 부활 차단 | RestoreFence/저널 통합 필요 | NOT_RUN |
@@ -45,7 +45,7 @@
 | G44-T24 | POLICY_HOLD | G43-O24 | 실제 provider 중복 호출 가능성 | 외부 호출 금지, exactly-once 근거 없음 | 위험 기록만; 외부 실험 금지 | POLICY_HOLD |
 | G44-T25 | LAB_DB | G43-O25 | Lab 전용 read-only principal로 INSERT | 권한 거부; 운영 ytp_app_data_ro 접근 없음 | 실험 DB SQLSTATE 42501 등 | NOT_RUN |
 | G44-T26 | LAB_AUTH_FUTURE | G43-O26 | 미허용 관리자/마이그레이션 pool 시도 | RuntimeDataSourceGuard 시작 차단 | 별도 Spring integration 필요 | NOT_RUN |
-| G44-T27 | LAB_WORKER | G43-O27 | 동일 Outbox event 2회 deliver | 중복 예약/새 Job·유효 claim 0 | delivery ids/Job-state 로그 | NOT_RUN |
+| G44-T27 | LAB_WORKER | G43-O27 | 동일 Outbox event 2회 deliver | 최초 유효 claim은 최대 1회; 중복 이벤트의 **추가** 유효 claim·Job·예약 0 | delivery ids, current lease, Job/Outbox counts | NOT_RUN |
 | G44-T28 | LAB_SAFETY | G43-O28 | APPROVED_TEST_ONLY fixture 임의 주입 | 운영 기능 여전히 off, 실제 외부 요청 0 | feature/manifest diff, egress trace | NOT_RUN |
 | G44-T29 | LAB_DB | 추가 | PUBLIC Scope tenantId NULL인 동일 tuple 2회 INSERT | UNIQUE NULLS NOT DISTINCT 또는 동등 인덱스로 두 번째 거부 | 중복 거부 constraint trace | NOT_RUN |
 | G44-T30 | LAB_DB | 추가 | Scope 필드 null·object·잘못된 locale·version | G4-2 request parser와 일치하게 fail-closed | invalid fixture vector 결과 | NOT_RUN |
@@ -80,5 +80,7 @@
 | G44-SECURITY | Spring tenant BOLA, CSRF, RestoreFence, DB guard | NOT_APPROVED |
 | G44-COMPLIANCE | YouTube 권리·원문/파생·보존·삭제·비용 | POLICY_HOLD |
 | G44-RELEASE | 위 승인, 별도 사용자 병합·배포 Gate | NOT_APPROVED |
+
+**독립 문서 검수 주의(2026-11-02 KST):** CI의 기존 Node/React PASS는 이 표의 40개 시나리오 PASS가 아니다. G44-T01/T06/T09의 HTTP/브라우저 통합은 `G44-SEC` 또는 별도 E2E에서만 검증하며, G44-T18의 가상 정책은 실제 외부 권한이 아니다. G44-T27의 정상 최초 claim은 허용한다.
 
 **최종 판정: 계획 40건 정리. 실제 PostgreSQL/Worker 실행 0/40, 운영 기능 미구현, POLICY_HOLD 유지.**

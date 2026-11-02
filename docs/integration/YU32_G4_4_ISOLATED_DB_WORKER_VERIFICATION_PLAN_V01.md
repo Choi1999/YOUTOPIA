@@ -3,7 +3,7 @@
 > **현재 상태:** PLAN_DRAFT / OFFLINE_ONLY / NOT_RUN / POLICY_HOLD
 > **문서 성격:** 계획 전용. 격리 DB·Worker를 구현하거나 실행한 문서가 아님.
 > **기준선:** frontend@ce03f2ced337be12a8337a6fb78d46f29d68b00c (PR #43 병합 완료)
-> **백엔드 참조:** feat/backend-bootstrap@b72d47e9565818cc9e248def1c6fd305f870a149 (읽기 전용 참조; 변경·병합하지 않음)
+> **백엔드 참조:** feat/backend-bootstrap@7e24bb90058d717226315f4f921aa04535747775 (읽기 전용 참조; 변경·병합하지 않음)
 > **근거:** [G4-2 분석 API 계약](./YU32_G4_2_API_AUTHORIZATION_CONTRACT_V01.md) · [G4-3 영속·인가·복구 설계](./YU32_G4_3_PERSISTENCE_AUTH_RECOVERY_DESIGN_V01.md) · [G4-3 수용 매트릭스](./YU32_G4_3_VERIFICATION_MATRIX_V01.md)
 > **동반 문서:** [G4-4 실행 전 검증 매트릭스](./YU32_G4_4_VERIFICATION_MATRIX_V01.md)
 > **승인 범위:** 사용자는 G4-4 **검증 계획 수립**을 승인했다. 실제 Lab 구축·실행, PR 병합, 운영 DDL/API, 소스 데이터 수집, 배포·비용은 별도 승인 대상이다.
@@ -34,7 +34,7 @@ G4-3의 **오프라인 불변식 39건**과 실제 서버·DB 수용 시나리�
 | 도구 | Node 24, node:test와 DB 드라이버 또는 격리 Java JDBC 후보 | 구체 버전·driver·Compose 선택은 DEC-G44-01 미결정 |
 | 결과물 | 익명화된 실행 로그, SQLSTATE, CAS 영향 행수, SHA-256 증거 요약 | raw DB, token, 개인 자료, 실제 서버 secret 커밋 금지 |
 
-현재 Docker 설치·실행 가능성, 네트워크 격리 및 Lab 이미지/드라이버 버전은 **확인되지 않았다**. 실행 전 별도 승인과 Preflight가 필수다. 실제 Spring Security·CSRF·세션·삭제 저널·RestoreFenceFilter의 통합 검증은 이 Lab 결과로 대체할 수 없다.
+현재 Docker 설치·실행 가능성, 네트워크 격리 및 Lab 이미지/드라이버 버전은 **확인되지 않았다**. 검수 중 백엔드 참조가 `b72d47e...`에서 `7e24bb9...`로 4개 커밋 진행한 사실을 확인했다. 배포·계정/복구/Guard 관련 수정이 포함되어 있으나, 최신 참조의 기본 DataSource는 `read-only: true`와 `default_transaction_read_only=on`을 유지하고 `SecurityConfiguration.anyRequest().denyAll()`도 유지한다. Lab 착수 시에는 그 시점의 백엔드 HEAD와 권한/복구 영향 범위를 다시 비교해야 한다. 실행 전 별도 승인과 Preflight가 필수다. 실제 Spring Security·CSRF·세션·삭제 저널·RestoreFenceFilter의 통합 검증은 이 Lab 결과로 대체할 수 없다.
 
 미래 후보 파일 배치 (아직 생성하지 않음):
 
@@ -56,10 +56,10 @@ Lab 구축을 승인받은 경우에만 만들고, frontend·backend·dev·main�
 
 - **Scope 유일성:** PUBLIC_REUSABLE은 tenantId=NULL, TENANT_PRIVATE는 현재 허용된 tenantId. 기본 UNIQUE 제약은 NULL을 서로 다르게 보므로 공개 Scope의 중복 insert를 막기 위해 **UNIQUE NULLS NOT DISTINCT** 또는 검증된 동등한 partial index/표현식 전략을 시험한다. 정규화 9필드 전체를 기준으로 하고 해시만 신뢰하지 않는다.
 - **활성 Job 중복 제거:** scope_id + execution_partition에 QUEUED/RUNNING만 걸리는 partial UNIQUE. 동일 파티션/Scope의 다른 key 동시 POST에서 생성 1, JOINED 1, 예산 예약 1이 되도록 두 DB 연결에서 증명한다. ON CONFLICT와 predicate inference 및 충돌 재조회 경로도 점검한다.
-- **멱등 결정:** principal+Idempotency-Key 해시와 서버 계산 canonical request digest로 슬롯 구분. 같은 키/본문은 생성 시 기록된 결정을 재생하고 추가 비용을 예약하지 않으며, 같은 키의 다른 본문은 409. 재생 시 최신 권한·정책은 재확인하되 이미 예약된 Job에 대해 **신규 Job 비용 잔액 부족**만으로 원 결정을 바꾸지 않는다.
-- **원자성:** Job, IdempotencyRecord, BudgetReservation, JobOutbox가 같은 authoritative PostgreSQL 트랜잭션에서 COMMIT 또는 전부 ROLLBACK되어야 한다. 트랜잭션 내 예외, COMMIT 후 HTTP 응답 유실, 병렬 quota 소진, HELD→COMMITTED/RELEASED 경합 및 중복 환불을 주입한다.
+- **멱등 결정:** principal+Idempotency-Key 해시와 서버 계산 canonical request digest로 슬롯 구분. 같은 키/본문은 생성 시 기록된 결정을 재생하고 추가 비용을 예약하지 않으며, 같은 키의 다른 본문은 DB 단위에서 `IDEMPOTENCY_CONFLICT`로 분류한다. **HTTP 409 매핑은 실제 서버 Adapter 미구현이므로 후속 `G44-SEC`에서만 검증 가능**하다. 재생 시 최신 권한·정책은 재확인하되 이미 예약된 Job에 대해 **신규 Job 비용 잔액 부족**만으로 원 결정을 바꾸지 않는다.
+- **원자성:** Job, IdempotencyRecord, BudgetReservation, JobOutbox가 같은 authoritative PostgreSQL 트랜잭션에서 COMMIT 또는 전부 ROLLBACK되어야 한다. 트랜잭션 내 예외, COMMIT 후 **합성 클라이언트 응답 유실**(DB commit 뒤 결과를 전달하지 않는 fault injector), 병렬 quota 소진, HELD→COMMITTED/RELEASED 경합 및 중복 환불을 주입한다. **실제 HTTP 응답 유실의 E2E 보증은 HTTP 서버가 없는 Lab에서 획득할 수 없다.**
 - **SQL 재시도:** READ COMMITTED의 경합과 SERIALIZABLE 경합을 구분한다. SQLSTATE 40001(serialization failure), 40P01(deadlock), 23505(unique collision)의 처리를 구분하며 무조건 오류 무시하지 않는다. 필요한 경우 **결정 논리를 포함한 전체 트랜잭션**만 제한적으로 재시도한다. 운영 retry 횟수나 TTL/쿼터 수치는 이번 계획에서 확정하지 않는다.
-- **권한:** Lab Writer는 별도 schema의 허용 테이블 SELECT/INSERT/UPDATE에 한정하며 ALTER/CREATE/GRANT, SUPERUSER, BYPASSRLS, 다른 schema 쓰기를 차단한다. 실험용 read-only 모의 계정의 쓰기 실패는 운영 ytp_app_data_ro의 실제 GRANT 검사 증거라고 주장하지 않는다.
+- **권한:** Lab Writer는 별도 schema의 허용 테이블 SELECT/INSERT/UPDATE에 한정하며 ALTER/CREATE/GRANT, SUPERUSER, BYPASSRLS, 다른 schema 쓰기를 차단한다. `PUBLIC`에 대한 기본 권한, role membership/`SET ROLE`, 데이터베이스 `CREATE`/`TEMP`, schema `CREATE`와 테이블 ownership도 별도로 확인한다. 실험용 read-only 모의 계정의 쓰기 실패는 운영 ytp_app_data_ro의 실제 GRANT 검사 증거라고 주장하지 않는다.
 
 ## 4. Worker claim·lease fencing·장애 복구 시험
 
@@ -69,7 +69,7 @@ Lab 구축을 승인받은 경우에만 만들고, frontend·backend·dev·main�
 | 만료 후 재claim | A가 RUNNING 중 종료, DB 시각 기준 만료, B가 claim | **같은 Job**, 더 큰 lease_epoch와 version |
 | 늦은 A 완료 | B의 재claim 후 A가 과거 토큰으로 COMPLETE | A의 CAS 0 rows, Snapshot/ScopeLatest 미변경 |
 | heartbeat version | B heartbeat로 version 증가, 구 version으로 complete | 구 token 거부, 새 token만 유효 |
-| 재전달 | Job/Outbox COMMIT 직후 프로세스 종료·재시작 | at-least-once 재전달 허용, 새 Job/예약 중복 없음 |
+| 재전달 | Job/Outbox COMMIT 직후 프로세스 종료·재시작 | at-least-once 재전달 허용, 새 Job/예약 중복 없음. **최초 유효 claim 1회는 허용**되지만 동일 활성 리스에서 추가 유효 claim은 0 |
 | 만료 리스 | DB 시각이 lease_expires_at 이상 | heartbeat/완료/연장 불가; watchdog 재claim 또는 FAILED 후보 |
 | 정책 철회 | dispatch/complete/publish 사이 policy_epoch·복구 generation 변경 | 외부 호출·공개/읽기 차단, 구 정책 결과 부활 금지 |
 | 공개 Scope 경합 | 서로 다른 actor의 Job B가 먼저 완료, 오래된 Job A가 나중에 완료 | 오래된 Job의 공유 ScopeLatest 덮어쓰기 금지 |
@@ -80,7 +80,7 @@ Lab 구축을 승인받은 경우에만 만들고, frontend·backend·dev·main�
 
 ## 5. 보안·데이터 수명주기 검증 범위
 
-**Lab만으로 확인 가능한 것:** 가짜 actor→execution_partition 매핑, 정규화 Scope·private tenant 격리, 최소 DB 권한, 정책 epoch에 대한 DB CAS/fencing, Outbox/Worker 복구. 이 결과가 실제 세션 인가를 인증하지는 않는다.
+**Lab만으로 확인 가능한 것:** 가짜 actor→execution_partition 매핑, 정규화 Scope·private tenant 격리, 최소 DB 권한, 정책 epoch에 대한 DB CAS/fencing, Outbox/Worker 복구 및 **합성 Summary 조회 모델의 읽기 부작용 0**. 실제 Chrome Hover GET→서버 HTTP 요청 경로, HTTP 상태코드, 인증·세션 인가는 별도 E2E 대상이다. Lab에서 전송/인가를 모의해도 해당 E2E의 PASS가 아니다.
 
 **후속 별도 Gate:** Spring Security의 deny-all, 실제 로그인·세션·CSRF, tenant BOLA 404, Role/Entitlement/Quota, RuntimeDataSourceGuard, AccountSessionFilter, RestoreFenceFilter, 계정 탈퇴·복구와 백업/삭제 저널. 실서비스 회원 데이터를 사용하지 않고 별도 테스트 fixture와 서버 통합 허가가 있어야 한다. 관리/삭제용 DB 풀에 분석 쓰기를 추가하는 것은 금지.
 
@@ -118,7 +118,7 @@ Lab 구축을 승인받은 경우에만 만들고, frontend·backend·dev·main�
 | DEC-G44-05 | 예산 HELD/COMMITTED/RELEASED 정산·보상 | 합성 원장만 |
 | DEC-G44-06 | 실험 자료 폐기/증거 보존·권한 담당 | raw 로그/credential 커밋 금지 |
 
-상위 **DEC-G43-01~08**은 계속 유효하며 특히 **DEC-G43-06은 POLICY_HOLD**다.
+상위 **DEC-G43-01~08**은 계속 유효하며 특히 **DEC-G43-06은 POLICY_HOLD**다. Lab의 합성 정책 epoch는 실제 외부 정책 서비스·Spring Session과 PostgreSQL 사이의 원자성을 증명하지 못한다. 이 교차 시스템 TOCTOU는 G44-SEC/후속 실험에서 별도 Gate로 남긴다.
 
 ## 9. PostgreSQL 16 기술 근거
 
@@ -126,5 +126,12 @@ Lab 구축을 승인받은 경우에만 만들고, frontend·backend·dev·main�
 - [CREATE INDEX / partial unique index](https://www.postgresql.org/docs/16/sql-createindex.html)
 - [SELECT ... FOR UPDATE SKIP LOCKED](https://www.postgresql.org/docs/16/sql-select.html)
 - [Serialization Failure Handling](https://www.postgresql.org/docs/16/mvcc-serialization-failure-handling.html)
+
+### 독립 문서 검수 보완 기록 (2026-11-02 KST)
+
+- 40건의 고유한 시험 ID와 G43-O01~O28 일대일 대응, 추가 12건, `NOT_RUN` 39건 및 `POLICY_HOLD` 1건을 **문서 정합성으로만** 대조했다. 이는 PostgreSQL/Worker 수용 증거가 아니다.
+- G44-T01/T06/T09는 Lab 모의 조회·결정·응답 유실과 실제 Chrome/HTTP E2E 증거를 분리했다. G44-T27은 첫 유효 claim까지 0으로 요구하던 잘못된 기대를 중복 추가 claim 0으로 수정했다.
+- 기존 GitHub Actions의 Extension/React 성공은 **이 계획의 40개 시나리오를 실행하거나 문서의 28개 매핑을 자동 검증했다는 뜻이 아니다.** 문서 검수 기록과 CI 코드 회귀를 별도 증거로 다룬다.
+- 백엔드 참조 HEAD 변경을 재확인했다. 기본 read-only 및 deny-all은 유지되지만 이후 구현 전에 Role/Restore 변경은 다시 독립 비교한다.
 
 **최종 판정: G4-4 검증 계획 후보. 실제 검증 0건 / 운영 구현 NOT_IMPLEMENTED / POLICY_HOLD 유지.**
