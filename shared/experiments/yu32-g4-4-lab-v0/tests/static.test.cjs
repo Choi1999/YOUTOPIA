@@ -125,3 +125,15 @@ test("G44-S12: private tenant CHECK regex and SQL quote closure are complete",()
   assert.match(scopeDDL,/CONSTRAINT g44_scope_canonical UNIQUE NULLS NOT DISTINCT/);
   assert.equal((scopeDDL.match(/'/g)||[]).length%2,0,"Unterminated SQL string literal in Scope DDL");
 });
+
+test("G44-S13: Docker engine must be the local Windows Desktop Linux pipe",()=>{
+  assert.match(runner,/function verifyLocalDockerContext\(\)/);
+  assert.match(runner,/DOCKER_HOST/);
+  assert.match(runner,/DOCKER_CONTEXT/);
+  assert.match(runner,/context","show/);
+  assert.match(runner,/dockerdesktoplinuxengine/);
+  assert.match(runner,/context\.dockerTarget=verifyLocalDockerContext\(\)/);
+  const guardIndex=runner.indexOf("context.dockerTarget=verifyLocalDockerContext()");
+  const dockerStart=runner.indexOf('docker([...base,"up","-d","--wait"');
+  assert.ok(guardIndex>=0 && dockerStart>guardIndex);
+});

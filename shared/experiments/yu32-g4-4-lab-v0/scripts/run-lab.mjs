@@ -21,7 +21,7 @@ const base = ["compose", "-p", project, "-f", composeFile];
 const results = [];
 let started = false;
 let teardown = "NOT_RUN";
-const context = {gitHead:"UNVERIFIED",gitBranch:"UNVERIFIED",imageId:"UNVERIFIED"};
+const context = {gitHead:"UNVERIFIED",gitBranch:"UNVERIFIED",imageId:"UNVERIFIED",dockerTarget:"UNVERIFIED"};
 
 function docker(args, input = "", allowFailure = false) {
   const x = spawnSync("docker", args, {
@@ -176,6 +176,25 @@ function checkManifest() {
   assert.match(sql,/REVOKE ALL ON ALL FUNCTIONS/);
   return "STATIC_MANIFEST_VALIDATED_ONLY";
 }
+// Fail closed if Docker targets an unexpected (including remote) daemon.
+// This first Lab version intentionally supports Windows Docker Desktop Linux only.
+function verifyLocalDockerContext() {
+  for (const name of ["DOCKER_HOST","DOCKER_CONTEXT","DOCKER_TLS_VERIFY","DOCKER_CERT_PATH"]) {
+    if (process.env[name]) throw new Error("Docker endpoint override detected ("+name+"): STOP");
+  }
+  const active=docker(["context","show"]).stdout.trim();
+  if (active!=="desktop-linux") throw new Error("G44 requires local desktop-linux context; got "+active);
+  const detail=JSON.parse(docker(["context","inspect",active]).stdout);
+  const host=detail?.[0]?.Endpoints?.docker?.Host;
+  if (detail.length!==1 || typeof host!=="string" ||
+      host.toLowerCase()!=="npipe:////./pipe/dockerdesktoplinuxengine") {
+    throw new Error("Not a verified local Windows Docker Desktop Linux pipe: STOP");
+  }
+  const os=docker(["info","--format","{{.OSType}}"]).stdout.trim();
+  if (os!=="linux") throw new Error("Linux Docker Engine required: STOP");
+  return {context:active,endpointClass:"LOCAL_WINDOWS_NPIPE",os};
+}
+
 function preflight() {
   checkManifest();
   const checkout=path.resolve(root,"../../..");
@@ -191,6 +210,7 @@ function preflight() {
   if(context.gitBranch!=="feature/yu32-g4-4-isolated-pg-worker-lab-v01")
     throw new Error("Unexpected checkout branch: STOP");
   if (process.env.CI) throw new Error("Lab must not run automatically in CI");
+  context.dockerTarget=verifyLocalDockerContext();
   docker(["version","--format","{{.Server.Version}}"]);
   docker(["compose","version"]);
   // Refuse an implicit external image pull: operator must preload this exact tag.
@@ -418,6 +438,7 @@ function evidence() {
   const summary={
     runId:project, evidenceClass:"ISOLATED_PG16_LAB_ONLY",
     head:context.gitHead,branch:context.gitBranch,imageId:context.imageId,
+    dockerTarget:context.dockerTarget,
     testCount:results.length,
     statuses:{passed:results.filter(x=>x.status==="PASS").length,
       failed:results.filter(x=>x.status==="FAIL").length},
