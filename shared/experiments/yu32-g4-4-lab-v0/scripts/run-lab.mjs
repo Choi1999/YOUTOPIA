@@ -331,7 +331,8 @@ async function tests() {
     const a=claim("worker-A");
     assert.match(a,/^\d+:\d+:\d+$/);
     const [jobid]=a.split(":");
-    scalar("UPDATE g44_lab.analysis_job SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE job_id="+jobid+";");
+    scalar("UPDATE g44_lab.analysis_job SET version=version+1,"+
+      "lease_expires_at=clock_timestamp()-interval '1 second' WHERE job_id="+jobid+";");
     const b=claim("worker-B");
     assert.match(b,/^\d+:\d+:\d+$/);
     assert.equal(Number(b.split(":")[1]),Number(a.split(":")[1])+1);
@@ -370,6 +371,26 @@ async function tests() {
     assert.equal(complete(a,"worker-A","older"),"SUCCEEDED");
     assert.equal(scalar("SELECT snapshot_id FROM g44_lab.scope_latest WHERE scope_id=1;"),"synthetic-newest");
     return "DB order only: no production freshness claim";
+  });
+  await verify("G44-T38-STATE_SUBSET","Terminal Job cannot return to RUNNING",()=>{
+    reset();submit(1);
+    const token=claim("worker-A");
+    assert.equal(complete(token,"worker-A","terminal"),"SUCCEEDED");
+    const job=token.split(":")[0];
+    expectSqlFailure("UPDATE g44_lab.analysis_job SET state='RUNNING',"+
+      "version=version+1 WHERE job_id="+job+";",/23514/);
+    assert.equal(scalar("SELECT state FROM g44_lab.analysis_job WHERE job_id="+job+";"),"SUCCEEDED");
+    return "terminal update 23514";
+  });
+  await verify("G44-T39-DB_SUBSET","Replay after new-Job quota zero, then synthetic revocation",()=>{
+    const id=reset(),key=randomUUID(),body=digest("replay");
+    const a=submit(id,"customer-A",key,body);
+    scalar("UPDATE g44_lab.budget_window SET remaining=0 WHERE actor_tag='customer-A';");
+    assert.equal(submit(id,"customer-A",key,body),a);
+    assert.equal(count("budget_reservation"),1);
+    scalar("UPDATE g44_lab.policy_gate SET revoked=TRUE,policy_epoch=policy_epoch+1;");
+    assert.equal(submit(id,"customer-A",key,body),"POLICY_BLOCKED");
+    return "original decision preserved; revoked replay denied";
   });
   await verify("G44-T27-CLAIM_SUBSET","Repeated claim without duplicate Outbox delivery simulation",()=>{
     reset();submit(1);
