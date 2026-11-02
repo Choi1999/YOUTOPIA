@@ -232,7 +232,8 @@ export async function runWorkerRecoveryProbes(ctx){
       const leaseA=parseClaim({value:tokenA},f.jobId);
       const killed=await a.kill("SIGKILL");
       assert.equal(killed.pid,ra.pid);
-      assert.ok(killed.signal==="SIGKILL"||killed.code!==0,
+      assert.ok(killed.signal==="SIGKILL"||
+        (Number.isInteger(killed.code)&&killed.code!==0),
         "Expected forced OS process termination");
       assertOneLease(ctx,f.jobId,"worker-A");
       assert.equal(await waitDbExpiry(ctx,f.jobId),"DB_EXPIRED");
