@@ -12,6 +12,17 @@ const workerScript=path.join(path.dirname(fileURLToPath(import.meta.url)),
   "worker-process.mjs");
 const tokenRx=/^[0-9]+:[0-9]+:[0-9]+$/;
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+function bounded(promise,timeoutMs,description,onTimeout=()=>{}) {
+  return new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>{
+      try{onTimeout();}finally{
+        reject(new Error(description+" exceeded "+timeoutMs+"ms"));
+      }
+    },timeoutMs);
+    promise.then(value=>{clearTimeout(timer);resolve(value);},
+      error=>{clearTimeout(timer);reject(error);});
+  });
+}
 
 function newWorker(ctx,name,offset=0) {
   assert.ok(["worker-A","worker-B"].includes(name));
@@ -83,10 +94,8 @@ function newWorker(ctx,name,offset=0) {
   }
   async function kill(signal="SIGKILL") {
     if(!done)proc.kill(signal);
-    return Promise.race([
-      exited,
-      delay(10000).then(()=>{throw new Error("Worker OS process did not terminate: "+name);})
-    ]);
+    return bounded(exited,10000,"Worker process termination: "+name,
+      ()=>{if(!done)proc.kill("SIGKILL");});
   }
   return {ready,request,kill,pid:proc.pid,get exited(){return exited;}};
 }
@@ -174,9 +183,8 @@ async function outboxBarrier(ctx,eventId){
     if(released)return;
     released=true;
     proc.stdin.end("SELECT pg_advisory_unlock(hashtextextended("+key+",0));\n");
-    await Promise.race([completed,delay(12000).then(()=>{
-      proc.kill("SIGKILL");throw new Error("Outbox barrier release timeout");
-    })]);
+    await bounded(completed,12000,"Outbox barrier release",
+      ()=>proc.kill("SIGKILL"));
   };
 }
 async function blockedOnOutbox(ctx,atLeast){
