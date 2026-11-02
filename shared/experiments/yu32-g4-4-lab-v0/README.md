@@ -57,7 +57,7 @@ The runner must always attempt project-scoped `docker compose down -v --remove-o
 
 ## Implemented Lab probes — no 40/40 claim
 
-The current opt-in subset attempts: PG16/isolated network preflight; G44-T03, T05, T06, T07, T08 (**DB portion**), T10, T14, T15/T16, T18 (**synthetic epoch only**), T25/T37 (**effective NOLOGIN role permissions only**), T27, T29, T34, and T35. It checks CREATE/JOINED/CONFLICT with independent `psql` sessions, Scope `NULLS NOT DISTINCT`, one active Job, same-transaction budget/idempotency/outbox, lease fencing, revocation and monotonic public latest pointer.
+The current opt-in subset attempts: PG16/isolated network preflight; G44-T03, T04 (**private-tenant CHECK only**), T05, T06, T07 (**two PostgreSQL connections verified blocked on one advisory-lock barrier**), T08 (**DB portion**), T10, T14, T15/T16, T18 (**synthetic epoch only**), T25/T37 (**effective NOLOGIN role permissions only**), T27, T29, T34, and T35. It checks CREATE/JOINED/CONFLICT with independent `psql` sessions, Scope `NULLS NOT DISTINCT`, one active Job, same-transaction budget/idempotency/outbox, lease fencing, revocation and monotonic public latest pointer.
 
 **Not implemented or not covered end-to-end:** the other 40-case G4-4 matrix entries, robust Redis integration, HTTP 409/response-loss E2E, full failure/refund ledger, backoff/serializable retry, real server/CSRF/BOLA/restore fencing, process crash reattachment outside simulated lease expiration, and source usage compliance. Node static tests do not execute PG16; even an opt-in Lab PASS must never be labeled production authorization, external exactly-once or complete G44-P1~P5 acceptance.
 
