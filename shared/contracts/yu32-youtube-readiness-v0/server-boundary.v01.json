@@ -1,0 +1,103 @@
+{
+  "version": "YU32_G4_5_SERVER_COLLECTOR_BOUNDARY_V01",
+  "status": "OFFLINE_ARCHITECTURE_PROPOSAL",
+  "approval": {
+    "backendOnlyDirection": true,
+    "cloudRuntimeProvisioning": false,
+    "cloudSpend": false,
+    "apiKeyCreation": false,
+    "enableNewCloudAPIs": false,
+    "liveCommentRead": false,
+    "derivedSentiment": false,
+    "prMerge": false
+  },
+  "runtime": {
+    "candidate": "CLOUD_RUN_JOB",
+    "execution": "MANUAL_IAM_OPERATOR_ONLY",
+    "inboundPublicService": false,
+    "publicEndpoint": false,
+    "deployed": false,
+    "scheduleEnabled": false,
+    "automaticRetries": 0,
+    "maxParallelRuns": 1
+  },
+  "worker": {
+    "source": "YOUTUBE",
+    "targetType": "VIDEO",
+    "maxVideos": 3,
+    "maxPagesPerVideo": 1,
+    "maxThreadsPerPage": 100,
+    "repliesEnabled": false,
+    "maxExternalRequests": 3,
+    "quotaUnitsPerCommentThreadsRequest": 1,
+    "maxPlannedQuotaUnitsWithoutErrors": 3,
+    "persistRawComments": false,
+    "logRawComments": false,
+    "writeProductionDatabase": false,
+    "publishSnapshots": false,
+    "runNlp": false
+  },
+  "credentials": {
+    "enabled": false,
+    "apiKeyCreated": false,
+    "oauthClientCreated": false,
+    "storageCandidate": "GOOGLE_SECRET_MANAGER",
+    "apiRestrictionService": "youtube.googleapis.com",
+    "applicationRestriction": "STATIC_PUBLIC_EGRESS_IP",
+    "ipRestrictionConfigured": false,
+    "secretCreated": false,
+    "secretValueInRepo": false,
+    "executableReadPath": false,
+    "requiresDedicatedRuntimeServiceAccount": true,
+    "serviceAccountCreated": false
+  },
+  "networking": {
+    "outboundRuntimeDefault": "DYNAMIC_IP_POOL",
+    "egressCandidate": "DIRECT_VPC_ALL_TRAFFIC_CLOUD_NAT_STATIC_IP",
+    "vpcCreated": false,
+    "natCreated": false,
+    "reservedPublicIpCreated": false,
+    "staticIpObserved": false,
+    "sourceIpTested": false,
+    "estimateApproved": false
+  },
+  "projectEvidence": {
+    "reportedDedicatedProject": true,
+    "userScreenshotApiEnabled": true,
+    "userScreenshotQuotaPerDay": 10000,
+    "userScreenshotCurrentUsage": 0,
+    "projectIdVisibleInQuotaScreenshot": false,
+    "projectOwnerIndependentlyVerified": false,
+    "credentialsListScreenshotEmpty": true,
+    "providerPolicyApprovalVerified": false,
+    "verifiedGateCount": 0
+  },
+  "referenceBackend": {
+    "branch": "feat/backend-bootstrap",
+    "commit": "7e24bb90058d717226315f4f921aa04535747775",
+    "javaToolchain": 21,
+    "springBoot": "4.0.9",
+    "existingDefaultDataSourceReadOnly": true,
+    "existingUnknownRoutesDenyAll": true,
+    "existingBackendModifiedByThisProposal": false
+  },
+  "gates": {
+    "basicSourceUse": "POLICY_HOLD",
+    "derivedMetrics": "POLICY_HOLD",
+    "rawLifecycle": "NOT_IMPLEMENTED",
+    "firstLiveCall": "NOT_APPROVED",
+    "productionAuthorization": "NOT_APPROVED",
+    "cloudResourceCost": "NOT_APPROVED"
+  },
+  "externalRequestsMade": 0,
+  "productionChangesMade": 0,
+  "firstPhaseSupersession": {
+    "approvedDirection": "WINDOWS_LOCAL_BACKEND_FIRST",
+    "currentFirstPhase": "WINDOWS_LOCAL_OFFLINE_CLI",
+    "firstPhaseManifest": "windows-local-boundary.v01.json",
+    "cloudRunJobRequiredForFirstPoC": false,
+    "cloudRuntimeRole": "L3_OPTIONAL_FUTURE_OPERATION_ONLY",
+    "cloudSpendApproved": false,
+    "liveYouTubeCallApproved": false
+  }
+}
