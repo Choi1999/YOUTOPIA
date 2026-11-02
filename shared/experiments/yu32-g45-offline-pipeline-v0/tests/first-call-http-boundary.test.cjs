@@ -179,3 +179,39 @@ test("G45-L120: policy gates are still zero-verified and forbid real reads",()=>
   assert.equal(p.derivedSentimentAuthorized,false);
   assert.equal(p.externalDataCollected,false);
 });
+
+test("G45-L121: spoofed synthetic labels cannot launder arbitrary comment text",()=>{
+  const v=JSON.parse(fixture("partial").body);
+  v.response.items[0].snippet.topLevelComment.snippet.textOriginal=
+    "Unreviewed real comment presented with fake fixture flags";
+  assert.equal(v.isSynthetic,true);
+  assert.equal(v.sourceType,"STATIC_FIXTURE");
+  blocked(()=>decodeSyntheticHttpEnvelope({
+    statusCode:200,contentType:"application/json",body:JSON.stringify(v)
+  },ID));
+});
+test("G45-L122: modified author/metadata cannot be hidden inside fixture wrapper",()=>{
+  const v=JSON.parse(fixture("ready").body);
+  v.response.items[0].snippet.topLevelComment.snippet.authorDisplayName="Unapproved author";
+  blocked(()=>decodeSyntheticHttpEnvelope({
+    statusCode:200,contentType:"application/json",body:JSON.stringify(v)
+  },ID));
+});
+test("G45-L123: statusCode accessor is rejected BEFORE executing getter",()=>{
+  let executed=false;
+  const envelope={};
+  Object.defineProperty(envelope,"statusCode",{
+    enumerable:true,get(){executed=true;return 200;}
+  });
+  blocked(()=>decodeSyntheticHttpEnvelope(envelope,ID));
+  assert.equal(executed,false);
+});
+test("G45-L124: successful response body accessor is rejected before execution",()=>{
+  const envelope=fixture("partial");
+  let executed=false;
+  Object.defineProperty(envelope,"body",{
+    enumerable:true,get(){executed=true;return "sensitive raw data";}
+  });
+  blocked(()=>decodeSyntheticHttpEnvelope(envelope,ID));
+  assert.equal(executed,false);
+});

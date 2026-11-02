@@ -2,6 +2,13 @@
 /* G45-L1: an offline HTTP envelope boundary. NO network, keys or storage. */
 const {descriptors,classifyOfflineProviderError}=require("./local-source-adapter.cjs");
 const {buildSyntheticSnapshot}=require("./pipeline.cjs");
+// Canonical known-good checked-in fixtures only: user-supplied provenance labels
+// are never sufficient to allow a new arbitrary payload through this boundary.
+const KNOWN_FIXTURES=new Set([
+  JSON.stringify(require("../fixtures/partial.json")),
+  JSON.stringify(require("../fixtures/ready.json")),
+  JSON.stringify(require("../fixtures/empty.json"))
+]);
 const gates=require("../../../contracts/yu32-youtube-readiness-v0/policy-gates.json");
 const MAX_BYTES=512*1024;
 function reject(code){
@@ -46,13 +53,16 @@ function planHttpFirstPage(options){
 function decodeSyntheticHttpEnvelope(envelope,videoId){
   hold();
   if(!envelope||Object.getPrototypeOf(envelope)!==Object.prototype||
-     !Number.isInteger(envelope.statusCode)||
      typeof videoId!=="string"||!/^[A-Za-z0-9_-]{11}$/.test(videoId))
     reject("ENVELOPE");
+  // Inspect own data-property descriptors BEFORE reading values to avoid
+  // executing a caller-provided getter during validation.
   const allowed=["statusCode","contentType","body","reason"];
   if(Reflect.ownKeys(envelope).some(k=>typeof k!=="string"||
       !allowed.includes(k)||!Object.hasOwn(
-        Object.getOwnPropertyDescriptor(envelope,k),"value")))
+        Object.getOwnPropertyDescriptor(envelope,k),"value"))||
+     !Object.hasOwn(envelope,"statusCode")||
+     !Number.isInteger(envelope.statusCode))
     reject("UNEXPECTED_FIELD");
   if(envelope.statusCode!==200){
     if(Object.hasOwn(envelope,"body")||
@@ -80,6 +90,11 @@ function decodeSyntheticHttpEnvelope(envelope,videoId){
      parsed.sourceType!=="STATIC_FIXTURE"||parsed.isSynthetic!==true||
      parsed.providerRequestsMade!==0||parsed.apiKeyUsed!==false||
      parsed.videoId!==videoId)reject("UNTRUSTED_PROVENANCE");
+  // A real API payload relabeled as a synthetic fixture MUST NOT be analyzed.
+  // JSON.parse produces plain data; compare its canonical serialization to
+  // the three reviewed, repo-controlled fixture bodies, without any secrets.
+  if(!KNOWN_FIXTURES.has(JSON.stringify(parsed)))
+    reject("NON_BUNDLED_RESPONSE_FORBIDDEN");
   let result;
   try {result=buildSyntheticSnapshot(parsed);}
   catch {reject("INVALID_SYNTHETIC_RESPONSE");}

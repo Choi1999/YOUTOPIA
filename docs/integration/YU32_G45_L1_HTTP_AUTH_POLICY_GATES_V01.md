@@ -18,6 +18,8 @@
 2. [Google Cloud API 키 보안](https://docs.cloud.google.com/docs/authentication/api-keys)은 API별 지원 상황에 따라 키 제한·사용 방법을 안내하며 `x-goog-api-key` HTTP 헤더 방식이 일반 Google API에서 사용된다.
 3. 기존 G45 소스 계획은 `x-goog-api-key`를 사용한다는 가정이지만, **해당 헤더가 YouTube Data API v3 `commentThreads.list`에서 지원된다는 공식 근거/실증은 미확인**이다.
 
+**검수 보강:** 기존 요청 Descriptor에 하드코딩됐던 `credentialHeaderName=x-goog-api-key`는 구현 근거로 오인될 수 있어 `null`로 변경하고 `authMode=UNVERIFIED_YOUTUBE_SPECIFIC`를 명시했다. 실제 API 인증 형식은 계속 미승인이다.
+
 **판정:** `AUTH_MODE_UNVERIFIED`. 불확실한 헤더 방식을 실요청에 연결하지 않는다. OAuth Bearer 방식은 문서화돼 있으나 OAuth 애플리케이션 생성 및 사용자 인증 권한은 미승인. API 키 쿼리 방식은 URL/프록시/로그에 키가 노출될 위험이 있으므로 URL 로깅 금지, 접근제어 및 비밀관리와 함께 별도 보안 검토가 필요하다. 공식 문서 확인 없이 단순히 헤더 사용을 전제한 코드를 활성화하지 않는다.
 
 ## 3. 정책 및 개인정보 Gate
@@ -32,7 +34,7 @@ YouTube [Developer Policies](https://developers.google.com/youtube/terms/develop
 
 | 단계 | 실시 가능한 일 | 금지/미확인 |
 |---|---|---|
-| L1-A | HTTP 요청 형식·최대 크기·상태 코드·오류 매핑을 **합성 데이터로만** 확인 | 실제 네트워크, 비밀키 입력 |
+| L1-A | HTTP 요청 형식·최대 크기·상태 코드·오류 매핑을 **저장소에 포함된 합성 Fixture 3종으로만** 확인. 응답 객체의 출처 주장만으로 임의 텍스트 처리를 허용하지 않음 | 실제 네트워크, 비밀키 입력 |
 | L1-B | YouTube 전용 인증 방식·Cloud 프로젝트/키/IP 제한·보안 저장소의 증거 검토 | 단순 Boolean으로 승인 위조 |
 | L1-C | 댓글 원문 비저장 및 관리자 수동삭제/자동만료·삭제 요청 전파 설계·검수 | 운영 데이터 저장 |
 | L1-D | 1~3회 실제 첫 호출에 대한 **새로운 명시적 승인** 이후 제한적 수집 실행 | 암묵적 승인·자동 실행 |

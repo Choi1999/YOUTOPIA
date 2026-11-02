@@ -71,11 +71,11 @@ These descriptors and 22 synthetic tests prepare a future separate HTTP adapter 
 
 ## G45-L1 locked HTTP envelope (first-call preparation)
 
-The pure Node 24 module \`src/first-call-http-boundary.cjs\` constructs **fixed HTTPS GET plans** for 1–3 canonical VIDEO IDs, validates HTTP status/content-type/body-byte limits against **synthetic-only** API-shaped fixtures and sanitizes outputs. No runtime HTTPS dispatcher, credential vault access, actual YouTube response, external proxy, file writes or automatic retries are present. \`executeLiveFirstCall\` always fails closed with \`G45_L1_BLOCKED\` regardless of caller-provided approval flags.
+The pure Node 24 module `src/first-call-http-boundary.cjs` constructs **fixed HTTPS GET plans** for 1–3 canonical VIDEO IDs, validates HTTP status/content-type/body-byte limits against the **three canonical, repository-bundled synthetic fixtures only** and sanitizes outputs. A caller cannot authorize arbitrary real comment text by merely setting `sourceType=STATIC_FIXTURE` or `isSynthetic=true`. No runtime HTTPS dispatcher, credential vault access, actual YouTube response, external proxy, file writes or automatic retries are present. `executeLiveFirstCall` always fails closed with `G45_L1_BLOCKED` regardless of caller-provided approval flags.
 
-This is **NOT** a functioning live YouTube collector: \`sourceType=STATIC_FIXTURE\`, \`providerRequestsMade=0\`, \`POLICY_HOLD\` and an unverified authentication mode are retained. Only after an independent provider-policy/secret-store/IP/retention/first-call approval review may a separate, restricted outbound transport be implemented and tested.
+This is **NOT** a functioning live YouTube collector: `sourceType=STATIC_FIXTURE`, `providerRequestsMade=0`, `POLICY_HOLD` and an unverified authentication mode are retained. Only after an independent provider-policy/secret-store/IP/retention/first-call approval review may a separate, restricted outbound transport be implemented and tested.
 
-See [L1 HTTPS/auth/policy review](../../../docs/integration/YU32_G45_L1_HTTP_AUTH_POLICY_GATES_V01.md). GitHub Actions runs the new 20 offline HTTP boundary tests with the existing G45 suite.
+See [L1 HTTPS/auth/policy review](../../../docs/integration/YU32_G45_L1_HTTP_AUTH_POLICY_GATES_V01.md). GitHub Actions runs the 24 offline HTTP boundary tests with the existing G45 suite.
 
 ## Required prior-to-live gates
 
