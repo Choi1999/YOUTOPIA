@@ -1,0 +1,34 @@
+name: G45 Windows local-source adapter offline-only
+
+on:
+  pull_request:
+    branches:
+      - feature/yu32-g45-offline-collector-analysis-pipeline-v01
+
+permissions:
+  contents: read
+
+jobs:
+  g45-offline-source-contract:
+    name: G45 synthetic source-contract and privacy checks (Node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Syntax-check contract and existing offline pipeline
+        run: |
+          node --check shared/experiments/yu32-g45-offline-pipeline-v0/src/local-source-adapter.cjs
+          node --check shared/experiments/yu32-g45-offline-pipeline-v0/src/ingest.cjs
+          node --check shared/experiments/yu32-g45-offline-pipeline-v0/src/pipeline.cjs
+          node --check shared/experiments/yu32-g45-offline-pipeline-v0/src/admin-purge.cjs
+      - name: Execute all G45 synthetic-only tests (no provider API)
+        run: |
+          node --test shared/experiments/yu32-g45-offline-pipeline-v0/tests/*.test.cjs
+      - name: Confirm non-live examples and deny unsafe execution
+        run: |
+          node shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-offline.cjs --check
+          node shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-offline.cjs --demo partial > /dev/null
+          node shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-admin-purge-demo.cjs --check
