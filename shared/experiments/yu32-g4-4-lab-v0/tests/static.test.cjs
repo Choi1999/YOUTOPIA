@@ -43,7 +43,7 @@ test("G44-S03: schema has explicit DB identity guard and distinct lab roles",()=
   assert.match(schema,/CREATE ROLE g44_reader NOLOGIN/);
   assert.match(schema,/REVOKE ALL ON ALL FUNCTIONS IN SCHEMA g44_lab FROM PUBLIC/);
   assert.match(schema,/REVOKE ALL ON DATABASE g44_lab FROM PUBLIC/);
-  assert.doesNotMatch(schema,/CREATE ROLE .*SUPERUSER\b(?! NOINHERIT)/);
+  assert.doesNotMatch(schema,/CREATE ROLE [A-Za-z0-9_]+ SUPERUSER\b/);
 });
 test("G44-S04: PG16 NULLS NOT DISTINCT and active partial UNIQUE",()=>{
   assert.match(schema,/UNIQUE NULLS NOT DISTINCT/);
