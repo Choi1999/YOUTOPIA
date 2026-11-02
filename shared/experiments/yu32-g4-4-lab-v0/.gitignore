@@ -1,0 +1,8 @@
+evidence/
+*.log
+*.env
+.env*
+*.db
+*.dump
+pgdata/
+node_modules/
