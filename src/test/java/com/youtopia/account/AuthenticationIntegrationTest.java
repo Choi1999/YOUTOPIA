@@ -839,7 +839,7 @@ class AuthenticationIntegrationTest {
         var second=b.get("/api/v1/games?sort=name&size=1&page=1",200);assertThat(second.path("content").get(0).path("steamAppId").asLong()).isEqualTo(570);
         var detail=b.get("/api/v1/games/steam:570",200);
         assertThat(detail.at("/game/currentCcu/value").asLong(-1)).isZero();assertThat(detail.at("/game/peak24h/value").asLong(-1)).isZero();
-        assertThat(detail.at("/game/newYoutubeVideos/availability").asText()).isEqualTo("UNAVAILABLE");assertThat(detail.at("/steamPreview/days").asInt()).isEqualTo(30);
+        assertThat(detail.at("/game/newYoutubeVideos/availability").asText()).isEqualTo("PENDING_CONTRACT");assertThat(detail.at("/steamPreview/days").asInt()).isEqualTo(30);
         assertThat(b.get("/api/v1/games?q=100%_literal",200).path("content").size()).isEqualTo(1);
         assertThat(b.get("/api/v1/games?page=2147483647",200).path("content").size()).isZero();
         b.get("/api/v1/games/steam:999",404);b.get("/api/v1/games/steam:4294967296",400);
@@ -1068,6 +1068,74 @@ class AuthenticationIntegrationTest {
         guest.signup();guest.login();guest.get("/api/v1/me/settings",200);
         guest.post("/api/v1/auth/logout",Map.of(),204);
         guest.get("/api/v1/auth/me",401);guest.get("/api/v1/me/settings",401);guest.get("/api/v1/games",200);
+    }
+
+    @Test void trackingUnknownAndHistoricalDataStayIndependentOfPeriodAndActivation()throws Exception {
+        gameFixtures();var guest=new Browser();
+        try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var q=c.createStatement()){
+            q.execute("ALTER TABLE service.game_catalog_fixture ALTER COLUMN steam_tracked DROP NOT NULL");
+            q.execute("UPDATE service.game_catalog_fixture SET steam_tracked=null WHERE app_id=900");
+            q.execute("UPDATE collector.ccu_fixture SET scheduled_at=scheduled_at-interval '40 days',observed_at=observed_at-interval '40 days' WHERE app_id=730");
+            var old=guest.get("/api/v1/games/steam:730",200);
+            assertThat(old.at("/game/steamConnection").asText()).isEqualTo("UNAVAILABLE");
+            assertThat(old.at("/game/currentCcu/value").asLong()).isEqualTo(200);
+            assertThat(old.at("/game/evidence/steam").asText()).isEqualTo("HISTORICAL_ONLY");
+            assertThat(old.at("/steamPreview/dataStatus").asText()).isEqualTo("EMPTY");
+            var unknown=guest.get("/api/v1/games?connectionStatus=UNKNOWN",200);
+            assertThat(unknown.path("content")).hasSize(1);assertThat(unknown.at("/content/0/steamConnection").asText()).isEqualTo("UNKNOWN");
+            assertThat(guest.get("/api/v1/games?connectionStatus=UNAVAILABLE",200).path("content")).hasSize(1);
+            q.execute("UPDATE service.game_catalog_fixture SET steam_tracked=true WHERE app_id=730");
+            assertThat(guest.get("/api/v1/games/steam:730",200).at("/game/evidence/steam").asText()).isEqualTo("HISTORICAL_ONLY");
+            q.execute("UPDATE service.game_catalog_fixture SET steam_tracked=false WHERE app_id=900");
+            q.execute("ALTER TABLE service.game_catalog_fixture ALTER COLUMN steam_tracked SET NOT NULL");
+        }
+    }
+    @Test void publicationsDeduplicateQueriesUseKstPublicationDatesAndDoNotConfuseMissingAccessWithZero()throws Exception {
+        // PostgreSQL stores microseconds. Keep the exact upper-bound fixture representable.
+        clock.now=clock.now.truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        gameFixtures();var guest=new Browser();
+        String path="/api/v1/games/steam:570/youtube-publications?days=7";
+        var pending=guest.get(path,200);assertThat(pending.path("dataStatus").asText()).isEqualTo("PENDING_CONTRACT");assertThat(pending.path("videos").isNull()).isTrue();
+        try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var q=c.createStatement()){
+            q.execute("CREATE TABLE service.publication_fixture(app_id bigint,video_id text,title text,published_at timestamptz,first_observed_at timestamptz,last_observed_at timestamptz)");
+            q.execute("CREATE VIEW service.v_game_published_video AS SELECT * FROM service.publication_fixture");
+            assertThat(guest.get(path,200).path("dataStatus").asText()).isEqualTo("PERMISSION_UNCONFIRMED");
+            q.execute("GRANT SELECT ON service.v_game_published_video TO ytp_test_data_ro");
+            var today=clock.now.atZone(ZoneId.of("Asia/Seoul")).toLocalDate();var boundary=today.minusDays(6).atStartOfDay(ZoneId.of("Asia/Seoul")).toInstant();
+            try(var insert=c.prepareStatement("INSERT INTO service.publication_fixture VALUES(570,?,?,?,?,?)")){
+                String[] ids={"abcdefghijk","abcdefghijk","bbbbbbbbbbb","ccccccccccc","ddddddddddd","eeeeeeeeeee","fffffffffff"};
+                Instant[] publications={boundary,boundary,boundary.minusNanos(1000),null,clock.now,clock.now.plusSeconds(1),clock.now};
+                for(int n=0;n<ids.length;n++){insert.setString(1,ids[n]);insert.setString(2,n==0?"<script>alert(1)</script>":null);insert.setTimestamp(3,publications[n]==null?null:Timestamp.from(publications[n]));
+                    insert.setTimestamp(4,Timestamp.from(n==6?clock.now.plusSeconds(1):clock.now.minusSeconds(1)));insert.setTimestamp(5,Timestamp.from(clock.now));insert.executeUpdate();}
+            }
+            var result=guest.get(path+"&date="+today.minusDays(6)+"&size=1",200);
+            assertThat(result.path("points")).hasSize(7);assertThat(result.at("/points/0/observedVideos").asLong()).isEqualTo(1);
+            assertThat(result.at("/videos/page/totalElements").asLong()).isEqualTo(1);assertThat(result.path("missingPublishedAt").asLong()).isEqualTo(1);
+            assertThat(result.at("/points/6/observedVideos").asLong()).isEqualTo(1);assertThat(result.at("/points/6/inProgress").asBoolean()).isTrue();
+            assertThat(result.path("coverage").asText()).isEqualTo("UNASSESSED");
+            assertThat(guest.get("/api/v1/games/steam:570",200).path("youtubePreviewAvailability").asText()).isEqualTo("AVAILABLE");
+            assertThat(guest.get(path+"&date="+today.minusDays(6)+"&page=1&size=1",200).at("/videos/content")).isEmpty();
+            guest.get(path+"&date="+today.minusDays(7),400);guest.get(path+"&size=101",400);guest.get(path+"&date=not-a-date",400);
+            q.execute("REVOKE SELECT ON service.v_game_published_video FROM ytp_test_data_ro");
+            assertThat(guest.get(path,200).path("dataStatus").asText()).isEqualTo("PERMISSION_UNCONFIRMED");
+        }finally{try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var q=c.createStatement()){q.execute("DROP VIEW IF EXISTS service.v_game_published_video");q.execute("DROP TABLE IF EXISTS service.publication_fixture");}}
+    }
+    @Test void evidenceSortingIsGlobalStableAcrossPagesAndUsesZeroObservationAndInclusivePeriod()throws Exception {
+        gameFixtures();var guest=new Browser();
+        try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var q=c.createStatement()){
+            q.execute("CREATE TABLE service.publication_fixture(app_id bigint,video_id text,title text,published_at timestamptz,first_observed_at timestamptz,last_observed_at timestamptz)");
+            q.execute("CREATE VIEW service.v_game_published_video AS SELECT * FROM service.publication_fixture");q.execute("GRANT SELECT ON service.v_game_published_video TO ytp_test_data_ro");
+            q.execute("INSERT INTO service.game_catalog_fixture(app_id,steam_name,steam_tracked) VALUES(1000,'Old',false),(1001,'Absent',true),(1002,'Tie',false),(1003,'Tie',false)");
+            try(var insert=c.prepareStatement("INSERT INTO service.publication_fixture VALUES(570,'abcdefghijk',null,?,?,?)")){for(int n=1;n<=3;n++)insert.setTimestamp(n,Timestamp.from(clock.now.minusSeconds(60)));insert.executeUpdate();}
+            try(var insert=c.prepareStatement("INSERT INTO collector.ccu_fixture VALUES(100,null,1000,?,?,1),(101,null,1002,?,?,0),(102,null,1003,?,?,0)")){
+                for(int n=1;n<=6;n++)insert.setTimestamp(n,Timestamp.from(clock.now.minusSeconds(n<=2?40*86400L:7*86400L)));insert.executeUpdate();}
+            var first=guest.get("/api/v1/games?days=7&size=1",200);assertThat(first.at("/content/0/steamAppId").asLong()).isEqualTo(570);
+            assertThat(first.at("/content/0/evidence/group").asInt()).isEqualTo(1);assertThat(first.at("/content/0/currentCcu/value").asLong(-1)).isZero();
+            var ids=new ArrayList<Long>();for(int page=0;page<7;page++)ids.add(guest.get("/api/v1/games?days=7&size=1&page="+page,200).at("/content/0/steamAppId").asLong());
+            assertThat(ids).containsExactly(570L,730L,1002L,1003L,1000L,900L,1001L);
+            var boundary=guest.get("/api/v1/steam/apps/1002/ccu?days=7",200);assertThat(boundary.path("points")).hasSize(1);
+            assertThat(guest.get("/api/v1/games/steam:1001",200).at("/game/evidence/steam").asText()).isEqualTo("EMPTY");
+        }finally{try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var q=c.createStatement()){q.execute("DROP VIEW IF EXISTS service.v_game_published_video");q.execute("DROP TABLE IF EXISTS service.publication_fixture");}}
     }
 
 }

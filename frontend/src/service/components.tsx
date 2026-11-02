@@ -117,12 +117,15 @@ export const time = (value: string | null | undefined) =>
     ? new Date(value).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) +
       " KST"
     : "관측 시각 없음";
-export function metric(value: Metric | undefined) {
-  return !value || value.availability === "UNAVAILABLE"
-    ? "데이터 미지원"
-    : value.availability === "EMPTY"
-      ? "관측 없음"
-      : number(value.value);
+export function trackingLabel(status: string | null | undefined) {
+  return status === "CONNECTED" ? "현재 추적 활성" : status === "UNAVAILABLE" ? "현재 활성 표시 없음" : "추적 상태 미확인";
+}
+export function metric(value: Metric | undefined, emptyLabel = "관측 없음") {
+  if (!value) return "상태 미확인";
+  if (value.availability === "UNAVAILABLE") return "데이터 미지원";
+  if (value.availability === "EMPTY") return emptyLabel;
+  if (value.availability !== "AVAILABLE" || value.value === null || !Number.isFinite(value.value)) return "상태 미확인";
+  return number(value.value);
 }
 export function Unavailable({
   title,
@@ -159,7 +162,7 @@ export function ObservedChart({
   const current = values[Math.min(index, values.length - 1)];
   if (!values.length)
     return (
-      <Unavailable title={title} reason="비교할 실제 관측점이 없습니다." />
+      <section className="trend-chart-panel"><h2>{title}</h2><p className="chart-caption">{points.length ? "관측 상태 미확인 · 유효한 관측점을 확인할 수 없습니다." : "선택 기간 관측 없음 · 비교할 실제 관측점이 없습니다."}</p></section>
     );
   const start = Date.parse(values[0].at),
     span = Math.max(1, Date.parse(values.at(-1)!.at) - start),

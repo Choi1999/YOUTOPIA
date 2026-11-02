@@ -6,6 +6,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
+import { GamePublications } from "./GamePublications";
 import { InsightMetricGrid } from "../features/project-insights/InsightMetricGrid";
 import { serviceApi, errorText, type Listing } from "./api";
 import { usePageView, useInteractionEvents } from "./Activity";
@@ -17,6 +18,7 @@ import {
   Unavailable,
   useResource,
   metric,
+  trackingLabel,
   time,
 } from "./components";
 export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
@@ -47,7 +49,7 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
       (params.get(key) ??
         (
           {
-            sort: "name",
+            sort: "dataAvailable",
             direction: "ASC",
             platform: "ALL",
             connectionStatus: "ALL",
@@ -66,7 +68,7 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
         type: "SORT_CHANGED",
         action: "games.sort.change",
         properties: {
-          sortKey: next.get("sort") ?? "name",
+          sortKey: next.get("sort") ?? "dataAvailable",
           direction: next.get("direction") ?? "ASC",
         },
       });
@@ -90,10 +92,11 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
         q,
         page: 0,
         size: Number(params.get("size") ?? 20),
-        sort: params.get("sort") ?? "name",
+        sort: params.get("sort") ?? "dataAvailable",
         direction: params.get("direction") ?? "ASC",
         platform: params.get("platform") ?? "ALL",
         connectionStatus: params.get("connectionStatus") ?? "ALL",
+        days: Number(params.get("days") ?? 30),
       });
       setOverride({ key: next.toString(), data });
       setRevision((n) => n + 1);
@@ -164,18 +167,20 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
             onChange={(e) => change("connectionStatus", e.target.value)}
           >
             <option value="ALL">전체</option>
-            <option value="CONNECTED">Steam 수집 대상</option>
-            <option value="UNAVAILABLE">수집 대상 아님</option>
+            <option value="CONNECTED">현재 추적 활성</option>
+            <option value="UNAVAILABLE">현재 활성 표시 없음</option>
+            <option value="UNKNOWN">추적 상태 미확인</option>
           </select>
         </label>
         <label>
           정렬
           <select
-            value={params.get("sort") ?? "name"}
+            value={params.get("sort") ?? "dataAvailable"}
             onChange={(e) => change("sort", e.target.value)}
           >
+            <option value="dataAvailable">데이터 있는 게임 우선</option>
             <option value="name">게임명</option>
-            <option value="currentCcu">현재 관측 CCU</option>
+            <option value="currentCcu">마지막 관측 CCU</option>
             <option value="peak24h">24시간 최고 CCU</option>
             <option value="lastObservedAt">최근 관측 시각</option>
           </select>
@@ -183,6 +188,7 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
         <label>
           방향
           <select
+            disabled={(params.get("sort") ?? "dataAvailable") === "dataAvailable"}
             value={params.get("direction") ?? "ASC"}
             onChange={(e) => change("direction", e.target.value)}
           >
@@ -190,7 +196,9 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
             <option value="DESC">내림차순</option>
           </select>
         </label>
+        <label>데이터 판정 기간<select value={params.get("days") ?? "30"} onChange={e=>change("days",e.target.value)}><option value="7">최근 7일</option><option value="30">최근 30일</option></select></label>
       </form>
+      <p className="chart-caption">데이터 우선은 인기·트렌드 순위가 아닙니다. 판정 기간 {params.get("days") ?? 30}일 · CCU는 관측 슬롯, YouTube는 한국 시간 게시일 기준입니다. 양쪽 → 한쪽 → 과거 데이터 → 확인된 데이터 없음 순이며, 일부 원천 미확인 게임은 부분 판정으로 표시합니다.</p>
       {Boolean(failure) && <p role="alert">{errorText(failure)}</p>}
       <StatePanel
         loading={resource.loading || busy}
@@ -225,7 +233,7 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
                     <tr>
                       <th>게임</th>
                       <th>연결 / 개발사</th>
-                      <th>현재 CCU</th>
+                      <th>마지막 관측 CCU</th>
                       <th>24시간 최고</th>
                       <th>신규 영상</th>
                       <th>최근 관측</th>
@@ -263,9 +271,9 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
                             <small>Steam {game.steamAppId}</small>
                           </td>
                           <td>
-                            {game.steamConnection === "CONNECTED"
-                              ? "Steam 연결"
-                              : "수집 대상 아님"}
+                            {trackingLabel(game.steamConnection)}
+                            <small>Steam: {game.evidence?.steam === "IN_PERIOD" ? "기간 내 관측 있음" : game.evidence?.steam === "HISTORICAL_ONLY" ? "과거 관측 있음" : game.evidence?.steam === "EMPTY" ? "관측 없음" : "미확인"}</small>
+                            <small>YouTube: {game.evidence?.youtube === "IN_PERIOD" ? "기간 내 게시 영상 있음" : game.evidence?.youtube === "HISTORICAL_ONLY" ? "과거 게시 영상 있음" : game.evidence?.youtube === "EMPTY" ? "관측한 게시 영상 없음" : "미확인"} · {game.evidence?.completeness === "COMPLETE" ? "전체 판정" : "부분 판정"}</small>
                             <small>
                               {game.developers.value?.length
                                 ? game.developers.value.join(", ")
@@ -397,28 +405,27 @@ export function GameDetailPage() {
               ? time(data.game.releaseAt.value)
               : "출시일 정보 없음"}{" "}
             · Steam{" "}
-            {data.game.steamConnection === "CONNECTED"
-              ? "연결"
-              : "수집 대상 아님"}{" "}
+            {trackingLabel(data.game.steamConnection)}{" "}
             · YouTube{" "}
-            {data.game.youtubeConnection === "CONNECTED" ? "연결" : "미지원"}
+            {data.game.youtubeConnection === "CONNECTED" ? "검색어 연결" : "연결 상태 미확인"}
           </p>
+          <p className="chart-caption">현재 활성 표시가 없어도 과거 관측은 유지됩니다. 비활성·대상 미등록 여부는 이 정보만으로 구분할 수 없습니다. 추적 활성은 최근 수집 성공을 뜻하지 않습니다.</p>
           <InsightMetricGrid
             metrics={[
               {
-                label: "현재 관측 CCU",
-                value: metric(data.game.currentCcu),
+                label: "마지막 관측 CCU",
+                value: metric(data.game.currentCcu,"기준 시각까지 관측 없음"),
                 note: time(data.game.currentCcu.observedAt),
               },
               {
                 label: "24시간 최고 CCU",
-                value: metric(data.game.peak24h),
+                value: metric(data.game.peak24h,"최근 24시간 관측 없음"),
                 note: "실제 관측값 기준",
               },
               {
                 label: "신규 YouTube 영상",
                 value: metric(data.game.newYoutubeVideos),
-                note: "집계 기준 확정 전",
+                note: "최근 30일 한국 시간 게시일 · 검색으로 관측한 영상",
               },
               {
                 label: "댓글 / Steam 리뷰",
@@ -450,8 +457,9 @@ export function GameDetailPage() {
               YouTube 관측 →
             </Link>
           </nav>
+          <GamePublications gameId={gameId} />
           <Unavailable
-            title="YouTube 활동 · 리뷰 · 관련 이벤트"
+            title="리뷰 · 관련 이벤트"
             reason="승인된 원천이 연결되면 실제 관측값을 표시합니다."
           />
         </>

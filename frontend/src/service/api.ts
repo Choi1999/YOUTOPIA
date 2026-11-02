@@ -1,3 +1,5 @@
+export type Publications = {appId:number;days:number;asOf:string;timezone:string;dataStatus:string;coverage:string;missingPublishedAt:number|null;selectedDate:string;
+ points:{date:string;observedVideos:number;inProgress:boolean}[];videos:{content:{videoId:string;title:string|null;publishedAt:string|null;firstObservedAt:string}[];page:{number:number;size:number;totalElements:number;hasNext:boolean}}|null};
 export type Identity = {
   kind: "USER" | "ADMIN";
   id: string;
@@ -22,6 +24,7 @@ export type Game = {
   peak24h: Metric;
   newYoutubeVideos: Metric;
   freshness: string;
+  evidence?: {steam:string;youtube:string;completeness:string;days:number;group:number;latestDataAt:string|null};
 };
 export type Listing = {
   content: Game[];
@@ -377,6 +380,9 @@ export class ServiceApi {
       account,
       body: { expectedVersion: version, changes: { theme } },
     });
+  }
+  publications(gameId:string,params:URLSearchParams,signal?:AbortSignal){
+    return this.request<Publications>("/api/v1/games/"+encodeURIComponent(gameId)+"/youtube-publications?"+params,{signal});
   }
   async games(params: URLSearchParams, signal?: AbortSignal) {
     const value = await this.request<Listing>("/api/v1/games?" + params, {

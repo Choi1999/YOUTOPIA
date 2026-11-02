@@ -1,3 +1,4 @@
+import { GamePublications } from "./GamePublications";
 import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { serviceApi, ApiError, type RankPair } from "./api";
@@ -465,6 +466,14 @@ export function SteamChartsPage() {
   );
 }
 export function YoutubePage() {
+  const {gameId} = useParams();
+  return gameId ? <GameYoutubePage gameId={gameId}/> : <NativeYoutubePage/>;
+}
+function GameYoutubePage({gameId}:{gameId:string}) {
+  const context=useResource(gameId,s=>serviceApi.detail(gameId,s));
+  return <Frame title={context.data?context.data.game.name+" · YouTube":"YouTube 관측 분석"}><Link to={"/games/"+gameId}>← 게임 상세</Link><StatePanel loading={context.loading} error={context.error} retry={context.retry}/>{context.data&&<><p className="chart-caption">Steam 앱 ID {context.data.game.steamAppId} · 게임별 YouTube 연결 {context.data.game.youtubeConnection==="CONNECTED"?"연결됨":"미확인"}</p><GamePublications gameId={gameId}/></>}</Frame>;
+}
+function NativeYoutubePage() {
   const session = useSession();
   const { gameId } = useParams();
   const context = useResource(gameId ?? "native-video", (s) =>
@@ -531,6 +540,8 @@ export function YoutubePage() {
           reason="게임 관련성·영상 메타데이터 조회 연결이 준비되지 않았습니다."
         />
       </div>
+      <p className="chart-caption"><Link to="/games">게임 목록에서 게임을 선택해 일별 게시 영상 확인 →</Link></p>
+      <details><summary>보조 도구 · 영상별 통계 관측</summary>
       <form className="game-filters" onSubmit={submit}>
         <label>
           영상 ID
@@ -620,6 +631,7 @@ export function YoutubePage() {
           reason="승인된 게임-영상 연결이 없습니다."
         />
       )}
+      </details>
       <Unavailable
         title="12 · 조회 증가 가속도 계산 가능 비율"
         reason="관측 간격·최소 표본 정책 확정 전입니다. 0%를 뜻하지 않습니다."

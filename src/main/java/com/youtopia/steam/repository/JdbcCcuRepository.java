@@ -20,7 +20,8 @@ public class JdbcCcuRepository implements CcuRepository {
     @Override
     public List<CcuObservation> findObservations(long appId, Instant from, Instant to) {
         // Only the approved canonical view. Parameters never select SQL identifiers.
-        // Repeated observations of a slot resolve deterministically to the latest receipt.
+        // If the adapter returns multiple rows for a slot, choose its latest receipt.
+        // An upstream canonical view may already have selected a row; this cannot recover discarded RAW rows.
         var points = jdbc.query("""
             SELECT observation_id, scheduled_at, observed_at, player_count
               FROM (

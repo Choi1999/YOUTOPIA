@@ -33,7 +33,7 @@ public class EventCatalog {
         for(String key:keys){values.put(key,value(key,event.properties().get(key)));columns.put(key,COLUMNS.get(key));}
         if("GAME_VIEW".equals(event.eventType())&&"SEARCH_RESULT".equals(values.get("source"))&&(!keys.contains("searchContextId")||!keys.contains("resultPosition")))throw invalid();
         if("FILTER_CHANGED".equals(event.eventType())){
-            var accepted="platform".equals(values.get("filterKey"))?Set.of("ALL","STEAM","YOUTUBE"):Set.of("ALL","CONNECTED","UNAVAILABLE");
+            var accepted="platform".equals(values.get("filterKey"))?Set.of("ALL","STEAM","YOUTUBE"):Set.of("ALL","CONNECTED","UNAVAILABLE","UNKNOWN");
             if(!accepted.contains(values.get("filterValue")))throw invalid();
         }
         if(!"SEARCH_EXECUTED".equals(event.eventType())&&event.searchReceipt()!=null)throw invalid();
@@ -52,9 +52,9 @@ public class EventCatalog {
         Set<String> allowed=switch(key){
             case "routeKey"->Set.of("dashboard","game.list","game.detail","analysis.steam","analysis.youtube","analysis.reaction","analysis.keyword","analysis.event","settings");
             case "source"->Set.of("DIRECT","DASHBOARD","GAME_LIST","SEARCH_RESULT");
-            case "sortKey"->Set.of("name","currentCcu","peak24h","lastObservedAt");
+            case "sortKey"->Set.of("dataAvailable","name","currentCcu","peak24h","lastObservedAt");
             case "direction"->Set.of("ASC","DESC");case "filterKey"->Set.of("platform","connectionStatus");
-            case "filterValue"->Set.of("ALL","STEAM","YOUTUBE","CONNECTED","UNAVAILABLE");
+            case "filterValue"->Set.of("ALL","STEAM","YOUTUBE","CONNECTED","UNAVAILABLE","UNKNOWN");
             case "analysisType"->Set.of("STEAM","YOUTUBE","REACTION","KEYWORD","EVENT");
             case "fromPeriod","toPeriod"->Set.of("7d","30d");
             // Source identifiers cannot be accepted until the actual source catalog is approved/connected.

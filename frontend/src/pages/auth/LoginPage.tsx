@@ -474,6 +474,7 @@ export function LoginPage({service=false,admin=false,signup=false}:{service?:boo
           )}
         </div>
       </section>
+      {service && <p className="signup-prompt"><Link to="/games">로그인 없이 둘러보기 · 게임 목록으로</Link>{!admin && <> · <Link to="/signup" onClick={()=>setDialog("signup")}>회원가입</Link></>}</p>}
       {dialog && (
         <div
           className="dialog-backdrop"
@@ -550,6 +551,7 @@ export function LoginPage({service=false,admin=false,signup=false}:{service?:boo
                 {dialog === "signup" ? service?"회원가입":"데모 계정 만들기" : "비밀번호 변경"}
               </button>
             </form>
+            {service && <Link to="/games" onClick={closeDialog}>게임 목록으로</Link>}
             <p className="dialog-warning" id="dialog-warning">
               {service?"복구코드·비밀번호를 다른 사람과 공유하지 마세요.":"서버 없는 시연용 기능입니다. 계정은 새로고침하면 사라지며 이메일 인증은 수행하지 않습니다."}
             </p>

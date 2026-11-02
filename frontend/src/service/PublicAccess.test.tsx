@@ -10,6 +10,7 @@ const listing: Listing = {
 beforeEach(() => {
   vi.stubEnv("VITE_PRODUCT_EVENTS_ENABLED", "true");
   vi.spyOn(serviceApi, "me").mockRejectedValue(new ApiError(401, "AUTHENTICATION_REQUIRED"));
+  vi.spyOn(serviceApi,"publications").mockResolvedValue({appId:570,days:30,asOf:listing.asOf,timezone:"Asia/Seoul",dataStatus:"PENDING_CONTRACT",coverage:"UNASSESSED",missingPublishedAt:null,selectedDate:"2026-10-30",points:[],videos:{content:[],page:{number:0,size:20,totalElements:0,hasNext:false}}});
   vi.spyOn(serviceApi, "games").mockResolvedValue(listing);
   vi.spyOn(serviceApi, "detail").mockResolvedValue({
     game: {gameId:"steam:570",steamAppId:570,name:"Synthetic Game",developers:{availability:"EMPTY",value:[]},releaseAt:{availability:"UNAVAILABLE",value:null},steamConnection:"CONNECTED",youtubeConnection:"UNAVAILABLE",currentCcu:{availability:"EMPTY",value:null,observedAt:null},peak24h:{availability:"EMPTY",value:null,observedAt:null},newYoutubeVideos:{availability:"UNAVAILABLE",value:null,observedAt:null},freshness:"UNASSESSED"},

@@ -19,6 +19,7 @@ import { GameListPage, GameDetailPage, SteamGamePage } from "./GamePages";
 import { SteamChartsPage, YoutubePage } from "./ChartPages";
 import { SettingsPage } from "./SettingsPage";
 import { AdminDashboard, AdminMembers, AdminMember } from "./AdminPages";
+import { ChatPreparation } from "./ChatPreparation";
 import { UserActivity } from "./Activity";
 function RouteScrollReset() {
   const { pathname } = useLocation();
@@ -62,6 +63,7 @@ function Login({
     </>
   );
 }
+function PublicShell(){return <><AppShell service/><ChatPreparation/></>;}
 function Guard() {
   const session = useSession(),
     location = useLocation();
@@ -125,7 +127,7 @@ export function ServiceApp() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Login signup />} />
             <Route path="/admin/login" element={<Login admin />} />
-              <Route element={<AppShell service />}>
+              <Route element={<PublicShell />}>
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={<GameListPage dashboard />} />
                 <Route path="/games" element={<GameListPage />} />

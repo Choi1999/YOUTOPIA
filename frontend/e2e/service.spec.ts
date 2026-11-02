@@ -108,7 +108,7 @@ test.describe("real isolated Spring/PostgreSQL/Redis browser flow", () => {
     await expect(
       page
         .locator(".insight-metric-card")
-        .filter({ hasText: "현재 관측 CCU" })
+        .filter({ hasText: "마지막 관측 CCU" })
         .getByText("0", { exact: true }),
     ).toBeVisible();
     const analysis = page.waitForResponse(
@@ -153,6 +153,7 @@ test.describe("real isolated Spring/PostgreSQL/Redis browser flow", () => {
       page.getByRole("heading", { name: "13 · 정확히 24시간 전 대비 게임 수" }),
     ).toBeVisible();
     await page.getByRole("link", { name: "YouTube 관측", exact: true }).click();
+    await page.getByText("보조 도구 · 영상별 통계 관측").click();
     await page.getByLabel("YouTube 영상 ID").fill("abcdefghijk");
     await page.getByRole("button", { name: "실제 영상 관측 조회" }).click();
     await expect(
@@ -189,7 +190,9 @@ test.describe("real isolated Spring/PostgreSQL/Redis browser flow", () => {
       .first()
       .textContent();
     await page.getByRole("button", { name: "보관 완료 · 코드 숨기기" }).click();
+    const loggedOut0=page.waitForResponse(r=>new URL(r.url()).pathname==="/api/v1/auth/logout");
     await page.getByRole("button", { name: "로그아웃", exact: true }).click();
+    expect((await loggedOut0).status()).toBe(204);
     await expect(page).toHaveURL(/\/login$/);
     expect(
       await page.evaluate(() => localStorage.getItem("yutopia-theme")),
@@ -223,7 +226,9 @@ test.describe("real isolated Spring/PostgreSQL/Redis browser flow", () => {
     await expect(
       page.getByRole("button", { name: "라이트", exact: true }).last(),
     ).toHaveAttribute("aria-pressed", "true");
+    const loggedOut1=page.waitForResponse(r=>new URL(r.url()).pathname==="/api/v1/auth/logout");
     await page.getByRole("button", { name: "로그아웃", exact: true }).click();
+    expect((await loggedOut1).status()).toBe(204);
     await expect(page).toHaveURL(/\/login$/);
 
     const other = "other-" + Date.now() + "@example.invalid";
@@ -243,7 +248,9 @@ test.describe("real isolated Spring/PostgreSQL/Redis browser flow", () => {
     await expect(
       page.getByLabel("YouTube 영상 ID", { exact: true }),
     ).toHaveCount(0);
+    const loggedOut2=page.waitForResponse(r=>new URL(r.url()).pathname==="/api/v1/auth/logout");
     await page.getByRole("button", { name: "로그아웃", exact: true }).click();
+    expect((await loggedOut2).status()).toBe(204);
     await expect(page.getByRole("link", { name: "로그인", exact: true })).toBeVisible();
     await expect(page).toHaveURL(/\/games\/steam:999999999\/youtube$/);
   });
@@ -260,10 +267,16 @@ test.describe("real isolated Spring/PostgreSQL/Redis browser flow", () => {
     await page.goto("/charts/steam");
     await expect(page.getByRole("heading", {name:"Steam 트렌드 차트",exact:true})).toBeVisible();
     await page.goto("/charts/youtube");
+    await expect(page.getByLabel("YouTube 영상 ID",{exact:true})).toBeHidden();
+    await page.getByText("보조 도구 · 영상별 통계 관측").click();
     await expect(page.getByLabel("YouTube 영상 ID",{exact:true})).toBeVisible();
     await page.goto("/games/steam:570/youtube");
     await expect(page.getByRole("heading",{name:"Browser Arena · YouTube",exact:true})).toBeVisible();
     await expect(page.getByText(/Steam 앱 ID 570 · 게임별 YouTube 연결 미확인/)).toBeVisible();
+    await expect(page.getByLabel("YouTube 영상 ID",{exact:true})).toHaveCount(0);
+    await expect(page.getByText(/게시 영상 상태 미확인/)).toBeVisible();
+    await page.goto("/charts/youtube");
+    await page.getByText("보조 도구 · 영상별 통계 관측").click();
     await page.getByLabel("YouTube 영상 ID",{exact:true}).fill("abcdefghijk");
     await page.getByRole("button",{name:"실제 영상 관측 조회",exact:true}).click();
     await expect(page.getByRole("group",{name:"10 · 영상 최초·마지막 누적 조회수 관측점 탐색"})).toBeVisible();
@@ -328,7 +341,9 @@ test.describe("real isolated Spring/PostgreSQL/Redis browser flow", () => {
       page.getByRole("heading", { name: "접근 권한이 없습니다." }),
     ).toBeVisible();
     await page.goto("/admin");
+    const loggedOut3=page.waitForResponse(r=>new URL(r.url()).pathname==="/api/v1/auth/logout");
     await page.getByRole("button", { name: "로그아웃", exact: true }).click();
+    expect((await loggedOut3).status()).toBe(204);
     await page.goto("/admin/users");
     await expect(page).toHaveURL(/\/admin\/login$/);
     // Replay the old cookie through an independent browser context after logout.
@@ -406,4 +421,24 @@ test("stubbed empty response is distinct from error and has no chart interaction
   await page.goto("/games");
   await expect(page.getByText("표시할 관측 데이터가 없습니다.")).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+test("preparation panel is modal, mobile safe and context resets without chatbot traffic",async({page})=>{
+ const requests:string[]=[];page.on("request",r=>requests.push(r.url()));
+ await page.setViewportSize({width:390,height:844});await page.goto("/games/steam:570");
+ await expect(page.getByRole("heading",{name:"Browser Arena",exact:true})).toBeVisible();
+ const trigger=page.getByRole("button",{name:"Youtopia 분석 도우미 열기"});await trigger.click();
+ const dialog=page.getByRole("dialog",{name:"Youtopia 분석 도우미"});await expect(dialog).toContainText("Browser Arena");await expect(dialog.getByRole("textbox",{name:"질문"})).toBeDisabled();await expect(dialog.getByRole("button",{name:"전송"})).toBeDisabled();
+ expect(await page.locator("#root").evaluate(el=>(el as HTMLElement).inert)).toBe(true);
+ const box=await dialog.boundingBox();expect(box!.x).toBeGreaterThanOrEqual(0);expect(box!.x+box!.width).toBeLessThanOrEqual(390);
+ await page.keyboard.press("Tab");await expect(dialog.getByRole("button",{name:"분석 도우미 닫기"})).toBeFocused();await page.keyboard.press("Escape");await expect(trigger).toBeFocused();expect(await page.locator("#root").evaluate(el=>(el as HTMLElement).inert)).toBe(false);
+ await page.goto("/games/steam:730");await trigger.click();await expect(page.getByRole("dialog")).toContainText("Browser Counter");await page.keyboard.press("Escape");
+ await page.goto("/games");await trigger.click();await expect(page.getByRole("dialog")).toContainText("게임을 선택하지 않았습니다");await expect(page.getByRole("dialog")).not.toContainText("Browser Counter");
+ expect(requests.filter(url=>/chatbot|\/chat\/|openai|anthropic/i.test(url))).toEqual([]);
+});
+test("login failure preserves public navigation and admin has no assistant",async({page})=>{
+ await page.goto("/admin/login");await expect(page.getByRole("button",{name:"Youtopia 분석 도우미 열기"})).toHaveCount(0);
+ await page.getByLabel("관리자 로그인명",{exact:true}).fill("nonexistent_synthetic_operator");await page.getByLabel("비밀번호",{exact:true}).fill("synthetic wrong password 1234");await page.getByRole("button",{name:"로그인",exact:true}).click();
+ await expect(page.getByText("로그인 정보 또는 세션을 확인해 주세요.")).toBeVisible();
+ await page.getByRole("link",{name:/로그인 없이 둘러보기/}).click();await expect(page).toHaveURL(/\/games$/);
 });

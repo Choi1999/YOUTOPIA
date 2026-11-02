@@ -30,7 +30,7 @@ public class SecurityConfiguration {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, "/api/v1/auth/csrf", "/api/v1/steam/apps/*/ccu").permitAll()
                 // Approved public observations only. Personal/admin routes and unknown writes stay protected.
-                .requestMatchers(HttpMethod.GET, "/api/v1/games", "/api/v1/games/*",
+                .requestMatchers(HttpMethod.GET, "/api/v1/games", "/api/v1/games/*", "/api/v1/games/*/youtube-publications",
                     "/api/v1/charts/steam/ranking-periods", "/api/v1/charts/steam/rankings",
                     "/api/v1/charts/steam/ccu", "/api/v1/charts/steam/app-types",
                     "/api/v1/youtube/videos/*/observations").permitAll()
