@@ -90,5 +90,14 @@
     "cloudResourceCost": "NOT_APPROVED"
   },
   "externalRequestsMade": 0,
-  "productionChangesMade": 0
+  "productionChangesMade": 0,
+  "firstPhaseSupersession": {
+    "approvedDirection": "WINDOWS_LOCAL_BACKEND_FIRST",
+    "currentFirstPhase": "WINDOWS_LOCAL_OFFLINE_CLI",
+    "firstPhaseManifest": "windows-local-boundary.v01.json",
+    "cloudRunJobRequiredForFirstPoC": false,
+    "cloudRuntimeRole": "L3_OPTIONAL_FUTURE_OPERATION_ONLY",
+    "cloudSpendApproved": false,
+    "liveYouTubeCallApproved": false
+  }
 }

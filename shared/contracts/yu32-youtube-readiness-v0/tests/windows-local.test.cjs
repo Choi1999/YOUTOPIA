@@ -123,3 +123,22 @@ test("G45-L14: docs distinguish local offline CLI from Spring backend and Cloud 
     "Cloud NAT","POLICY_HOLD","30일","별도"])
     assert.ok(doc.includes(s),s);
 });
+
+test("G45-L15: prior Cloud Run manifest explicitly demoted to optional L3",()=>{
+  const cloud=JSON.parse(fs.readFileSync(path.join(root,"server-boundary.v01.json"),"utf8"));
+  assert.equal(cloud.runtime.candidate,"CLOUD_RUN_JOB");
+  assert.equal(cloud.firstPhaseSupersession.currentFirstPhase,"WINDOWS_LOCAL_OFFLINE_CLI");
+  assert.equal(cloud.firstPhaseSupersession.cloudRunJobRequiredForFirstPoC,false);
+  assert.equal(cloud.firstPhaseSupersession.cloudRuntimeRole,"L3_OPTIONAL_FUTURE_OPERATION_ONLY");
+  assert.equal(cloud.firstPhaseSupersession.cloudSpendApproved,false);
+  assert.equal(cloud.firstPhaseSupersession.liveYouTubeCallApproved,false);
+});
+test("G45-L16: Cloud pricing remains optional historical estimate, not first-phase bill",()=>{
+  const cloud=JSON.parse(fs.readFileSync(path.join(root,"cloud-cost-model.v01.json"),"utf8"));
+  assert.equal(cloud.currentFirstPhase,"WINDOWS_LOCAL_OFFLINE");
+  assert.equal(cloud.cloudRuntimeRole,"L3_OPTIONAL_FUTURE_OPERATION_ONLY");
+  assert.equal(cloud.cloudRunRequiredForFirstPoC,false);
+  assert.equal(cloud.cloudCostApproved,false);
+  assert.equal(cloud.scope.cloudResourcesCreated,0);
+  assert.equal(cloud.scope.providerRequestsMade,0);
+});

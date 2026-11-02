@@ -117,5 +117,10 @@
     "productionChanges": 0,
     "prMerged": false,
     "providerPolicy": "POLICY_HOLD"
-  }
+  },
+  "currentFirstPhase": "WINDOWS_LOCAL_OFFLINE",
+  "cloudRuntimeRole": "L3_OPTIONAL_FUTURE_OPERATION_ONLY",
+  "cloudRunRequiredForFirstPoC": false,
+  "cloudCostApproved": false,
+  "firstPhaseCostEstimateNote": "Existing Windows PC; no new Cloud Run, Cloud NAT or reserved IPv4 required in first offline/local PoC. Existing PC/internet/electricity costs excluded."
 }
