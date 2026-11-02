@@ -115,3 +115,13 @@ test("G44-S11: SQL fixture has one canonical schema, a single COMMIT, and termin
   assert.match(schema,/OLD.state IN \('SUCCEEDED','FAILED'\)/);
   assert.match(schema,/NEW.version <= OLD.version/);
 });
+
+test("G44-S12: private tenant CHECK regex and SQL quote closure are complete",()=>{
+  const begin=schema.indexOf("CREATE TABLE g44_lab.analysis_scope(");
+  const end=schema.indexOf("CREATE TABLE g44_lab.budget_window(",begin);
+  assert.ok(begin>=0 && end>begin);
+  const scopeDDL=schema.slice(begin,end);
+  assert.ok(scopeDDL.includes("AND tenant_id ~ '^[A-Za-z0-9_-]{1,64}$')"));
+  assert.match(scopeDDL,/CONSTRAINT g44_scope_canonical UNIQUE NULLS NOT DISTINCT/);
+  assert.equal((scopeDDL.match(/'/g)||[]).length%2,0,"Unterminated SQL string literal in Scope DDL");
+});
