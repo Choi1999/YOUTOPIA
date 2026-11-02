@@ -61,6 +61,14 @@ node shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-admin-purge-dem
 
 See [G4-5 Admin Deletion & Retention Contract](../../../docs/integration/YU32_G4_5_ADMIN_DELETION_RETENTION_CONTRACT_V01.md) for the **not-yet-implemented** Spring security/admin UI, retention, propagation, restoration fence and source-policy gates.
 
+## Local YouTube source-adapter descriptors (still offline)
+
+A new **read-only local source adapter specification** lives in `src/local-source-adapter.cjs`. It returns **non-executable GET descriptors** for exactly 1–3 canonical public VIDEO targets, `maxResults≤100`, `part=snippet`, `order=time`, `textFormat=plainText`, first page only, retries 0. The descriptor's fixed `www.googleapis.com` hostname and `/youtube/v3/commentThreads` path are not executable transport. API keys are never present in descriptors or query parameters; future secured runtime must use server-held `x-goog-api-key` headers if authorized.
+
+The module also contains **diagnostic-only** error metadata classification (comments disabled vs quota vs authorization vs missing video) and an operator-evidence checklist. A caller can report every policy/security flag `true` and the module still returns `mayCollectRealComments=false` and `POLICY_HOLD`; these flags are **not independent provider consent or security evidence**.
+
+These descriptors and 22 synthetic tests prepare a future separate HTTP adapter without introducing an external request path, secret reader, OS IP discovery, or persistence. A real collector would require a new review, implementation, authorization and privacy-erase audit.
+
 ## Required prior-to-live gates
 
 This PR is deliberately **independent** of [G4-5 readiness PR #47](https://github.com/Choi1999/YOUTOPIA/pull/47) and [G44 Worker PR #46](https://github.com/Choi1999/YOUTOPIA/pull/46), each still Draft at time of authoring.
