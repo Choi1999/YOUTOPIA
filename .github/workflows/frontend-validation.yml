@@ -50,12 +50,35 @@ jobs:
       - name: YU-32 G4-3 persistence and recovery design tests (offline only)
         run: node --test shared/contracts/yu32-g4-3-design-v0/tests/*.test.cjs
 
+      - name: G4-5 YouTube source readiness offline contract (NO external API)
+        run: |
+          node --check shared/contracts/yu32-youtube-readiness-v0/scripts/windows-local-preflight.cjs
+          node --check shared/contracts/yu32-youtube-readiness-v0/source-plan.cjs
+          node --test shared/contracts/yu32-youtube-readiness-v0/tests/*.test.cjs
+
       - name: G4-4 disposable lab static guards (NO database or Docker execution)
         run: |
           node --check shared/experiments/yu32-g4-4-lab-v0/scripts/run-lab.mjs
           node --check shared/experiments/yu32-g4-4-lab-v0/scripts/worker-process.mjs
           node --check shared/experiments/yu32-g4-4-lab-v0/scripts/worker-probes.mjs
           node --test shared/experiments/yu32-g4-4-lab-v0/tests/static.test.cjs
+
+      - name: G4-5 synthetic collection and analysis pipeline (NO live API)
+        run: |
+          node --check shared/experiments/yu32-g45-offline-pipeline-v0/src/ingest.cjs
+          node --check shared/experiments/yu32-g45-offline-pipeline-v0/src/synthetic-classifier.cjs
+          node --check shared/experiments/yu32-g45-offline-pipeline-v0/src/pipeline.cjs
+          node --check shared/experiments/yu32-g45-offline-pipeline-v0/src/local-source-adapter.cjs
+          node --check shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-offline.cjs
+          node --check shared/experiments/yu32-g45-offline-pipeline-v0/src/admin-purge.cjs
+          node --check shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-admin-purge-demo.cjs
+          node --test shared/experiments/yu32-g45-offline-pipeline-v0/tests/*.test.cjs
+          node shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-offline.cjs --check
+          node shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-offline.cjs --demo partial > /dev/null
+          node shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-admin-purge-demo.cjs --check
+          node shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-admin-purge-demo.cjs --demo-admin-delete > /dev/null
+          node shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-admin-purge-demo.cjs --demo-expiry > /dev/null
+          node shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-admin-purge-demo.cjs --demo-user-erasure > /dev/null
 
       - name: Synthetic scheduler tests
         run: node --test shared/experiments/coverage-scheduler-v0/tests/*.test.cjs

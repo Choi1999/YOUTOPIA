@@ -1,0 +1,24 @@
+{
+  "fixtureId": "G45_SYNTHETIC_RESPONSE_V01",
+  "sourceType": "STATIC_FIXTURE",
+  "isSynthetic": true,
+  "providerRequestsMade": 0,
+  "apiKeyUsed": false,
+  "videoId": "Ab0_-123xyz",
+  "scope": {
+    "mode": "ONE_VIDEO",
+    "windowStart": "2026-10-25T00:00:00Z",
+    "windowEnd": "2026-11-01T12:00:00Z",
+    "locale": "ko-KR"
+  },
+  "observedAt": "2026-11-01T12:00:00Z",
+  "analyzedAt": "2026-11-01T12:01:00Z",
+  "response": {
+    "kind": "youtube#commentThreadListResponse",
+    "pageInfo": {
+      "totalResults": 0,
+      "resultsPerPage": 0
+    },
+    "items": []
+  }
+}

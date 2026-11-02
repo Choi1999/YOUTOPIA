@@ -1,0 +1,126 @@
+{
+  "version": "YU32_G4_5_CLOUD_COST_MODEL_V01",
+  "status": "OFFLINE_ESTIMATE_ONLY",
+  "pricingAsOf": "2026-11-02",
+  "currency": "USD",
+  "candidateRegion": "asia-northeast3",
+  "regionIsApproved": false,
+  "officialRateConfirmationBeforeProcurementRequired": true,
+  "ratesUSD": {
+    "cloudRunTier2VcpuSecond": 0.0000216,
+    "cloudRunTier2GiBSecond": 0.0000024,
+    "natGatewayAssignedEndpointHour": 0.0014,
+    "natProcessedGiB": 0.045,
+    "natAttachedPublicIPv4Hour": 0.005,
+    "reservedUnattachedPublicIPv4Hour": 0.01,
+    "secretManagerPaidActiveVersionMonth": 0.06,
+    "secretManagerPaid10kAccesses": 0.03
+  },
+  "sourceURLs": [
+    "https://cloud.google.com/run/pricing",
+    "https://cloud.google.com/nat/pricing",
+    "https://cloud.google.com/vpc/network-pricing",
+    "https://cloud.google.com/secret-manager/pricing",
+    "https://docs.cloud.google.com/run/docs/configuring/static-outbound-ip",
+    "https://docs.cloud.google.com/run/docs/configuring/vpc-direct-vpc",
+    "https://docs.cloud.google.com/billing/docs/how-to/budgets",
+    "https://docs.cloud.google.com/run/docs/configuring/max-retries"
+  ],
+  "notActualPrices": [
+    "Seoul/Tier2 Cloud Run gross unit rates are example pricing assumptions; verify project-region SKUs before billing approval",
+    "NAT assigned-endpoint-hours use the published <=32-instance rate as a modeling proxy; actual Cloud Run/endpoint meter must be confirmed in Cloud Billing",
+    "IP-hour rates assume IP connected to Cloud NAT; reserved but unattached IP is billed at a different rate",
+    "Free-tier availability depends on billing-account-wide monthly use and location and is not guaranteed",
+    "Internet data transfer, Cloud Build/Artifact Registry, excess logging, taxes, FX, other network/SKU charges and retries are excluded from partial totals"
+  ],
+  "freeTierAssumptions": {
+    "cloudRunJobsVcpuSecondsMonthlyBaselineUSDRegion": 240000,
+    "cloudRunJobsGiBSecondsMonthlyBaselineUSDRegion": 450000,
+    "secretManagerFreeActiveVersionsMonthly": 6,
+    "secretManagerFreeAccessOperationsMonthly": 10000,
+    "assumeEntireFreeTierAvailable": false,
+    "secretManagerOneVersionThirtyReadsExampleGrossAfterFreeTierUSD": 0
+  },
+  "scenarios": {
+    "oneOffOneHourThenDelete": {
+      "inputs": {
+        "runs": 1,
+        "secondsPerRun": 120,
+        "vCpu": 1,
+        "ramGiB": 0.5,
+        "natBilledEndpointHours": 1,
+        "attachedNatIPv4Hours": 1,
+        "natTrafficMiB": 1
+      },
+      "components": {
+        "cloudRunBeforeFreeTierUSD": 0.002736,
+        "natGatewayIllustrativeUSD": 0.0014,
+        "attachedNatIPv4USD": 0.005,
+        "natDataProcessingUSD": 0.000043945
+      },
+      "illustrativePartialGrossUSD": 0.009179945
+    },
+    "thirtyManualRunsOneIPRetained": {
+      "inputs": {
+        "runs": 30,
+        "secondsPerRun": 120,
+        "vCpu": 1,
+        "ramGiB": 0.5,
+        "natBilledEndpointHours": 1,
+        "attachedNatIPv4Hours": 720,
+        "natTrafficMiB": 10
+      },
+      "components": {
+        "cloudRunBeforeFreeTierUSD": 0.08208,
+        "natGatewayIllustrativeUSD": 0.0014,
+        "attachedNatIPv4USD": 3.6,
+        "natDataProcessingUSD": 0.000439453
+      },
+      "illustrativePartialGrossUSD": 3.683919453
+    },
+    "thirtyRunsOneNatEndpointFor720Hours": {
+      "inputs": {
+        "runs": 30,
+        "secondsPerRun": 120,
+        "vCpu": 1,
+        "ramGiB": 0.5,
+        "natBilledEndpointHours": 720,
+        "attachedNatIPv4Hours": 720,
+        "natTrafficMiB": 10
+      },
+      "components": {
+        "cloudRunBeforeFreeTierUSD": 0.08208,
+        "natGatewayIllustrativeUSD": 1.008,
+        "attachedNatIPv4USD": 3.6,
+        "natDataProcessingUSD": 0.000439453
+      },
+      "illustrativePartialGrossUSD": 4.690519453
+    }
+  },
+  "reservedUnattachedIP720hUSD": 7.2,
+  "budgetProposal": {
+    "alertOnlyMonthlyUSD": 10,
+    "alertPercentages": [
+      50,
+      90,
+      100
+    ],
+    "isHardSpendCap": false,
+    "cloudRunSelectiveSpendCapIfAvailableDoesNotCoverNatOrIp": true,
+    "billingBudgetCreated": false
+  },
+  "scope": {
+    "cloudResourcesCreated": 0,
+    "apiKeysCreated": 0,
+    "providerRequestsMade": 0,
+    "realCommentsStored": 0,
+    "productionChanges": 0,
+    "prMerged": false,
+    "providerPolicy": "POLICY_HOLD"
+  },
+  "currentFirstPhase": "WINDOWS_LOCAL_OFFLINE",
+  "cloudRuntimeRole": "L3_OPTIONAL_FUTURE_OPERATION_ONLY",
+  "cloudRunRequiredForFirstPoC": false,
+  "cloudCostApproved": false,
+  "firstPhaseCostEstimateNote": "Existing Windows PC; no new Cloud Run, Cloud NAT or reserved IPv4 required in first offline/local PoC. Existing PC/internet/electricity costs excluded."
+}

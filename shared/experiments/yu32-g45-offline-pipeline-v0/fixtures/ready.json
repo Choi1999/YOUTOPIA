@@ -1,0 +1,71 @@
+{
+  "fixtureId": "G45_SYNTHETIC_RESPONSE_V01",
+  "sourceType": "STATIC_FIXTURE",
+  "isSynthetic": true,
+  "providerRequestsMade": 0,
+  "apiKeyUsed": false,
+  "videoId": "Ab0_-123xyz",
+  "scope": {
+    "mode": "ONE_VIDEO",
+    "windowStart": "2026-10-25T00:00:00Z",
+    "windowEnd": "2026-11-01T12:00:00Z",
+    "locale": "ko-KR"
+  },
+  "observedAt": "2026-11-01T12:00:00Z",
+  "analyzedAt": "2026-11-01T12:01:00Z",
+  "response": {
+    "kind": "youtube#commentThreadListResponse",
+    "pageInfo": {
+      "totalResults": 2,
+      "resultsPerPage": 2
+    },
+    "items": [
+      {
+        "kind": "youtube#commentThread",
+        "id": "synthetic-thread-1",
+        "snippet": {
+          "videoId": "Ab0_-123xyz",
+          "isPublic": true,
+          "totalReplyCount": 0,
+          "topLevelComment": {
+            "kind": "youtube#comment",
+            "id": "synthetic-comment-1",
+            "snippet": {
+              "videoId": "Ab0_-123xyz",
+              "textOriginal": "편집이 정말 좋아요.",
+              "textDisplay": "편집이 정말 좋아요.",
+              "likeCount": 1,
+              "publishedAt": "2026-10-31T10:00:00Z",
+              "updatedAt": "2026-10-31T10:00:00Z",
+              "authorDisplayName": "SYNTHETIC_USER_1",
+              "authorProfileImageUrl": "https://example.invalid/synthetic-only.png"
+            }
+          }
+        }
+      },
+      {
+        "kind": "youtube#commentThread",
+        "id": "synthetic-thread-2",
+        "snippet": {
+          "videoId": "Ab0_-123xyz",
+          "isPublic": true,
+          "totalReplyCount": 0,
+          "topLevelComment": {
+            "kind": "youtube#comment",
+            "id": "synthetic-comment-2",
+            "snippet": {
+              "videoId": "Ab0_-123xyz",
+              "textOriginal": "음질이 아쉬워요.",
+              "textDisplay": "음질이 아쉬워요.",
+              "likeCount": 2,
+              "publishedAt": "2026-10-30T09:00:00Z",
+              "updatedAt": "2026-10-30T09:00:00Z",
+              "authorDisplayName": "SYNTHETIC_USER_2",
+              "authorProfileImageUrl": "https://example.invalid/synthetic-only.png"
+            }
+          }
+        }
+      }
+    ]
+  }
+}
