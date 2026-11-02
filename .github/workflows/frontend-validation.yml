@@ -53,6 +53,8 @@ jobs:
       - name: G4-4 disposable lab static guards (NO database or Docker execution)
         run: |
           node --check shared/experiments/yu32-g4-4-lab-v0/scripts/run-lab.mjs
+          node --check shared/experiments/yu32-g4-4-lab-v0/scripts/worker-process.mjs
+          node --check shared/experiments/yu32-g4-4-lab-v0/scripts/worker-probes.mjs
           node --test shared/experiments/yu32-g4-4-lab-v0/tests/static.test.cjs
 
       - name: Synthetic scheduler tests
