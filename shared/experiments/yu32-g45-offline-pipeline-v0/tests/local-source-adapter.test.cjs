@@ -75,7 +75,8 @@ test("G45-S09: input accessors, symbols, maps and inherited objects are rejected
 test("G45-S10: planned request has no key in query and no secret value anywhere",()=>{
  const p=descriptors({videoIds:[A]});
  const txt=JSON.stringify(p);
- assert.equal(p.candidates[0].credentialHeaderName,"x-goog-api-key");
+ assert.equal(p.candidates[0].credentialHeaderName,null);
+ assert.equal(p.candidates[0].authMode,"UNVERIFIED_YOUTUBE_SPECIFIC");
  assert.equal(p.candidates[0].credentialValuePresent,false);
  assert.equal(p.candidates[0].queryContainsKey,false);
  assert.equal(p.authorizedKeysRead,0);

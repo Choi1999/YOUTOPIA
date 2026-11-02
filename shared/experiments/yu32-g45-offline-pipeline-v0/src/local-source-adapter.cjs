@@ -36,7 +36,9 @@ function descriptors(spec){
     query:Object.freeze({
       part:"snippet",videoId,maxResults,order:"time",textFormat:"plainText"
     }),
-    credentialHeaderName:"x-goog-api-key",
+    credentialHeaderName:null,
+    // YouTube-specific acceptance of x-goog-api-key is NOT established.
+    authMode:"UNVERIFIED_YOUTUBE_SPECIFIC",
     credentialValuePresent:false,
     queryContainsKey:false,
     automaticRetries:0,
