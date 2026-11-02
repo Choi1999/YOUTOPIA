@@ -46,6 +46,21 @@ Outputs contain only synthetic counts, synthetic target ID, synthetic topics and
 - Empty successful page in the defined query scope is `NO_DATA` **without sample/sentiment percentages**. Comments disabled/permission/quota errors are separate and cannot be silently converted to zero.
 - The output is a **candidate** `AnalysisSnapshot` matching `shared/contracts/analysis-v1/analysis.schema.json` keys. No HTTP adapter, durable DB write, data-retention mechanism, provider-authorized classifier or public consumer is implemented.
 
+## Administrator-controlled deletion (synthetic QA only)
+
+**Approved direction:** Only a server-authenticated `ADMIN` may manually delete YOUTOPIA-collected VIDEO analysis data. A separate **mandatory system expiration** path and **verified user-erasure request** path must still work without an admin login; 30-day API data refresh/deletion and 7-day user erasure requirements may not be bypassed.
+
+The working **in-memory synthetic harness**, `src/admin-purge.cjs`, tests exact `tenant+VIDEO` scope, admin preview+explicit confirmation, reason, idempotency UUID, revision conflict, dependent cache/index/report/job/outbox removal, tombstone/replay protection, metadata-only audit, automatic expiry and verified-erasure simulation. `syntheticActorForTests` is NOT production authentication, and no real storage is affected.
+
+~~~powershell
+node shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-admin-purge-demo.cjs --check
+node shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-admin-purge-demo.cjs --demo-admin-delete
+node shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-admin-purge-demo.cjs --demo-expiry
+node shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-admin-purge-demo.cjs --demo-user-erasure
+~~~
+
+See [G4-5 Admin Deletion & Retention Contract](../../../docs/integration/YU32_G4_5_ADMIN_DELETION_RETENTION_CONTRACT_V01.md) for the **not-yet-implemented** Spring security/admin UI, retention, propagation, restoration fence and source-policy gates.
+
 ## Required prior-to-live gates
 
 This PR is deliberately **independent** of [G4-5 readiness PR #47](https://github.com/Choi1999/YOUTOPIA/pull/47) and [G44 Worker PR #46](https://github.com/Choi1999/YOUTOPIA/pull/46), each still Draft at time of authoring.

@@ -25,6 +25,10 @@
 | Provenance | `sourceType=STATIC_FIXTURE`, `isSynthetic=true`, providerRequestsMade=0 | APPROVED_PROVIDER 위조 입력 차단 |
 | Distribution | QA용 JSON만; API/브라우저 Snapshot·운영 DB 저장 0 | 기존 Spring Security / G44 변경 없음 |
 
+### 관리자 전용 수동 삭제 + 필수 자동 만료 (2026-11-02 승인 방향)
+
+사용자는 YOUTOPIA의 **영상별 수집·분석 데이터 수동 삭제를 인증된 관리자만 할 수 있도록** 요청했다. 사용자 관련 삭제 요구 및 보존 기한 만료/원본 소스 철회에 따른 자동 처리는 **관리자 로그인 없이도** 정책상 기한 내 수행해야 한다. [관리자 삭제·보존/요청 계약](./YU32_G4_5_ADMIN_DELETION_RETENTION_CONTRACT_V01.md)에 따라 tenant+VIDEO, preview/확인/revision/UUID/감사, 원문·Snapshot·캐시·색인·Job/Outbox·복구펜스 삭제를 추적한다. 이번 PR에는 **합성 메모리 시뮬레이터와 회귀 테스트만** 추가. 실제 관리자 API/UI/DB 삭제는 미구현이며 Y45-E07/E08은 계속 미통과다.
+
 ## 3. 다음 개발 단계 — 실제 수집 전까지 병렬화
 
 1. **기능 게이트와 API 계약 (Track A):** PR #47의 Google 프로젝트/소유/키 제한·quota·공개 댓글 기본 이용 조건/원문 삭제·철회·추가 파생지표 승인 증거를 검증한다. `Y45-E05/E06/E07/E08/E11`은 미통과, 정책 미승인은 실제 데이터 사용 금지.
