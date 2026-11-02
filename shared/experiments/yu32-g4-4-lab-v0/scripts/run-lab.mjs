@@ -93,7 +93,11 @@ async function submissionBarrier(scope,actor) {
   const key=scope+":"+actor;
   proc.stdin.write("SELECT pg_advisory_lock(hashtextextended('"+key+
     "',0));\nSELECT 'G44_LOCK_READY';\n");
-  await ready;
+  try {await ready;} catch(e){
+    proc.stdin.end();
+    proc.kill("SIGKILL");
+    throw e;
+  }
   return async()=>{
     const finished=new Promise((resolve,reject)=>{
       proc.on("close",code=>code===0?resolve():reject(new Error("Barrier failed: "+error.slice(0,150))));
@@ -263,7 +267,7 @@ async function tests() {
     assert.equal(count("job_outbox"),1);
     return a;
   });
-  await verify("G44-T06","Same key with different digest is a conflict (not HTTP 409)",()=>{
+  await verify("G44-T06-DB_SUBSET","Same key with different digest is a conflict (not HTTP 409)",()=>{
     const id=reset(),key=randomUUID();
     const a=submit(id,"customer-A",key,digest("one"));
     const b=submit(id,"customer-A",key,digest("two"));
@@ -291,7 +295,7 @@ async function tests() {
     assert.equal(count("budget_reservation"),1);
     return "observed_blocked="+blocked+"; "+out.join(",");
   });
-  await verify("G44-T08","Same PUBLIC scope, isolated actors and jobs (DB only)",()=>{
+  await verify("G44-T08-DB_SUBSET","Same PUBLIC scope, isolated actors and jobs (DB only)",()=>{
     const id=reset();
     const a=submit(id,"customer-A");
     const b=submit(id,"customer-B");
@@ -313,7 +317,7 @@ async function tests() {
     assert.equal(scalar("SELECT remaining FROM g44_lab.budget_window WHERE actor_tag='customer-A';"),start);
     return "all four rolled back";
   });
-  await verify("G44-T14","Only one live lease owner",async()=>{
+  await verify("G44-T14-SMOKE","Two psql claim attempts; no deterministic claim barrier",async()=>{
     reset(); submit(1);
     const attempts=await Promise.all([
       concurrentSql("SELECT g44_lab.claim_one('worker-A',10000);"),
@@ -322,7 +326,7 @@ async function tests() {
     assert.equal(attempts.filter(v=>v!=="NONE").length,1);
     return attempts.join(",");
   });
-  await verify("G44-T15/T16","Reclaim increases epoch; late worker cannot publish",()=>{
+  await verify("G44-T15/T16-LEASE_SUBSET","Injected lease expiry, not a genuine process crash",()=>{
     reset();submit(1);
     const a=claim("worker-A");
     assert.match(a,/^\d+:\d+:\d+$/);
@@ -347,7 +351,7 @@ async function tests() {
     assert.equal(complete(parts.join(":"),"worker-A","new-version"),"SUCCEEDED");
     return "fenced by expected_version";
   });
-  await verify("G44-T18","Synthetic policy revocation blocks completion/read",()=>{
+  await verify("G44-T18-SYNTHETIC_SUBSET","Synthetic policy revocation blocks completion/read",()=>{
     reset();submit(1);
     const a=claim("worker-A");
     scalar("UPDATE g44_lab.policy_gate SET revoked=TRUE,policy_epoch=policy_epoch+1;");
@@ -367,7 +371,7 @@ async function tests() {
     assert.equal(scalar("SELECT snapshot_id FROM g44_lab.scope_latest WHERE scope_id=1;"),"synthetic-newest");
     return "DB order only: no production freshness claim";
   });
-  await verify("G44-T27","Duplicate dispatch must not create a second active lease",()=>{
+  await verify("G44-T27-CLAIM_SUBSET","Repeated claim without duplicate Outbox delivery simulation",()=>{
     reset();submit(1);
     assert.equal(count("job_outbox"),1);
     assert.match(claim("worker-A"),/^\d+:\d+:\d+$/);
@@ -375,7 +379,7 @@ async function tests() {
     assert.equal(count("analysis_job"),1);
     return "1 initial claim; 0 additional valid claims";
   });
-  await verify("G44-T25/T37","Lab writer has no DDL or policy UPDATE",()=>{
+  await verify("G44-T25/T37-ROLE_SUBSET","Lab NOLOGIN effective privileges, not real server account",()=>{
     reset();
     expectSqlFailure("CREATE TABLE g44_lab.should_fail(id int);",/42501/,"g44_writer");
     expectSqlFailure("UPDATE g44_lab.policy_gate SET approved_test=FALSE;",/42501/,"g44_writer");
