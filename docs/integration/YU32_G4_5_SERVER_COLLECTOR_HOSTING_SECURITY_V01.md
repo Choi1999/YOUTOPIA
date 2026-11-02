@@ -5,6 +5,10 @@
 > **인계:** [G4-5 소스 준비 Gate](./YU32_G4_5_YOUTUBE_SOURCE_READINESS_V01.md) · [G4-5 증거 매트릭스](./YU32_G4_5_PROVIDER_POLICY_EVIDENCE_MATRIX_V01.md) · [오프라인 서버 경계 계약](../../shared/contracts/yu32-youtube-readiness-v0/server-boundary.v01.json)
 > **승인된 결정:** 첫 실제 공개 댓글 조회 PoC는 **Chrome 확장 프로그램/브라우저가 아니라 백엔드 서버에서** 실행한다. 구체적인 Cloud 자원 생성·비용·실호출은 **별도 승인** 대상이다.
 
+## 0. 2026-11-02 우선순위 수정: 최초 PoC는 Windows 로컬 실행
+
+사용자 승인에 따라 **첫 소량 댓글 수집 PoC의 실행 위치는 기존 Windows PC의 수동 백엔드 프로세스**로 변경됐다. Cloud Run Job·Cloud NAT·예약 공인 IP는 L3 후속 운영 대안일 뿐 L0/L1 필수 비용이 아니다. 현재는 [Windows 로컬 PoC](./YU32_G4_5_WINDOWS_LOCAL_BACKEND_POC_V01.md)에 따른 **오프라인 준비만** 구현하며, API 키 생성·실데이터 호출·NLP·프로덕션 연동은 계속 POLICY_HOLD다.
+
 ## 1. 권장 실행 환경과 근거
 
 **초기 PoC 후보: Google Cloud Run Job (수동 실행·비공개 배치 작업).** Chrome Hover→Side Panel은 수집자·API 키·원문 데이터 저장소가 아니다. 초기 PoC에는 공개 HTTP 수집기 엔드포인트도 불필요하다.

@@ -52,6 +52,7 @@ jobs:
 
       - name: G4-5 YouTube source readiness offline contract (NO external API)
         run: |
+          node --check shared/contracts/yu32-youtube-readiness-v0/scripts/windows-local-preflight.cjs
           node --check shared/contracts/yu32-youtube-readiness-v0/source-plan.cjs
           node --test shared/contracts/yu32-youtube-readiness-v0/tests/*.test.cjs
 

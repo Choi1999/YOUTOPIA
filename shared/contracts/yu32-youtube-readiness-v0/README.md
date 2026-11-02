@@ -12,6 +12,7 @@ The output is a **query shape candidate**, not a runnable HTTP request or an ind
 
 Source and decision documents:
 - [G4-5 live-source readiness](../../../docs/integration/YU32_G4_5_YOUTUBE_SOURCE_READINESS_V01.md)
+- [G4-5 Windows local-first backend PoC](../../../docs/integration/YU32_G4_5_WINDOWS_LOCAL_BACKEND_POC_V01.md) (CURRENT L0/L1 direction; actual calls still blocked).
 - [G4-5 server-only collector execution/secret/egress architecture](../../../docs/integration/YU32_G4_5_SERVER_COLLECTOR_HOSTING_SECURITY_V01.md) (design only: Cloud Run Job / Secret Manager / static egress IP; no resources created)
 - [G4-5 Cloud Run / Cloud NAT / fixed-IP cost scenarios](../../../docs/integration/YU32_G4_5_CLOUD_RUN_COST_ESTIMATE_V01.md) and `cloud-cost-model.v01.json` (estimate only, no spend approved).
 - [G4-5 policy evidence matrix](../../../docs/integration/YU32_G4_5_PROVIDER_POLICY_EVIDENCE_MATRIX_V01.md)

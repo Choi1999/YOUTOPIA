@@ -69,6 +69,10 @@ Chrome Hover GET은 읽기 전용이며 외부 호출이나 분석 Job POST를 �
 
 사용자는 **최초 실제 공개 댓글 조회 PoC의 실행 위치를 Chrome/프런트엔드가 아닌 백엔드 서버로 제한**하는 방향을 승인했다. 후보는 **비공개 수동 Cloud Run Job**이며, 서버 API 키에 YouTube Data API v3 API 제한과 **고정 공인 출구 IP 제한**, Secret Manager·전용 Service Account를 적용하도록 설계했다. Cloud Run/Cloud NAT/예약 IP/Secret Manager의 실제 리소스 생성 및 비용 승인은 아직 이루어지지 않았다. [G4-5 서버 전용 수집기 설계](./YU32_G4_5_SERVER_COLLECTOR_HOSTING_SECURITY_V01.md)를 참조한다. API 키·Cloud API·실데이터·배포·댓글 원문·NLP 모두 변경 없음.
 
+### 실행 위치 조정 (2026-11-02)
+
+최초 수집 PoC는 **Windows PC 로컬 백엔드** 우선이며 Cloud Run/NAT는 선택적 후속 운영 옵션이다. 초기 [Windows 오프라인 실행 경계](./YU32_G4_5_WINDOWS_LOCAL_BACKEND_POC_V01.md)를 별도 설계했다. 공인 IP 제한/키 보호 및 소스·원문 수명주기 승인 전 실제 YouTube 호출은 계속 금지한다.
+
 ## 5. Track B — 병렬 서버 안정성 경계
 
 G44-P3 PR #46은 별도 Draft이며 현재 Lab 프로세스·Outbox 합성 검증과 실제 API 권한은 무관하다. 후속 Track B의 우선 작업은 `G44-T31~T33` 예산 정산/SQLSTATE 경합 및 Spring 세션/CSRF/tenant BOLA/RestoreFence E2E다. 기존 읽기 전용 `ytp_app_data_ro`를 분석 쓰기 계정으로 전환하지 않고 `SecurityConfiguration.anyRequest().denyAll()`도 유지한다. 운영 Job 생성·Snapshot 공개는 여전히 승인 금지다.

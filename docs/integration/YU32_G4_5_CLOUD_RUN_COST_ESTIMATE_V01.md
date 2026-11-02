@@ -7,6 +7,10 @@
 > **계산 근거:** [machine-readable cost model](../../shared/contracts/yu32-youtube-readiness-v0/cloud-cost-model.v01.json) · 오프라인 테스트 `tests/cloud-cost.test.cjs`
 > **승인 경계:** 기존 승인에는 조사·산정·설계·Draft PR 수정만 포함. **Google Cloud 리소스 생성, 예산 설정, 결제 활성화, API 키 발급, 실제 댓글 수집, 배포 또는 PR 병합은 불포함.**
 
+## 0. 최초 PoC: Windows 로컬 우선 결정 (2026-11-02)
+
+이 문서의 Cloud Run/NAT/고정 IP 추정치는 **L3 선택적 운영 확장 비용**이다. 초기 L0/L1의 공개 영상 1~3개 시험을 위해 유료 클라우드 자원을 생성할 필요는 없다. [Windows 로컬 PoC](./YU32_G4_5_WINDOWS_LOCAL_BACKEND_POC_V01.md)를 현재 우선 설계로 적용한다. 실제 데이터 수집·키 생성·정책·삭제 검증은 별도 승인 대상이다.
+
 ## 1. 공식 단가·무료 구간 (2026-11-02 검토)
 
 | 항목 | 요금 기준 (USD) | 주요 제한과 해석 |
