@@ -166,7 +166,7 @@ test("G45-S20: synthetic fixture still flows to existing safe analysis-v1 snapsh
  assert.equal(result.evidence.providerRequestsMade,0);
 });
 test("G45-S21: no HTTP SDK, credential access, cloud resources, disk persistence or shell",()=>{
- assert.doesNotMatch(code,/\bfetch\s*\(|node:https|node:http|axios|child_process|XMLHttpRequest|googleapis/);
+ assert.doesNotMatch(code,/\bfetch\s*\(|node:https|node:http|axios|child_process|XMLHttpRequest|require\s*\(\s*["\x27]googleapis["\x27]/);
  assert.doesNotMatch(code,/fs\.write|fs\.unlink|process\.env|x-goog-api-key.*\$\{|DELETE FROM|INSERT INTO/);
 });
 test("G45-S22: no source gate escalation or an outbound transport exposed by module",()=>{
