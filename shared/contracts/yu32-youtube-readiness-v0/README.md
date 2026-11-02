@@ -12,6 +12,7 @@ The output is a **query shape candidate**, not a runnable HTTP request or an ind
 
 Source and decision documents:
 - [G4-5 live-source readiness](../../../docs/integration/YU32_G4_5_YOUTUBE_SOURCE_READINESS_V01.md)
+- [G4-5 server-only collector execution/secret/egress architecture](../../../docs/integration/YU32_G4_5_SERVER_COLLECTOR_HOSTING_SECURITY_V01.md) (design only: Cloud Run Job / Secret Manager / static egress IP; no resources created)
 - [G4-5 policy evidence matrix](../../../docs/integration/YU32_G4_5_PROVIDER_POLICY_EVIDENCE_MATRIX_V01.md)
 - [G4-2 API authorization contract](../../../docs/integration/YU32_G4_2_API_AUTHORIZATION_CONTRACT_V01.md)
 
