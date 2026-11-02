@@ -74,7 +74,7 @@ function ready() {
   Date.now=()=>original()+offset;
   process.send({type:"ready",pid:process.pid,owner,clockOffsetMs:offset});
 }
-try {ready();} catch(e) {fail(e.message);}
+try {ready();} catch(e) {fail(e.message);process.exit(1);}
 
 let busy=false;
 process.on("message",message=>{
