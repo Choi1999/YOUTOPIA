@@ -9,6 +9,7 @@ import {createHash, randomBytes, randomUUID} from "node:crypto";
 import {existsSync, mkdirSync, readFileSync, writeFileSync} from "node:fs";
 import {fileURLToPath} from "node:url";
 import path from "node:path";
+import {runWorkerRecoveryProbes} from "./worker-probes.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..");
@@ -207,7 +208,7 @@ function preflight() {
     throw new Error("Working tree is not clean: STOP");
   context.gitHead=git(["rev-parse","HEAD"]);
   context.gitBranch=git(["branch","--show-current"]);
-  if(context.gitBranch!=="feature/yu32-g4-4-isolated-pg-worker-lab-v01")
+  if(context.gitBranch!=="feature/yu32-g44-worker-recovery-outbox-v01")
     throw new Error("Unexpected checkout branch: STOP");
   if (process.env.CI) throw new Error("Lab must not run automatically in CI");
   context.dockerTarget=verifyLocalDockerContext();
@@ -471,6 +472,11 @@ async function main() {
     const init=readFileSync(schemaFile,"utf8");
     scalar(init);
     await tests();
+    // Opt-in dynamic-only extension: five new OS-process/Outbox/clock probes.
+    // The first 18 Lab probes remain unchanged and retain their own IDs.
+    await runWorkerRecoveryProbes({
+      verify,reset,submit,scalar,count,project,composeFile,env,base
+    });
   } catch (e) {
     failure=e;
     process.stderr.write("G44 LAB FAIL: "+String(e.message).slice(0,400)+"\n");
@@ -489,6 +495,6 @@ async function main() {
     evidence();
   }
   if(failure)process.exitCode=1;
-  else process.stdout.write("G44 subset lab PASS; 40-case full matrix remains separately gated.\n");
+  else process.stdout.write("G44 P3 extended lab PASS; complete 40-case matrix and production gates remain separate.\n");
 }
 main().catch(e=>{process.stderr.write("G44 STOP: "+String(e.message).slice(0,400)+"\n");process.exitCode=1});
