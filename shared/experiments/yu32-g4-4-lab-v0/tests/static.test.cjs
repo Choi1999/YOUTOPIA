@@ -105,3 +105,13 @@ test("G44-S10: execution requires explicit opt-in; no Docker work on refusal",()
   assert.notEqual(error.status,0);
   assert.match(String(error.stderr),/G44 STOP/);
 });
+
+test("G44-S11: SQL fixture has one canonical schema, a single COMMIT, and terminal fencing",()=>{
+  assert.equal(schema.split("CREATE SCHEMA g44_lab;").length-1,1);
+  assert.equal(schema.split("CREATE UNIQUE INDEX g44_one_active_per_partition").length-1,1);
+  assert.equal(schema.split("COMMIT;").length-1,1);
+  assert.equal(schema.split("CREATE TRIGGER g44_job_transition_guard").length-1,1);
+  assert.match(schema,/tenant_id IS NOT NULL/);
+  assert.match(schema,/OLD.state IN \('SUCCEEDED','FAILED'\)/);
+  assert.match(schema,/NEW.version <= OLD.version/);
+});
