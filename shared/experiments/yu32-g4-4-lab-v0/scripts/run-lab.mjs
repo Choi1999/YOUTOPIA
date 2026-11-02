@@ -21,6 +21,7 @@ const base = ["compose", "-p", project, "-f", composeFile];
 const results = [];
 let started = false;
 let teardown = "NOT_RUN";
+const context = {gitHead:"UNVERIFIED",gitBranch:"UNVERIFIED",imageId:"UNVERIFIED"};
 
 function docker(args, input = "", allowFailure = false) {
   const x = spawnSync("docker", args, {
@@ -128,11 +129,23 @@ function checkManifest() {
 }
 function preflight() {
   checkManifest();
+  const checkout=path.resolve(root,"../../..");
+  const git = args => {
+    const x=spawnSync("git",args,{cwd:checkout,encoding:"utf8",timeout:10000});
+    if(x.status!==0)throw new Error("Git preflight failed");
+    return x.stdout.trim();
+  };
+  if(git(["status","--porcelain"]))
+    throw new Error("Working tree is not clean: STOP");
+  context.gitHead=git(["rev-parse","HEAD"]);
+  context.gitBranch=git(["branch","--show-current"]);
+  if(context.gitBranch!=="feature/yu32-g4-4-isolated-pg-worker-lab-v01")
+    throw new Error("Unexpected checkout branch: STOP");
   if (process.env.CI) throw new Error("Lab must not run automatically in CI");
   docker(["version","--format","{{.Server.Version}}"]);
   docker(["compose","version"]);
   // Refuse an implicit external image pull: operator must preload this exact tag.
-  docker(["image","inspect",image]);
+  context.imageId=JSON.parse(docker(["image","inspect",image]).stdout)[0].Id;
   const cfg=JSON.parse(docker([...base,"config","--format","json"]).stdout);
   assert.equal(cfg.networks?.isolated?.internal,true,"Compose network not internal");
   assert.equal(cfg.services?.db?.pull_policy,"never");
@@ -147,6 +160,11 @@ function checkIsolation() {
   assert.equal(networks.length,1,"Unexpected additional network");
   const net=JSON.parse(docker(["network","inspect",networks[0]]).stdout)[0];
   assert.equal(net.Internal,true,"Network has host egress");
+  const route=docker([...base,"exec","-T","db","cat","/proc/net/route"]).stdout;
+  assert.ok(!route.split("\n").slice(1).some(line=>{
+    const fields=line.trim().split(/\s+/);
+    return fields.length>1 && fields[1]==="00000000";
+  }),"Container has an unexpected default IPv4 route");
   for(const bindings of Object.values(inspected.NetworkSettings.Ports||{}))
     assert.ok(!bindings?.length,"A host port was published");
   const rawVersion=Number(scalar("SHOW server_version_num;"));
@@ -312,7 +330,7 @@ function resourcesLeft() {
 function evidence() {
   const summary={
     runId:project, evidenceClass:"ISOLATED_PG16_LAB_ONLY",
-    head:"USER_CHECKOUT_NOT_ATTESTED",
+    head:context.gitHead,branch:context.gitBranch,imageId:context.imageId,
     testCount:results.length,
     statuses:{passed:results.filter(x=>x.status==="PASS").length,
       failed:results.filter(x=>x.status==="FAIL").length},
