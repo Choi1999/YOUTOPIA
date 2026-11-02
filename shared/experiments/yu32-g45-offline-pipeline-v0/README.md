@@ -63,15 +63,23 @@ See [G4-5 Admin Deletion & Retention Contract](../../../docs/integration/YU32_G4
 
 ## Local YouTube source-adapter descriptors (still offline)
 
-A new **read-only local source adapter specification** lives in `src/local-source-adapter.cjs`. It returns **non-executable GET descriptors** for exactly 1–3 canonical public VIDEO targets, `maxResults≤100`, `part=snippet`, `order=time`, `textFormat=plainText`, first page only, retries 0. The descriptor's fixed `www.googleapis.com` hostname and `/youtube/v3/commentThreads` path are not executable transport. API keys are never present in descriptors or query parameters; future secured runtime must use server-held `x-goog-api-key` headers if authorized.
+A new **read-only local source adapter specification** lives in `src/local-source-adapter.cjs`. It returns **non-executable GET descriptors** for exactly 1–3 canonical public VIDEO targets, `maxResults≤100`, `part=snippet`, `order=time`, `textFormat=plainText`, first page only, retries 0. The descriptor's fixed `www.googleapis.com` hostname and `/youtube/v3/commentThreads` path are not executable transport. API keys are never present in descriptors or query parameters. **YouTube-specific authentication is still unresolved:** its API reference explicitly specifies the `key` query parameter or an OAuth token; the generic Google `x-goog-api-key` header is not verified here as supported by YouTube Data API v3. Do not activate either credential mode without a separate security and provider-compatibility review.
 
 The module also contains **diagnostic-only** error metadata classification (comments disabled vs quota vs authorization vs missing video) and an operator-evidence checklist. A caller can report every policy/security flag `true` and the module still returns `mayCollectRealComments=false` and `POLICY_HOLD`; these flags are **not independent provider consent or security evidence**.
 
 These descriptors and 22 synthetic tests prepare a future separate HTTP adapter without introducing an external request path, secret reader, OS IP discovery, or persistence. A real collector would require a new review, implementation, authorization and privacy-erase audit.
 
+## G45-L1 locked HTTP envelope (first-call preparation)
+
+The pure Node 24 module \`src/first-call-http-boundary.cjs\` constructs **fixed HTTPS GET plans** for 1–3 canonical VIDEO IDs, validates HTTP status/content-type/body-byte limits against **synthetic-only** API-shaped fixtures and sanitizes outputs. No runtime HTTPS dispatcher, credential vault access, actual YouTube response, external proxy, file writes or automatic retries are present. \`executeLiveFirstCall\` always fails closed with \`G45_L1_BLOCKED\` regardless of caller-provided approval flags.
+
+This is **NOT** a functioning live YouTube collector: \`sourceType=STATIC_FIXTURE\`, \`providerRequestsMade=0\`, \`POLICY_HOLD\` and an unverified authentication mode are retained. Only after an independent provider-policy/secret-store/IP/retention/first-call approval review may a separate, restricted outbound transport be implemented and tested.
+
+See [L1 HTTPS/auth/policy review](../../../docs/integration/YU32_G45_L1_HTTP_AUTH_POLICY_GATES_V01.md). GitHub Actions runs the new 20 offline HTTP boundary tests with the existing G45 suite.
+
 ## Required prior-to-live gates
 
-This PR is deliberately **independent** of [G4-5 readiness PR #47](https://github.com/Choi1999/YOUTOPIA/pull/47) and [G44 Worker PR #46](https://github.com/Choi1999/YOUTOPIA/pull/46), each still Draft at time of authoring.
+Readiness PR #47, Worker PR #46, pipeline PR #48 and source-adapter PR #50 have been merged into `frontend`; the baseline policy gates remain `POLICY_HOLD`. This L1 change is an independent Draft PR until explicitly reviewed and merged.
 
 Before any *future* actual YouTube retrieval/analysis: prove project+credentials+IP restriction, YouTube data-use compliance, raw text/author privacy/deletion/expiry, API budget, approval for separate derived sentiment use case, server/tenant authorization, provenance and a **new, explicit first-call approval**. The candidate readiness package on PR #47 sets `POLICY_HOLD` and cannot be overridden by this synthetic pipeline.
 
