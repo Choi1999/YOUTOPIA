@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:16-alpine
+    pull_policy: never
+    restart: 'no'
+    environment:
+      POSTGRES_DB: g44_lab
+      POSTGRES_USER: g44_dba
+      POSTGRES_PASSWORD: ${G44_LAB_DB_PASSWORD:?G44_LAB_DB_PASSWORD is required}
+    networks:
+      - isolated
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U g44_dba -d g44_lab']
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    # No published ports. Only docker compose exec can reach psql.
+networks:
+  isolated:
+    internal: true
+volumes:
+  pgdata:
