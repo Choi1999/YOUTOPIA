@@ -137,3 +137,67 @@ test("G44-S13: Docker engine must be the local Windows Desktop Linux pipe",()=>{
   const dockerStart=runner.indexOf('docker([...base,"up","-d","--wait"');
   assert.ok(guardIndex>=0 && dockerStart>guardIndex);
 });
+
+const childWorker=read("scripts/worker-process.mjs");
+const recovery=read("scripts/worker-probes.mjs");
+
+test("G44-S14: stored Outbox event ID binds the claim to one fenced Job",()=>{
+  assert.equal(schema.split("CREATE FUNCTION g44_lab.claim_from_outbox(").length-1,1);
+  assert.match(schema,/JOIN g44_lab\.analysis_job AS j ON j\.job_id=o\.job_id/);
+  assert.match(schema,/o\.event_id=p_event AND o\.event_type='DISPATCH'/);
+  assert.match(schema,/pg_advisory_xact_lock[\s\S]*hashtextextended\('g44-outbox:'\|\|p_event::text/);
+  assert.match(schema,/FOR UPDATE OF j SKIP LOCKED/);
+  assert.match(schema,/j\.lease_expires_at <= clock_timestamp\(\)/);
+  assert.match(schema,/lease_epoch=lease_epoch\+1/);
+  assert.match(schema,/j\.policy_epoch=\(SELECT policy_epoch/);
+});
+
+test("G44-S15: synthetic worker child is IPC-only, restricted and fail-closed",()=>{
+  assert.match(childWorker,/G44_CHILD_PROJECT/);
+  assert.match(childWorker,/G44_CHILD_OWNER/);
+  assert.match(childWorker,/G44_LAB_CONFIRM/);
+  assert.match(childWorker,/process\.env\.CI/);
+  assert.match(childWorker,/G44 child STOP/);
+  assert.match(childWorker,/process\.exit\(1\)/);
+  assert.match(childWorker,/process\.send/);
+  assert.match(childWorker,/SET ROLE g44_writer/);
+  assert.match(childWorker,/context","show/);
+  assert.match(childWorker,/claim_from_outbox/);
+  assert.doesNotMatch(childWorker,/youtube\.googleapis\.com|\/api\/v1\/analysis\/jobs|https?:\/\//);
+});
+
+test("G44-S16: actual child-process crash and duplicate-event probes are opt-in only",()=>{
+  for(const label of ["G44-T14-PROCESS","G44-T15/T16-PROCESS","G44-T17-PROCESS",
+    "G44-T27-REDRIVE","G44-T36-NODE_CLOCK_SUBSET"])
+    assert.ok(recovery.includes('ctx.verify("'+label+'"'));
+  assert.match(recovery,/fork\(workerScript/);
+  assert.match(recovery,/\.kill\("SIGKILL"\)/);
+  assert.match(recovery,/waitDbExpiry/);
+  assert.match(recovery,/pg_stat_activity/);
+  assert.match(recovery,/outboxBarrier/);
+  assert.match(recovery,/assert\.equal\(duplicateAfter\.value,"NONE"\)/);
+  assert.match(recovery,/Date\.now\(\)/);
+  assert.match(runner,/runWorkerRecoveryProbes/);
+  assert.match(runner,/await tests\(\);[\s\S]*await runWorkerRecoveryProbes\(/);
+  assert.doesNotMatch(recovery,/youtube\.googleapis\.com|fetch\(|https?:\/\//);
+});
+
+test("G44-S17: feature branch preflight remains gated and 18 baseline probes stay",()=>{
+  assert.match(runner,/context\.gitBranch!=="feature\/yu32-g44-worker-recovery-outbox-v01"/);
+  assert.match(runner,/function verifyLocalDockerContext\(\)/);
+  assert.match(runner,/process\.env\.CI/);
+  assert.equal((runner.match(/await verify\("G44/g)||[]).length,18);
+  assert.match(runner,/docker\(\[\.\.\.base,"down","-v","--remove-orphans"\]\)/);
+  assert.doesNotMatch(runner,/youtube\.googleapis\.com/);
+});
+
+test("G44-S18: standalone child invocation without parent approval is rejected",()=>{
+  const res=require("node:child_process").spawnSync(process.execPath,
+    [path.join(lab,"scripts/worker-process.mjs")],{
+      encoding:"utf8",timeout:10000,
+      env:{...process.env,CI:"true",G44_LAB_CONFIRM:"",
+        G44_CHILD_PROJECT:"",G44_CHILD_OWNER:"worker-A"}
+    });
+  assert.notEqual(res.status,0);
+  assert.match(res.stderr||"",/G44 child STOP: Synthetic parent\/lab guard failed/);
+});
