@@ -1,0 +1,62 @@
+{
+  "version": "YU32_G4_5_WINDOWS_LOCAL_FIRST_V01",
+  "decision": "WINDOWS_LOCAL_BACKEND_FIRST",
+  "status": "OFFLINE_PRECHECK_ONLY",
+  "policy": "POLICY_HOLD",
+  "runtime": {
+    "platformCandidate": "win32",
+    "nodeMajorCandidate": 24,
+    "mode": "MANUAL_CLI_NO_HTTP_SERVER",
+    "localOnly": true,
+    "publicListener": false,
+    "scheduled": false,
+    "automaticRetries": 0,
+    "maxParallelRuns": 1
+  },
+  "limits": {
+    "source": "YOUTUBE",
+    "targetType": "VIDEO",
+    "minVideoCount": 1,
+    "maxVideoCount": 3,
+    "maxThreadsPerVideo": 100,
+    "maxPagesPerVideo": 1,
+    "plannedMaxQuotaUnits": 3,
+    "noReplies": true,
+    "noNlp": true
+  },
+  "keySecurity": {
+    "keysCreated": 0,
+    "apiRestriction": "youtube.googleapis.com",
+    "applicationRestrictionCandidate": "CURRENT_PUBLIC_EGRESS_IP",
+    "currentPublicIpVerified": false,
+    "ipRestrictionVerified": false,
+    "storedInOSVault": false,
+    "mustReverifyAfterAddressChange": true,
+    "allowUnrestrictedKeyFallback": false
+  },
+  "approvals": {
+    "localFirstDirection": true,
+    "localOfflineChecks": true,
+    "createCredentials": false,
+    "makeRealYouTubeCall": false,
+    "configureCloudResources": false,
+    "chargeBilling": false,
+    "writeRawComments": false,
+    "operatePublicEndpoint": false,
+    "mergePullRequest": false
+  },
+  "results": {
+    "networkRequestsMade": 0,
+    "realCommentsDownloaded": 0,
+    "realCommentsPersisted": 0,
+    "sentimentComputed": 0,
+    "liveSnapshotsPublished": 0,
+    "cloudResourcesCreated": 0
+  },
+  "providerGates": {
+    "basicSourceUse": "POLICY_HOLD",
+    "derivedMetrics": "POLICY_HOLD",
+    "rawLifecycle": "NOT_IMPLEMENTED",
+    "firstLiveCall": "NOT_APPROVED"
+  }
+}
