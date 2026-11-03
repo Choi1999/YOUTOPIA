@@ -1,0 +1,231 @@
+{
+  "contractVersion": "YU32_G45_L4_EVIDENCE_ERASURE_READINESS_V01",
+  "reviewedAtKST": "2026-11-03",
+  "baseline": {
+    "branch": "frontend",
+    "sha": "326dade64d255a126359a034b770455e2f8498fd",
+    "backendRef": "ff69f0b0ad14f156a4a4dafb5755dbbb1ab2c5b9"
+  },
+  "authority": "OFFLINE_TEST_AND_REVIEW_CHECKLIST_ONLY_NOT_POLICY_ENGINE",
+  "authoritativeGatePath": "shared/contracts/yu32-youtube-readiness-v0/policy-gates.json",
+  "status": "PREIMPLEMENTATION_POLICY_HOLD",
+  "evidenceVerifiedCount": 0,
+  "liveCallsAuthorized": false,
+  "derivedSentimentAuthorized": false,
+  "externalDataCollected": false,
+  "credentialHandling": {
+    "cloudApiConnectionAvailable": false,
+    "accountOrProjectOwnershipIndependentlyVerified": false,
+    "cloudProjectChangeAuthorized": false,
+    "keyCreationAuthorized": false,
+    "credentialsRead": 0,
+    "quotaAndUsageIndependentlyVerified": false,
+    "currentEgressIpObserved": false,
+    "ipRestrictionMatchVerified": false,
+    "youtubeAuthenticationModeSelected": false,
+    "evidenceReviewMode": "REDACTED_METADATA_AND_OWNER_ATTESTATION_WITH_INDEPENDENT_REVIEW",
+    "neverCommit": [
+      "API_KEY",
+      "OAUTH_ACCESS_TOKEN",
+      "OAUTH_REFRESH_TOKEN",
+      "RAW_COMMENT",
+      "AUTHOR_IDENTITY",
+      "UNREDACTED_SECURITY_SCREENSHOT",
+      "PUBLIC_EGRESS_IP",
+      "SECRET_FILE"
+    ]
+  },
+  "evidence": [
+    {
+      "id": "Y45-E01",
+      "status": "UNVERIFIED",
+      "scope": "LIVE_READ",
+      "requirement": "Google Cloud 프로젝트 소유자·책임자와 프로젝트 식별 증거를 접근제어된 공간에서 독립 검토; ID는 공개하지 않음",
+      "receiptVerified": false,
+      "evidenceCapturedInRepository": false,
+      "independentReviewerRequired": true,
+      "requiresNonSecretReviewMetadata": true
+    },
+    {
+      "id": "Y45-E02",
+      "status": "UNVERIFIED",
+      "scope": "LIVE_READ",
+      "requirement": "동일 프로젝트의 YouTube Data API v3 활성화와 선택한 메서드의 공식 지원 인증 모드를 독립 확인",
+      "receiptVerified": false,
+      "evidenceCapturedInRepository": false,
+      "independentReviewerRequired": true,
+      "requiresNonSecretReviewMetadata": true
+    },
+    {
+      "id": "Y45-E03",
+      "status": "UNVERIFIED",
+      "scope": "LIVE_READ",
+      "requirement": "API 제한·애플리케이션/실제 출구 IP 제한·Windows OS 보호 저장소·회전과 유출 대응 시험 확인",
+      "receiptVerified": false,
+      "evidenceCapturedInRepository": false,
+      "independentReviewerRequired": true,
+      "requiresNonSecretReviewMetadata": true
+    },
+    {
+      "id": "Y45-E04",
+      "status": "UNVERIFIED",
+      "scope": "LIVE_READ",
+      "requirement": "프로젝트별 현행 Quota/실제 사용량·오류 소비·최대 3회 발송·재시도 0 확인",
+      "receiptVerified": false,
+      "evidenceCapturedInRepository": false,
+      "independentReviewerRequired": true,
+      "requiresNonSecretReviewMetadata": true
+    },
+    {
+      "id": "Y45-E05",
+      "status": "POLICY_HOLD",
+      "scope": "LIVE_READ",
+      "requirement": "기본 Developer Policies·수집·표시·개인정보/동의 범위와 YOUTOPIA 사용 목적 검토",
+      "receiptVerified": false,
+      "evidenceCapturedInRepository": false,
+      "independentReviewerRequired": true,
+      "requiresNonSecretReviewMetadata": true
+    },
+    {
+      "id": "Y45-E06",
+      "status": "POLICY_HOLD",
+      "scope": "DERIVED_METRICS",
+      "requirement": "파생 지표 추가 정책 수락·신청/감사 및 실제 YOUTOPIA 분석 사례의 적용 승인 범위 확인",
+      "receiptVerified": false,
+      "evidenceCapturedInRepository": false,
+      "independentReviewerRequired": true,
+      "requiresNonSecretReviewMetadata": true
+    },
+    {
+      "id": "Y45-E07",
+      "status": "NOT_IMPLEMENTED",
+      "scope": "LIVE_READ",
+      "requirement": "영속 저장 인벤토리·기한 만료·업데이트/삭제·캐시/로그 잔존 및 복구 뒤 재생성 차단 E2E 증거",
+      "receiptVerified": false,
+      "evidenceCapturedInRepository": false,
+      "independentReviewerRequired": true,
+      "requiresNonSecretReviewMetadata": true
+    },
+    {
+      "id": "Y45-E08",
+      "status": "NOT_IMPLEMENTED",
+      "scope": "LIVE_READ",
+      "requirement": "검증된 사용자 삭제·OAuth 철회 접수/기한·하위 저장소 전파·백업/복구 펜스 E2E 증거",
+      "receiptVerified": false,
+      "evidenceCapturedInRepository": false,
+      "independentReviewerRequired": true,
+      "requiresNonSecretReviewMetadata": true
+    },
+    {
+      "id": "Y45-E09",
+      "status": "NOT_IMPLEMENTED",
+      "scope": "PRODUCTION",
+      "requirement": "Spring 실 관리자/시스템 계정 분리·AuthN/CSRF/tenant BOLA/Rate Limit 실증",
+      "receiptVerified": false,
+      "evidenceCapturedInRepository": false,
+      "independentReviewerRequired": true,
+      "requiresNonSecretReviewMetadata": true
+    },
+    {
+      "id": "Y45-E10",
+      "status": "NOT_IMPLEMENTED",
+      "scope": "PRODUCTION",
+      "requirement": "실 응답 출처·분모·미완전 페이지·STALE/NO_DATA/POLICY_BLOCKED 검증 및 무단 공개 차단",
+      "receiptVerified": false,
+      "evidenceCapturedInRepository": false,
+      "independentReviewerRequired": true,
+      "requiresNonSecretReviewMetadata": true
+    },
+    {
+      "id": "Y45-E11",
+      "status": "NOT_APPROVED",
+      "scope": "LIVE_READ",
+      "requirement": "승인 VIDEO 범위/작업자/요청·Quota 예산/폐기 및 정확한 최초 실호출 **별도 명시 승인**",
+      "receiptVerified": false,
+      "evidenceCapturedInRepository": false,
+      "independentReviewerRequired": true,
+      "requiresNonSecretReviewMetadata": true
+    },
+    {
+      "id": "Y45-E12",
+      "status": "POLICY_HOLD",
+      "scope": "PRODUCTION",
+      "requirement": "법무·보안·개인정보·비용·운영 배포의 별도 최종 승인",
+      "receiptVerified": false,
+      "evidenceCapturedInRepository": false,
+      "independentReviewerRequired": true,
+      "requiresNonSecretReviewMetadata": true
+    }
+  ],
+  "evidenceReceiptRecordFields": [
+    "evidenceId",
+    "projectReferenceRedacted",
+    "scope",
+    "reviewer",
+    "reviewedAt",
+    "expiresAt",
+    "policyRevision",
+    "sourceReference",
+    "restrictedEvidenceLocationOrHash",
+    "revocationStatus"
+  ],
+  "lifecycle": {
+    "authority": "PRODUCTION_DELETION_NOT_IMPLEMENTED",
+    "initialRawCommentPersistence": false,
+    "rawNonAuthorizedDataRefreshOrDeleteAfterCalendarDays": 30,
+    "userErasureRequestWithinCalendarDays": 7,
+    "oauthRevocationInAppWithinCalendarDays": 7,
+    "oauthRevocationInGoogleSecuritySettingsWithinCalendarDays": 30,
+    "deadlinesAreMaximumsNotReasonsToDelay": true,
+    "userErasureAndExpiryDoNotRequireAdmin": true,
+    "adminManualDeletionRequiresServerVerifiedAdmin": true,
+    "sourceTombstoneBeforePropagation": true,
+    "jobReplaysMustRespectMonotonicPolicyEpoch": true,
+    "propagationTargets": [
+      "raw-and-identity",
+      "snapshot-and-derived",
+      "report",
+      "search-index",
+      "server-cache",
+      "client-and-cdn-cache",
+      "job-and-outbox",
+      "temporary-export",
+      "backup-and-restore-fence"
+    ],
+    "purgedRequiresAllTargetsVerified": true,
+    "failureState": "PURGE_FAILED",
+    "backendSqlRedisQueueCdnBackupIntegrated": false
+  },
+  "syntheticLab": {
+    "fixtureId": "G45_L4_STATIC_TEST_ONLY",
+    "acceptedSyntheticScopes": [
+      "tenant-alpha:Ab0_-123xyz",
+      "tenant-beta:Ab0_-123xyz"
+    ],
+    "statusOnFullAcknowledgement": "PURGED_SYNTHETIC_ONLY",
+    "noTransport": true,
+    "noCredentialAccess": true,
+    "noPersistentWrites": true,
+    "noProductionDeletes": true,
+    "noProviderData": true,
+    "noUserIdentity": true,
+    "cannotAuthorizeOperations": true
+  },
+  "approvals": {
+    "firstLiveApiCall": false,
+    "apiKeyIssuance": false,
+    "cloudSpend": false,
+    "derivedMetricsUse": false,
+    "realDataProcessing": false,
+    "operationalDeletion": false,
+    "productionDeployment": false,
+    "prMerge": false
+  },
+  "effects": {
+    "providerRequestsMade": 0,
+    "realCommentsRead": 0,
+    "realDerivedMetrics": 0,
+    "realStoredDataDeleted": 0,
+    "cloudResourcesCreated": 0
+  }
+}
