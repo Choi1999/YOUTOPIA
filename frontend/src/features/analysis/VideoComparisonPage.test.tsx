@@ -82,7 +82,7 @@ describe("YU-35 — 영상 목록 및 비교 Web UX", () => {
 
     await screen.findByRole("heading", { name: "감성 분포 비교" });
     await user.type(screen.getByLabelText("영상 ID 추가"), UNKNOWN);
-    await user.click(screen.getByRole("button", { name: "추가", exact: true }));
+    await user.click(screen.getByRole("button", { name: "추가" }));
 
     expect(await screen.findByText("분석 데이터 미제공")).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "비교 선택 " + UNKNOWN }))
@@ -138,13 +138,13 @@ describe("YU-35 — 영상 목록 및 비교 Web UX", () => {
     renderPage();
     const input = screen.getByLabelText("영상 ID 추가");
     await user.type(input, "https://evil.example/");
-    await user.click(screen.getByRole("button", { name: "추가", exact: true }));
+    await user.click(screen.getByRole("button", { name: "추가" }));
     expect(screen.getByText(/영상 ID는 영문·숫자·하이픈·밑줄/))
       .toBeInTheDocument();
 
     await user.clear(input);
     await user.type(input, A);
-    await user.click(screen.getByRole("button", { name: "추가", exact: true }));
+    await user.click(screen.getByRole("button", { name: "추가" }));
     expect(screen.getByText("이미 목록에 추가한 영상입니다."))
       .toBeInTheDocument();
     expect(screen.getByRole("list", { name: "분석 대상 영상 목록" })
