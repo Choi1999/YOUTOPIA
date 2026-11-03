@@ -50,7 +50,7 @@ export function ChannelSelectionResult({
     let cancelled = false;
     setRows(null);
 
-    void Promise.all(selection.videoIds.map(async videoId: string): Promise<ChannelVideoEntry> => {
+    void Promise.all(selection.videoIds.map(async (videoId: string): Promise<ChannelVideoEntry> => {
       const target = createAnalysisTarget("VIDEO", videoId);
       if (!target) return { videoId, kind: "INVALID_SNAPSHOT", web: null };
 
