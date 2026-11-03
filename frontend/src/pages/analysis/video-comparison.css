@@ -521,3 +521,57 @@
   font-size: 11px;
   line-height: 1.55;
 }
+
+/* YU-39: local-only, canonical VIDEO A/B share URL. */
+.video-compare__share {
+  display: grid;
+  gap: 8px;
+  padding: 13px;
+  margin-bottom: 16px;
+  border-radius: 11px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-subtle);
+  min-width: 0;
+}
+.video-compare__share h3 {
+  color: var(--text-primary);
+  margin: 0;
+  font-size: 13px;
+}
+.video-compare__share label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.video-compare__share input {
+  min-width: 0;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+}
+.video-compare__share button {
+  padding: 9px;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.video-compare__share p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.video-compare__share p.video-compare__share-feedback {
+  color: var(--text-primary);
+  font-weight: 700;
+}

@@ -182,10 +182,14 @@ describe("YU-35 — 영상 목록 및 비교 Web UX", () => {
       .toBeInTheDocument();
   });
 
-  it("가짜 쿼리 ID는 분석을 시작하지 않고 명시적 예시만 보여준다", async () => {
+  it("YU-39: 잘못된 비교 쿼리는 안전하게 빈 목록으로 시작한다", async () => {
     renderPage("/analysis/youtube/compare?video=../../bad");
-    expect(await screen.findByRole("heading", { name: "감성 분포 비교" }))
+    expect(screen.getByText(/공유 링크의 영상 ID나 매개변수가 올바르지 않습니다/))
       .toBeInTheDocument();
+    expect(screen.getByText("목록이 비어 있습니다. 영상 ID를 추가하세요."))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "감성 분포 비교" }))
+      .not.toBeInTheDocument();
     expect(screen.queryByText("../../bad")).not.toBeInTheDocument();
   });
 
@@ -452,6 +456,75 @@ describe("YU-35 — 영상 목록 및 비교 Web UX", () => {
     expect(screen.getByText(/허용되지 않은 URL/)).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "분석 대상 영상 목록" })
       .querySelectorAll("li")).toHaveLength(2);
+  });
+
+  it("YU-39: two-video share URL restores the exact A/B order and verified results", async () => {
+    renderPage("/analysis/youtube/compare?video=" + B + "&video=" + A);
+    expect(await screen.findByRole("heading", { name: "차이 한눈에 보기" }))
+      .toBeInTheDocument();
+    expect(screen.getByText("영상 B의 긍정 비율은 영상 A보다 22.5%p 높습니다."))
+      .toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "비교 선택 " + A })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "비교 선택 " + B })).toBeChecked();
+    const link = screen.getByRole("textbox", { name: "비교 공유 링크" });
+    expect(link).toHaveAttribute("readonly");
+    expect(link).toHaveValue(window.location.origin +
+      "/analysis/youtube/compare?video=" + B + "&video=" + A);
+  });
+
+  it("YU-39: single Side Panel URL handoff shows one item and no share link", async () => {
+    renderPage("/analysis/youtube/compare?video=" + B);
+    expect(await screen.findByText("비교할 영상 두 개를 선택하세요."))
+      .toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "비교 선택 " + B })).toBeChecked();
+    expect(screen.queryByRole("checkbox", { name: "비교 선택 " + A }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "비교 공유 링크" }))
+      .not.toBeInTheDocument();
+  });
+
+  it.each([
+    "?video=" + A + "&video=" + A,
+    "?video=" + A + "&video=" + B + "&video=Zb0_-123xyz",
+    "?video=" + A + "&token=secret",
+  ])("YU-39: malformed share query is rejected without implicit fallback: %s", query => {
+    renderPage("/analysis/youtube/compare" + query);
+    expect(screen.getByText(/공유 링크의 영상 ID나 매개변수가 올바르지 않습니다/))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "차이 한눈에 보기" }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "비교 공유 링크" }))
+      .not.toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "분석 대상 영상 목록" })
+      .querySelectorAll("li")).toHaveLength(0);
+  });
+
+  it("YU-39: selection swap updates the canonical share URL, then clears on unselect", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole("heading", { name: "감성 분포 비교" });
+    const link = screen.getByRole("textbox", { name: "비교 공유 링크" });
+    expect(link).toHaveValue(window.location.origin +
+      "/analysis/youtube/compare?video=" + A + "&video=" + B);
+    await user.click(screen.getByRole("button", { name: "A/B 순서 바꾸기" }));
+    expect(link).toHaveValue(window.location.origin +
+      "/analysis/youtube/compare?video=" + B + "&video=" + A);
+    await user.click(screen.getByRole("button", { name: "비교 선택 해제" }));
+    expect(screen.queryByRole("textbox", { name: "비교 공유 링크" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("YU-39: share link exposes no comment text, token or source metadata", async () => {
+    renderPage();
+    await screen.findByRole("heading", { name: "감성 분포 비교" });
+    const link = screen.getByRole("textbox", { name: "비교 공유 링크" });
+    const url = new URL((link as HTMLInputElement).value);
+    expect([...url.searchParams.keys()]).toEqual(["video", "video"]);
+    expect(url.searchParams.getAll("video")).toEqual([A, B]);
+    expect(url.hash).toBe("");
+    expect(url.search).not.toContain("token");
+    expect(screen.getByText(/현재 localhost 실행 환경에서만 열 수 있습니다/))
+      .toBeInTheDocument();
   });
 
 });

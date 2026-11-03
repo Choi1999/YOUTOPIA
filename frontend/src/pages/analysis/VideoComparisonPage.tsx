@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import { createAnalysisTarget } from "../../features/analysis-target/analysisTarget";
 import { parseVideoBatch, type VideoBatchResult } from "../../features/analysis-target/videoInput";
+import { parseComparisonQuery, buildComparisonShareUrl } from "../../features/analysis-target/comparisonShareLink";
 import { useAnalysisRepository } from "../../features/analysis/data/AnalysisRepositoryContext";
 import {
   projectDemoAnalysisSnapshot,
@@ -50,16 +51,12 @@ const ENTRY_LABEL: Record<Entry["kind"], string> = {
 };
 
 function initialIds(search: URLSearchParams): string[] {
-  const matches = search.getAll("video");
-  if (
-    matches.length === 1 &&
-    createAnalysisTarget("VIDEO", matches[0])
-  ) {
-    // Side Panel/상세 화면에서 전달된 ID 하나만 초기 선택한다.
-    // 다른 영상을 동의 없이 추가하거나 실제 분석을 시작하지 않는다.
-    return [matches[0]];
-  }
-  return [...EXAMPLES];
+  const incoming = parseComparisonQuery(search);
+  // Empty URL = ordinary demo; malformed URL = fail closed empty list.
+  // One valid ID remains single; a valid pair retains its shared A/B order.
+  return incoming.kind === "DEFAULT"
+    ? [...EXAMPLES]
+    : [...incoming.videoIds];
 }
 
 const sentiments = [
@@ -80,7 +77,12 @@ export function VideoComparisonPage() {
     initialIds(searchParams).slice(0, 2),
   );
   const [input, setInput] = useState("");
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState(() =>
+    parseComparisonQuery(searchParams).kind === "INVALID"
+      ? "공유 링크의 영상 ID나 매개변수가 올바르지 않습니다. 영상을 직접 추가하세요."
+      : "",
+  );
+  const [shareFeedback, setShareFeedback] = useState("");
   const [filter, setFilter] = useState("");
   const [readyOnly, setReadyOnly] = useState(false);
   const [entries, setEntries] = useState<Record<string, Entry>>({});
@@ -227,6 +229,26 @@ export function VideoComparisonPage() {
           : ""
     : "";
 
+  /* YU-39: use ONLY the current application's origin and two selected VIDEO IDs. */
+  const shareUrl = typeof window !== "undefined"
+    ? buildComparisonShareUrl(window.location.origin, selected)
+    : null;
+
+  async function copyShareLink() {
+    if (!shareUrl) return;
+    const clipboard = typeof navigator !== "undefined" ? navigator.clipboard : undefined;
+    if (!clipboard || typeof clipboard.writeText !== "function") {
+      setShareFeedback("클립보드를 사용할 수 없습니다. 아래 링크를 직접 선택해 복사하세요.");
+      return;
+    }
+    try {
+      await clipboard.writeText(shareUrl);
+      setShareFeedback("비교 구성 링크를 복사했습니다. 합성 분석 결과 자체를 저장한 링크는 아닙니다.");
+    } catch {
+      setShareFeedback("클립보드 복사에 실패했습니다. 아래 링크를 직접 선택해 복사하세요.");
+    }
+  }
+
   const leftEntry = selected.length === 2 ? entries[selected[0]] : undefined;
   const rightEntry = selected.length === 2 ? entries[selected[1]] : undefined;
 
@@ -315,6 +337,28 @@ export function VideoComparisonPage() {
               <a href="#comparison-results">비교 결과로 이동</a>
             </div>
           </div>
+          <section className="video-compare__share"
+            aria-labelledby="comparison-share-heading">
+            <h3 id="comparison-share-heading">비교 구성 공유</h3>
+            <p>영상 A/B ID와 순서만 포함하는 로컬 DEMO 링크입니다. 로그인·댓글·분석 원문은 담지 않습니다.</p>
+            {shareUrl ? (
+              <>
+                <label htmlFor="comparison-share-url">비교 공유 링크</label>
+                <input id="comparison-share-url" type="text" readOnly
+                  value={shareUrl}
+                  onFocus={event => event.currentTarget.select()} />
+                <button type="button" onClick={() => { void copyShareLink(); }}>
+                  링크 복사
+                </button>
+                <p>현재 localhost 실행 환경에서만 열 수 있습니다. 외부 공유용 서비스는 아직 제공하지 않습니다.</p>
+              </>
+            ) : (
+              <p>공유 링크를 만들려면 서로 다른 영상 두 개를 선택하세요.</p>
+            )}
+            {shareFeedback && (
+              <p role="status" className="video-compare__share-feedback">{shareFeedback}</p>
+            )}
+          </section>
           <div className="video-compare__filter">
             <label htmlFor="comparison-filter">영상 ID 필터</label>
             <input id="comparison-filter" type="search" value={filter}
