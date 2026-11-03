@@ -1,0 +1,68 @@
+name: G45-L9 Windows DPAPI protected key storage (synthetic only)
+
+on:
+  pull_request:
+    branches:
+      - frontend
+  push:
+    branches:
+      - frontend
+
+permissions:
+  contents: read
+
+jobs:
+  g45-l9-windows-dpapi:
+    name: Offline Windows DPAPI ACL and synthetic round-trip
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify empty private DEV vault status without credentials
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = '.\shared\contracts\yu32-youtube-readiness-v0\scripts\g45-l9-windows-dpapi-vault.ps1'
+          $raw = & $script -Status
+          if (-not $?) { throw 'G45-L9 initial status failed' }
+          $report = $raw | ConvertFrom-Json
+          if ($report.status -ne 'VAULT_NOT_ENROLLED' -or
+              $report.vaultPresent -ne $false -or
+              $report.dpapiDecryptionPerformed -ne $false -or
+              $report.youtubeApiRequests -ne 0 -or
+              $report.liveCallsAuthorized -ne $false) {
+            throw 'G45-L9 empty vault status invalid'
+          }
+      - name: Validate synthetic Windows user DPAPI and restricted ACL
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = '.\shared\contracts\yu32-youtube-readiness-v0\scripts\g45-l9-windows-dpapi-vault.ps1'
+          $raw = & $script -SelfTest
+          if (-not $?) { throw 'G45-L9 synthetic self-test failed' }
+          $report = $raw | ConvertFrom-Json
+          if ($report.status -ne 'SYNTHETIC_DPAPI_ROUNDTRIP_PASS' -or
+              $report.syntheticFixtureOnly -ne $true -or
+              $report.aclRestrictedObserved -ne $true -or
+              $report.dpapiDecryptionPerformed -ne $true -or
+              $report.vaultPresent -ne $false -or
+              $report.secretPrinted -ne $false -or
+              $report.collectorCredentialReaderIntegrated -ne $false -or
+              $report.youtubeApiRequests -ne 0 -or
+              $report.cloudApiRequests -ne 0 -or
+              $report.liveCallsAuthorized -ne $false -or
+              $report.verifiedGateCount -ne 0) {
+            throw 'G45-L9 synthetic DPAPI integrity or policy check failed'
+          }
+      - name: Ensure no production DEV key stored during CI
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = '.\shared\contracts\yu32-youtube-readiness-v0\scripts\g45-l9-windows-dpapi-vault.ps1'
+          $raw = & $script -Status
+          if (-not $?) { throw 'G45-L9 final status failed' }
+          $report = $raw | ConvertFrom-Json
+          if ($report.vaultPresent -ne $false -or
+              $report.status -ne 'VAULT_NOT_ENROLLED') {
+            throw 'G45-L9 synthetic test must not create a real DEV vault'
+          }
