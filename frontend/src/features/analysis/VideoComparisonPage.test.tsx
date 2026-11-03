@@ -219,4 +219,33 @@ describe("YU-35 — 영상 목록 및 비교 Web UX", () => {
     expect(screen.getByRole("list", { name: "분석 대상 영상 목록" })
       .querySelectorAll("li")).toHaveLength(1);
   });
+  it("YU-36: 검증된 두 영상의 B − A 감성 차이와 주제 차이를 표시한다", async () => {
+    renderPage();
+    expect(await screen.findByRole("heading", { name: "차이 한눈에 보기" }))
+      .toBeInTheDocument();
+    expect(screen.getByText("영상 B의 긍정 비율은 영상 A보다 22.5%p 낮습니다."))
+      .toBeInTheDocument();
+    expect(screen.getByText("-22.5%p")).toBeInTheDocument();
+    expect(screen.getByText("+10.0%p")).toBeInTheDocument();
+    expect(screen.getByText("+12.5%p")).toBeInTheDocument();
+    expect(screen.getByText("B − A: +13건")).toBeInTheDocument();
+    expect(screen.getByText("B − A: -13건")).toBeInTheDocument();
+    expect(screen.getByText(/통계적 유의성을 뜻하지 않습니다/))
+      .toBeInTheDocument();
+  });
+
+  it("YU-36: 호환되지 않는 관측 범위는 차이 카드도 표시하지 않는다", async () => {
+    renderPage("/analysis/youtube/compare", resultWithB({
+      scope: {
+        ...demoComparisonSnapshot.scope,
+        windowEnd: "2026-10-09T00:00:00+09:00",
+      },
+    }));
+    expect(await screen.findByText(/관측 기간 또는 언어·범위가 달라/))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "차이 한눈에 보기" }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByText(/22.5%p/)).not.toBeInTheDocument();
+  });
+
 });

@@ -318,3 +318,92 @@
   .video-compare__pair { grid-template-columns: minmax(0, 1fr); }
   .video-compare__target-actions { flex-wrap: wrap; }
 }
+
+/* YU-36: factual, source-guarded B-minus-A difference presentation. */
+.video-compare__highlights {
+  padding: 18px;
+  border: 1px solid var(--border-default);
+  border-radius: 13px;
+  background: var(--bg-subtle);
+}
+.video-compare__highlight-summary {
+  padding: 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+}
+.video-compare__highlight-summary strong { font-size: 12px; }
+.video-compare__highlight-summary p {
+  margin: 7px 0 0;
+  font-weight: 650;
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+.video-compare__delta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.video-compare__delta-card {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  border-radius: 10px;
+}
+.video-compare__delta-card > span {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.video-compare__delta-card strong {
+  color: var(--text-primary);
+  font-size: clamp(15px, 1.8vw, 19px);
+  font-variant-numeric: tabular-nums;
+}
+.video-compare__delta-card small {
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+.video-compare__top-differences h4 {
+  margin: 0 0 9px;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.video-compare__top-differences ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.video-compare__top-differences li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 9px;
+  background: var(--bg-surface);
+  padding: 10px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.video-compare__top-differences li strong { overflow-wrap: anywhere; }
+.video-compare__top-differences li small {
+  grid-column: 1 / -1;
+  color: var(--text-secondary);
+}
+.video-compare__section > .video-compare__interpretation {
+  border-top: 1px solid var(--border-default);
+  padding-top: 12px;
+  line-height: 1.65;
+}
+@media (max-width: 600px) {
+  .video-compare__delta-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .video-compare__highlights { padding: 13px; }
+  .video-compare__delta-card { padding: 9px; }
+}

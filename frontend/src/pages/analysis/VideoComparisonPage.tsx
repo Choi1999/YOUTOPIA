@@ -12,6 +12,8 @@ import {
   type VideoComparisonResult,
 } from "../../features/analysis/model/videoComparison";
 
+import { deriveComparisonHighlights } from "../../features/analysis/model/comparisonHighlights";
+
 import "./video-comparison.css";
 
 const EXAMPLES = ["Ab0_-123xyz", "Qb0_-123xyz"] as const;
@@ -169,6 +171,7 @@ export function VideoComparisonPage() {
       : null;
 
   const ready = comparison?.kind === "READY" ? comparison : null;
+  const highlights = ready ? deriveComparisonHighlights(ready) : null;
 
   const waitingForResults =
     selected.length === 2 && (!leftEntry || !rightEntry);
@@ -310,6 +313,59 @@ export function VideoComparisonPage() {
                 <p>분석 버전: {ready.left.analysisVersion}</p>
                 <p>분류 완료 표본: 각 {ready.left.sentimentPercent?.denominator}건</p>
               </div>
+
+              {highlights && (
+                <section aria-labelledby="comparison-highlights-title"
+                  className="video-compare__section video-compare__highlights">
+                  <h3 id="comparison-highlights-title">차이 한눈에 보기</h3>
+                  <p>영상 B − 영상 A 기준입니다. 감성은 퍼센트포인트(%p), 주제는 언급 건수 차이입니다.</p>
+                  <div className="video-compare__highlight-summary" role="note">
+                    <strong>가장 큰 감성 분포 차이</strong>
+                    <p>
+                      {highlights.largestSentiment.deltaPp === 0
+                        ? "긍정·중립·부정 비율 차이가 없습니다."
+                        : "영상 B의 " + highlights.largestSentiment.label + " 비율은 영상 A보다 " +
+                          Math.abs(highlights.largestSentiment.deltaPp).toFixed(1) + "%p " +
+                          (highlights.largestSentiment.deltaPp > 0 ? "높습니다." : "낮습니다.")}
+                    </p>
+                  </div>
+                  <div className="video-compare__delta-grid" aria-label="감성별 퍼센트포인트 차이">
+                    {highlights.sentiments.map(item => (
+                      <div key={item.key} className="video-compare__delta-card">
+                        <span>{item.label}</span>
+                        <strong>
+                          {item.deltaPp > 0 ? "+" : ""}
+                          {item.deltaPp.toFixed(1)}%p
+                        </strong>
+                        <small>영상 B − A</small>
+                      </div>
+                    ))}
+                  </div>
+                  {highlights.topTopicDifferences.length > 0 && (
+                    <div className="video-compare__top-differences">
+                      <h4>언급량 차이가 큰 주제 (최대 3개)</h4>
+                      <ol>
+                        {highlights.topTopicDifferences.map(topic => (
+                          <li key={topic.topicId}>
+                            <strong>{topic.topicId}</strong>
+                            <span>
+                              B − A: {topic.deltaCount > 0 ? "+" : ""}
+                              {topic.deltaCount}건
+                            </span>
+                            <small>
+                              A {topic.leftCount}건 · B {topic.rightCount}건
+                            </small>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+                  <p className="video-compare__interpretation">
+                    같은 조건의 합성 스냅샷에 나타난 기술적 차이입니다.
+                    시간에 따른 변화, 실제 영상의 우열, 원인 또는 통계적 유의성을 뜻하지 않습니다.
+                  </p>
+                </section>
+              )}
 
               <section aria-labelledby="comparison-sentiment-title"
                 className="video-compare__section">
