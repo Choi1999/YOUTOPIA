@@ -9,10 +9,14 @@
  * separately approved first actual read, not for derived sentiment metrics.
  */
 const https=require("node:https");
+const {TextDecoder}=require("node:util");
 const gates=require("../../../contracts/yu32-youtube-readiness-v0/policy-gates.json");
 
 const RELEASED_FOR_FIRST_REAL_CALL=false; // MUST be changed only in a separately reviewed, approved PR
 const MAX_RESPONSE_BYTES=512*1024;
+const TOTAL_REQUEST_DEADLINE_MS=5000;
+// In-process fail-closed claim is supplemental; L8 still needs a durable one-shot authorization journal.
+let firstAttemptClaimed=false;
 const MAX_RESULTS=100;
 const VIDEO=/^[A-Za-z0-9_-]{11}$/;
 const REQUIRED_EVIDENCE=Object.freeze([
@@ -83,8 +87,13 @@ function decodeFirstPageShape(body,input) {
   const bytes=Buffer.byteLength(body);
   if(bytes<2||bytes>MAX_RESPONSE_BYTES)deny("BODY_LIMIT");
   let page;
-  try{page=JSON.parse(body.toString());}
-  catch{deny("INVALID_JSON");}
+  try {
+    // A Buffer is decoded with fatal UTF-8 checks; Node Buffer.toString() silently
+    // replaces malformed byte sequences, which would mutate provider content.
+    const json=Buffer.isBuffer(body)?
+      new TextDecoder("utf-8",{fatal:true}).decode(body):body;
+    page=JSON.parse(json);
+  } catch {deny("INVALID_JSON_OR_UTF8");}
   if(!isRecord(page)||page.kind!=="youtube#commentThreadListResponse"||
      !Array.isArray(page.items)||page.items.length>plan.maxResults||
      !isRecord(page.pageInfo))deny("INVALID_PAGE");
@@ -101,7 +110,7 @@ function decodeFirstPageShape(body,input) {
     if(seenThread.has(threadId))deny("DUPLICATE_THREAD");
     seenThread.add(threadId);
     const s=item.snippet;
-    if(!isRecord(s)||s.videoId!==plan.videoId||s.isPublic===false)
+    if(!isRecord(s)||s.videoId!==plan.videoId||s.isPublic!==true)
       deny("WRONG_VIDEO_SCOPE");
     if(s.totalReplyCount!==undefined)asUnsigned(s.totalReplyCount);
     const top=s.topLevelComment;
@@ -134,11 +143,23 @@ function decodeFirstPageShape(body,input) {
   });
 }
 function assertReleasedForFirstCall() {
-  // First gate is compile-time, before touching caller input or credentials.
+  // Compile-time lock is checked before caller objects or credentials.
   if(RELEASED_FOR_FIRST_REAL_CALL!==true)deny("POLICY_HOLD");
-  const evidence=new Map(gates.evidence.map(e=>[e.id,e.status]));
-  if(gates.liveCallsAuthorized!==true||
-     REQUIRED_EVIDENCE.some(id=>evidence.get(id)!=="VERIFIED"))
+  // Defense in depth: release also requires a separately reviewed canonical
+  // live-read status, never just a caller flag or a list of self-reported booleans.
+  if(gates.status!=="LIVE_FIRST_CALL_APPROVED"||
+     gates.liveCallsAuthorized!==true||
+     !Number.isSafeInteger(gates.verifiedCount)||
+     gates.verifiedCount<REQUIRED_EVIDENCE.length||
+     !Array.isArray(gates.evidence))deny("EVIDENCE_NOT_APPROVED");
+  const evidence=new Map();
+  for(const item of gates.evidence) {
+    if(!isRecord(item)||typeof item.id!=="string"||
+       typeof item.status!=="string"||evidence.has(item.id))
+      deny("EVIDENCE_NOT_APPROVED");
+    evidence.set(item.id,item.status);
+  }
+  if(REQUIRED_EVIDENCE.some(id=>evidence.get(id)!=="VERIFIED"))
     deny("EVIDENCE_NOT_APPROVED");
 }
 /** Fixed-host transport. No URL/credential/error-body logging, redirect or retry. */
@@ -146,51 +167,84 @@ function sendBoundedFirstPage(plan,apiKey) {
   if(typeof apiKey!=="string"||!(/^[A-Za-z0-9_-]{30,160}$/.test(apiKey)))
     deny("INVALID_CREDENTIAL");
   const query=new URLSearchParams(plan.query);
-  query.set("key",apiKey); // Official YouTube API key query parameter; NEVER log path.
+  query.set("key",apiKey); // YouTube-specific official query parameter. NEVER log the path.
   const options={
     protocol:"https:",hostname:"www.googleapis.com",port:443,
     path:"/youtube/v3/commentThreads?"+query.toString(),
-    method:"GET",headers:{Accept:"application/json"},
+    method:"GET",headers:{Accept:"application/json","Accept-Encoding":"identity"},
     rejectUnauthorized:true,agent:false
   };
   return new Promise((resolve,reject)=>{
-    let settled=false;
+    let settled=false,req,deadline;
+    function clearDeadline(){
+      if(deadline!==undefined)clearTimeout(deadline);
+    }
     function fail(code){
       if(settled)return;
       settled=true;
+      clearDeadline();
       reject(Object.assign(new Error("G45_L7_"+code),{code:"G45_L7_"+code}));
+      // Do not drain arbitrary provider error responses: terminate the socket.
+      if(req)req.destroy();
     }
-    const req=https.request(options,res=>{
-      if(res.statusCode!==200){res.resume();fail("PROVIDER_HTTP_STATUS");return;}
-      const type=res.headers["content-type"];
-      if(typeof type!=="string"||
-         !/^application\/json(?:;\s*charset=utf-8)?$/i.test(type.trim())){
-        res.resume();fail("PROVIDER_CONTENT_TYPE");return;
-      }
-      const chunks=[];let bytes=0;
-      res.on("data",chunk=>{
-        if(settled)return;
-        bytes+=chunk.length;
-        if(bytes>MAX_RESPONSE_BYTES){fail("PROVIDER_BODY_TOO_LARGE");req.destroy();return;}
-        chunks.push(chunk);
+    function succeed(shaped){
+      if(settled)return;
+      settled=true;
+      clearDeadline();
+      resolve(Object.freeze({...shaped,sourceAuthenticated:true,
+        status:shaped.sampleCount?"FIRST_PAGE_FETCHED":"FIRST_PAGE_EMPTY",
+        observedAt:new Date().toISOString(),providerRequestsMade:1}));
+    }
+    try {
+      req=https.request(options,res=>{
+        if(res.statusCode!==200){fail("PROVIDER_HTTP_STATUS");return;}
+        const type=res.headers["content-type"];
+        if(typeof type!=="string"||
+           !/^application\/json(?:;\s*charset=utf-8)?$/i.test(type.trim())){
+          fail("PROVIDER_CONTENT_TYPE");return;
+        }
+        const encoding=res.headers["content-encoding"];
+        if(encoding!==undefined&&encoding!=="identity"){
+          fail("UNEXPECTED_CONTENT_ENCODING");return;
+        }
+        const length=res.headers["content-length"];
+        if(length!==undefined&&
+           (typeof length!=="string"||!/^\d+$/.test(length)||
+            !Number.isSafeInteger(Number(length))||Number(length)>MAX_RESPONSE_BYTES)){
+          fail("PROVIDER_BODY_TOO_LARGE");return;
+        }
+        const chunks=[];let bytes=0;
+        res.on("data",chunk=>{
+          if(settled)return;
+          bytes+=chunk.length;
+          if(bytes>MAX_RESPONSE_BYTES){fail("PROVIDER_BODY_TOO_LARGE");return;}
+          chunks.push(chunk);
+        });
+        res.on("error",()=>fail("PROVIDER_STREAM_ERROR"));
+        res.on("aborted",()=>fail("PROVIDER_STREAM_INCOMPLETE"));
+        res.on("close",()=>{if(!res.complete)fail("PROVIDER_STREAM_INCOMPLETE");});
+        res.on("end",()=>{
+          if(settled)return;
+          try {
+            const shaped=decodeFirstPageShape(Buffer.concat(chunks),{
+              videoId:plan.videoId,maxResults:plan.maxResults
+            });
+            succeed(shaped);
+          } catch {fail("INVALID_PROVIDER_RESPONSE");}
+        });
       });
-      res.on("error",()=>fail("PROVIDER_STREAM_ERROR"));
-      res.on("end",()=>{
-        if(settled)return;
-        try{
-          const shaped=decodeFirstPageShape(Buffer.concat(chunks),{
-            videoId:plan.videoId,maxResults:plan.maxResults
-          });
-          settled=true;
-          resolve(Object.freeze({...shaped,sourceAuthenticated:true,
-            status:shaped.sampleCount?"FIRST_PAGE_FETCHED":"FIRST_PAGE_EMPTY",
-            observedAt:new Date().toISOString(),providerRequestsMade:1}));
-        }catch{fail("INVALID_PROVIDER_RESPONSE");}
-      });
-    });
-    req.on("error",()=>fail("PROVIDER_NETWORK_ERROR"));
-    req.setTimeout(5000,()=>{fail("PROVIDER_TIMEOUT");req.destroy();});
-    req.end();
+    } catch {
+      // Synchronous native errors may contain request internals; discard them.
+      fail("PROVIDER_NETWORK_ERROR");
+      return;
+    }
+    // req.setTimeout checks socket inactivity ONLY. This independent timer
+    // enforces a wall-clock deadline even if the server trickles data forever.
+    deadline=setTimeout(()=>fail("PROVIDER_TOTAL_DEADLINE"),TOTAL_REQUEST_DEADLINE_MS);
+    try {
+      req.setTimeout(TOTAL_REQUEST_DEADLINE_MS,()=>fail("PROVIDER_INACTIVITY_TIMEOUT"));
+      req.end();
+    } catch {fail("PROVIDER_NETWORK_ERROR");}
   });
 }
 /**
@@ -203,12 +257,16 @@ async function executeApprovedFirstPage(input,readServerCredential) {
   assertReleasedForFirstCall();
   const plan=planFirstPage(input);
   if(typeof readServerCredential!=="function")deny("CREDENTIAL_READER_REQUIRED");
+  // A single attempt in THIS process only; L8 must supply durable cross-process
+  // operation IDs and quotas before any real request is authorized.
+  if(firstAttemptClaimed)deny("PROCESS_FIRST_CALL_SLOT_USED");
+  firstAttemptClaimed=true;
   let key;
   try{key=await readServerCredential();}
   catch{deny("CREDENTIAL_UNAVAILABLE");}
   return sendBoundedFirstPage(plan,key);
 }
 module.exports=Object.freeze({
-  MAX_RESPONSE_BYTES,RELEASED_FOR_FIRST_REAL_CALL,
+  MAX_RESPONSE_BYTES,TOTAL_REQUEST_DEADLINE_MS,RELEASED_FOR_FIRST_REAL_CALL,
   planFirstPage,decodeFirstPageShape,executeApprovedFirstPage
 });

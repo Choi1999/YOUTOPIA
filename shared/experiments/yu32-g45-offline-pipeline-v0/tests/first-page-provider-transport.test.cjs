@@ -5,7 +5,7 @@ const https=require("node:https");
 const fs=require("node:fs");
 const path=require("node:path");
 const {
-  MAX_RESPONSE_BYTES,RELEASED_FOR_FIRST_REAL_CALL,
+  MAX_RESPONSE_BYTES,TOTAL_REQUEST_DEADLINE_MS,RELEASED_FOR_FIRST_REAL_CALL,
   planFirstPage,decodeFirstPageShape,executeApprovedFirstPage
 }=require("../src/first-page-provider-transport.cjs");
 const ID="Ab0_-123xyz";
@@ -25,7 +25,7 @@ function providerPage(){
               authorProfileImageUrl:"https://private.example.invalid/avatar",
               likeCount:3,publishedAt:"2026-10-20T10:00:00Z"}}}},
       {kind:"youtube#commentThread",id:"thread-2",
-        snippet:{videoId:ID,totalReplyCount:0,
+        snippet:{videoId:ID,isPublic:true,totalReplyCount:0,
           topLevelComment:{kind:"youtube#comment",id:"comment-2",
             snippet:{videoId:ID,textDisplay:"음질은 아쉬워요.",
               likeCount:0,publishedAt:"2026-10-21T10:00:00.123Z"}}}}
@@ -109,7 +109,7 @@ test("L7-06: wrong VIDEO, duplicates and nonpublic thread rejected",()=>{
 });
 test("L7-07: body, timestamp and page count are strictly bounded",()=>{
   assert.throws(()=>decodeFirstPageShape("x".repeat(MAX_RESPONSE_BYTES+1),{videoId:ID}),/BODY_LIMIT/);
-  assert.throws(()=>decodeFirstPageShape("{",{videoId:ID}),/BODY_LIMIT|INVALID_JSON/);
+  assert.throws(()=>decodeFirstPageShape("{",{videoId:ID}),/BODY_LIMIT|INVALID_JSON_OR_UTF8/);
   let p=providerPage();p.pageInfo.resultsPerPage=99;
   assert.throws(()=>decode(p),/PAGE_COUNT_MISMATCH/);
   p=providerPage();p.items[0].snippet.topLevelComment.snippet.publishedAt="2026-02-30T00:00:00Z";
@@ -165,4 +165,41 @@ test("L7-12: canonical policy still denies real API and derived analytics",()=>{
   const code=fs.readFileSync(path.resolve(__dirname,"../src/first-page-provider-transport.cjs"),"utf8");
   assert.match(code,/RELEASED_FOR_FIRST_REAL_CALL=false/);
   assert.doesNotMatch(code,/console\.log|process\.env|fs\.writeFile|res\.setHeader/);
+});
+
+test("L7-13: absent or non-boolean public visibility never qualifies",()=>{
+  for(const visibility of [undefined,null,false,0,"true"]) {
+    const p=providerPage();
+    if(visibility===undefined)delete p.items[1].snippet.isPublic;
+    else p.items[1].snippet.isPublic=visibility;
+    assert.throws(()=>decode(p),/WRONG_VIDEO_SCOPE/);
+  }
+  assert.equal(decode().sampleCount,2);
+});
+test("L7-14: malformed provider UTF-8 is rejected instead of silently replaced",()=>{
+  const valid=Buffer.from(JSON.stringify(providerPage()),"utf8");
+  assert.equal(decodeFirstPageShape(valid,{videoId:ID}).sampleCount,2);
+  const malformed=Buffer.concat([valid.slice(0,-1),Buffer.from([0xc3,0x28,0x7d])]);
+  assert.throws(()=>decodeFirstPageShape(malformed,{videoId:ID}),/INVALID_JSON_OR_UTF8/);
+});
+test("L7-15: future transport has total wall-clock deadline and terminates bad responses",()=>{
+  const code=fs.readFileSync(path.resolve(__dirname,
+    "../src/first-page-provider-transport.cjs"),"utf8");
+  assert.equal(TOTAL_REQUEST_DEADLINE_MS,5000);
+  assert.match(code,/deadline=setTimeout\(\(\)=>fail\("PROVIDER_TOTAL_DEADLINE"\),TOTAL_REQUEST_DEADLINE_MS\)/);
+  assert.match(code,/req\.setTimeout\(TOTAL_REQUEST_DEADLINE_MS,/);
+  assert.match(code,/if\(req\)req\.destroy\(\)/);
+  assert.match(code,/PROVIDER_CONTENT_TYPE/);
+  assert.match(code,/UNEXPECTED_CONTENT_ENCODING/);
+  assert.doesNotMatch(code,/res\.resume\(\)/);
+});
+test("L7-16: future live release demands a reviewed canonical status and process attempt fence",()=>{
+  const code=fs.readFileSync(path.resolve(__dirname,
+    "../src/first-page-provider-transport.cjs"),"utf8");
+  assert.match(code,/RELEASED_FOR_FIRST_REAL_CALL=false/);
+  assert.match(code,/gates\.status!=="LIVE_FIRST_CALL_APPROVED"/);
+  assert.match(code,/REQUIRED_EVIDENCE\.some/);
+  assert.match(code,/if\(firstAttemptClaimed\)deny\("PROCESS_FIRST_CALL_SLOT_USED"\)/);
+  assert.match(code,/firstAttemptClaimed=true/);
+  // These are STRUCTURAL tests only: no HTTPS transport is invoked while held.
 });

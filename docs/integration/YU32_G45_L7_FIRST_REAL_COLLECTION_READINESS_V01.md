@@ -16,12 +16,12 @@ G45-L1~L6까지는 비실행 요청 설계, 합성 수명주기 및 격리 DB·R
 
 신규 `src/first-page-provider-transport.cjs`:
 
-- **작동하는 HTTPS 전송 구현 자체**는 작성한다. 호스트와 경로를 `www.googleapis.com:443 /youtube/v3/commentThreads`로 고정하고, GET·첫 페이지·타임아웃 5초·응답 512 KiB 제한·리다이렉트 없음·자동 재시도 0·응답 MIME 검증을 구현한다.
+- **작동하는 HTTPS 전송 구현 자체**는 작성한다. 호스트와 경로를 `www.googleapis.com:443 /youtube/v3/commentThreads`로 고정하고, GET·첫 페이지·**총 실행시간 5초와 소켓 비활동 5초의 이중 타임아웃**·응답 512 KiB 제한·리다이렉트 없음·자동 재시도 0·응답 MIME/압축 형식 검증을 구현한다. 비정상 응답·타임아웃 발생 시 요청 소켓을 종료하고 원문/키/URL이 포함될 수 있는 네이티브 오류는 외부로 전달하지 않는다.
 - 인증 키는 전송 전에 **나중에 승인된 서버측 credential reader**로부터 일회성 전달받는 구조로 작성한다. 키 또는 요청 URL·오류 응답 본문을 기록하거나 반환하지 않는다. `key` 쿼리 특성상 운영 프록시/서버/트레이싱에서 URL이 노출되지 않는지 별도 점검 필요.
-- API 응답 본문에서 영상 스코프, 상한, thread/comment ID 중복, 댓글 본문 길이·일시·페이지 크기를 검증한다. **author ID/이름/프로필/etag/nextPageToken을 결과에서 제외**한다.
+- API 응답 본문에서 영상 스코프, **`isPublic===true`**, 상한, thread/comment ID 중복, 댓글 본문 길이·일시·페이지 크기를 검증한다. Byte Buffer는 malformed UTF-8을 거부하는 fatal decoder로 처리한다. **author ID/이름/프로필/etag/nextPageToken을 결과에서 제외**한다.
 - 텍스트는 현재 **함수 반환값의 메모리 데이터**로만 존재하며 파일·DB·Redis·브라우저 캐시·로그에 저장되지 않는다. 이 반환값은 감성 분석기로 전달되지 않는다.
 - `decodeFirstPageShape`는 임의 JSON의 **형식만** 확인하므로 결과에 `sourceAuthenticated:false`를 표기한다. 실제 TLS 출처 인증을 수행한 결과라고 단정하지 않는다.
-- 향후 승인된 호출만 `sourceAuthenticated:true`로 반환할 수 있도록 성공 경로 코드를 작성하지만, **현재 `RELEASED_FOR_FIRST_REAL_CALL=false`**로 컴파일 시점부터 고정된 차단을 유지한다. 나중에 `policy-gates.json`을 바꾸거나 호출자가 `approved:true`를 주더라도 이번 브랜치만으로 실호출 불가.
+- 향후 승인된 호출만 `sourceAuthenticated:true`로 반환할 수 있도록 성공 경로 코드를 작성하지만, **현재 `RELEASED_FOR_FIRST_REAL_CALL=false`**로 컴파일 시점부터 고정된 차단을 유지한다. 추가로 향후 별도 심사된 정본 상태 `LIVE_FIRST_CALL_APPROVED`, 필수 증거별 검증 및 프로세스 내부 일회성 시도 플래그를 요구한다. 이 상태값은 **현재 정책에 정의·승인되지 않았으며 미래 별도 변경 승인이 필요하다**. 나중에 `policy-gates.json`을 바꾸거나 호출자가 `approved:true`를 주더라도 이번 브랜치만으로 실호출 불가.
 
 **변경하지 않는 부분:** 기존 `first-call-http-boundary.cjs`의 무조건 거부 `executeLiveFirstCall()`, 합성 파이프라인의 세 가지 묶음 Fixture 전용 권한 경계, `policy-gates.json`, Spring 운영 백엔드/삭제 API/DB, 사용자 화면. 별도의 실호출 실행 스크립트·HTTP endpoint도 추가하지 않는다.
 
@@ -51,7 +51,7 @@ G45-L1~L6까지는 비실행 요청 설계, 합성 수명주기 및 격리 DB·R
 ## 5. 다음 순서 — 실수집을 앞당기는 최소 작업
 
 1. **이번 G45-L7 PR:** 실 API 응답 구조 디코더·고정 HTTPS 전송·민감정보 제거·엄격한 단발 예산과 테스트를 준비하되 실행 차단. 코드 독립 리뷰/CI.
-2. **G45-L8 증거 수령·실수집 Gate:** E01~E05/E07/E08/E11의 **실제 비밀 제외 증거**를 독립 검수하고, 안전한 서버 credential reader와 한 번만 실행하는 수동 명령을 **별도 보안 PR**로 구현. 정본 Gate 상태는 증거 검증 후에만 변경.
+2. **G45-L8 증거 수령·실수집 Gate:** E01~E05/E07/E08/E11의 **실제 비밀 제외 증거**를 독립 검수하고, 안전한 서버 credential reader와 한 번만 실행하는 수동 명령을 **별도 보안 PR**로 구현. 정본 Gate 상태는 증거 검증 후에만 변경. **현재의 프로세스 내부 시도 차단은 재시작·다중 프로세스에서 무효**이므로, 실제 1회 요청 상한은 영속 원자적 소비 기록·실행권한과 quota 확인을 추가해야 한다.
 3. **첫 실제 댓글 조회:** 추가로 승인된 대상 VIDEO ID 1개에 대해 실제 `commentThreads.list` 1회 실행; 실패/통신 오류 시 자동 재시도·추가 페이지 없음. 사용 후 원문 폐기. 실제 호출 사실과 사용 quota를 기록하되 키/원문은 로그에서 제외.
 4. **G45-L9 화면 연동:** 출처/표본 제한을 표시하고, 사용 조건 충족 범위에서 영상 데이터 조회 UI 연결. 분석이 허용되지 않은 경우 감성 점수는 `null`.
 5. **G45-L10 AI 분석:** E06 조건 충족 이후 NLP 분류기·품질 평가 및 투명한 비공식 지표 표시. YOUTOPIA의 분석 결과를 YouTube가 제공한 데이터로 오인하게 하지 않는다.
@@ -66,3 +66,12 @@ G45-L1~L6까지는 비실행 요청 설계, 합성 수명주기 및 격리 DB·R
 - https://developers.google.com/youtube/terms/derived-metrics-policy
 
 **판정: REAL_TRANSPORT_IMPLEMENTED_BUT_HARD_LOCKED / POLICY_HOLD / LIVE_API_0 / G45-L7 검수·병합 별도 승인.**
+
+## 7. PR #54 독립 코드·보안 검수 보완 (2026-11-03)
+
+- **P1:** 기존 `req.setTimeout(5000)`은 소켓 비활동 시간만 검사했다. 응답을 조금씩 지속적으로 보내는 상황에서도 전체 요청이 종료되도록 독립된 `setTimeout` 총 시간 제한과 성공·실패 시 정리 경로를 추가했다.
+- **P2:** HTTP 오류·MIME/압축 불일치·바이트 초과·중도 중단 시 요청 스트림을 폐기하고 연결을 종료한다. 키 포함 URL/네이티브 예외는 로그·반환값에 복사하지 않는다.
+- **P2:** 일부 스레드의 `isPublic` 누락을 허용하던 로직을 명시적 `true`로 제한하고, 잘못된 UTF-8 Buffer는 대체 문자 변환 없이 거부한다.
+- **L8 차단 사항:** 프로세스 내부 시도 1회 플래그는 영속적 호출 예산을 보장하지 않는다. 실제 호출 전 별도 승인된 증거·지속형 one-shot 원장 및 권한 검토가 필요하다.
+- 신규 테스트는 정책 잠금을 유지하면서 파서·검증 및 코드 구조를 확인하며, 실제 HTTPS 실행 경로를 통합 테스트했다고 주장하지 않는다.
+
