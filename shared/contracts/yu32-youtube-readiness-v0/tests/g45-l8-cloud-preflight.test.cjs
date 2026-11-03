@@ -85,6 +85,6 @@ test("G45-L8-12: only explicitly ENABLED YouTube Data API may be observed",()=>{
   assert.match(ps,/\$service\.state -ceq 'ENABLED'/);
   assert.match(ps,/\$service\.config\.name -ceq 'youtube\.googleapis\.com'/);
   assert.match(ps,/PROJECT_IDENTITY_MISMATCH/);
-  assert.match(wf,/cloudCliMayUseExistingAuthentication -ne \$false/);
-  assert.match(wf,/apiKeyMaterialReadByThisScript -ne \$false/);
+  assert.match(workflow,/cloudCliMayUseExistingAuthentication -ne \$false/);
+  assert.match(workflow,/apiKeyMaterialReadByThisScript -ne \$false/);
 });
