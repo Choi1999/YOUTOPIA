@@ -21,6 +21,10 @@ export type VideoBatchResult =
 /** Single non-redirecting, exact-host HTTPS URL or raw VIDEO ID. */
 export function parseVideoInput(value: unknown): VideoInputResult {
   if (typeof value !== "string") return { kind: "INVALID", reason: "BAD_ID" };
+  // WHATWG URL parsing may strip leading/trailing C0 controls. Reject before trim/parse.
+  if (/[\u0000-\u001F\u007F]/.test(value)) {
+    return { kind: "INVALID", reason: "UNSUPPORTED_URL" };
+  }
   const input = value.trim();
 
   if (input.length === 0) return { kind: "INVALID", reason: "EMPTY" };

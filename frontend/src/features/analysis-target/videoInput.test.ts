@@ -55,7 +55,7 @@ describe("YU-38 — exact-host, non-network video URL parser", () => {
     expect(parseVideoInput("   ").kind).toBe("INVALID");
     expect(parseVideoInput("x".repeat(2049))).toEqual({ kind: "INVALID", reason: "TOO_LONG" });
     expect(parseVideoInput("https://youtu.be/" + A + "\t")).toEqual({
-      kind: "VALID", videoId: A, type: "SHORT_LINK",
+      kind: "INVALID", reason: "UNSUPPORTED_URL",
     });
     expect(parseVideoInput("https://youtu.be/" + A + "\u0001").kind).toBe("INVALID");
   });
