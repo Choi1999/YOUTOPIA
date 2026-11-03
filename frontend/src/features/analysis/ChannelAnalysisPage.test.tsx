@@ -100,4 +100,71 @@ describe("YU-44 — registered synthetic channel selection only", () => {
       .toHaveLength(2);
     expect(screen.queryByText("SENSITIVE_PROVIDER_DETAIL")).not.toBeInTheDocument();
   });
+  it("YU-45: verified two-video set shows exact classified denominator and channel-limited rates", async () => {
+    renderPage("/analysis/youtube/channel/" + CHANNEL);
+    expect(await screen.findByRole("img", {
+      name: /선정 영상 감성 분포: 긍정 51.25%, 중립 30.00%, 부정 18.75%/,
+    })).toBeInTheDocument();
+    expect(screen.getByText("원시 댓글: 240건")).toBeInTheDocument();
+    expect(screen.getByText("적격 댓글: 200건")).toBeInTheDocument();
+    expect(screen.getByText("분류 완료: 160건")).toBeInTheDocument();
+    expect(screen.getByText("미분류: 40건")).toBeInTheDocument();
+    expect(screen.getByText("긍정: 51.25% (82건)")).toBeInTheDocument();
+    expect(screen.getByText(/실제 채널의 전체 영상이나/))
+      .toBeInTheDocument();
+  });
+
+  it("YU-45: topic contributions retain each video's count and multi-label caveat", async () => {
+    renderPage("/analysis/youtube/channel/" + CHANNEL);
+    const topics = await screen.findByRole("list", {
+      name: "채널 선정 영상 주제 언급량",
+    });
+    expect(within(topics).getByText("RECIPE · 63건")).toBeInTheDocument();
+    expect(within(topics).getByText("PRICE · 57건")).toBeInTheDocument();
+    expect(within(topics).getByText("DELIVERY · 12건")).toBeInTheDocument();
+    const contributions = screen.getByRole("list", {
+      name: "영상별 분석 기여도",
+    });
+    expect(within(contributions).getAllByRole("listitem")).toHaveLength(2);
+    expect(screen.getByText(/주제는 다중 라벨입니다/))
+      .toBeInTheDocument();
+  });
+
+  it("YU-45: missing one selected VIDEO makes all aggregate metrics unavailable", async () => {
+    const missing: AnalysisRepository = {
+      async getSnapshot(target) {
+        if (target.targetId === "Qb0_-123xyz") return { kind: "NOT_FOUND" };
+        return demoAnalysisRepository.getSnapshot(target);
+      },
+    };
+    renderPage("/analysis/youtube/channel/" + CHANNEL, missing);
+    expect(await screen.findByText(/선정 영상 중 분석 데이터 미제공/))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /선정 영상 감성 분포/ }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByText(/분류 완료: 160건/))
+      .not.toBeInTheDocument();
+  });
+
+  it("YU-45: PARTIAL and mismatched observation windows fail closed", async () => {
+    const repository: AnalysisRepository = {
+      async getSnapshot(target) {
+        const result = await demoAnalysisRepository.getSnapshot(target);
+        if (result.kind !== "FOUND" || target.targetId !== "Qb0_-123xyz")
+          return result;
+        return {
+          kind: "FOUND",
+          snapshot: { ...result.snapshot, scope: {
+            ...result.snapshot.scope, locale: "en-US",
+          } },
+        };
+      },
+    };
+    renderPage("/analysis/youtube/channel/" + CHANNEL, repository);
+    expect(await screen.findByText(/모든 선정 영상이 동일 조건의 READY 스냅샷이어야 합니다/))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "채널 선정 영상 주제 언급량" }))
+      .not.toBeInTheDocument();
+  });
+
 });
