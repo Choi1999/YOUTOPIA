@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { createAnalysisTarget } from "../../features/analysis-target/analysisTarget";
+import { buildComparisonSharePath } from "../../features/analysis-target/comparisonShareLink";
 import { useAnalysisRepository } from "../../features/analysis/data/AnalysisRepositoryContext";
 import {
   getDemoChannelSelection,
@@ -105,7 +106,7 @@ export function ChannelSelectionResult({
                 <strong>영상 ID: {entry.videoId}</strong>
                 <span>{STATUS_LABELS[entry.kind]}</span>
               </div>
-              <Link to={"/analysis/youtube/video/" + entry.videoId}>
+              <Link to={"/analysis/youtube/video/" + entry.videoId + "?channel=" + selection.channelId}>
                 영상 상세 분석
               </Link>
             </li>
@@ -128,6 +129,12 @@ export function ChannelSelectionResult({
             </p>
           ) : (
             <>
+              <nav className="channel-analysis__nav" aria-label="채널 선정 영상 탐색">
+                <Link to={buildComparisonSharePath(aggregate.selectedVideoIds) ??
+                  "/analysis/youtube/compare"}>
+                  이 두 합성 영상 비교하기
+                </Link>
+              </nav>
               <p>
                 분석 범위: 등록된 합성 영상 {aggregate.selectedVideoIds.length}개
                 (실제 채널 전체가 아님)
@@ -236,6 +243,9 @@ export function ChannelAnalysisPage() {
         <div className="channel-analysis__eyebrow">YOUTOPIA · STATIC FIXTURE · DEMO</div>
         <h1>채널 상세 분석</h1>
         <p>선정 영상 범위에 한정된 합성 데모입니다. 실제 채널 전체 반응이 아닙니다.</p>
+        <nav className="channel-analysis__nav" aria-label="채널 화면 탐색">
+          <Link to="/analysis/youtube/compare">영상 비교 목록으로 이동</Link>
+        </nav>
       </header>
       {!target ? (
         <section className="channel-analysis__panel">

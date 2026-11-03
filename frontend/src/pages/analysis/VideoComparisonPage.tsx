@@ -16,6 +16,7 @@ import {
 
 import { deriveComparisonHighlights } from "../../features/analysis/model/comparisonHighlights";
 import { serializeSyntheticComparisonCsv, SYNTHETIC_COMPARISON_CSV_FILENAME } from "../../features/analysis/model/comparisonCsv";
+import { demoChannelSelection } from "../../features/analysis/data/demoChannelSelection";
 
 import "./video-comparison.css";
 
@@ -348,6 +349,9 @@ export function VideoComparisonPage() {
         <nav aria-label="분석 화면 탐색" className="video-compare__top-nav">
           <Link to="/analysis/youtube/video/Ab0_-123xyz">합성 영상 상세 예시</Link>
           <Link to="/analysis/youtube/compare">새 비교 화면</Link>
+          <Link to={"/analysis/youtube/channel/" + demoChannelSelection.channelId}>
+            선정 합성 채널 분석
+          </Link>
         </nav>
         <p>
           영상 목록을 관리하고 검증된 합성 스냅샷 2개의 감성·주제를 비교합니다.

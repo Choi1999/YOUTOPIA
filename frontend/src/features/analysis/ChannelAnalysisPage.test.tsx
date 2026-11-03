@@ -1,8 +1,11 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { ChannelAnalysisPage } from "../../pages/analysis/ChannelAnalysisPage";
+import { SingleVideoAnalysisPage } from "../../pages/analysis/SingleVideoAnalysisPage";
+import { VideoComparisonPage } from "../../pages/analysis/VideoComparisonPage";
 import { AnalysisRepositoryProvider } from "./data/AnalysisRepositoryContext";
 import { demoAnalysisRepository } from "./data/DemoAnalysisRepository";
 import type { AnalysisRepository } from "./data/AnalysisRepository";
@@ -21,6 +24,10 @@ function renderPage(
         <Routes>
           <Route path="/analysis/youtube/channel/:channelId"
             element={<ChannelAnalysisPage />} />
+          <Route path="/analysis/youtube/video/:videoId"
+            element={<SingleVideoAnalysisPage />} />
+          <Route path="/analysis/youtube/compare"
+            element={<VideoComparisonPage />} />
         </Routes>
       </MemoryRouter>
     </AnalysisRepositoryProvider>,
@@ -165,6 +172,63 @@ describe("YU-44 — registered synthetic channel selection only", () => {
       .toBeInTheDocument();
     expect(screen.queryByRole("list", { name: "채널 선정 영상 주제 언급량" }))
       .not.toBeInTheDocument();
+  });
+
+  it("YU-46: selected channel → video detail → same synthetic channel round trip", async () => {
+    const user = userEvent.setup();
+    renderPage("/analysis/youtube/channel/" + CHANNEL);
+    const list = await screen.findByRole("list", { name: "채널의 선정 영상 목록" });
+    const first = within(list).getAllByRole("link", { name: "영상 상세 분석" })[0];
+    expect(first).toHaveAttribute("href",
+      "/analysis/youtube/video/Ab0_-123xyz?channel=" + CHANNEL);
+    await user.click(first);
+    expect(await screen.findByRole("heading", { name: "영상 상세 분석" }))
+      .toBeInTheDocument();
+    const back = screen.getByRole("link", {
+      name: "선정 합성 채널 분석으로 돌아가기",
+    });
+    expect(back).toHaveAttribute("href", "/analysis/youtube/channel/" + CHANNEL);
+    await user.click(back);
+    expect(await screen.findByRole("heading", { name: "채널 상세 분석" }))
+      .toBeInTheDocument();
+  });
+
+  it("YU-46: verified channel aggregate links to exact synthetic A/B comparison", async () => {
+    const user = userEvent.setup();
+    renderPage("/analysis/youtube/channel/" + CHANNEL);
+    const link = await screen.findByRole("link", { name: "이 두 합성 영상 비교하기" });
+    expect(link).toHaveAttribute("href",
+      "/analysis/youtube/compare?video=Ab0_-123xyz&video=Qb0_-123xyz");
+    await user.click(link);
+    expect(await screen.findByRole("heading", { name: "차이 한눈에 보기" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "비교 선택 Ab0_-123xyz" }))
+      .toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "비교 선택 Qb0_-123xyz" }))
+      .toBeChecked();
+  });
+
+  it("YU-46: blocked channel aggregate must not offer comparison of unverified pair", async () => {
+    const missing: AnalysisRepository = {
+      async getSnapshot(target) {
+        if (target.targetId === "Qb0_-123xyz") return { kind: "NOT_FOUND" };
+        return demoAnalysisRepository.getSnapshot(target);
+      },
+    };
+    renderPage("/analysis/youtube/channel/" + CHANNEL, missing);
+    expect(await screen.findByText(/선정 영상 중 분석 데이터 미제공/))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "이 두 합성 영상 비교하기" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("YU-46: unrelated channel query on video detail never gets return link", async () => {
+    renderPage("/analysis/youtube/video/Ab0_-123xyz?channel=UC" + "B".repeat(22));
+    expect(await screen.findByRole("heading", { name: "영상 상세 분석" }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("link", {
+      name: "선정 합성 채널 분석으로 돌아가기",
+    })).not.toBeInTheDocument();
   });
 
 });
