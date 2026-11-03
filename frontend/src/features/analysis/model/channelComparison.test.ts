@@ -102,4 +102,18 @@ describe("YU-47 — explicitly registered synthetic channel A/B comparison", () 
       ...b,sample:{...b.sample,classified:999},
     })).toEqual({kind:"BLOCKED",reason:"INVALID_COUNTS"});
   });
+  it("rejects duplicated or tampered constituent video contributions",async()=>{
+    const a=await ready(demoChannelSelection.channelId);
+    const b=await ready(demoChannelBSelection.channelId);
+    expect(compareChannelAggregations(a,{...b,videos:[
+      {...b.videos[0],classifiedCount:999},b.videos[1],
+    ]})).toEqual({kind:"BLOCKED",reason:"INVALID_COUNTS"});
+    expect(compareChannelAggregations(a,{...b,videos:[
+      b.videos[0],b.videos[0],
+    ]})).toEqual({kind:"BLOCKED",reason:"INVALID_COUNTS"});
+    expect(compareChannelAggregations(a,{...b,topics:[
+      b.topics[0],b.topics[0],
+    ]})).toEqual({kind:"BLOCKED",reason:"INVALID_COUNTS"});
+  });
+
 });

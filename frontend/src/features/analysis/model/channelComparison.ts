@@ -55,6 +55,21 @@ function validAggregate(item: Ready): boolean {
     return false;
 
   const videoSet = new Set(item.selectedVideoIds);
+  // Reject missing/duplicate per-VIDEO provenance and arithmetic mismatches.
+  // A valid aggregate must be exactly the sum of the registered constituents.
+  const videoIds = item.videos.map(v => v.videoId);
+  const perVideoTotals = [
+    item.videos.reduce((sum, v) => sum + v.rawCount, 0),
+    item.videos.reduce((sum, v) => sum + v.eligibleCount, 0),
+    item.videos.reduce((sum, v) => sum + v.classifiedCount, 0),
+  ];
+  const topicIds = item.topics.map(t => t.topicId);
+  if (new Set(videoIds).size !== videoSet.size ||
+      new Set(topicIds).size !== topicIds.length ||
+      !perVideoTotals.every(Number.isSafeInteger) ||
+      perVideoTotals[0] !== s.raw ||
+      perVideoTotals[1] !== s.eligible ||
+      perVideoTotals[2] !== s.classified) return false;
   return item.videos.length === videoSet.size &&
     item.videos.every(video =>
       videoSet.has(video.videoId) &&
@@ -65,6 +80,7 @@ function validAggregate(item: Ready): boolean {
       /^[A-Z0-9_]{1,64}$/.test(topic.topicId) &&
       nonNegative(topic.mentionCount) &&
       topic.perVideo.length === videoSet.size &&
+      new Set(topic.perVideo.map(v => v.videoId)).size === videoSet.size &&
       topic.perVideo.every(v => videoSet.has(v.videoId) && nonNegative(v.mentionCount)) &&
       topic.perVideo.reduce((sum, v) => sum + v.mentionCount, 0) === topic.mentionCount
     );
