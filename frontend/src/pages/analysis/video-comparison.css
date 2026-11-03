@@ -407,3 +407,100 @@
   .video-compare__highlights { padding: 13px; }
   .video-compare__delta-card { padding: 9px; }
 }
+
+/* YU-37: explicit A/B selection order, local list filtering and help states. */
+.video-compare__selection-controls {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding: 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 11px;
+  background: var(--bg-subtle);
+}
+.video-compare__selected-slots {
+  display: grid;
+  gap: 6px;
+}
+.video-compare__selected-slots > span {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: baseline;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.video-compare__selected-slots code {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.video-compare__selection-actions {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.video-compare__selection-actions button,
+.video-compare__selection-actions a {
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  padding: 8px 10px;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.video-compare__filter {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 12px;
+}
+.video-compare__filter > label:first-child {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 750;
+}
+.video-compare__filter > input[type="search"] {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border-default);
+  border-radius: 9px;
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  padding: 10px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+}
+.video-compare__filter-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+.video-compare__filter-option input {
+  accent-color: var(--accent-primary);
+  width: 15px;
+  height: 15px;
+}
+.video-compare__filter > p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.video-compare__blocked > .video-compare__issue-detail {
+  margin-top: 12px;
+  color: var(--text-primary);
+  font-weight: 750;
+}
+.video-compare__results { scroll-margin-top: 24px; }
+@media (max-width: 600px) {
+  .video-compare__selection-actions > * {
+    flex: 1;
+    text-align: center;
+  }
+}

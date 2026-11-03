@@ -80,6 +80,8 @@ export function VideoComparisonPage() {
   );
   const [input, setInput] = useState("");
   const [feedback, setFeedback] = useState("");
+  const [filter, setFilter] = useState("");
+  const [readyOnly, setReadyOnly] = useState(false);
   const [entries, setEntries] = useState<Record<string, Entry>>({});
 
   /*
@@ -162,6 +164,48 @@ export function VideoComparisonPage() {
     }
   }
 
+  /*
+   * YU-37: 선택 순서만 바꾸거나 명시적으로 비울 수 있다.
+   * 목록·Repository·기존 스냅샷은 변경하지 않으며 추가 API 호출도 없다.
+   */
+  function swapSelected() {
+    if (selected.length !== 2) return;
+    setSelected(previous => [previous[1], previous[0]]);
+    setFeedback("영상 A/B 비교 순서를 바꿨습니다. 차이는 새 B − A 기준으로 표시됩니다.");
+  }
+
+  function clearSelected() {
+    setSelected([]);
+    setFeedback("비교 대상을 해제했습니다. 목록은 그대로 유지됩니다.");
+  }
+
+  /* 필터는 임시 목록의 표시만 바꾸며 비교 선택은 유지한다. */
+  const normalizedFilter = filter.trim().toLowerCase();
+  const visibleIds = ids.filter(id => {
+    const entry = entries[id];
+    return (
+      id.toLowerCase().includes(normalizedFilter) &&
+      (!readyOnly ||
+        (entry?.kind === "READY" &&
+         entry.web.status === "READY" &&
+         entry.web.sentimentPercent !== null))
+    );
+  });
+
+  const selectedIssueId = selected.length === 2
+    ? selected.find(id => entries[id] && entries[id].kind !== "READY")
+    : undefined;
+  const selectedIssue = selectedIssueId ? entries[selectedIssueId] : undefined;
+  const selectedIssueDetail = selectedIssueId && selectedIssue
+    ? selectedIssue.kind === "NOT_FOUND"
+      ? "영상 " + selectedIssueId + "의 등록된 합성 스냅샷이 없습니다."
+      : selectedIssue.kind === "REJECTED"
+        ? "영상 " + selectedIssueId + "의 분석 스냅샷을 검증할 수 없습니다."
+        : selectedIssue.kind === "ERROR"
+          ? "영상 " + selectedIssueId + "의 데이터 조회에 오류가 발생했습니다."
+          : ""
+    : "";
+
   const leftEntry = selected.length === 2 ? entries[selected[0]] : undefined;
   const rightEntry = selected.length === 2 ? entries[selected[1]] : undefined;
 
@@ -230,8 +274,44 @@ export function VideoComparisonPage() {
           <p className="video-compare__instructions">
             비교할 영상 2개만 체크하세요. 이 목록은 브라우저 화면을 닫으면 사라집니다.
           </p>
+
+          <div className="video-compare__selection-controls"
+            role="group" aria-label="비교 대상 선택 관리">
+            <div className="video-compare__selected-slots">
+              <span>영상 A: <code>{selected[0] ?? "미선택"}</code></span>
+              <span>영상 B: <code>{selected[1] ?? "미선택"}</code></span>
+            </div>
+            <div className="video-compare__selection-actions">
+              <button type="button" onClick={swapSelected}
+                disabled={selected.length !== 2}>
+                A/B 순서 바꾸기
+              </button>
+              <button type="button" onClick={clearSelected}
+                disabled={selected.length === 0}>
+                비교 선택 해제
+              </button>
+              <a href="#comparison-results">비교 결과로 이동</a>
+            </div>
+          </div>
+          <div className="video-compare__filter">
+            <label htmlFor="comparison-filter">영상 ID 필터</label>
+            <input id="comparison-filter" type="search" value={filter}
+              placeholder="목록에서 영상 ID 찾기"
+              onChange={event => setFilter(event.target.value)}
+            />
+            <label className="video-compare__filter-option">
+              <input type="checkbox" checked={readyOnly}
+                onChange={event => setReadyOnly(event.target.checked)}
+              />
+              READY 스냅샷만 표시
+            </label>
+            <p>
+              목록 {visibleIds.length} / {ids.length}개 표시
+              · 필터는 비교 선택을 변경하지 않습니다.
+            </p>
+          </div>
           <ul className="video-compare__target-list" aria-label="분석 대상 영상 목록">
-            {ids.map(id => {
+            {visibleIds.map(id => {
               const checked = selected.includes(id);
               const state = entries[id];
               return (
@@ -264,6 +344,11 @@ export function VideoComparisonPage() {
           {ids.length === 0 && (
             <p className="video-compare__empty">목록이 비어 있습니다. 영상 ID를 추가하세요.</p>
           )}
+          {ids.length > 0 && visibleIds.length === 0 && (
+            <p role="status" className="video-compare__empty">
+              현재 필터에 맞는 영상이 없습니다. 필터를 해제하거나 다른 영상 ID를 입력하세요.
+            </p>
+          )}
           <div className="video-compare__example">
             <p>합성 데모 예시 영상</p>
             {EXAMPLES.map(id => (
@@ -275,7 +360,7 @@ export function VideoComparisonPage() {
           </div>
         </section>
 
-        <section className="video-compare__panel video-compare__results"
+        <section id="comparison-results" className="video-compare__panel video-compare__results"
           aria-labelledby="video-compare-results">
           <div className="video-compare__panel-heading">
             <h2 id="video-compare-results">두 영상 비교</h2>
@@ -290,6 +375,9 @@ export function VideoComparisonPage() {
                   ? BLOCK_REASONS[comparison.reason]
                   : incompleteMessage}
               </p>
+              {selectedIssueDetail && (
+                <p className="video-compare__issue-detail">{selectedIssueDetail}</p>
+              )}
               <p>관측 조건이 같지 않으면 감성 차이·주제 언급량을 계산하지 않습니다.</p>
             </div>
           )}

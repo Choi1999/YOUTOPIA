@@ -248,4 +248,133 @@ describe("YU-35 — 영상 목록 및 비교 Web UX", () => {
     expect(screen.queryByText(/22.5%p/)).not.toBeInTheDocument();
   });
 
+  it("YU-37: A/B 순서를 바꾸면 차이 부호도 바뀌고 목록은 유지된다", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    expect(await screen.findByText("영상 B의 긍정 비율은 영상 A보다 22.5%p 낮습니다."))
+      .toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "A/B 순서 바꾸기" }));
+    expect(screen.getByText("영상 B의 긍정 비율은 영상 A보다 22.5%p 높습니다."))
+      .toBeInTheDocument();
+    expect(screen.getByText("+22.5%p")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /영상 A 긍정 40.0%/ }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "분석 대상 영상 목록" })
+      .querySelectorAll("li")).toHaveLength(2);
+  });
+
+  it("YU-37: 비교 선택 해제는 임시 목록을 삭제하지 않으며 재선택 가능하다", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole("heading", { name: "감성 분포 비교" });
+    await user.click(screen.getByRole("button", { name: "비교 선택 해제" }));
+    expect(screen.getByText("비교할 영상 두 개를 선택하세요."))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "차이 한눈에 보기" }))
+      .not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "A/B 순서 바꾸기" }))
+      .toBeDisabled();
+    expect(screen.getByRole("list", { name: "분석 대상 영상 목록" })
+      .querySelectorAll("li")).toHaveLength(2);
+
+    await user.click(screen.getByRole("checkbox", { name: "비교 선택 " + B }));
+    await user.click(screen.getByRole("checkbox", { name: "비교 선택 " + A }));
+    expect(await screen.findByRole("heading", { name: "차이 한눈에 보기" }))
+      .toBeInTheDocument();
+  });
+
+  it("YU-37: ID 필터는 현재 선택을 변경하지 않고 목록 표시만 바꾼다", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole("heading", { name: "감성 분포 비교" });
+    const input = screen.getByRole("searchbox", { name: "영상 ID 필터" });
+    await user.type(input, A.slice(0, 5));
+    expect(screen.getByRole("list", { name: "분석 대상 영상 목록" })
+      .querySelectorAll("li")).toHaveLength(1);
+    expect(screen.getByRole("heading", { name: "감성 분포 비교" }))
+      .toBeInTheDocument();
+
+    await user.clear(input);
+    await user.type(input, "not-found");
+    expect(screen.getByText(/현재 필터에 맞는 영상이 없습니다/))
+      .toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "감성 분포 비교" }))
+      .toBeInTheDocument();
+
+    await user.clear(input);
+    expect(screen.getByRole("list", { name: "분석 대상 영상 목록" })
+      .querySelectorAll("li")).toHaveLength(2);
+  });
+
+  it("YU-37: READY 필터는 미제공 영상을 숨기되 등록/선택 상태는 보존한다", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole("heading", { name: "감성 분포 비교" });
+    await user.type(screen.getByLabelText("영상 ID 추가"), UNKNOWN);
+    await user.click(screen.getByRole("button", { name: "추가" }));
+    expect(await screen.findByText("분석 데이터 미제공")).toBeInTheDocument();
+    await user.click(screen.getByRole("checkbox", { name: "READY 스냅샷만 표시" }));
+    expect(screen.getByRole("list", { name: "분석 대상 영상 목록" })
+      .querySelectorAll("li")).toHaveLength(2);
+    expect(screen.getByRole("heading", { name: "감성 분포 비교" }))
+      .toBeInTheDocument();
+    await user.click(screen.getByRole("checkbox", { name: "READY 스냅샷만 표시" }));
+    expect(screen.getByRole("list", { name: "분석 대상 영상 목록" })
+      .querySelectorAll("li")).toHaveLength(3);
+    expect(screen.getByText("분석 데이터 미제공")).toBeInTheDocument();
+  });
+
+  it("YU-37: 등록되지 않은 선택 대상은 구체적인 미제공 이유를 보여준다", async () => {
+    const user = userEvent.setup();
+    renderPage("/analysis/youtube/compare?video=" + UNKNOWN);
+    expect(await screen.findByText("분석 데이터 미제공")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: A + " 추가" }));
+    expect(await screen.findByText("영상 " + UNKNOWN + "의 등록된 합성 스냅샷이 없습니다."))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "차이 한눈에 보기" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("YU-37: 선택된 영상의 Repository 오류는 안전한 원인 안내만 표시한다", async () => {
+    const repository: AnalysisRepository = {
+      async getSnapshot(target) {
+        if (target.targetId === B) throw new Error("PRIVATE_PROVIDER_ERROR");
+        return demoAnalysisRepository.getSnapshot(target);
+      },
+    };
+    renderPage("/analysis/youtube/compare", repository);
+    expect(await screen.findByText("영상 " + B + "의 데이터 조회에 오류가 발생했습니다."))
+      .toBeInTheDocument();
+    expect(screen.queryByText("PRIVATE_PROVIDER_ERROR")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "차이 한눈에 보기" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("YU-37: 검증 실패 스냅샷은 상세 원인을 노출하지 않고 비교를 막는다", async () => {
+    renderPage("/analysis/youtube/compare", resultWithB({
+      sourceType: "APPROVED_PROVIDER",
+      isSynthetic: false,
+    }));
+    expect(await screen.findByText("영상 " + B + "의 분석 스냅샷을 검증할 수 없습니다."))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "차이 한눈에 보기" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("YU-37: 두 영상을 모두 제거하면 빈 목록 안내와 선택 해제 상태를 보여준다", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole("heading", { name: "감성 분포 비교" });
+    await user.click(screen.getByRole("button", { name: "목록에서 제거 " + A }));
+    await user.click(screen.getByRole("button", { name: "목록에서 제거 " + B }));
+    expect(screen.getByText("목록이 비어 있습니다. 영상 ID를 추가하세요."))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "비교 선택 해제" }))
+      .toBeDisabled();
+    expect(screen.queryByRole("heading", { name: "감성 분포 비교" }))
+      .not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: A + " 추가" }))
+      .toBeEnabled();
+  });
+
 });
