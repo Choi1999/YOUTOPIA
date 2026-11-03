@@ -1,9 +1,10 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
 import { VideoComparisonPage } from "../../pages/analysis/VideoComparisonPage";
+import { SingleVideoAnalysisPage } from "../../pages/analysis/SingleVideoAnalysisPage";
 import type { AnalysisRepository, AnalysisLookupResult } from "./data/AnalysisRepository";
 import { AnalysisRepositoryProvider } from "./data/AnalysisRepositoryContext";
 import { demoAnalysisRepository } from "./data/DemoAnalysisRepository";
@@ -13,18 +14,33 @@ const A = "Ab0_-123xyz";
 const B = "Qb0_-123xyz";
 const UNKNOWN = "Zb0_-123xyz";
 
+function QuerySwitcher() {
+  const navigate = useNavigate();
+  return (
+    <button type="button"
+      onClick={() => navigate("/analysis/youtube/compare?video=" + B + "&video=" + A)}>
+      테스트: 동일 페이지 공유 링크 전환
+    </button>
+  );
+}
+
 function renderPage(
   location = "/analysis/youtube/compare",
   repository: AnalysisRepository = demoAnalysisRepository,
+  showQuerySwitcher = false,
 ) {
   return render(
     <AnalysisRepositoryProvider repository={repository}>
       <MemoryRouter initialEntries={[location]}>
         <Routes>
-          <Route path="/analysis/youtube/compare"
-            element={<VideoComparisonPage />} />
+          <Route path="/analysis/youtube/compare" element={
+            <>
+              {showQuerySwitcher && <QuerySwitcher />}
+              <VideoComparisonPage />
+            </>
+          } />
           <Route path="/analysis/youtube/video/:videoId"
-            element={<p>상세 분석 페이지</p>} />
+            element={<SingleVideoAnalysisPage />} />
         </Routes>
       </MemoryRouter>
     </AnalysisRepositoryProvider>,
@@ -525,6 +541,66 @@ describe("YU-35 — 영상 목록 및 비교 Web UX", () => {
     expect(url.search).not.toContain("token");
     expect(screen.getByText(/현재 localhost 실행 환경에서만 열 수 있습니다/))
       .toBeInTheDocument();
+  });
+
+  it("YU-40: 비교 목록에서 상세로 이동한 후 같은 A/B 순서로 돌아온다", async () => {
+    const user = userEvent.setup();
+    renderPage("/analysis/youtube/compare?video=" + B + "&video=" + A);
+    await screen.findByRole("heading", { name: "차이 한눈에 보기" });
+    const links = within(screen.getByRole("list", { name: "분석 대상 영상 목록" }))
+      .getAllByRole("link", { name: "상세 보기" });
+    await user.click(links[0]);
+    expect(await screen.findByRole("heading", { name: "영상 상세 분석" }))
+      .toBeInTheDocument();
+    const back = screen.getByRole("link", {
+      name: "선택한 두 영상 비교로 돌아가기",
+    });
+    expect(back).toHaveAttribute("href",
+      "/analysis/youtube/compare?video=" + B + "&video=" + A);
+    await user.click(back);
+    expect(await screen.findByText("영상 B의 긍정 비율은 영상 A보다 22.5%p 높습니다."))
+      .toBeInTheDocument();
+  });
+
+  it("YU-40: 같은 비교 화면에서 URL만 변경해도 선택과 분석이 갱신된다", async () => {
+    const user = userEvent.setup();
+    renderPage("/analysis/youtube/compare?video=" + A + "&video=" + B,
+      demoAnalysisRepository, true);
+    expect(await screen.findByText("영상 B의 긍정 비율은 영상 A보다 22.5%p 낮습니다."))
+      .toBeInTheDocument();
+    await user.click(screen.getByRole("button", {
+      name: "테스트: 동일 페이지 공유 링크 전환",
+    }));
+    expect(await screen.findByText("영상 B의 긍정 비율은 영상 A보다 22.5%p 높습니다."))
+      .toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "비교 공유 링크" }))
+      .toHaveValue(window.location.origin +
+        "/analysis/youtube/compare?video=" + B + "&video=" + A);
+  });
+
+  it("YU-40: 일반 상세 화면에서는 한 영상만 비교 목록으로 전달한다", async () => {
+    const user = userEvent.setup();
+    renderPage("/analysis/youtube/video/" + A);
+    expect(await screen.findByRole("heading", { name: "영상 상세 분석" }))
+      .toBeInTheDocument();
+    await user.click(screen.getByRole("link", { name: "이 영상을 비교 목록에 추가" }));
+    expect(await screen.findByText("비교할 영상 두 개를 선택하세요."))
+      .toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "비교 선택 " + A }))
+      .toBeChecked();
+    expect(screen.queryByRole("checkbox", { name: "비교 선택 " + B }))
+      .not.toBeInTheDocument();
+  });
+
+  it("YU-40: 상세 화면의 악성/불일치 쿼리는 반사하지 않는다", async () => {
+    renderPage("/analysis/youtube/video/" + A +
+      "?video=" + B + "&video=Zb0_-123xyz");
+    expect(await screen.findByRole("heading", { name: "영상 상세 분석" }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "선택한 두 영상 비교로 돌아가기" }))
+      .not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "이 영상을 비교 목록에 추가" }))
+      .toHaveAttribute("href", "/analysis/youtube/compare?video=" + A);
   });
 
 });

@@ -1,9 +1,9 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link, useLocation } from "react-router-dom";
 
 import { createAnalysisTarget } from "../../features/analysis-target/analysisTarget";
 import { parseVideoBatch, type VideoBatchResult } from "../../features/analysis-target/videoInput";
-import { parseComparisonQuery, buildComparisonShareUrl } from "../../features/analysis-target/comparisonShareLink";
+import { parseComparisonQuery, buildComparisonSharePath, buildComparisonShareUrl } from "../../features/analysis-target/comparisonShareLink";
 import { useAnalysisRepository } from "../../features/analysis/data/AnalysisRepositoryContext";
 import {
   projectDemoAnalysisSnapshot,
@@ -71,14 +71,16 @@ const sentiments = [
  */
 export function VideoComparisonPage() {
   const repository = useAnalysisRepository();
-  const [searchParams] = useSearchParams();
-  const [ids, setIds] = useState<string[]>(() => initialIds(searchParams));
+  const location = useLocation();
+  const query = new URLSearchParams(location.search);
+  const previousSearch = useRef(location.search);
+  const [ids, setIds] = useState<string[]>(() => initialIds(query));
   const [selected, setSelected] = useState<string[]>(() =>
-    initialIds(searchParams).slice(0, 2),
+    initialIds(query).slice(0, 2),
   );
   const [input, setInput] = useState("");
   const [feedback, setFeedback] = useState(() =>
-    parseComparisonQuery(searchParams).kind === "INVALID"
+    parseComparisonQuery(query).kind === "INVALID"
       ? "공유 링크의 영상 ID나 매개변수가 올바르지 않습니다. 영상을 직접 추가하세요."
       : "",
   );
@@ -86,6 +88,28 @@ export function VideoComparisonPage() {
   const [filter, setFilter] = useState("");
   const [readyOnly, setReadyOnly] = useState(false);
   const [entries, setEntries] = useState<Record<string, Entry>>({});
+
+  /*
+   * YU-40: React Router can update the query on this SAME mounted page.
+   * Re-apply only when its actual search string changes. Do not reset on
+   * local add/remove/filter/selection actions or on an unrelated re-render.
+   */
+  useEffect(() => {
+    if (previousSearch.current === location.search) return;
+    previousSearch.current = location.search;
+    const current = new URLSearchParams(location.search);
+    const nextIds = initialIds(current);
+    setIds(nextIds);
+    setSelected(nextIds.slice(0, 2));
+    setEntries({});
+    setInput("");
+    setFilter("");
+    setReadyOnly(false);
+    setShareFeedback("");
+    setFeedback(parseComparisonQuery(current).kind === "INVALID"
+      ? "공유 링크의 영상 ID나 매개변수가 올바르지 않습니다. 영상을 직접 추가하세요."
+      : "");
+  }, [location.search]);
 
   /*
    * 대상 목록이 변하면 이전 비동기 응답과 시각화 결과를 즉시 초기화한다.
@@ -230,6 +254,8 @@ export function VideoComparisonPage() {
     : "";
 
   /* YU-39: use ONLY the current application's origin and two selected VIDEO IDs. */
+  const returnPairQuery = buildComparisonSharePath(selected)?.split("?")[1] ?? null;
+
   const shareUrl = typeof window !== "undefined"
     ? buildComparisonShareUrl(window.location.origin, selected)
     : null;
@@ -282,6 +308,10 @@ export function VideoComparisonPage() {
       <header className="product-heading video-compare__header">
         <div className="video-compare__eyebrow">YOUTOPIA · STATIC FIXTURE · DEMO</div>
         <h1>영상 비교 분석</h1>
+        <nav aria-label="분석 화면 탐색" className="video-compare__top-nav">
+          <Link to="/analysis/youtube/video/Ab0_-123xyz">합성 영상 상세 예시</Link>
+          <Link to="/analysis/youtube/compare">새 비교 화면</Link>
+        </nav>
         <p>
           영상 목록을 관리하고 검증된 합성 스냅샷 2개의 감성·주제를 비교합니다.
           실제 YouTube 댓글을 수집하거나 분석하지 않습니다.
@@ -397,7 +427,10 @@ export function VideoComparisonPage() {
                     {state?.kind === "READY" && " · " + state.web.status}
                   </span>
                   <div className="video-compare__target-actions">
-                    <Link to={"/analysis/youtube/video/" + id}>상세 보기</Link>
+                    <Link to={
+                      "/analysis/youtube/video/" + id +
+                      (returnPairQuery && selected.includes(id) ? "?" + returnPairQuery : "")
+                    }>상세 보기</Link>
                     <button type="button" onClick={() => removeVideo(id)}
                       aria-label={"목록에서 제거 " + id}>
                       제거

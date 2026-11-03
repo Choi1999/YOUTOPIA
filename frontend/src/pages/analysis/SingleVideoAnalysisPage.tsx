@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import "./single-video-analysis.css";
 
@@ -12,6 +12,7 @@ import {
 import { useAnalysisRepository } from "../../features/analysis/data/AnalysisRepositoryContext";
 import { projectDemoAnalysisSnapshot } from "../../features/analysis/model/analysisProjection";
 import type { AnalysisSnapshot } from "../../features/analysis/model/analysisSnapshot";
+import { parseComparisonQuery, buildComparisonSharePath } from "../../features/analysis-target/comparisonShareLink";
 
 
 type LoadState =
@@ -376,24 +377,41 @@ function AnalysisResult({ target }: { target: AnalysisTarget }) {
  */
 export function SingleVideoAnalysisPage() {
   const { videoId } = useParams<{ videoId: string }>();
+  const [searchParams] = useSearchParams();
 
   const target = videoId
     ? createAnalysisTarget("VIDEO", videoId)
     : null;
+
+  // YU-40: return to a shared A/B comparison ONLY if its exact validated
+  // query explicitly includes this current VIDEO. Never reflect arbitrary URL.
+  const incoming = parseComparisonQuery(searchParams);
+  const returnToComparison = target &&
+    incoming.kind === "PAIR" &&
+    incoming.videoIds.includes(target.targetId)
+      ? buildComparisonSharePath(incoming.videoIds)
+      : null;
 
   return (
     <div className="product-screen">
       <header className="product-heading">
         <h1>영상 상세 분석</h1>
         <p>YOUTOPIA · YouTube 영상 반응 분석</p>
-        {target && (
-          <Link
-            className="analysis-detail__compare-link"
-            to={"/analysis/youtube/compare?video=" + target.targetId}
-          >
-            이 영상을 비교 목록에 추가
+        <nav aria-label="분석 화면 탐색" className="analysis-detail__page-nav">
+          <Link className="analysis-detail__compare-link"
+            to="/analysis/youtube/compare">
+            영상 비교 목록
           </Link>
-        )}
+          {target && (
+            <Link className="analysis-detail__compare-link"
+              to={returnToComparison ??
+                "/analysis/youtube/compare?video=" + target.targetId}>
+              {returnToComparison
+                ? "선택한 두 영상 비교로 돌아가기"
+                : "이 영상을 비교 목록에 추가"}
+            </Link>
+          )}
+        </nav>
       </header>
 
       {!target ? (

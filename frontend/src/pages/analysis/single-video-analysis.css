@@ -263,3 +263,14 @@
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
+
+/* YU-40: explicit navigation between detail and verified comparison context. */
+.analysis-detail__page-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.analysis-detail__page-nav .analysis-detail__compare-link {
+  margin-top: 14px;
+}

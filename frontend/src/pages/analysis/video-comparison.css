@@ -575,3 +575,26 @@
   color: var(--text-primary);
   font-weight: 700;
 }
+
+/* YU-40: discoverable detail/compare navigation without implicit collection. */
+.video-compare__top-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 13px;
+}
+.video-compare__top-nav a {
+  display: inline-flex;
+  padding: 8px 11px;
+  border: 1px solid var(--border-default);
+  border-radius: 9px;
+  background: var(--bg-subtle);
+  color: var(--text-link);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+.video-compare__top-nav a:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}

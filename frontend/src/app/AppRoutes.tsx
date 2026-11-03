@@ -49,7 +49,7 @@ function RouteScrollReset() {
  */
 export function AppRoutes() {
   const placeholderRoutes = yutopiaRoutes.filter(
-    (route) => !["YU-01", "YU-02", "YU-03", "YU-04", "YU-05", "YU-06", "YU-07", "YU-08", "YU-09", "YU-10", "YU-11", "YU-12"].includes(route.code),
+    (route) => !["YU-01", "YU-02", "YU-03", "YU-04", "YU-05", "YU-06", "YU-07", "YU-08", "YU-09", "YU-10", "YU-11", "YU-12", "YU-35"].includes(route.code),
   );
 
   return (
