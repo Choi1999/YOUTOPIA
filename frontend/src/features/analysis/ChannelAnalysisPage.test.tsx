@@ -86,7 +86,7 @@ describe("YU-44 — registered synthetic channel selection only", () => {
         return {
           kind: "FOUND",
           snapshot: { ...demoReadySnapshot, target, sample: {
-            ...demoReadySnapshot.sample, rawCount: 500,
+            ...demoReadySnapshot.sample!, rawCount: 500,
           } },
         };
       },
