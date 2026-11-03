@@ -21,6 +21,7 @@ test("G45-L8-02: manual inspector defaults to Check with no gcloud",()=>{
   assert.match(ps,/if \(\$PSCmdlet\.ParameterSetName -eq 'Check'\)/);
   assert.match(ps,/CHECK_ONLY_NO_GCLOUD/);
   assert.match(ps,/cloudCommandInvoked = \$CloudCommandInvoked/);
+  assert.match(ps,/cloudCliMayUseExistingAuthentication = \$CloudCommandInvoked/);
 });
 test("G45-L8-03: explicit project and trusted executable required",()=>{
   assert.match(ps,/\[string\]\$ProjectId/);
@@ -38,7 +39,7 @@ test("G45-L8-04: read-only Cloud metadata commands, no provider, key or logs",()
   assert.doesNotMatch(ps,/https?:\/\/|commentThreads|Invoke-WebRequest|Invoke-RestMethod|Start-Process|New-Item|Set-Content|Export-Csv|Add-Content|Out-File|Remove-Item/);
 });
 test("G45-L8-05: local observations never claim independent approvals",()=>{
-  for(const clause of ["projectOwnerVerified = $false","apiKeyRestrictionsVerified = $false","currentEgressIpVerified = $false","availableQuotaVerified = $false","sourceUsePolicyVerified = $false","lifecycleAndErasureVerified = $false","firstLiveCallApproved = $false","canonicalEvidenceVerifiedCount = 0","canonicalPolicy = 'POLICY_HOLD'","liveYouTubeRequestsMade = 0","credentialsReadByThisScript = 0"])
+  for(const clause of ["projectOwnerVerified = $false","apiKeyRestrictionsVerified = $false","currentEgressIpVerified = $false","availableQuotaVerified = $false","sourceUsePolicyVerified = $false","lifecycleAndErasureVerified = $false","firstLiveCallApproved = $false","canonicalEvidenceVerifiedCount = 0","canonicalPolicy = 'POLICY_HOLD'","liveYouTubeRequestsMade = 0","apiKeyMaterialReadByThisScript = $false"])
     assert.ok(ps.includes(clause),clause);
 });
 test("G45-L8-06: evidence checklist separates project, quota, deletion and call",()=>{
@@ -59,4 +60,31 @@ test("G45-L8-08: L7 transport lock remains false",()=>{
   assert.match(source,/const RELEASED_FOR_FIRST_REAL_CALL=false/);
   assert.match(source,/gates\.status!=="LIVE_FIRST_CALL_APPROVED"/);
   assert.match(source,/const REQUIRED_EVIDENCE=/);
+});
+
+test("G45-L8-09: report distinguishes existing Cloud CLI auth from direct API key inspection",()=>{
+  assert.match(ps,/apiKeyMaterialReadByThisScript = \$false/);
+  assert.match(ps,/cloudCliMayUseExistingAuthentication = \$CloudCommandInvoked/);
+  assert.doesNotMatch(ps,/credentialsReadByThisScript = 0/);
+  assert.match(doc,/기존 OAuth 인증/);
+  assert.match(doc,/로그/);
+});
+test("G45-L8-10: missing Cloud CLI reports it was not invoked",()=>{
+  assert.match(ps,/\$cloudCommandInvoked = \$false/);
+  assert.match(ps,/\$cloudCommandInvoked = \$true/);
+  assert.match(ps,/New-SafeReport 'LOCAL_METADATA_UNAVAILABLE' \$false \$false \$cloudCommandInvoked/);
+  assert.doesNotMatch(ps,/New-SafeReport 'LOCAL_METADATA_UNAVAILABLE' \$false \$false \$true/);
+});
+test("G45-L8-11: service JSON array boundaries preserve empty and single-element results",()=>{
+  assert.match(ps,/ConvertFrom-Json -InputObject \(\$rawServices -join \[Environment\]::NewLine\) -NoEnumerate/);
+  assert.match(ps,/\$services -isnot \[System\.Array\]/);
+  assert.match(ps,/foreach \(\$service in \$services\)/);
+  assert.match(ps,/SERVICE_ITEM_INVALID/);
+});
+test("G45-L8-12: only explicitly ENABLED YouTube Data API may be observed",()=>{
+  assert.match(ps,/\$service\.state -ceq 'ENABLED'/);
+  assert.match(ps,/\$service\.config\.name -ceq 'youtube\.googleapis\.com'/);
+  assert.match(ps,/PROJECT_IDENTITY_MISMATCH/);
+  assert.match(wf,/cloudCliMayUseExistingAuthentication -ne \$false/);
+  assert.match(wf,/apiKeyMaterialReadByThisScript -ne \$false/);
 });

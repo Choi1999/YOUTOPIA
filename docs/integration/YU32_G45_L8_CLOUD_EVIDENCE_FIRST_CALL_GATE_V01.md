@@ -15,14 +15,14 @@ G45-L7에서 실제 YouTube `commentThreads.list` 전송 코드는 만들었지�
 
 새 파일: `shared/contracts/yu32-youtube-readiness-v0/scripts/g45-l8-cloud-metadata-preflight.ps1`.
 
-- 기본 `-Check` 모드는 **gcloud를 실행하지 않고** 준비 상태 JSON만 출력한다. CI에서도 이 모드만 실행한다.
+- 기본 `-Check` 모드는 **gcloud를 실행하지 않고** 준비 상태 JSON만 출력한다. CI에서도 이 모드만 실행한다. `cloudCommandInvoked=false`는 이 스크립트가 Cloud CLI를 실행하지 않았음을 뜻하며, `-Inspect`에서 실행 전에 CLI 검색이 실패해도 동일하게 정확한 값을 출력한다.
 - 명시적 `-Inspect -ProjectId <기존 프로젝트 ID>` 모드는 **소유자가 지정한 기존 프로젝트**에서 두 개의 읽기 전용 명령만 사용한다.
   - `gcloud projects describe`: 지정 프로젝트와 ACTIVE 여부의 로컬 조회
   - `gcloud services list --enabled`: 동일 프로젝트에서 `youtube.googleapis.com` 서비스가 활성화된 것으로 관찰되는지 확인
-- 결과 JSON은 프로젝트 ID, 계정 이메일, 액세스 토큰, API 키/키 식별자, 공인 IP, 원시 CLI stderr, API 응답 본문을 포함하지 않는다.
-- 프로젝트/계정 변경, 로그인, API 키 생성·조회, 서비스 활성화, Quota 수정, YouTube 댓글 요청, 파일 기록/DB 기록을 **하지 않는다**.
-- `projectReachableLocally=true`는 **로컬에 설정된 계정의 접근**만 뜻하며, 소유권 E01의 독립 증거가 아니다. `youtubeDataApiEnabledObserved=true`도 E02를 자동으로 VERIFIED로 만들지 않는다.
-- 명령 인자의 프로젝트 ID는 로컬 프로세스 목록이나 gcloud 내부 로그에 나타날 수 있다. 출력 결과를 복사할 때 원본 명령줄·계정정보·보안 화면은 제외한다.
+- 결과 JSON은 프로젝트 ID, 계정 이메일, 액세스 토큰, API 키/키 식별자, 공인 IP, 원시 CLI stderr, API 응답 본문을 포함하지 않는다. 대신 `apiKeyMaterialReadByThisScript=false`(스크립트 자체는 키를 조회하지 않음), `cloudCliMayUseExistingAuthentication`(기존 gcloud OAuth 인증 사용 가능성)을 별도로 명시한다.
+- 스크립트 자체는 프로젝트/계정 변경, 신규 로그인, API 키 생성·조회, 서비스 활성화, Quota 수정, YouTube 댓글 요청, 별도 파일/DB 기록을 **수행하지 않는다**. 그러나 **gcloud CLI 자체는 기존 OAuth 인증을 사용하며 로컬 로그·인증 캐시 파일을 생성하거나 갱신할 수 있다.** 따라서 '시스템 전체에서 자격증명 읽기 0건 또는 파일 기록 0건'으로 주장하지 않는다.
+- `projectReachableLocally=true`는 **로컬에 설정된 계정의 접근**만 뜻하며, 소유권 E01의 독립 증거가 아니다. `youtubeDataApiEnabledObserved=true`도 E02를 자동으로 VERIFIED로 만들지 않는다. 활성 서비스 응답은 배열로 검증하고 각 서비스에 `state=ENABLED`가 명시된 경우만 인정한다. 빈 배열은 정상적으로 '활성화 관찰 없음'으로 처리한다.
+- 명령 인자의 프로젝트 ID는 로컬 프로세스 목록이나 gcloud 내부 로그에 나타날 수 있다. 출력 결과를 복사할 때 원본 명령줄·계정정보·보안 화면은 제외한다. `Get-Command gcloud`는 PATH의 실행 파일을 찾을 뿐 정품·서명을 인증하지 않으므로, **운영자가 공식 Google Cloud CLI의 설치 경로와 출처를 자체 확인해야 한다**.
 
 ## 3. 소유자 작업 순서 — 데이터/비밀값을 대화에 붙여넣지 말 것
 
@@ -75,3 +75,10 @@ CI는 새 Windows Job에서 **`-Check`만 실행**한다. Cloud 계정에 로그
 - https://developers.google.com/youtube/terms/developer-policies
 
 **판정: G45_L8_LOCAL_CLOUD_METADATA_PRECHECK_ONLY / FIRST_LIVE_CALL_NOT_AUTHORIZED.**
+
+## 7. PR #55 독립 코드·보안 검수 보완 (2026-11-03)
+
+- **P1 인증 사용 표기:** 기존 `credentialsReadByThisScript=0`은 `gcloud`가 내부적으로 기존 OAuth 토큰을 읽는 사실과 혼동될 수 있다. 새 필드는 직접 API 키 데이터 조회 여부와 CLI의 기존 인증 사용 가능성을 분리하며, Cloud CLI 로그·캐시 가능성을 안내한다.
+- **P2 실행 관측 정확성:** 실제 `gcloud` 명령 호출 직전까지 `cloudCommandInvoked=false`를 유지한다. 실행 파일을 찾지 못한 실패도 '명령 실행됨'이라고 보고하지 않는다.
+- **P2 JSON 배열 처리:** `ConvertFrom-Json -NoEnumerate` 및 배열 타입 검증, `state=ENABLED` 조건을 추가했다. 빈 목록은 'YouTube API 활성화 관찰 없음'으로 처리하고 이상한 형식은 실패 처리한다.
+- **잔여 미검증:** CI는 `-Check`만 실제 실행한다. `-Inspect`의 운영 gcloud 실제 출력 및 키·Quota·소유/개인정보 정책은 로컬 운영자/독립 검증 전까지 미확인으로 유지한다. 어떤 테스트도 실제 Google Cloud·YouTube 데이터를 조회하지 않는다.

@@ -31,6 +31,8 @@ jobs:
               $result.projectReachableLocally -ne $false -or
               $result.youtubeDataApiEnabledObserved -ne $false -or
               $result.firstLiveCallApproved -ne $false -or
-              $result.canonicalEvidenceVerifiedCount -ne 0) {
+              $result.canonicalEvidenceVerifiedCount -ne 0 -or
+              $result.apiKeyMaterialReadByThisScript -ne $false -or
+              $result.cloudCliMayUseExistingAuthentication -ne $false) {
             throw 'Cloud evidence Check mode must never authorize an external call'
           }
