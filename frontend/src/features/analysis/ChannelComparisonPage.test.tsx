@@ -227,4 +227,18 @@ describe("YU-47 — two explicit synthetic channels comparison Web UI", () => {
       .not.toBeInTheDocument();
   });
 
+  it("YU-47-QA-UTM: UTM before B-only channel keeps B and allows selecting A", async () => {
+    const user=userEvent.setup();
+    show("/analysis/youtube/channels/compare?utm_source=chatgpt.com&channel=&channel="+B);
+    const first=screen.getByRole("combobox", {name:"채널 A"});
+    const second=screen.getByRole("combobox", {name:"채널 B"});
+    expect(first).toHaveValue("");
+    expect(second).toHaveValue(B);
+    await user.selectOptions(first,A);
+    expect(first).toHaveValue(A);
+    expect(second).toHaveValue(B);
+    expect(await screen.findByRole("heading", {name:"감성 분포 및 차이"}))
+      .toBeInTheDocument();
+  });
+
 });

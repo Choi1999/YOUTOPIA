@@ -212,4 +212,20 @@ describe("YU-48 — per-topic selected-video evidence Web UI",()=>{
       .not.toBeInTheDocument();
   });
 
+  it("YU-48-QA-UTM: attribution before empty topic leaves topic selector usable", async () => {
+    const user=userEvent.setup();
+    show("/analysis/youtube/topics?utm_source=chatgpt.com&topic=&channel="+A);
+    const topic=screen.getByRole("combobox", {name:"주제 ID"});
+    const first=screen.getByRole("combobox", {name:"채널 A"});
+    expect(topic).toBeEnabled();
+    expect(topic).toHaveValue("");
+    expect(first).toHaveValue(A);
+    expect(screen.queryByRole("heading", {name:/주제 RECIPE · 선정 영상별 언급량/}))
+      .not.toBeInTheDocument();
+    await user.selectOptions(topic,"RECIPE");
+    expect(first).toHaveValue(A);
+    expect(await screen.findByRole("heading", {name:"주제 RECIPE · 선정 영상별 언급량"}))
+      .toBeInTheDocument();
+  });
+
 });

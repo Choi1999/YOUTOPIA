@@ -71,4 +71,11 @@ describe("YU-47/48 — bounded UTM attribution does not affect analysis selectio
     expect(stripped?.toString()).toBe("channel=" + A);
     expect(params.toString()).toBe(original);
   });
+  it("accepts source metadata ahead of incomplete application fields without reordering them", () => {
+    expect(strip("utm_source=chatgpt.com&channel=&channel="+A+"&utm_campaign=qa"))
+      .toBe("channel=&channel="+A);
+    expect(strip("utm_source=chatgpt.com&topic=&channel="+A))
+      .toBe("topic=&channel="+A);
+  });
+
 });
