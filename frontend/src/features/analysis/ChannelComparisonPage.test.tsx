@@ -96,4 +96,71 @@ describe("YU-47 — two explicit synthetic channels comparison Web UI", () => {
     const nav=screen.getByRole("navigation",{name:"채널 비교 탐색"});
     expect(within(nav).getAllByRole("link")).toHaveLength(2);
   });
+  it("YU-47-QA: preserves channel A when B is still empty in URL", async () => {
+    const user = userEvent.setup();
+    show("/analysis/youtube/channels/compare?channel="+A+"&channel=");
+    const first = screen.getByRole("combobox", {name:"채널 A"});
+    const second = screen.getByRole("combobox", {name:"채널 B"});
+    expect(first).toHaveValue(A);
+    expect(second).toHaveValue("");
+    expect(screen.getByText(/채널 A가 선택되었습니다. 비교할 채널 B를 선택하세요/))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button", {name:"A/B 순서 바꾸기"})).toBeDisabled();
+    expect(screen.queryByRole("heading", {name:"감성 분포 및 차이"}))
+      .not.toBeInTheDocument();
+
+    await user.selectOptions(second, B);
+    expect(first).toHaveValue(A);
+    expect(second).toHaveValue(B);
+    expect(await screen.findByRole("heading", {name:"감성 분포 및 차이"}))
+      .toBeInTheDocument();
+  });
+
+  it("YU-47-QA: starting from two empty URL slots retains A then B", async () => {
+    const user = userEvent.setup();
+    show("/analysis/youtube/channels/compare?channel=&channel=");
+    const first = screen.getByRole("combobox", {name:"채널 A"});
+    const second = screen.getByRole("combobox", {name:"채널 B"});
+    expect(first).toHaveValue("");
+    expect(second).toHaveValue("");
+    await user.selectOptions(first, A);
+    expect(first).toHaveValue(A);
+    expect(second).toHaveValue("");
+    expect(screen.queryByRole("heading", {name:"감성 분포 및 차이"}))
+      .not.toBeInTheDocument();
+    await user.selectOptions(second, B);
+    expect(first).toHaveValue(A);
+    expect(second).toHaveValue(B);
+    expect(await screen.findByRole("heading", {name:"감성 분포 및 차이"}))
+      .toBeInTheDocument();
+  });
+
+  it("YU-47-QA: clearing B hides prior comparison while retaining A", async () => {
+    const user = userEvent.setup();
+    show();
+    await screen.findByRole("heading", {name:"감성 분포 및 차이"});
+    const first=screen.getByRole("combobox", {name:"채널 A"});
+    const second=screen.getByRole("combobox", {name:"채널 B"});
+    await user.selectOptions(second, "");
+    expect(first).toHaveValue(A);
+    expect(second).toHaveValue("");
+    expect(screen.queryByRole("heading", {name:"감성 분포 및 차이"}))
+      .not.toBeInTheDocument();
+    expect(screen.getByText(/채널 A가 선택되었습니다/)).toBeInTheDocument();
+  });
+
+  it("YU-47-QA: malformed duplicate query is blocked, but explicit fresh selection recovers", async () => {
+    const user = userEvent.setup();
+    show("/analysis/youtube/channels/compare?channel="+A+"&channel="+A);
+    expect(screen.getByRole("alert")).toHaveTextContent("서로 다른 유효한 CHANNEL ID");
+    const first=screen.getByRole("combobox", {name:"채널 A"});
+    const second=screen.getByRole("combobox", {name:"채널 B"});
+    await user.selectOptions(first, A);
+    expect(first).toHaveValue(A);
+    expect(second).toHaveValue("");
+    await user.selectOptions(second, B);
+    expect(await screen.findByRole("heading", {name:"감성 분포 및 차이"}))
+      .toBeInTheDocument();
+  });
+
 });

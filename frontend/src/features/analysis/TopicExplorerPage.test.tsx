@@ -78,4 +78,89 @@ describe("YU-48 — per-topic selected-video evidence Web UI",()=>{
     expect(screen.queryByRole("heading",{name:/주제 RECIPE · 선정 영상별 언급량/}))
       .not.toBeInTheDocument();
   });
+  it("YU-48-QA: topic ID stays enabled while first channel is empty", async () => {
+    const user=userEvent.setup();
+    show("/analysis/youtube/topics?topic=RECIPE&channel=");
+    const topic=screen.getByRole("combobox", {name:"주제 ID"});
+    const first=screen.getByRole("combobox", {name:"채널 A"});
+    expect(topic).toBeEnabled();
+    expect(topic).toHaveValue("RECIPE");
+    expect(first).toHaveValue("");
+    expect(screen.getByText(/주제와 채널 A를 선택하면/)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", {name:"주제 RECIPE · 선정 영상별 언급량"}))
+      .not.toBeInTheDocument();
+
+    await user.selectOptions(first,A);
+    expect(topic).toHaveValue("RECIPE");
+    expect(first).toHaveValue(A);
+    expect(await screen.findByRole("heading", {name:"주제 RECIPE · 선정 영상별 언급량"}))
+      .toBeInTheDocument();
+  });
+
+  it("YU-48-QA: blank topic stays editable and activates after explicit selection", async () => {
+    const user=userEvent.setup();
+    show("/analysis/youtube/topics?topic=&channel="+A);
+    const topic=screen.getByRole("combobox",{name:"주제 ID"});
+    expect(topic).toBeEnabled();
+    expect(topic).toHaveValue("");
+    expect(screen.getByRole("combobox",{name:"채널 A"})).toHaveValue(A);
+    await user.selectOptions(topic,"PRICE");
+    expect(topic).toHaveValue("PRICE");
+    expect(await screen.findByRole("heading",{name:"주제 PRICE · 선정 영상별 언급량"}))
+      .toBeInTheDocument();
+  });
+
+  it("YU-48-QA: invalid share URL shows no data but both controls can recover", async () => {
+    const user=userEvent.setup();
+    show("/analysis/youtube/topics?topic=RECIPE&channel="+A+"&secret=1");
+    expect(screen.getByRole("alert")).toHaveTextContent("주제 1개와 유효한 채널");
+    const topic=screen.getByRole("combobox",{name:"주제 ID"});
+    const channel=screen.getByRole("combobox",{name:"채널 A"});
+    expect(topic).toBeEnabled();
+    expect(channel).toBeEnabled();
+    await user.selectOptions(topic,"PRICE");
+    expect(topic).toHaveValue("PRICE");
+    expect(channel).toHaveValue("");
+    expect(screen.queryByRole("heading",{name:"주제 PRICE · 선정 영상별 언급량"}))
+      .not.toBeInTheDocument();
+    await user.selectOptions(channel,A);
+    expect(await screen.findByRole("heading",{name:"주제 PRICE · 선정 영상별 언급량"}))
+      .toBeInTheDocument();
+  });
+
+  it("YU-48-QA: optional channel B is selectable without losing topic/channel A", async () => {
+    const user=userEvent.setup();show();
+    expect(await screen.findByRole("heading",{name:"주제 RECIPE · 선정 영상별 언급량"}))
+      .toBeInTheDocument();
+    const first=screen.getByRole("combobox",{name:"채널 A"});
+    const second=screen.getByRole("combobox",{name:"채널 B (선택 사항)"});
+    const topic=screen.getByRole("combobox",{name:"주제 ID"});
+    expect(first).toHaveValue(A);
+    expect(second).toHaveValue("");
+    await user.selectOptions(second,B);
+    expect(first).toHaveValue(A);
+    expect(second).toHaveValue(B);
+    expect(topic).toHaveValue("RECIPE");
+    expect(await screen.findByRole("heading",{name:"채널 B · 32건"}))
+      .toBeInTheDocument();
+    expect(screen.getByText("채널 B − A 주제 언급 차이: -31건"))
+      .toBeInTheDocument();
+  });
+
+  it("YU-48-QA: URL with B only retains B while A is selected", async () => {
+    const user=userEvent.setup();
+    show("/analysis/youtube/topics?topic=QUALITY&channel=&channel="+B);
+    const first=screen.getByRole("combobox",{name:"채널 A"});
+    const second=screen.getByRole("combobox",{name:"채널 B (선택 사항)"});
+    expect(first).toHaveValue("");
+    expect(second).toHaveValue(B);
+    expect(screen.queryByRole("heading",{name:"주제 QUALITY · 선정 영상별 언급량"}))
+      .not.toBeInTheDocument();
+    await user.selectOptions(first,A);
+    expect(first).toHaveValue(A);
+    expect(second).toHaveValue(B);
+    expect(await screen.findByRole("heading",{name:"채널 B · 43건"}))
+      .toBeInTheDocument();
+  });
+
 });

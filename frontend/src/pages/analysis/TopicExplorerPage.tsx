@@ -17,55 +17,80 @@ function parseTopicQuery(search: URLSearchParams): Request | null {
   };
   const topics=search.getAll("topic");
   const ids=search.getAll("channel");
-  if (topics.length!==1 || ids.length<1 || ids.length>2 ||
+  // Preserve partially entered topic/channel controls as URL-backed drafts.
+  // Missing fields never authorize data reads, but remain editable.
+  // Unknown fields, duplicate nonempty channels and malformed IDs fail closed.
+  if (topics.length!==1 || ids.length>2 ||
       entries.length!==topics.length+ids.length ||
       entries.some(([key])=>key!=="topic"&&key!=="channel") ||
-      !/^[A-Z0-9_]{1,64}$/.test(topics[0]) ||
-      new Set(ids).size!==ids.length ||
-      !ids.every(id=>createAnalysisTarget("CHANNEL",id)!==null)) return null;
-  return {topicId:topics[0],channelIds:ids};
+      (topics[0]!=="" && !/^[A-Z0-9_]{1,64}$/.test(topics[0])) ||
+      (ids.length===2 && ids[0]!=="" && ids[0]===ids[1]) ||
+      !ids.every(id=>id==="" || createAnalysisTarget("CHANNEL",id)!==null))
+    return null;
+  return {topicId:topics[0],channelIds:ids.length ? ids : [""]};
 }
 
 export function TopicExplorerPage() {
   const repository=useAnalysisRepository();
   const [params,setParams]=useSearchParams();
   const request=parseTopicQuery(new URLSearchParams(params.toString()));
-  const topicId=request?.topicId ?? null;
-  const ids=request?.channelIds.join(",") ?? "";
-  const [result,setResult]=useState<TopicExplorerResult|null>(null);
-  const [loading,setLoading]=useState(true);
+  const topicId=request?.topicId ?? "";
+  const firstChannel=request?.channelIds[0] ?? "";
+  const secondChannel=request?.channelIds[1] ?? "";
+  const hasSelection=Boolean(topicId && firstChannel &&
+    firstChannel !== secondChannel);
+  const ids=hasSelection
+    ? [firstChannel,...(secondChannel ? [secondChannel] : [])].join(",")
+    : "";
+  const requestKey=hasSelection ? topicId + "|" + ids : null;
+  // Key resolved results to the exact URL selection: never show stale evidence
+  // while another topic/channel is still being chosen.
+  const [resolved,setResolved]=useState<
+    {key:string; value:TopicExplorerResult}|null
+  >(null);
+  const [loading,setLoading]=useState(false);
 
   useEffect(()=>{
     let cancelled=false;
-    setResult(null);
-    setLoading(Boolean(topicId&&ids));
-    if (!topicId||!ids) return;
+    setResolved(null);
+    setLoading(Boolean(requestKey));
+    if (!requestKey) return;
     void Promise.all(ids.split(",").map(id=>
       readDemoChannelAggregate(repository,id)
     )).then(aggregates=>{
       if (cancelled) return;
-      setResult(exploreRegisteredTopic(topicId,aggregates));
+      setResolved({key:requestKey,
+        value:exploreRegisteredTopic(topicId,aggregates)});
       setLoading(false);
     });
     return ()=>{cancelled=true;};
-  },[repository,topicId,ids]);
+  },[repository,topicId,ids,requestKey]);
 
-  const ready=result?.kind==="READY"?result:null;
+  const result=resolved?.key===requestKey ? resolved.value : null;
+  const ready=hasSelection&&result?.kind==="READY"?result:null;
+  const waiting=Boolean(requestKey && (loading || !result));
   const available = ready ? [ready.topicId] : [];
   const opts=["RECIPE","PRICE","DELIVERY","QUALITY",...available];
   const options=[...new Set(opts)].sort();
 
-  function pickTopic(nextTopic:string) {
-    if (!request) return;
+  function updateDraft(nextTopic:string, channels:readonly string[]) {
     const next=new URLSearchParams();
     next.append("topic",nextTopic);
-    for (const channel of request.channelIds) next.append("channel",channel);
+    next.append("channel",channels[0]??"");
+    if (channels[1]) next.append("channel",channels[1]);
     setParams(next);
   }
 
-  const comparisonQuery=new URLSearchParams();
-  if (request) for (const id of request.channelIds)
-    comparisonQuery.append("channel",id);
+  function pickTopic(nextTopic:string) {
+    updateDraft(nextTopic,[firstChannel,secondChannel]);
+  }
+
+  function pickChannel(index:0|1, value:string) {
+    const next:[string,string]=[firstChannel,secondChannel];
+    if (value && next[1-index]===value) return;
+    next[index]=value;
+    updateDraft(topicId,next);
+  }
 
   return (
     <div className="product-screen topic-explorer">
@@ -80,28 +105,55 @@ export function TopicExplorerPage() {
           <Link to="/analysis/youtube/channels/compare">
             채널 비교 화면
           </Link>
-          {request?.channelIds.map(id=>(
+          {request?.channelIds.filter(Boolean).map(id=>(
             <Link key={id} to={"/analysis/youtube/channel/"+id}>채널 {id} 상세</Link>
           ))}
         </nav>
         <div className="topic-explorer__filters">
           <label htmlFor="topic-explorer-topic">주제 ID
-            <select id="topic-explorer-topic" value={topicId??""}
-              disabled={!request}
+            <select id="topic-explorer-topic" value={topicId}
               onChange={e=>pickTopic(e.target.value)}>
-              {!request && <option value="">유효한 주제·채널 URL 필요</option>}
-              {request && !options.includes(topicId??"") &&
-                <option value={topicId??""}>{topicId}</option>}
+              <option value="">주제를 선택하세요</option>
+              {topicId && !options.includes(topicId) &&
+                <option value={topicId}>{topicId} (등록 확인 필요)</option>}
               {options.map(id=><option key={id} value={id}>{id}</option>)}
             </select>
           </label>
+          {([0,1] as const).map(index=>(
+            <label key={index} htmlFor={"topic-explorer-channel-"+index}>
+              채널 {index===0?"A":"B (선택 사항)"}
+              <select id={"topic-explorer-channel-"+index}
+                value={index===0?firstChannel:secondChannel}
+                onChange={e=>pickChannel(index,e.target.value)}>
+                <option value="">{index===0?"채널을 선택하세요":"추가 채널 없음"}</option>
+                {(index===0?firstChannel:secondChannel) &&
+                  !demoChannelSelections.some(c=>c.channelId===
+                    (index===0?firstChannel:secondChannel)) && (
+                    <option value={index===0?firstChannel:secondChannel}>
+                      미등록 채널: {index===0?firstChannel:secondChannel}
+                    </option>
+                  )}
+                {demoChannelSelections.map(c=>(
+                  <option key={c.channelId} value={c.channelId}
+                    disabled={c.channelId===(index===0?secondChannel:firstChannel)}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
         </div>
         {!request ? (
           <p role="alert" className="topic-explorer__blocked">
             주제 1개와 유효한 채널 1~2개만 지정할 수 있습니다.
             잘못된 URL에서 임의 예시 분석을 표시하지 않습니다.
           </p>
-        ) : loading ? (
+        ) : !hasSelection ? (
+          <p role="status" className="topic-explorer__blocked">
+            주제와 채널 A를 선택하면 등록된 합성 영상의 주제 언급량을 확인할 수 있습니다.
+            선택 중에는 미검증 분석 수치를 표시하지 않습니다.
+          </p>
+        ) : waiting ? (
           <p role="status">선정 채널의 합성 스냅샷과 주제 근거를 확인하고 있습니다.</p>
         ) : !ready ? (
           <p role="status" className="topic-explorer__blocked">

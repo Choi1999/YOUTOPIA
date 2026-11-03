@@ -21,10 +21,14 @@ function getPair(params: URLSearchParams): Pair | null {
     return [demoChannelSelections[0].channelId, demoChannelSelections[1].channelId];
   }
   const ids = params.getAll("channel");
+  // A/B selection is a two-step interaction. Preserve a valid channel
+  // even while the other slot is empty; only fully valid pairs may be queried.
+  // Unknown parameters, malformed IDs, and duplicate nonempty IDs fail closed.
   if (all.length !== 2 || ids.length !== 2 ||
       all.some(([key]) => key !== "channel") ||
-      ids[0] === ids[1] ||
-      !ids.every(id => createAnalysisTarget("CHANNEL", id) !== null)) {
+      (ids[0] !== "" && ids[0] === ids[1]) ||
+      !ids.every(id => id === "" ||
+        createAnalysisTarget("CHANNEL", id) !== null)) {
     return null;
   }
   return [ids[0], ids[1]];
@@ -35,29 +39,37 @@ export function ChannelComparisonPage() {
   const [params, setParams] = useSearchParams();
   const query = params.toString();
   const pair = getPair(new URLSearchParams(query));
-  const aId = pair?.[0] ?? null;
-  const bId = pair?.[1] ?? null;
-  const [result, setResult] = useState<ChannelCompareResult | null>(null);
-  const [loading, setLoading] = useState(true);
+  const aId = pair?.[0] ?? "";
+  const bId = pair?.[1] ?? "";
+  const complete = Boolean(aId && bId && aId !== bId);
+  const pairKey = complete ? aId + ":" + bId : null;
+  // Associate resolved data with the exact pair so an old response cannot
+  // briefly render under a newly selected or incomplete URL.
+  const [resolved, setResolved] = useState<
+    { key: string; value: ChannelCompareResult } | null
+  >(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    setResult(null);
-    setLoading(Boolean(aId && bId));
-    if (!aId || !bId) return;
+    setResolved(null);
+    setLoading(complete);
+    if (!complete || !pairKey) return;
     void Promise.all([
       readDemoChannelAggregate(repo, aId),
       readDemoChannelAggregate(repo, bId),
     ]).then(([a, b]) => {
       if (!cancelled) {
-        setResult(compareChannelAggregations(a, b));
+        setResolved({ key: pairKey, value: compareChannelAggregations(a, b) });
         setLoading(false);
       }
     });
     return () => { cancelled = true; };
-  }, [repo, aId, bId]);
+  }, [repo, aId, bId, complete, pairKey]);
 
   function select(index: 0 | 1, value: string) {
+    // A user cannot select the same channel twice. Keep prior valid draft.
+    if (value && value === (index === 0 ? bId : aId)) return;
     const ids: [string, string] = [
       index === 0 ? value : aId ?? "",
       index === 1 ? value : bId ?? "",
@@ -69,14 +81,16 @@ export function ChannelComparisonPage() {
   }
 
   function swap() {
-    if (!pair) return;
+    if (!complete || !pair) return;
     const next = new URLSearchParams();
     next.append("channel", pair[1]);
     next.append("channel", pair[0]);
     setParams(next);
   }
 
-  const ready = result?.kind === "READY" ? result : null;
+  const result = resolved?.key === pairKey ? resolved.value : null;
+  const ready = complete && result?.kind === "READY" ? result : null;
+  const waiting = complete && (!result || loading);
 
   return (
     <div className="product-screen channel-compare">
@@ -93,35 +107,45 @@ export function ChannelComparisonPage() {
               채널 {index === 0 ? "A" : "B"}
               <select value={pair?.[index] ?? ""}
                 onChange={e => select(index, e.target.value)}>
-                <option value="" disabled>채널을 선택하세요</option>
+                <option value="">채널을 선택하세요</option>
                 {pair?.[index] && !demoChannelSelections.some(c => c.channelId === pair?.[index]) && (
                   <option value={pair[index]}>미등록 채널: {pair[index]}</option>
                 )}
                 {demoChannelSelections.map(channel => (
-                  <option key={channel.channelId} value={channel.channelId}>
+                  <option key={channel.channelId} value={channel.channelId}
+                    disabled={channel.channelId === (index === 0 ? bId : aId)}>
                     {channel.label}
                   </option>
                 ))}
               </select>
             </label>
           ))}
-          <button type="button" onClick={swap} disabled={!pair}>
+          <button type="button" onClick={swap} disabled={!complete}>
             A/B 순서 바꾸기
           </button>
         </div>
         <nav className="channel-compare__links" aria-label="채널 비교 탐색">
-          {pair?.map((id, index) => (
+          {pair?.map((id, index) => id ? (
             <Link key={id} to={"/analysis/youtube/channel/" + id}>
               채널 {index === 0 ? "A" : "B"} 상세
             </Link>
-          ))}
+          ) : null)}
         </nav>
         {!pair ? (
           <p role="alert" className="channel-compare__blocked">
             두 개의 서로 다른 유효한 CHANNEL ID만 비교할 수 있습니다.
             잘못된 공유 URL을 기본 예시의 분석값으로 바꾸지 않습니다.
           </p>
-        ) : loading ? (
+        ) : !complete ? (
+          <p role="status" className="channel-compare__blocked">
+            {aId && !bId
+              ? "채널 A가 선택되었습니다. 비교할 채널 B를 선택하세요."
+              : !aId && bId
+                ? "채널 B가 선택되었습니다. 비교할 채널 A를 선택하세요."
+                : "비교할 채널 A와 B를 차례로 선택하세요."}
+            분석 수치는 두 채널을 모두 선택한 후에만 표시됩니다.
+          </p>
+        ) : waiting ? (
           <p role="status">선정 영상의 검증된 합성 스냅샷을 조회하고 있습니다.</p>
         ) : !ready ? (
           <p role="status" className="channel-compare__blocked">
