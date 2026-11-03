@@ -40,3 +40,23 @@ p { line-height: 1.55; margin: 0; }
 .web-analysis-link[hidden] {
   display: none;
 }
+/* YU-33: pinned target, synthetic-only insight tabs. No provider data. */
+.preview { display: grid; gap: 12px; border: 1px solid #475569; border-radius: 12px; padding: 14px; background: #111d33; }
+.preview[hidden], [role="tabpanel"][hidden] { display: none !important; }
+.preview__heading { display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+.preview__disclaimer { color: #facc15; font-size: 12px; font-weight: 750; }
+.preview__tabs { display: flex; gap: 6px; padding: 4px; border-radius: 11px; background: #1e293b; }
+.preview__tabs button { flex: 1; min-width: 0; border: 0; border-radius: 8px; padding: 9px 5px; font: inherit; font-size: 12px; line-height: 1.3; font-weight: 700; color: #cbd5e1; background: transparent; cursor: pointer; }
+.preview__tabs button[aria-selected="true"] { background: #43538f; color: #fff; }
+.preview__tabs button:focus-visible { outline: 2px solid #a5b4fc; outline-offset: 2px; }
+.preview__meta { color: #b5c5da; font-size: 12px; line-height: 1.55; }
+.preview__bar { margin-top: 12px; display: flex; height: 13px; border-radius: 99px; background: #334155; overflow: hidden; }
+.preview__bar span { display: block; height: 100%; width: 0; }
+.preview__positive { background: #5dd0b1; }
+.preview__neutral { background: #94a3b8; }
+.preview__negative { background: #ed9b93; }
+.preview__legend { display: flex; justify-content: space-between; gap: 6px; margin-top: 8px; color: #e2e8f0; font-size: 11px; }
+.preview__legend strong { font-variant-numeric: tabular-nums; }
+.preview__briefing { margin-top: 12px; font-size: 12px; line-height: 1.6; color: #d4e2f4; }
+.preview__topics { margin: 10px 0 0; padding-left: 20px; line-height: 1.8; color: #e2e8f0; font-size: 13px; }
+.preview__empty { padding: 12px; border-radius: 10px; background: #1e293b; color: #cbd5e1; font-size: 12px; line-height: 1.6; }

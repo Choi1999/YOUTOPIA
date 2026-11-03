@@ -33,10 +33,46 @@
           <p class="panel__notice">다른 썸네일에 마우스를 올려도 선택은 바뀌지 않습니다. 다른 영상을 고르려면 그 영상의 「더보기」를 직접 클릭하세요.</p>
         </div>
       </section>
-      <p class="panel__notice">이 화면은 대상 선택 계약을 검증하는 DEMO입니다. 요약·주제·추이 탭, 실시간 댓글 분석, 로그인, 저장, 결제 기능은 아직 연결되지 않았습니다.</p>
+      <section id="demo-preview" class="preview" aria-label="합성 반응 미리보기" hidden>
+        <header class="preview__heading">
+          <h2>선택 대상의 반응 미리보기</h2>
+          <span class="panel__pill">STATIC FIXTURE</span>
+        </header>
+        <p class="preview__disclaimer">DEMO · 가상 수치 · 실제 YouTube 댓글 분석이 아닙니다.</p>
+        <div class="preview__tabs" role="tablist" aria-label="반응 정보">
+          <button type="button" id="demo-tab-overview" role="tab" aria-controls="demo-panel-overview" aria-selected="true" tabindex="0">요약</button>
+          <button type="button" id="demo-tab-topics" role="tab" aria-controls="demo-panel-topics" aria-selected="false" tabindex="-1">주제</button>
+          <button type="button" id="demo-tab-trends" role="tab" aria-controls="demo-panel-trends" aria-selected="false" tabindex="-1">추이</button>
+        </div>
+        <div id="demo-panel-overview" role="tabpanel" aria-labelledby="demo-tab-overview">
+          <p id="demo-scope" class="preview__meta"></p>
+          <p id="demo-sample" class="preview__meta"></p>
+          <div id="demo-sentiment-bar" class="preview__bar" role="img" aria-label="가상 감성 분포">
+            <span id="demo-bar-positive" class="preview__positive"></span>
+            <span id="demo-bar-neutral" class="preview__neutral"></span>
+            <span id="demo-bar-negative" class="preview__negative"></span>
+          </div>
+          <div class="preview__legend" aria-label="가상 감성 수치">
+            <span>긍정 <strong id="demo-positive"></strong></span>
+            <span>중립 <strong id="demo-neutral"></strong></span>
+            <span>부정 <strong id="demo-negative"></strong></span>
+          </div>
+          <p id="demo-briefing" class="preview__briefing"></p>
+        </div>
+        <div id="demo-panel-topics" role="tabpanel" aria-labelledby="demo-tab-topics" hidden>
+          <p class="preview__meta">예시 논점 · 실제 댓글에서 추출하지 않았습니다.</p>
+          <ul id="demo-topics" class="preview__topics"></ul>
+        </div>
+        <div id="demo-panel-trends" role="tabpanel" aria-labelledby="demo-tab-trends" hidden>
+          <p class="preview__empty">추이 데이터는 아직 제공되지 않습니다. 기간별 변화는 실제 시계열 데이터와 사용 승인이 준비된 이후 연결됩니다.</p>
+        </div>
+        <p class="panel__notice">Hover는 미리보기, 이 패널은 클릭으로 고정한 대상입니다. 웹 상세 분석은 영상 ID가 유효할 때만 열립니다.</p>
+      </section>
+      <p class="panel__notice">이 패널은 기능 시연용이며 실제 댓글 수집·분석, 로그인, 저장 또는 결제 기능을 실행하지 않습니다.</p>
     </main>
     <script src="shared.js"></script>
     <script src="panel-selection-contract.js"></script>
+    <script src="hover-card-model.js"></script>
     <script src="web-analysis-link.js"></script>
     <script src="sidepanel.js"></script>
   </body>
