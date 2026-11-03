@@ -30,6 +30,22 @@
     );
   }
 
+  /*
+   * YU-35: 확정된 VIDEO 선택만 Web 비교 화면의 임시 목록으로 전달한다.
+   * 선택 ID 하나만 URL 쿼리에 넣으며 실제 분석/수집 작업은 실행하지 않는다.
+   * 다른 유형이나 불량 ID에서는 링크를 생성하지 않는다.
+   */
+  function buildCompareUrl(targetType, targetId) {
+    if (
+      targetType !== "VIDEO" ||
+      typeof targetId !== "string" ||
+      !VIDEO_ID_PATTERN.test(targetId)
+    ) return null;
+
+    return BASE_URL + "/analysis/youtube/compare?video=" +
+      encodeURIComponent(targetId);
+  }
+
   scope.YUTOPIA_WEB_ANALYSIS_LINK =
-    Object.freeze({ buildVideoUrl });
+    Object.freeze({ buildVideoUrl, buildCompareUrl });
 })(globalThis);

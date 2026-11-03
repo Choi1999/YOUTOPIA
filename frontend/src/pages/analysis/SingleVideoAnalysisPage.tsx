@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import "./single-video-analysis.css";
 
@@ -386,6 +386,14 @@ export function SingleVideoAnalysisPage() {
       <header className="product-heading">
         <h1>영상 상세 분석</h1>
         <p>YOUTOPIA · YouTube 영상 반응 분석</p>
+        {target && (
+          <Link
+            className="analysis-detail__compare-link"
+            to={"/analysis/youtube/compare?video=" + target.targetId}
+          >
+            이 영상을 비교 목록에 추가
+          </Link>
+        )}
       </header>
 
       {!target ? (
