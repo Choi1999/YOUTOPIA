@@ -67,9 +67,19 @@
       return reply(req, false, result.status);
     }
 
-    // READ is pure: never write storage or create a change-event loop.
-    if (req.action === "READ")
+    // READ never renews TTL. When an actual expired entry was filtered,
+    // remove it physically from the session store exactly once; subsequent
+    // reads do not write and cannot cause a storage.onChanged refresh loop.
+    if (req.action === "READ") {
+      const expired = raw && Array.isArray(raw.items) &&
+        (raw.items.length !== result.state.items.length ||
+         raw.selected.length !== result.state.selected.length);
+      if (expired) {
+        if (result.state.items.length === 0) await session.remove(key);
+        else await session.set({[key]: result.state});
+      }
       return reply(req, true, result.status, result.state);
+    }
 
     if (req.action === "CLEAR" || result.state.items.length === 0) {
       await session.remove(key);

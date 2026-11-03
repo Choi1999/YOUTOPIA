@@ -256,3 +256,21 @@ test("YU42-15 selected pair is never more than two even with eight fixture IDs",
       stored.items[1].videoId,stored.items[2].videoId],
   },17,t),null);
 });
+
+
+test("YU42-16 expired collection items are physically removed on read without extending TTL",async()=>{
+  const f=harness(),t=Date.now();
+  f.data.set(f.contract.keyForTab(17),{
+    version:1,tabId:17,updatedAt:t-1000,
+    items:[{videoId:A,expiresAt:t-1}],selected:[A],
+  });
+  const removals=f.getRemovals();
+  const response=await f.send("READ");
+  assert.equal(response.ok,true);
+  assert.equal(response.state.items.length,0);
+  assert.equal(f.data.has(f.contract.keyForTab(17)),false);
+  assert.equal(f.getRemovals(),removals+1);
+  const second=await f.send("READ");
+  assert.equal(second.state.items.length,0);
+  assert.equal(f.getRemovals(),removals+1);
+});
