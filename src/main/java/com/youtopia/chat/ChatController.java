@@ -18,7 +18,7 @@ public class ChatController {
     public Status status(HttpServletRequest request,HttpServletResponse response){
         QueryParameters.only(request);response.setHeader("Cache-Control","no-store");var owner=access.require(request);
         String state=service.readiness(owner);boolean ready=state.equals("READY");
-        String message=switch(state){case "READY"->"일반적인 지표 설명을 제공합니다.";case "TOTAL_LIMIT"->"전체 시연 누적 호출 한도에 도달했습니다.";case "ADMIN_RATE_LIMIT"->"분당 호출 한도에 도달했습니다. 잠시 후 다시 확인해 주세요.";case "BUSY"->"다른 응답을 처리 중입니다. 잠시 후 다시 확인해 주세요.";default->ChatFailure.MAINTENANCE;};
+        String message=switch(state){case "READY"->"프로젝트 소개와 지표 설명을 제공합니다.";case "TOTAL_LIMIT"->"전체 시연 누적 호출 한도에 도달했습니다.";case "ADMIN_RATE_LIMIT"->"분당 호출 한도에 도달했습니다. 잠시 후 다시 확인해 주세요.";case "BUSY"->"다른 응답을 처리 중입니다. 잠시 후 다시 확인해 주세요.";default->ChatFailure.MAINTENANCE;};
         return new Status(ready,state,message,
             Arrays.stream(ChatQuestion.values()).map(q->new Question(q,q.text)).toList(),"TEMPORARY_ADMIN_DEMO");
     }

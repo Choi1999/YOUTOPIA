@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { ApiError, serviceApi } from "./api";
 import { useResource } from "./components";
 import { useSession } from "./SessionProvider";
-const questions=[{id:"CCU_BASICS",text:"CCU는 무엇인가요?"},{id:"VIDEO_VOLUME",text:"게임 관련 영상 게시량은 어떻게 해석하나요?"},{id:"JOINT_SIGNALS",text:"CCU와 영상 게시량을 함께 보면 무엇을 알 수 있나요?"}];
+const questions=[{id:"CCU_BASICS",text:"Youtopia는 어떤 프로젝트인가요?"},{id:"VIDEO_VOLUME",text:"Steam CCU와 YouTube 영상 게시량을 함께 보는 이유는 무엇인가요?"},{id:"JOINT_SIGNALS",text:"앞으로 분석 모델과 RAG는 어떻게 연결할 예정인가요?"}];
 const maintenance="현재 점검 중입니다. 잠시 후 다시 이용해 주세요.";
 export function ChatPreparation(){
  const gameId=useMatch("/games/:gameId/*")?.params.gameId,location=useLocation(),[params]=useSearchParams(),session=useSession();
@@ -55,9 +55,9 @@ export function ChatPreparation(){
  return <><button className="chat-preparation-trigger" ref={trigger} aria-label="Youtopia 분석 도우미 열기" aria-expanded={open} aria-haspopup="dialog" onClick={()=>setOpen(true)}>분석 도우미</button>
  {open&&createPortal(<div className="chat-preparation-backdrop" onClick={e=>{if(e.target===e.currentTarget)setOpen(false)}}><section className="chat-preparation-panel" role="dialog" aria-modal="true" aria-labelledby="analysis-assistant-title" aria-describedby="analysis-assistant-reason" ref={panel}>
  <header><h2 id="analysis-assistant-title">Youtopia 분석 도우미</h2><button aria-label="분석 도우미 닫기" onClick={()=>setOpen(false)}>닫기</button></header>
- <p id="analysis-assistant-reason">LLM 응답 시연입니다. 실제 게임 데이터 조회와 RAG는 아직 연결되지 않았습니다.</p>
+ <p id="analysis-assistant-reason">시연용 AI 안내입니다. 현재는 프로젝트 소개와 지표 설명을 제공하며, 실제 게임 데이터 분석·RAG는 연결되지 않았습니다.</p>
  <p>현재 화면: {gameId?(context.data?.game.name??"게임 정보 미확인"):"게임을 선택하지 않았습니다."} · {params.get("days")??(location.pathname.endsWith("/steam")?7:30)}일</p>
- <p className="chart-caption">선택한 게임·기간은 LLM에 전송하지 않습니다. 일반적인 지표 설명만 제공합니다.</p>
+ <p className="chart-caption">선택한 게임·기간은 LLM에 전송하지 않습니다. 프로젝트 소개와 일반적인 지표 설명을 제공합니다.</p>
  {!admin?<p role="status">현재 시연은 관리자 로그인 상태에서만 이용할 수 있습니다. <Link to="/admin/login">관리자 로그인</Link></p>:<p role="status">{status.loading?"호출 가능 상태 확인 중":status.error?maintenance:status.data?.message??maintenance}</p>}
  <div className="chat-fixed-questions" role="group" aria-label="고정 질문">{questions.map(q=><button key={q.id} disabled={disabled} onClick={()=>{void ask(q.id)}}>{q.text}</button>)}</div>
  {result.busy&&<p role="status">응답을 기다리고 있습니다.</p>}

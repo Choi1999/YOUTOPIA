@@ -25,7 +25,7 @@ public class OpenAiChatProvider implements ChatProvider {
     }
     @Override public String answer(ChatQuestion question){
         try{
-            String body=json.writeValueAsString(Map.of("model",settings.model,"instructions",ChatQuestion.INSTRUCTIONS,"input",question.text,
+            String body=json.writeValueAsString(Map.of("model",settings.model,"instructions",ChatQuestion.INSTRUCTIONS,"input",question.input(),
                 "max_output_tokens",300,"reasoning",Map.of("effort","none"),"store",false,"stream",false));
             var request=HttpRequest.newBuilder(endpoint).timeout(Duration.ofSeconds(8)).header("Authorization","Bearer "+settings.key)
                 .header("Content-Type","application/json").header("Accept","application/json").POST(HttpRequest.BodyPublishers.ofString(body,StandardCharsets.UTF_8)).build();

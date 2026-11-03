@@ -22,8 +22,8 @@ class OpenAiChatProviderTest {
             calls.incrementAndGet();assertThat(exchange.getRequestMethod()).isEqualTo("POST");
             assertThat(exchange.getRequestHeaders().getFirst("Authorization")).isEqualTo("Bearer "+settings.key);
             var body=json.readTree(exchange.getRequestBody());assertThat(body.size()).isEqualTo(7);
-            assertThat(body.path("model").asText()).isEqualTo("gpt-6-luna");assertThat(body.path("input").asText()).isEqualTo(question.text);
-            assertThat(body.path("instructions").asText()).contains("실제 특정 게임","RAG");assertThat(body.path("max_output_tokens").asInt()).isEqualTo(300);
+            assertThat(body.path("model").asText()).isEqualTo("gpt-6-luna");assertThat(body.path("input").asText()).isEqualTo(question.input()).contains(question.text,"질문별 검토 자료:");
+            assertThat(body.path("instructions").asText()).contains("실제 특정 게임","RAG","Youtopia","게시일 기준 관측치","후속 연결 계획","인과관계");assertThat(body.path("max_output_tokens").asInt()).isEqualTo(300);
             assertThat(body.at("/reasoning/effort").asText()).isEqualTo("none");assertThat(body.path("store").asBoolean()).isFalse();assertThat(body.path("stream").asBoolean()).isFalse();
             assertThat(body.has("messages")||body.has("previous_response_id")||body.has("tools")).isFalse();
             byte[] response="{\"status\":\"completed\",\"output\":[{\"type\":\"reasoning\"},{\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"일반 설명\"},{\"type\":\"output_text\",\"text\":\"입니다.\"}]}]}".getBytes(StandardCharsets.UTF_8);
