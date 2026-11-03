@@ -22,11 +22,13 @@ public class GameService {
         Metric newYoutubeVideos,String reviewAvailability,String analysisAvailability,String gameEventAvailability,String freshness,Evidence evidence) {}
     public record Listing(List<Game> content,PageResult.Page page,Instant asOf,String catalogScope,String dataStatus,String freshness) {}
     public record Detail(Game game,Instant asOf,CcuResponse steamPreview,String youtubePreviewAvailability) {}
-    private final GameRepository repository;private final Clock clock;private final CcuRequestBudget budget;private final CcuService ccu;private final ObjectMapper json;
-    public GameService(GameRepository repository,Clock clock,CcuRequestBudget budget,CcuService ccu,ObjectMapper json){this.repository=repository;this.clock=clock;this.budget=budget;this.ccu=ccu;this.json=json;}
+    private final GameRepository repository;private final Clock clock;private final CcuRequestBudget budget;private final CcuService ccu;private final ObjectMapper json;private final GameClassifications classifications;
+    public GameService(GameRepository repository,Clock clock,CcuRequestBudget budget,CcuService ccu,ObjectMapper json,GameClassifications classifications){this.repository=repository;this.clock=clock;this.budget=budget;this.ccu=ccu;this.json=json;this.classifications=classifications;}
+    @Transactional(readOnly=true,timeout=8)
+    public GameClassifications.Catalog classifications(){budget.acquire();return classifications.catalog(clock.instant());}
     @Transactional(readOnly=true,isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ,timeout=8)
     public Listing list(GameQuery query){
-        budget.acquire();Instant now=clock.instant();long total=repository.count(query);
+        budget.acquire();Instant now=clock.instant();if(!query.classification().equals("ALL"))classifications.require(query.classification(),now);long total=repository.count(query,now);
         var rows=(long)query.page()*query.size()>=total?List.<GameRepository.Row>of():repository.find(query,now);
         var page=PageResult.of(rows.stream().map(row->game(row,query.days())).toList(),query.page(),query.size(),total);
         return new Listing(page.content(),page.page(),now,"COLLECTOR_ELIGIBLE_READY_GAME_CANDIDATES",total==0?"EMPTY":"AVAILABLE","UNASSESSED");

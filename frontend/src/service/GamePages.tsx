@@ -35,6 +35,9 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
   const [revision, setRevision] = useState(0);
   const session = useSession();
   const interaction = useInteractionEvents();
+  const classifications=useResource("game-classifications",signal=>serviceApi.classifications(signal));
+  const selectedClassification=params.get("classification")??"ALL";
+  const unknownClassification=selectedClassification!=="ALL"&&!classifications.data?.options.some(option=>option.id===selectedClassification);
   const query = params.toString(),
     resource = useResource(query + ":" + revision, (signal) =>
       override?.key === query
@@ -53,12 +56,14 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
             direction: "ASC",
             platform: "ALL",
             connectionStatus: "ALL",
+            classification: "ALL",
           } as Record<string, string>
         )[key]) === value
     )
       return;
     const next = new URLSearchParams(params);
     next.set(key, value);
+    if(key==="sort")next.set("direction",value==="currentCcu"||value==="peak24h"||value==="lastObservedAt"?"DESC":"ASC");
     if (key !== "page") next.set("page", "0");
     setOverride(null);
     setFailure(undefined);
@@ -97,6 +102,7 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
         platform: params.get("platform") ?? "ALL",
         connectionStatus: params.get("connectionStatus") ?? "ALL",
         days: Number(params.get("days") ?? 30),
+        classification: params.get("classification") ?? "ALL",
       });
       setOverride({ key: next.toString(), data });
       setRevision((n) => n + 1);
@@ -173,6 +179,14 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
           </select>
         </label>
         <label>
+          수집 분류
+          <select aria-describedby="game-classification-note" value={selectedClassification} onChange={e=>change("classification",e.target.value)} disabled={selectedClassification==="ALL"&&(classifications.loading||classifications.data?.state!=="AVAILABLE")}>
+            <option value="ALL">전체</option>
+            {unknownClassification&&<option value={selectedClassification} disabled>선택 분류 확인 불가</option>}
+            {classifications.data?.options.map(option=><option key={option.id} value={option.id}>{option.label}</option>)}
+          </select>
+        </label>
+        <label>
           정렬
           <select
             value={params.get("sort") ?? "dataAvailable"}
@@ -182,7 +196,7 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
             <option value="name">게임명</option>
             <option value="currentCcu">마지막 관측 CCU</option>
             <option value="peak24h">24시간 최고 CCU</option>
-            <option value="lastObservedAt">최근 관측 시각</option>
+            <option value="lastObservedAt">최근 CCU 관측 시각</option>
           </select>
         </label>
         <label>
@@ -198,6 +212,7 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
         </label>
         <label>데이터 판정 기간<select value={params.get("days") ?? "30"} onChange={e=>change("days",e.target.value)}><option value="7">최근 7일</option><option value="30">최근 30일</option></select></label>
       </form>
+      <p className="chart-caption" id="game-classification-note">{classifications.loading?"수집 분류 확인 중":classifications.error?"수집 분류를 불러오지 못했습니다. 장르가 없다는 뜻이 아닙니다.":classifications.data?.state==="AVAILABLE"?classifications.data.meaning:classifications.data?.state==="EMPTY"?"확인된 분류 수집 이력이 없습니다. 공식 장르가 없다는 뜻이 아닙니다.":"수집 분류 원천·권한을 확인할 수 없습니다. 전체 게임 목록은 계속 이용할 수 있습니다."}</p>
       <p className="chart-caption">데이터 우선은 인기·트렌드 순위가 아닙니다. 판정 기간 {params.get("days") ?? 30}일 · CCU는 관측 슬롯, YouTube는 한국 시간 게시일 기준입니다. 양쪽 → 한쪽 → 과거 데이터 → 확인된 데이터 없음 순이며, 일부 원천 미확인 게임은 부분 판정으로 표시합니다.</p>
       {Boolean(failure) && <p role="alert">{errorText(failure)}</p>}
       <StatePanel

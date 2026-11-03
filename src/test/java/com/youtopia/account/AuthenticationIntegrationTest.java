@@ -1176,6 +1176,28 @@ class AuthenticationIntegrationTest {
         clock.now=clock.now.plusSeconds(901);again.post("/api/v1/chat/answers",body,401);
         org.mockito.Mockito.verifyNoMoreInteractions(chatProvider);
     }
+    @Test void publicCollectionFiltersUseObservedAllowlistAcrossSearchAndPagesAndFailClosedOnMissingPermission()throws Exception {
+        try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var sql=c.createStatement()){
+            sql.execute("TRUNCATE service.game_catalog_fixture,collector.ccu_fixture,service.ranking_chart_fixture");
+            sql.execute("INSERT INTO service.game_catalog_fixture(app_id,steam_name,developers,steam_tracked) VALUES(1,'Collection Alpha','[]',true),(2,'Collection Beta','[]',false),(3,'Unclassified','[]',true)");
+            sql.execute("INSERT INTO service.ranking_chart_fixture(ranking_run_id,ranking_source,category_key,period_start,period_end,received_at,app_id,result_position) VALUES(1,'DAILY_MOST_PLAYED',null,now()-interval '2 days',now()-interval '1 day',now()-interval '23 hours',1,1),(1,'DAILY_MOST_PLAYED',null,now()-interval '2 days',now()-interval '1 day',now()-interval '23 hours',1,1),(1,'DAILY_MOST_PLAYED',null,now()-interval '2 days',now()-interval '1 day',now()-interval '23 hours',2,2)");
+            var guest=new Browser();var options=guest.get("/api/v1/games/classifications",200);
+            assertThat(options.path("state").asText()).isEqualTo("AVAILABLE");assertThat(options.at("/options/0/id").asText()).isEqualTo("DAILY_MOST_PLAYED|");
+            var page=guest.get("/api/v1/games?classification=DAILY_MOST_PLAYED|&sort=name&page=1&size=1&days=7",200);
+            assertThat(page.at("/page/totalElements").asInt()).isEqualTo(2);assertThat(page.at("/content/0/gameId").asText()).isEqualTo("steam:2");
+            var searched=guest.post("/api/v1/games/search",Map.of("q","Collection","clientEventId",UUID.randomUUID(),"classification","DAILY_MOST_PLAYED|","sort","name","direction","DESC","days",7),200);
+            assertThat(searched.at("/page/totalElements").asInt()).isEqualTo(2);assertThat(searched.at("/content/0/gameId").asText()).isEqualTo("steam:2");
+            guest.get("/api/v1/games?classification=NOT_SUPPORTED|",400);
+            guest.get("/api/v1/games?classification=x|y;DROP",400);guest.get("/api/v1/games?sort=name;DROP",400);
+            guest.get("/api/v1/games?direction=SIDEWAYS",400);guest.get("/api/v1/games?page=-1",400);guest.get("/api/v1/games?size=101",400);
+            sql.execute("REVOKE SELECT ON service.v_weekly_rank_observation FROM ytp_test_data_ro");
+            try{
+                assertThat(guest.get("/api/v1/games/classifications",200).path("state").asText()).isEqualTo("PERMISSION_UNCONFIRMED");
+                guest.get("/api/v1/games?classification=DAILY_MOST_PLAYED|",503);guest.get("/api/v1/games",200);
+            }finally{sql.execute("GRANT SELECT ON service.v_weekly_rank_observation TO ytp_test_data_ro");}
+        }
+        org.mockito.Mockito.verifyNoInteractions(chatProvider);
+    }
     @Test void chatProviderFailureReturnsNonSuccessMaintenanceWithoutKeyOrExceptionText()throws Exception {
         chatBudget.initializeReviewedNewBudget();var admin=new Browser();admin.post("/api/v1/admin/auth/login",Map.of("login","operator","password",PASSWORD),200);
         org.mockito.Mockito.when(chatProvider.answer(com.youtopia.chat.ChatQuestion.VIDEO_VOLUME)).thenThrow(new com.youtopia.chat.ChatFailure("PROVIDER_QUOTA"));

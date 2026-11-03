@@ -13,4 +13,10 @@ class GameQueryTest {
         assertThatThrownBy(()->new GameQuery("test",0,20,"name","ASC","YOUTUBE","ALL")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(()->new GameQuery("x\ny",0,20,"name","ASC","ALL","ALL")).isInstanceOf(IllegalArgumentException.class);
     }
+    @Test void classificationAndPagingInputsAreBounded(){
+        for(String value:new String[]{"bad","x|a|b","x|'; DROP TABLE t;--","x|a b","|genre","x|"+"a".repeat(81)})
+            assertThatThrownBy(()->new GameQuery("",0,20,"name","ASC","ALL","ALL",7,value)).isInstanceOf(IllegalArgumentException.class);
+        for(int[] page:new int[][]{{-1,20},{0,0},{0,101}})assertThatThrownBy(()->new GameQuery("",page[0],page[1],"name","ASC","ALL","ALL",7,"ALL")).isInstanceOf(IllegalArgumentException.class);
+        assertThat(new GameQuery("",0,20,"name","DESC","ALL","ALL",7,"WEEKLY_TOP_SELLERS|").classification()).endsWith("|");
+    }
 }

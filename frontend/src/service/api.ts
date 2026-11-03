@@ -45,6 +45,7 @@ export type Listing = {
     receipt: string | null;
   };
 };
+export type GameClassifications = {state:string;options:{id:string;label:string}[];meaning:string};
 export type Point = {
   scheduledAt: string;
   observedAt: string;
@@ -395,6 +396,7 @@ export class ServiceApi {
       throw new ApiError(0, "INVALID_RESPONSE");
     return value;
   }
+  classifications(signal?:AbortSignal){return this.request<GameClassifications>("/api/v1/games/classifications",{signal});}
   search(params: Record<string, unknown>, signal?: AbortSignal) {
     return this.request<Listing>("/api/v1/games/search", {
       method: "POST",

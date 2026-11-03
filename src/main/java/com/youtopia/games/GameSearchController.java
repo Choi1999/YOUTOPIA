@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 /** Explicit search execution issues an optional analytics proof only after a real successful query. */
 @RestController @ConditionalOnProperty(name="youtopia.games.enabled",havingValue="true")
 public class GameSearchController {
-    public record Search(@NotBlank String q,@NotNull UUID clientEventId,Integer page,Integer size,String sort,String direction,String platform,String connectionStatus,Integer days) {}
+    public record Search(@NotBlank String q,@NotNull UUID clientEventId,Integer page,Integer size,String sort,String direction,String platform,String connectionStatus,Integer days,String classification) {}
     public record Tracking(String availability,UUID clientEventId,UUID searchContextId,Map<String,Object> properties,String receipt) {}
     public record Result(java.util.List<GameService.Game> content,com.youtopia.api.PageResult.Page page,java.time.Instant asOf,String catalogScope,String dataStatus,String freshness,Tracking searchTracking) {}
     private final GameService service;private final ObjectProvider<SearchReceipt> receipts;private final ObjectProvider<EventCatalog> catalogs;private final ObjectProvider<ProductEventService> events;private final ObjectMapper json;
@@ -21,7 +21,7 @@ public class GameSearchController {
     @PostMapping("/api/v1/games/search")
     Result search(@Valid @RequestBody Search body,HttpServletRequest request,HttpServletResponse response){
         com.youtopia.api.QueryParameters.only(request);response.setHeader("Cache-Control","no-store");
-        var query=new GameQuery(body.q(),body.page()==null?0:body.page(),body.size()==null?20:body.size(),body.sort()==null?"dataAvailable":body.sort(),body.direction()==null?"ASC":body.direction(),body.platform()==null?"ALL":body.platform(),body.connectionStatus()==null?"ALL":body.connectionStatus(),body.days()==null?30:body.days());
+        var query=new GameQuery(body.q(),body.page()==null?0:body.page(),body.size()==null?20:body.size(),body.sort()==null?"dataAvailable":body.sort(),body.direction()==null?"ASC":body.direction(),body.platform()==null?"ALL":body.platform(),body.connectionStatus()==null?"ALL":body.connectionStatus(),body.days()==null?30:body.days(),body.classification()==null?"ALL":body.classification());
         var result=service.list(query);Tracking tracking=new Tracking("UNAVAILABLE",body.clientEventId(),null,null,null);
         if(receipts.getIfAvailable()!=null&&catalogs.getIfAvailable()!=null&&events.getIfAvailable()!=null&&result.page().totalElements()<=Integer.MAX_VALUE)try{
             var keys=new ArrayList<String>();if(!query.platform().equals("ALL"))keys.add("platform");if(!query.connectionStatus().equals("ALL"))keys.add("connectionStatus");

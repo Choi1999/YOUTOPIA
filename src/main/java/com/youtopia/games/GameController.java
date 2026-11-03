@@ -12,10 +12,12 @@ public class GameController {
     @GetMapping("/api/v1/games")
     GameService.Listing list(@RequestParam(defaultValue="")String q,@RequestParam(defaultValue="0")int page,@RequestParam(defaultValue="20")int size,
         @RequestParam(defaultValue="dataAvailable")String sort,@RequestParam(defaultValue="ASC")String direction,@RequestParam(defaultValue="ALL")String platform,
-        @RequestParam(defaultValue="ALL")String connectionStatus,@RequestParam(defaultValue="30")int days,HttpServletRequest request,HttpServletResponse response){
-        QueryParameters.only(request,"q","page","size","sort","direction","platform","connectionStatus","days");response.setHeader("Cache-Control","no-store");
-        return service.list(new GameQuery(q,page,size,sort,direction,platform,connectionStatus,days));
+        @RequestParam(defaultValue="ALL")String connectionStatus,@RequestParam(defaultValue="30")int days,@RequestParam(defaultValue="ALL")String classification,HttpServletRequest request,HttpServletResponse response){
+        QueryParameters.only(request,"q","page","size","sort","direction","platform","connectionStatus","days","classification");response.setHeader("Cache-Control","no-store");
+        return service.list(new GameQuery(q,page,size,sort,direction,platform,connectionStatus,days,classification));
     }
+    @GetMapping("/api/v1/games/classifications")
+    GameClassifications.Catalog classifications(HttpServletRequest request,HttpServletResponse response){QueryParameters.only(request);response.setHeader("Cache-Control","no-store");return service.classifications();}
     @GetMapping("/api/v1/games/{gameId}")
     GameService.Detail detail(@PathVariable String gameId,HttpServletRequest request,HttpServletResponse response){QueryParameters.only(request);response.setHeader("Cache-Control","no-store");return service.detail(gameId);}
 }
