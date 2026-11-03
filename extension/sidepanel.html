@@ -39,8 +39,25 @@
             >
               이 영상으로 웹 비교 시작 · 로컬 DEMO
             </a>
+          <button type="button" id="compare-add-current" class="compare-action" hidden>선택한 영상을 비교 후보에 추가</button>
           <p class="panel__notice">다른 썸네일에 마우스를 올려도 선택은 바뀌지 않습니다. 다른 영상을 고르려면 그 영상의 「더보기」를 직접 클릭하세요.</p>
         </div>
+      </section>
+      <section id="compare-candidates" class="compare-candidates" aria-labelledby="compare-heading">
+        <header class="compare-candidates__heading">
+          <h2 id="compare-heading">영상 비교 후보 · 세션 DEMO</h2>
+          <span class="panel__pill">합성 선택</span>
+        </header>
+        <p class="panel__notice">더보기로 확정한 영상을 다시 버튼으로 추가해야 후보에 등록됩니다. Hover만으로는 추가되지 않습니다.</p>
+        <p id="compare-status" role="status" aria-live="polite">현재 탭의 비교 후보를 확인 중입니다.</p>
+        <ol id="compare-list" class="compare-candidates__list" aria-label="현재 탭의 비교 후보"></ol>
+        <div class="compare-candidates__actions">
+          <button type="button" class="compare-action" id="compare-swap" disabled>A/B 순서 바꾸기</button>
+          <button type="button" class="compare-action" id="compare-clear" disabled>비교 후보 지우기</button>
+        </div>
+        <a id="compare-open-pair" class="web-analysis-link" target="_blank"
+          rel="noopener noreferrer" hidden>선택한 두 영상 웹 비교 · 로컬 DEMO</a>
+        <p class="panel__notice">현재 탭에만 속하며 최대 2개·2시간 이내에 만료됩니다. 탭 종료 시 삭제됩니다. 실제 YouTube 댓글 분석이 아닙니다.</p>
       </section>
       <section id="demo-preview" class="preview" aria-label="합성 반응 미리보기" hidden>
         <header class="preview__heading">
@@ -82,7 +99,9 @@
     <script src="shared.js"></script>
     <script src="panel-selection-contract.js"></script>
     <script src="hover-card-model.js"></script>
+    <script src="panel-compare-contract.js"></script>
     <script src="web-analysis-link.js"></script>
     <script src="sidepanel.js"></script>
+    <script src="panel-compare-ui.js"></script>
   </body>
 </html>

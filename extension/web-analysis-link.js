@@ -46,6 +46,17 @@
       encodeURIComponent(targetId);
   }
 
+  // The two IDs and A/B order alone enter a localhost DEMO comparison URL.
+  function buildComparePairUrl(ids) {
+    if (!Array.isArray(ids) || ids.length !== 2 ||
+        ids[0] === ids[1] ||
+        ids.some(id => typeof id !== "string" || !VIDEO_ID_PATTERN.test(id))) {
+      return null;
+    }
+    return BASE_URL + "/analysis/youtube/compare?video=" +
+      encodeURIComponent(ids[0]) + "&video=" + encodeURIComponent(ids[1]);
+  }
+
   scope.YUTOPIA_WEB_ANALYSIS_LINK =
-    Object.freeze({ buildVideoUrl, buildCompareUrl });
+    Object.freeze({ buildVideoUrl, buildCompareUrl, buildComparePairUrl });
 })(globalThis);
