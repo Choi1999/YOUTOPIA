@@ -184,6 +184,9 @@ export function ChannelSelectionResult({
                 {aggregate.topics.map(topic => (
                   <li key={topic.topicId}>
                     <strong>{topic.topicId} · {topic.mentionCount}건</strong>
+                    <Link to={"/analysis/youtube/topics?topic=" + encodeURIComponent(topic.topicId) + "&channel=" + selection.channelId}>
+                      {topic.topicId} 주제 상세 탐색
+                    </Link>
                     <ul aria-label={topic.topicId + " 영상별 기여도"}>
                       {topic.perVideo.map(part => (
                         <li key={part.videoId}>
