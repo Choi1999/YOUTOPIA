@@ -94,7 +94,7 @@ export function ChannelComparisonPage() {
               <select value={pair?.[index] ?? ""}
                 onChange={e => select(index, e.target.value)}>
                 <option value="" disabled>채널을 선택하세요</option>
-                {pair?.[index] && !demoChannelSelections.some(c => c.channelId === pair[index]) && (
+                {pair?.[index] && !demoChannelSelections.some(c => c.channelId === pair?.[index]) && (
                   <option value={pair[index]}>미등록 채널: {pair[index]}</option>
                 )}
                 {demoChannelSelections.map(channel => (

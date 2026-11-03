@@ -64,7 +64,7 @@ describe("YU-48 — synthetic topic contributions drilldown",()=>{
     const [a,b]=await fixtures();
     if(b.kind!=="READY")throw Error("NOT_READY");
     expect(exploreRegisteredTopic("QUALITY",[a,{...b,
-      observationWindow:{...b.observationWindow,windowEnd:"2026-10-09"}}]))
+      observationWindow:{...b.observationWindow,end:"2026-10-09"}}]))
       .toEqual({kind:"BLOCKED",reason:"INCOMPATIBLE_CHANNELS"});
   });
   it("rejects empty or more than two channel groups",async()=>{
