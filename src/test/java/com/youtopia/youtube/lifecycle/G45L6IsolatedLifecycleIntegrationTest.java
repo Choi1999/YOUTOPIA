@@ -50,6 +50,25 @@ class G45L6IsolatedLifecycleIntegrationTest {
         }
     }
 
+
+    /** Fixed allowlist and FK prevent arbitrary labels or orphan ACK rows from satisfying the count. */
+    private static void createSyntheticAckTables(Connection c) throws SQLException {
+        try(var s=c.createStatement()) {
+            s.execute("CREATE TEMP TABLE g45_l6_op(id uuid PRIMARY KEY,state text NOT NULL CHECK(state IN('PROPAGATING','PURGED_SYNTHETIC_ONLY'))) ON COMMIT PRESERVE ROWS");
+            s.execute("""
+                CREATE TEMP TABLE g45_l6_ack(
+                    id uuid NOT NULL REFERENCES pg_temp.g45_l6_op(id),
+                    target text NOT NULL CHECK(target IN(
+                        'raw-and-identity','snapshot-and-derived','report',
+                        'search-index','server-cache','client-and-cdn-cache',
+                        'job-and-outbox','temporary-export','backup-and-restore-fence'
+                    )),
+                    PRIMARY KEY(id,target)
+                ) ON COMMIT PRESERVE ROWS
+                """);
+        }
+    }
+
     @Test void temporaryPostgresTableIsInvisibleOutsideItsTestSession() throws Exception {
         try (var c=isolatedPg();var s=c.createStatement()) {
             s.execute("CREATE TEMP TABLE g45_l6_rows(tenant_id text NOT NULL, video_id text NOT NULL, marker text NOT NULL, PRIMARY KEY(tenant_id,video_id)) ON COMMIT PRESERVE ROWS");
@@ -98,8 +117,7 @@ class G45L6IsolatedLifecycleIntegrationTest {
         assertEquals(9,TARGETS.size());
         UUID request=UUID.fromString("11111111-1111-4111-8111-111111111111");
         try (var c=isolatedPg();var s=c.createStatement()) {
-            s.execute("CREATE TEMP TABLE g45_l6_op(id uuid PRIMARY KEY,state text NOT NULL CHECK(state IN('PROPAGATING','PURGED_SYNTHETIC_ONLY'))) ON COMMIT PRESERVE ROWS");
-            s.execute("CREATE TEMP TABLE g45_l6_ack(id uuid NOT NULL,target text NOT NULL,PRIMARY KEY(id,target)) ON COMMIT PRESERVE ROWS");
+            createSyntheticAckTables(c);
             try (var q=c.prepareStatement("INSERT INTO pg_temp.g45_l6_op VALUES(?,'PROPAGATING')")) {
                 q.setObject(1,request);assertEquals(1,q.executeUpdate());
             }
@@ -129,6 +147,35 @@ class G45L6IsolatedLifecycleIntegrationTest {
             try(var r=s.executeQuery("SELECT state FROM pg_temp.g45_l6_op")) {
                 assertTrue(r.next());
                 assertEquals("PURGED_SYNTHETIC_ONLY",r.getString(1));
+            }
+        }
+    }
+
+
+    @Test void invalidOrOrphanAcknowledgementsNeverCountTowardCompletion() throws Exception {
+        UUID valid=UUID.fromString("11111111-1111-4111-8111-111111111111");
+        UUID orphan=UUID.fromString("22222222-2222-4222-8222-222222222222");
+        try(var c=isolatedPg()) {
+            createSyntheticAckTables(c);
+            try(var q=c.prepareStatement("INSERT INTO pg_temp.g45_l6_op VALUES(?,'PROPAGATING')")) {
+                q.setObject(1,valid);
+                assertEquals(1,q.executeUpdate());
+            }
+            try(var q=c.prepareStatement("INSERT INTO pg_temp.g45_l6_ack VALUES(?,?)")) {
+                q.setObject(1,valid);q.setString(2,"not-a-real-backup-fence");
+                SQLException invalid=assertThrows(SQLException.class,q::executeUpdate);
+                assertEquals("23514",invalid.getSQLState()); // target CHECK violation
+                q.setObject(1,orphan);q.setString(2,TARGETS.getFirst());
+                SQLException unknownRequest=assertThrows(SQLException.class,q::executeUpdate);
+                assertEquals("23503",unknownRequest.getSQLState()); // request FK violation
+            }
+            try(var s=c.createStatement();
+                var rs=s.executeQuery("SELECT count(*) FROM pg_temp.g45_l6_ack")) {
+                assertTrue(rs.next());assertEquals(0,rs.getInt(1));
+            }
+            try(var q=c.prepareStatement("UPDATE pg_temp.g45_l6_op SET state='PURGED_SYNTHETIC_ONLY' WHERE id=? AND 9=(SELECT count(*) FROM pg_temp.g45_l6_ack WHERE id=?)")) {
+                q.setObject(1,valid);q.setObject(2,valid);
+                assertEquals(0,q.executeUpdate()); // fabricated ACKs cannot complete
             }
         }
     }

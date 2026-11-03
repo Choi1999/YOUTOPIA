@@ -25,10 +25,11 @@ PR #52의 G45-L5 JUnit 상태 전이 모형은 메모리 테스트다. G45-L6는
 | L6-01 | 세션 임시 테이블 | 다른 PostgreSQL 접속에서 합성 TEMP 테이블 읽기 불가(SQLSTATE 42P01) |
 | L6-02 | Tombstone·tenant 격리·실패 롤백 | 삭제 전에 Tombstone 커밋; 실패 재시도에도 보존; tenant-alpha 데이터만 삭제하고 tenant-beta는 유지 |
 | L6-03 | 전파 대상 9개 ACK | 합성 backup/restore fence 확인 누락 시 완료 판정 거부; 중복 ACK로 9개를 속이지 못함 |
+| L6-06 | ACK 허용 대상·요청 참조 무결성 | 9개 고정 target에 대한 CHECK, operation UUID 외래키로 임의 target·존재하지 않는 요청 ACK를 거부(SQLSTATE 23514·23503) |
 | L6-04 | Redis 캐시·삭제 펜스 | 시험 UUID의 alpha 캐시만 삭제, beta 캐시·Tombstone 유지, 중복 삭제 멱등성 |
 | L6-05 | DB 최소 권한 | 기존 시험 전용 `ytp_test_data_ro`가 collector 데이터에 DELETE 권한을 갖지 않음 |
 
-**완료 상태는 항상 `PURGED_SYNTHETIC_ONLY`이다.** SQL ACK는 실제 CDN·브라우저·Outbox·백업의 삭제 증거가 아니다. TEMP 테이블은 서버 프로세스 재시작 또는 백업 복구를 넘는 내구성/펜스를 검증하지 못하며, 시험용 `postgres` 슈퍼유저는 운영 최소 권한 설계가 아니다.
+**완료 상태는 항상 `PURGED_SYNTHETIC_ONLY`이다.** 단순 ACK 개수만 비교하면 임의 문자열 9개로 완료 상태를 위조할 수 있어 독립 검수에서 시험용 `target` CHECK와 요청 ID 외래키를 추가했다. SQL ACK는 해당 시험용 요청·고정 대상에 대한 모의 레코드일 뿐 실제 CDN·브라우저·Outbox·백업의 삭제 증거가 아니다. TEMP 테이블은 서버 프로세스 재시작 또는 백업 복구를 넘는 내구성/펜스를 검증하지 못하며, 시험용 `postgres` 슈퍼유저는 운영 최소 권한 설계가 아니다.
 
 ## 4. CI 실행
 
@@ -47,6 +48,8 @@ CI 실행에 테스트 이미지 다운로드가 필요할 수 있으나 YouTube
 - 데이터별 보존/갱신·삭제, Redis/CDN/브라우저 캐시 및 백업의 신뢰 가능한 외부 ACK
 - 실제 Google Cloud 프로젝트/키·Quota·IP 제한 검증(E01~E04), 제공자 기본 정책(E05), 감성 지표 허용(E06), 최초 YouTube 실호출 별도 승인(E11)
 - 정본 정책 Gate는 `POLICY_HOLD`, `verifiedCount=0`, `liveCallsAuthorized=false`를 유지. 브랜치/PR 병합도 별도 승인 대상.
+
+**독립 검수 보강 (2026-11-03):** P2 삭제 완료 상태 검증 결함 수정 — 허용되지 않은 ACK 라벨 및 존재하지 않는 요청 UUID의 삽입을 SQL 레벨에서 거부하고 완료 조건으로 오인하지 않도록 음성 테스트를 추가했다. 기존 운영 Java·인프라·정책·브랜치는 수정하지 않았다.
 
 **판정:** G45-L6 일회성 PostgreSQL/Redis 검증용 PR. 실제 운영 데이터 수명주기 기능 구현 완료를 의미하지 않는다.
 
