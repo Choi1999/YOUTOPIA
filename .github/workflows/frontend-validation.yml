@@ -69,6 +69,7 @@ jobs:
           node --check shared/experiments/yu32-g45-offline-pipeline-v0/src/synthetic-classifier.cjs
           node --check shared/experiments/yu32-g45-offline-pipeline-v0/src/pipeline.cjs
           node --check shared/experiments/yu32-g45-offline-pipeline-v0/src/local-source-adapter.cjs
+          node --check shared/experiments/yu32-g45-offline-pipeline-v0/src/first-page-provider-transport.cjs
           node --check shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-offline.cjs
           node --check shared/experiments/yu32-g45-offline-pipeline-v0/src/admin-purge.cjs
           node --check shared/experiments/yu32-g45-offline-pipeline-v0/scripts/run-admin-purge-demo.cjs
