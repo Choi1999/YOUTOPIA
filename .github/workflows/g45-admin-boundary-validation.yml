@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - feat/backend-bootstrap
+  push:
+    branches:
+      - feat/backend-bootstrap
 
 permissions:
   contents: read
@@ -19,9 +22,9 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: gradle
-      - name: Verify Gradle wrapper integrity and run only synthetic admin security tests
+      - name: Run G45 synthetic admin security and lifecycle contract tests (NO live data)
         run: |
           test -f gradlew
           test -f gradle/wrapper/gradle-wrapper.jar
           chmod +x ./gradlew
-          ./gradlew --no-daemon test --tests 'com.youtopia.youtube.admin.G45AdminDeletionBoundarySecurityTest'
+          ./gradlew --no-daemon test --tests 'com.youtopia.youtube.admin.G45AdminDeletionBoundarySecurityTest' --tests 'com.youtopia.youtube.lifecycle.G45LifecycleBoundaryContractTest'
