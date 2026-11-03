@@ -29,6 +29,7 @@ class G45LifecycleBoundaryContractTest {
     enum Trigger { ADMIN_MANUAL, RETENTION_EXPIRY, VERIFIED_USER_ERASURE,
         IN_APP_OAUTH_REVOCATION, EXTERNAL_OAUTH_REVOCATION }
     enum TestActor { ADMIN, SYSTEM, USER }
+    enum ReplayDecision { STALE_EPOCH_BLOCKED, TOMBSTONED_SCOPE_BLOCKED, NO_LIVE_JOB_AUTHORITY }
     enum State { PENDING, EXECUTING, PROPAGATING, PURGE_FAILED, PURGED_SYNTHETIC_ONLY }
     enum Target { RAW_AND_IDENTITY, SNAPSHOT_AND_DERIVED, REPORT, SEARCH_INDEX,
         SERVER_CACHE, CLIENT_AND_CDN_CACHE, JOB_AND_OUTBOX, TEMPORARY_EXPORT,
@@ -36,19 +37,21 @@ class G45LifecycleBoundaryContractTest {
 
     record Scope(String tenantId, String videoId) {
         Scope {
-            if (!FIXTURE_TENANTS.contains(tenantId) || !VIDEO.equals(videoId))
+            if (tenantId==null || !FIXTURE_TENANTS.contains(tenantId) || !VIDEO.equals(videoId))
                 throw new IllegalArgumentException("synthetic fixture scope only");
         }
     }
 
-    static Optional<Instant> deadline(Trigger trigger, Instant requestedAt) {
+    static Optional<Instant> deadline(Trigger trigger, Instant policyEventAt) {
+        // Retention starts at last source observation/refresh; user erasure and
+        // OAuth revocation start at their respective verified event timestamps.
         Objects.requireNonNull(trigger);
-        Objects.requireNonNull(requestedAt);
+        Objects.requireNonNull(policyEventAt);
         return switch (trigger) {
             case RETENTION_EXPIRY, EXTERNAL_OAUTH_REVOCATION ->
-                Optional.of(requestedAt.plus(30, ChronoUnit.DAYS));
+                Optional.of(policyEventAt.plus(30, ChronoUnit.DAYS));
             case VERIFIED_USER_ERASURE, IN_APP_OAUTH_REVOCATION ->
-                Optional.of(requestedAt.plus(7, ChronoUnit.DAYS));
+                Optional.of(policyEventAt.plus(7, ChronoUnit.DAYS));
             case ADMIN_MANUAL -> Optional.empty();
         };
     }
@@ -69,14 +72,17 @@ class G45LifecycleBoundaryContractTest {
         private final Map<UUID, Operation> operations = new HashMap<>();
         private final Map<Scope, Long> tombstones = new HashMap<>();
 
-        Operation request(String fixtureId, TestActor actor, UUID id, Scope scope,
+        Operation request(String fixtureId, TestActor actor, String actorTenantId, UUID id, Scope scope,
                           Trigger trigger, long policyEpoch, Instant at) {
             if (!"G45_L5_SYNTHETIC_ONLY".equals(fixtureId) ||
                 actor==null || id==null || scope==null || trigger==null || at==null ||
                 policyEpoch < 1) throw new IllegalArgumentException("invalid synthetic input");
-            if (trigger==Trigger.ADMIN_MANUAL && actor!=TestActor.ADMIN)
-                throw new SecurityException("synthetic admin role required");
-            if (trigger!=Trigger.ADMIN_MANUAL && actor!=TestActor.SYSTEM)
+            // Test-only tenant context; does NOT authenticate a real server principal.
+            if (trigger==Trigger.ADMIN_MANUAL &&
+                (actor!=TestActor.ADMIN || !scope.tenantId().equals(actorTenantId)))
+                throw new SecurityException("synthetic admin/tenant scope required");
+            if (trigger!=Trigger.ADMIN_MANUAL &&
+                (actor!=TestActor.SYSTEM || actorTenantId!=null))
                 throw new SecurityException("synthetic system actor required");
             Operation old=operations.get(id);
             if (old!=null) {
@@ -131,16 +137,21 @@ class G45LifecycleBoundaryContractTest {
             op.state=State.PROPAGATING;
             return op;
         }
-        boolean mayReplay(Scope scope, long jobPolicyEpoch) {
-            if(jobPolicyEpoch<1 || scope==null)
+        ReplayDecision assessSyntheticReplay(Scope scope, long jobPolicyEpoch) {
+            if (jobPolicyEpoch<1 || scope==null)
                 throw new IllegalArgumentException("invalid replay fixture");
-            // No permission to process actual jobs, even when epoch is newer.
-            return false;
+            Long tombstone=tombstones.get(scope);
+            if (tombstone==null) return ReplayDecision.NO_LIVE_JOB_AUTHORITY;
+            if (jobPolicyEpoch<=tombstone) return ReplayDecision.STALE_EPOCH_BLOCKED;
+            // Newer job epochs still cannot override a tombstoned scope.
+            return ReplayDecision.TOMBSTONED_SCOPE_BLOCKED;
+        }
+        boolean mayReplay(Scope scope, long jobPolicyEpoch) {
+            assessSyntheticReplay(scope,jobPolicyEpoch);
+            return false; // NO live job authority in this isolated test model
         }
         boolean isOldEpochBlocked(Scope scope, long jobPolicyEpoch) {
-            if(jobPolicyEpoch<1 || scope==null)throw new IllegalArgumentException("invalid epoch");
-            Long tombstone=tombstones.get(scope);
-            return tombstone!=null && jobPolicyEpoch<=tombstone;
+            return assessSyntheticReplay(scope,jobPolicyEpoch)==ReplayDecision.STALE_EPOCH_BLOCKED;
         }
         int providerRequestsMade(){return 0;}
         int productionDeletes(){return 0;}
@@ -148,7 +159,8 @@ class G45LifecycleBoundaryContractTest {
     static Scope alpha(){return new Scope("tenant-alpha",VIDEO);}
     static Scope beta(){return new Scope("tenant-beta",VIDEO);}
     static Operation request(SyntheticLab lab, Scope scope, UUID id, Trigger trigger, TestActor actor) {
-        return lab.request("G45_L5_SYNTHETIC_ONLY",actor,id,scope,trigger,4,AT);
+        return lab.request("G45_L5_SYNTHETIC_ONLY",actor,
+            actor==TestActor.ADMIN ? scope.tenantId() : null,id,scope,trigger,4,AT);
     }
 
     @Test void retentionThirtyDayAndUserErasureSevenDayDeadlinesAreSeparate() {
@@ -164,6 +176,8 @@ class G45LifecycleBoundaryContractTest {
         assertThrows(IllegalArgumentException.class,()->new Scope("tenant-other",VIDEO));
         assertThrows(IllegalArgumentException.class,()->new Scope("tenant-alpha","differentID"));
         assertThrows(IllegalArgumentException.class,()->new Scope("tenant-alpha","*"));
+        assertThrows(IllegalArgumentException.class,()->new Scope(null,VIDEO));
+        assertThrows(IllegalArgumentException.class,()->new Scope("tenant-alpha",null));
     }
     @Test void adminOnlyManualAndSystemOnlyMandatoryPathsRemainDistinct() {
         SyntheticLab lab=new SyntheticLab();
@@ -174,9 +188,9 @@ class G45LifecycleBoundaryContractTest {
     }
     @Test void callerProvidedApprovalOrProviderFixtureNeverBecomesRuntimeAuthorization() {
         SyntheticLab lab=new SyntheticLab();
-        assertThrows(IllegalArgumentException.class,()->lab.request("APPROVED_PROVIDER",TestActor.ADMIN,
+        assertThrows(IllegalArgumentException.class,()->lab.request("APPROVED_PROVIDER",TestActor.ADMIN,"tenant-alpha",
             ID1,alpha(),Trigger.ADMIN_MANUAL,4,AT));
-        assertThrows(IllegalArgumentException.class,()->lab.request("G45_L5_SYNTHETIC_ONLY",TestActor.ADMIN,
+        assertThrows(IllegalArgumentException.class,()->lab.request("G45_L5_SYNTHETIC_ONLY",TestActor.ADMIN,"tenant-alpha",
             ID1,alpha(),Trigger.ADMIN_MANUAL,0,AT));
         assertEquals(0,lab.providerRequestsMade());
     }
@@ -251,6 +265,32 @@ class G45LifecycleBoundaryContractTest {
         assertTrue(EnumSet.allOf(Target.class).contains(Target.BACKUP_AND_RESTORE_FENCE));
         assertTrue(EnumSet.allOf(Target.class).contains(Target.CLIENT_AND_CDN_CACHE));
         assertTrue(EnumSet.allOf(Target.class).contains(Target.JOB_AND_OUTBOX));
+    }
+    @Test void syntheticAdminMustMatchTenantAndSystemCannotImpersonateTenantAdmin() {
+        SyntheticLab lab=new SyntheticLab();
+        assertThrows(SecurityException.class,()->lab.request(
+            "G45_L5_SYNTHETIC_ONLY",TestActor.ADMIN,"tenant-beta",
+            ID1,alpha(),Trigger.ADMIN_MANUAL,4,AT));
+        assertThrows(SecurityException.class,()->lab.request(
+            "G45_L5_SYNTHETIC_ONLY",TestActor.ADMIN,null,
+            ID1,alpha(),Trigger.ADMIN_MANUAL,4,AT));
+        assertThrows(SecurityException.class,()->lab.request(
+            "G45_L5_SYNTHETIC_ONLY",TestActor.SYSTEM,"tenant-alpha",
+            ID1,alpha(),Trigger.VERIFIED_USER_ERASURE,4,AT));
+        assertEquals(State.PENDING,request(lab,alpha(),ID1,Trigger.ADMIN_MANUAL,TestActor.ADMIN).state);
+        assertEquals(0,lab.productionDeletes());
+    }
+    @Test void replayDecisionDistinguishesEpochAndTombstoneWithoutAuthorizingWork() {
+        SyntheticLab lab=new SyntheticLab();
+        assertEquals(ReplayDecision.NO_LIVE_JOB_AUTHORITY,lab.assessSyntheticReplay(alpha(),2));
+        request(lab,alpha(),ID1,Trigger.VERIFIED_USER_ERASURE,TestActor.SYSTEM);
+        assertEquals(ReplayDecision.STALE_EPOCH_BLOCKED,lab.assessSyntheticReplay(alpha(),4));
+        assertEquals(ReplayDecision.TOMBSTONED_SCOPE_BLOCKED,lab.assessSyntheticReplay(alpha(),5));
+        assertThrows(IllegalArgumentException.class,()->lab.assessSyntheticReplay(alpha(),0));
+        assertFalse(lab.mayReplay(alpha(),4));
+        assertFalse(lab.mayReplay(alpha(),5));
+        assertEquals(0,lab.providerRequestsMade());
+        assertEquals(0,lab.productionDeletes());
     }
     @Test void testModelHasNoSpringOrRuntimeDeploymentAnnotation() {
         assertFalse(G45LifecycleBoundaryContractTest.class.isAnnotationPresent(

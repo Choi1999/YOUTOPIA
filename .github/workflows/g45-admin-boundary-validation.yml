@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - feat/backend-bootstrap
+  push:
+    branches:
+      - feat/backend-bootstrap
 
 permissions:
   contents: read

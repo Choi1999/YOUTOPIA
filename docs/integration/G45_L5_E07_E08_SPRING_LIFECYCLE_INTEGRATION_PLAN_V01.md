@@ -88,3 +88,11 @@
 - https://developers.google.com/youtube/data/reference/rest/v3/commentThreads/list
 - https://developers.google.com/youtube/data/reference/rest
 - https://developers.google.com/youtube/data/determine_quota_cost
+
+## 7. 독립 코드·보안 검수 보강 (2026-11-03)
+
+- 테스트 범위 P2: 기존 테스트의 합성 ADMIN 열거형은 tenant 범위를 검사하지 않았다. `actorTenantId` 대조와 교차 테넌트/무테넌트 부정 테스트를 추가했다. 해당 값은 테스트 입력이며 운영 인가 증거가 아니다.
+- 테스트 범위 P2: 기존 `mayReplay()`는 상수 `false`로만 종료되어 오래된 작업과 신규 Epoch의 실패 이유를 구분하지 못했다. `assessSyntheticReplay()`는 구 Epoch와 Tombstone 존재를 구분하되 모든 실제 작업을 계속 차단한다.
+- SLA 기점: 30일 보존은 API 데이터 관측 또는 마지막 갱신 시각, 사용자 삭제 요청은 검증된 접수 시각, OAuth 철회는 해당 철회 시각을 기준으로 설계한다. 테스트 함수 인수를 `policyEventAt`로 명명했다.
+- CI 추적: PR에서의 테스트 통과와 최종 병합 SHA의 통과는 구분한다. 백엔드 브랜치 push에서도 동일 Java 21 검증이 실행되게 추가했다. PR 병합 자체는 별도 승인 대상이다.
+- 실제 `SecurityConfiguration`, 서비스 계정 삭제, SQL/Redis/외부 API 로직은 변경하지 않았고 E01~E12 `POLICY_HOLD`를 유지한다.
