@@ -221,7 +221,7 @@ try:
             # Give each browser project its own real session/limiter namespace.
             # Keep the production-default request threshold; aggregate UI projects
             # must not consume each other's per-minute budget or require disabling it.
-            projects = ['real-service', 'visual-desktop-dark', 'visual-mobile-dark',
+            projects = ['real-service', 'collection-filters', 'visual-desktop-dark', 'visual-mobile-dark',
                         'visual-desktop-light', 'visual-mobile-light']
             for project in projects:
                 for process in list(processes):

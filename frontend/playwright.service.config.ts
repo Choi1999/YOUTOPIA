@@ -35,6 +35,7 @@ export default defineConfig({
         colorScheme: "dark",
       },
     },
+    { name: "collection-filters", testMatch: "game-filters.spec.ts", use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 }, colorScheme: "dark" } },
     ...(["dark", "light"] as const).flatMap((colorScheme) => [
       {
         name: "visual-desktop-" + colorScheme,
