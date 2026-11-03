@@ -14,14 +14,34 @@ export const demoChannelSelection = Object.freeze({
   videoIds: ["Ab0_-123xyz", "Qb0_-123xyz"] as const,
 });
 
-export type DemoChannelSelection = typeof demoChannelSelection;
+export type DemoChannelSelection = Readonly<{
+  source: "STATIC_FIXTURE";
+  isSynthetic: true;
+  channelId: string;
+  label: string;
+  selectionRule: "EXPLICIT_SYNTHETIC_VIDEO_SET";
+  videoIds: readonly [string, string];
+}>;
+
+/** A separate curated synthetic channel, not a real membership assertion. */
+export const demoChannelBSelection: DemoChannelSelection = Object.freeze({
+  source: "STATIC_FIXTURE",
+  isSynthetic: true,
+  channelId: "UC" + "B".repeat(22),
+  label: "합성 데모 채널 B — 실제 YouTube 채널이 아님",
+  selectionRule: "EXPLICIT_SYNTHETIC_VIDEO_SET",
+  videoIds: ["Cb0_-123xyz", "Db0_-123xyz"] as const,
+});
+
+export const demoChannelSelections: readonly DemoChannelSelection[] =
+  Object.freeze([demoChannelSelection, demoChannelBSelection]);
 
 export function getDemoChannelSelection(
   channelId: string,
 ): DemoChannelSelection | null {
   const target = createAnalysisTarget("CHANNEL", channelId);
-  return target && target.targetId === demoChannelSelection.channelId
-    ? demoChannelSelection
+  return target
+    ? demoChannelSelections.find(s => s.channelId === target.targetId) ?? null
     : null;
 }
 

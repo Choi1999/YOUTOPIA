@@ -2,6 +2,7 @@
 import type { AnalysisRepository } from "./AnalysisRepository";
 import { demoReadySnapshot } from "./demoReadySnapshot";
 import { demoComparisonSnapshot } from "./demoComparisonSnapshot";
+import { demoChannelBVideoOne, demoChannelBVideoTwo } from "./demoChannelBSnapshots";
 
 /**
  * 합성 스냅샷을 제공하는 테스트 전용 Repository.
@@ -12,7 +13,7 @@ import { demoComparisonSnapshot } from "./demoComparisonSnapshot";
 export const demoAnalysisRepository: AnalysisRepository = {
   async getSnapshot(target) {
     // 정확히 등록한 두 합성 대상 외에는 데이터를 만들지 않는다.
-    const fixture = [demoReadySnapshot, demoComparisonSnapshot].find(
+    const fixture = [demoReadySnapshot, demoComparisonSnapshot, demoChannelBVideoOne, demoChannelBVideoTwo].find(
       ({ target: fixtureTarget }) =>
         target.source === fixtureTarget.source &&
         target.targetType === fixtureTarget.targetType &&
