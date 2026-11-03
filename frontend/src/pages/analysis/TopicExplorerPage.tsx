@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { createAnalysisTarget } from "../../features/analysis-target/analysisTarget";
+import { withoutAllowedUtmTracking } from "../../features/analysis-target/analysisQueryTracking";
 import { demoChannelSelections } from "../../features/analysis/data/demoChannelSelection";
 import { useAnalysisRepository } from "../../features/analysis/data/AnalysisRepositoryContext";
 import { readDemoChannelAggregate } from "../../features/analysis/data/readDemoChannelAggregate";
@@ -11,12 +12,14 @@ import "./channel-comparison.css";
 type Request = Readonly<{topicId:string; channelIds:readonly string[]}>;
 
 function parseTopicQuery(search: URLSearchParams): Request | null {
-  const entries=[...search.entries()];
+  const analysisSearch = withoutAllowedUtmTracking(search);
+  if (!analysisSearch) return null;
+  const entries=[...analysisSearch.entries()];
   if (entries.length===0) return {
     topicId:"RECIPE",channelIds:[demoChannelSelections[0].channelId],
   };
-  const topics=search.getAll("topic");
-  const ids=search.getAll("channel");
+  const topics=analysisSearch.getAll("topic");
+  const ids=analysisSearch.getAll("channel");
   // Preserve partially entered topic/channel controls as URL-backed drafts.
   // Missing fields never authorize data reads, but remain editable.
   // Unknown fields, duplicate nonempty channels and malformed IDs fail closed.

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { createAnalysisTarget } from "../../features/analysis-target/analysisTarget";
+import { withoutAllowedUtmTracking } from "../../features/analysis-target/analysisQueryTracking";
 import {
   demoChannelSelections,
 } from "../../features/analysis/data/demoChannelSelection";
@@ -16,11 +17,13 @@ import "./channel-comparison.css";
 type Pair = readonly [string, string];
 
 function getPair(params: URLSearchParams): Pair | null {
-  const all = [...params.entries()];
+  const analysisParams = withoutAllowedUtmTracking(params);
+  if (!analysisParams) return null;
+  const all = [...analysisParams.entries()];
   if (!all.length) {
     return [demoChannelSelections[0].channelId, demoChannelSelections[1].channelId];
   }
-  const ids = params.getAll("channel");
+  const ids = analysisParams.getAll("channel");
   // A/B selection is a two-step interaction. Preserve a valid channel
   // even while the other slot is empty; only fully valid pairs may be queried.
   // Unknown parameters, malformed IDs, and duplicate nonempty IDs fail closed.

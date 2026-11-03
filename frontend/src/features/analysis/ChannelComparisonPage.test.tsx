@@ -180,4 +180,51 @@ describe("YU-47 — two explicit synthetic channels comparison Web UI", () => {
       .toBeInTheDocument();
   });
 
+  it("YU-47-QA-UTM: screenshot URL retains channel A and can select B", async () => {
+    const user = userEvent.setup();
+    show("/analysis/youtube/channels/compare?channel=" + A +
+      "&channel=&utm_source=chatgpt.com");
+    const first = screen.getByRole("combobox", {name:"채널 A"});
+    const second = screen.getByRole("combobox", {name:"채널 B"});
+    expect(first).toHaveValue(A);
+    expect(second).toHaveValue("");
+    expect(screen.getByText(/채널 A가 선택되었습니다/)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", {name:"감성 분포 및 차이"}))
+      .not.toBeInTheDocument();
+    await user.selectOptions(second, B);
+    expect(first).toHaveValue(A);
+    expect(second).toHaveValue(B);
+    expect(await screen.findByRole("heading", {name:"감성 분포 및 차이"}))
+      .toBeInTheDocument();
+  });
+
+  it("YU-47-QA-UTM: completed selected channels retain comparison with UTM metadata", async () => {
+    show("/analysis/youtube/channels/compare?channel="+B+"&channel="+A+
+      "&utm_source=chatgpt.com&utm_medium=link");
+    expect(screen.getByRole("combobox", {name:"채널 A"})).toHaveValue(B);
+    expect(screen.getByRole("combobox", {name:"채널 B"})).toHaveValue(A);
+    expect(await screen.findByText("채널 A 34.29% · 채널 B 51.25%"))
+      .toBeInTheDocument();
+  });
+
+  it("YU-47-QA-UTM: attribution-only link uses ordinary default demo pair", async () => {
+    show("/analysis/youtube/channels/compare?utm_source=chatgpt.com");
+    expect(screen.getByRole("combobox", {name:"채널 A"})).toHaveValue(A);
+    expect(screen.getByRole("combobox", {name:"채널 B"})).toHaveValue(B);
+    expect(await screen.findByRole("heading", {name:"감성 분포 및 차이"}))
+      .toBeInTheDocument();
+  });
+
+  it.each([
+    "?channel="+A+"&channel="+B+"&secret=token&utm_source=chatgpt.com",
+    "?channel="+A+"&channel="+B+"&utm_source=one&utm_source=two",
+    "?channel="+A+"&channel="+B+"&utm_source="+"x".repeat(129),
+    "?channel="+A+"&channel="+B+"&utm_custom=unexpected",
+  ])("YU-47-QA-UTM: unknown, duplicate or oversized parameter fails closed: %s", query => {
+    show("/analysis/youtube/channels/compare"+query);
+    expect(screen.getByRole("alert")).toHaveTextContent("서로 다른 유효한 CHANNEL ID");
+    expect(screen.queryByRole("heading", {name:"감성 분포 및 차이"}))
+      .not.toBeInTheDocument();
+  });
+
 });
