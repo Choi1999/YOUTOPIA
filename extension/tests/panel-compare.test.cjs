@@ -112,15 +112,22 @@ test("YU41-04 two separate explicit pinned selections make ordered A/B and real 
   ),"http://localhost:5173/analysis/youtube/compare?video="+A+"&video="+B);
 });
 
-test("YU41-05 duplicates and full capacity never mutate stored candidates",async()=>{
+test("YU41/42-05 duplicates are blocked, but collection supports eight bounded items",async()=>{
   const f=harness();f.setPin(A);await f.send("ADD",17,A);
   assert.equal((await f.send("ADD",17,A)).status,"DUPLICATE");
   f.setPin(B,17,2);await f.send("ADD",17,B);
-  f.setPin(C,17,3);
-  const rejected=await f.send("ADD",17,C);
-  assert.equal(rejected.status,"FULL");
-  const list=await f.send("READ");
-  assert.equal(list.state.items.length,2);
+  const values=[C,"Cb0_-123xyz","Db0_-123xyz","Eb0_-123xyz",
+    "Fb0_-123xyz","Gb0_-123xyz"];
+  for(let i=0;i<values.length;i++){
+    f.setPin(values[i],17,i+3);
+    assert.equal((await f.send("ADD",17,values[i])).ok,true);
+  }
+  const all=await f.send("READ");
+  assert.equal(all.state.items.length,8);
+  assert.equal(all.state.selected.join(","),A+","+B);
+  f.setPin("Hb0_-123xyz",17,10);
+  assert.equal((await f.send("ADD",17,"Hb0_-123xyz")).status,"FULL");
+  assert.equal((await f.send("READ")).state.items.length,8);
 });
 
 test("YU41-06 swap/remove/clear are explicit, ordered session mutations",async()=>{
@@ -197,4 +204,55 @@ test("YU41-12 panel compare URL rejects extra IDs and invalid target types",()=>
   for(const pair of [[],[A],[A,A],[A,B,C],[A,"invalid"],[null,B]]) {
     assert.equal(url(pair),null);
   }
+});
+
+
+test("YU42-13 selection toggles only registered items and preserves A/B click order",async()=>{
+  const f=harness();f.setPin(A);await f.send("ADD",17,A);
+  f.setPin(B,17,2);await f.send("ADD",17,B);
+  f.setPin(C,17,3);await f.send("ADD",17,C);
+  assert.equal((await f.send("SELECT",17,C)).status,"PAIR_FULL");
+  assert.equal((await f.send("SELECT",17,A)).status,"UNSELECTED");
+  const added=await f.send("SELECT",17,C);
+  assert.equal(added.status,"SELECTED");
+  assert.equal(added.state.selected.join(","),B+","+C);
+  const swapped=await f.send("SWAP");
+  assert.equal(swapped.state.selected.join(","),C+","+B);
+  assert.equal((await f.send("SELECT",17,A)).status,"PAIR_FULL");
+  assert.equal((await f.send("SELECT",17,"Hb0_-123xyz")).status,"NOT_IN_COLLECTION");
+  const removed=await f.send("REMOVE",17,C);
+  assert.equal(removed.state.selected.join(","),B);
+});
+
+test("YU42-14 collection never leaks across tab switch, and unselected items remain",async()=>{
+  const f=harness();f.setPin(A);await f.send("ADD",17,A);
+  f.setPin(B,17,2);await f.send("ADD",17,B);
+  f.setPin(C,17,3);await f.send("ADD",17,C);
+  const set=await f.send("READ",17);
+  assert.equal(set.state.items.length,3);
+  assert.equal(set.state.selected.length,2);
+  f.setActive(18);
+  assert.equal((await f.send("READ",18)).state.items.length,0);
+  f.setActive(17);
+  assert.equal((await f.send("READ",17)).state.items.length,3);
+});
+
+test("YU42-15 selected pair is never more than two even with eight fixture IDs",()=>{
+  const f=harness(),c=f.contract,t=2000000;
+  assert.equal(c.MAX_ITEMS,8);
+  let stored;
+  for(let i=0;i<8;i++){
+    const id="Ab0_-123xy"+i;
+    const pin={tabId:17,targetType:"VIDEO",targetId:id,
+      isSynthetic:true,source:"STATIC_FIXTURE",expiresAt:t+5000};
+    const result=c.modify(stored,17,"ADD",id,t,pin);
+    assert.equal(result.ok,true);
+    stored=result.state;
+  }
+  assert.equal(stored.items.length,8);
+  assert.equal(stored.selected.length,2);
+  assert.equal(c.readState({
+    ...stored,selected:[stored.items[0].videoId,
+      stored.items[1].videoId,stored.items[2].videoId],
+  },17,t),null);
 });

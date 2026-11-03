@@ -12,9 +12,9 @@
   const RESULT = "YUTOPIA_YU41_COMPARE_RESULT_V1";
   const PREFIX = "YU41_COMPARE_TAB_V1_";
   const TTL_MS = 2 * 60 * 60 * 1000;
-  const MAX_ITEMS = 2; // YU-42 extends bounded collection to 8.
+  const MAX_ITEMS = 8; // YU-42: session-only, per-tab video collection.
   const VIDEO = /^[A-Za-z0-9_-]{11}$/;
-  const ACTIONS = ["READ", "ADD", "REMOVE", "SWAP", "CLEAR"];
+  const ACTIONS = ["READ", "ADD", "REMOVE", "SELECT", "SWAP", "CLEAR"];
   const KEYS = ["type", "version", "action", "tabId", "targetId"];
   const STATE_KEYS = ["version", "tabId", "items", "selected", "updatedAt"];
   const ITEM_KEYS = ["videoId", "expiresAt"];
@@ -32,7 +32,7 @@
 
   function request(action, tabId, targetId = null) {
     if (!ACTIONS.includes(action) || !validTab(tabId) ||
-        (action === "ADD" || action === "REMOVE"
+        (action === "ADD" || action === "REMOVE" || action === "SELECT"
           ? !validVideo(targetId)
           : targetId !== null)) return null;
     return Object.freeze({type: TYPE, version: VERSION, action, tabId, targetId});
@@ -119,6 +119,22 @@
           items: state.items.filter(x => x.videoId !== targetId),
           selected: state.selected.filter(id => id !== targetId)},
       };
+    }
+    if (action === "SELECT") {
+      if (!validVideo(targetId) ||
+          !state.items.some(item => item.videoId === targetId))
+        return {ok: false, status: "NOT_IN_COLLECTION", state};
+      if (state.selected.includes(targetId))
+        return {ok: true, status: "UNSELECTED", state: {
+          ...state, updatedAt: now,
+          selected: state.selected.filter(id => id !== targetId),
+        }};
+      if (state.selected.length >= 2)
+        return {ok: false, status: "PAIR_FULL", state};
+      return {ok: true, status: "SELECTED", state: {
+        ...state, updatedAt: now,
+        selected: [...state.selected, targetId],
+      }};
     }
     if (action === "SWAP") {
       if (state.selected.length !== 2)

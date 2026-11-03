@@ -82,20 +82,29 @@
         : "비교 후보가 비어 있습니다. 고정된 영상에서 직접 추가하세요."
     );
 
-    const children = checked.items.map((entry, index) => {
+    const children = checked.items.map(entry => {
       const row = doc.createElement("li");
       const label = doc.createElement("code");
       label.textContent =
         (checked.selected.indexOf(entry.videoId) === 0 ? "A · " :
          checked.selected.indexOf(entry.videoId) === 1 ? "B · " : "") +
         entry.videoId;
+      const choose = doc.createElement("input");
+      choose.type = "checkbox";
+      choose.checked = checked.selected.includes(entry.videoId);
+      choose.disabled = !choose.checked && checked.selected.length >= 2;
+      choose.setAttribute("aria-label", "비교 선택 " + entry.videoId);
+      choose.addEventListener("change", () => { void action("SELECT", entry.videoId); });
+      const choiceLabel = doc.createElement("label");
+      choiceLabel.className = "compare-candidates__choice";
+      choiceLabel.append(choose, label);
       const remove = doc.createElement("button");
       remove.type = "button";
       remove.className = "compare-action";
       remove.textContent = "제거";
-      remove.setAttribute("aria-label", "비교 후보 제거 " + entry.videoId);
+      remove.setAttribute("aria-label", "컬렉션에서 제거 " + entry.videoId);
       remove.addEventListener("click", () => { void action("REMOVE", entry.videoId); });
-      row.append(label, remove);
+      row.append(choiceLabel, remove);
       return row;
     });
     list.replaceChildren(...children);
@@ -191,8 +200,9 @@
       if (!validReply(result, tabId) || !result.ok) {
         status.textContent = {
           DUPLICATE: "이미 비교 후보에 등록된 영상입니다.",
-          FULL: "비교 후보 두 개가 가득 찼습니다. 먼저 하나를 제거하세요.",
+          FULL: "컬렉션 최대 8개가 가득 찼습니다. 먼저 영상을 제거하세요.",
           PIN_REQUIRED: "현재 클릭으로 고정된 영상만 추가할 수 있습니다.",
+          PAIR_FULL: "비교할 영상은 최대 2개입니다. 먼저 하나를 선택 해제하세요.",
           NOT_ACTIVE_TAB: "현재 탭이 바뀌었습니다. 다시 선택하세요.",
         }[result?.status] || "비교 후보를 수정할 수 없습니다.";
         return;
@@ -201,7 +211,9 @@
         ADDED: "비교 후보를 추가했습니다.",
         REMOVED: "비교 후보를 제거했습니다.",
         SWAPPED: "영상 A/B 순서를 바꿨습니다.",
-        CLEARED: "비교 후보를 모두 지웠습니다.",
+        CLEARED: "컬렉션을 모두 지웠습니다.",
+        SELECTED: "비교 영상으로 선택했습니다.",
+        UNSELECTED: "비교 선택을 해제했습니다.",
       }[result.status] || "비교 후보를 갱신했습니다.";
       render(result.state, message);
     } catch {
