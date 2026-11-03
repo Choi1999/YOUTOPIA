@@ -1,0 +1,36 @@
+name: G45-L8 Windows Cloud evidence check (offline only)
+
+on:
+  pull_request:
+    branches:
+      - frontend
+  push:
+    branches:
+      - frontend
+
+permissions:
+  contents: read
+
+jobs:
+  g45-l8-offline-windows:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Cloud evidence inspector Check mode without gcloud or credentials
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = '.\shared\contracts\yu32-youtube-readiness-v0\scripts\g45-l8-cloud-metadata-preflight.ps1'
+          $output = & $script -Check
+          $result = $output | ConvertFrom-Json
+          if ($result.status -ne 'CHECK_ONLY_NO_GCLOUD') {
+            throw 'Unexpected G45-L8 offline status'
+          }
+          if ($result.cloudCommandInvoked -ne $false -or
+              $result.projectReachableLocally -ne $false -or
+              $result.youtubeDataApiEnabledObserved -ne $false -or
+              $result.firstLiveCallApproved -ne $false -or
+              $result.canonicalEvidenceVerifiedCount -ne 0) {
+            throw 'Cloud evidence Check mode must never authorize an external call'
+          }
