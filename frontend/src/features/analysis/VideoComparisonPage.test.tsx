@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { VideoComparisonPage } from "../../pages/analysis/VideoComparisonPage";
 import { SingleVideoAnalysisPage } from "../../pages/analysis/SingleVideoAnalysisPage";
@@ -601,6 +601,66 @@ describe("YU-35 — 영상 목록 및 비교 Web UX", () => {
       .not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "이 영상을 비교 목록에 추가" }))
       .toHaveAttribute("href", "/analysis/youtube/compare?video=" + A);
+  });
+
+  it("YU-43: only a validated READY synthetic comparison exposes CSV download", async () => {
+    renderPage();
+    expect(await screen.findByRole("heading", { name: "비교 결과 내보내기" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "합성 비교 CSV 다운로드" }))
+      .toBeEnabled();
+    expect(screen.getByText(/실제 YouTube 댓글 원문이나 개인 정보는 포함되지 않습니다/))
+      .toBeInTheDocument();
+  });
+
+  it("YU-43: blocked PARTIAL comparison cannot export any metrics", async () => {
+    renderPage("/analysis/youtube/compare", resultWithB({
+      status: "PARTIAL",
+    }));
+    expect(await screen.findByText(/두 영상 모두 검증된 READY 상태여야 합니다/))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "합성 비교 CSV 다운로드" }))
+      .not.toBeInTheDocument();
+  });
+
+  it("YU-43: clicking CSV export uses a local Blob, fixed filename and no fetch", async () => {
+    const user = userEvent.setup();
+    const beforeCreate = URL.createObjectURL;
+    const beforeRevoke = URL.revokeObjectURL;
+    const mockedCreate = vi.fn((_blob: Blob) => "blob:yu43-local-demo");
+    const mockedRevoke = vi.fn();
+    let clickedFileName = "";
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true, writable: true, value: mockedCreate,
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      configurable: true, writable: true, value: mockedRevoke,
+    });
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(function(this: HTMLAnchorElement) {
+        clickedFileName = this.download;
+      });
+    try {
+      renderPage();
+      const button = await screen.findByRole("button", {
+        name: "합성 비교 CSV 다운로드",
+      });
+      await user.click(button);
+      expect(clickedFileName).toBe("youtopia-synthetic-video-comparison.csv");
+      expect(mockedCreate).toHaveBeenCalledTimes(1);
+      const blob = mockedCreate.mock.calls[0]?.[0];
+      expect(blob).toBeInstanceOf(Blob);
+      expect(blob?.type).toBe("text/csv;charset=utf-8");
+      expect(blob?.size).toBeGreaterThan(0);
+      expect(screen.getByText(/합성 데모 비교 CSV 저장을 시작했습니다/))
+        .toBeInTheDocument();
+    } finally {
+      clickSpy.mockRestore();
+      if (beforeCreate) URL.createObjectURL = beforeCreate;
+      else Reflect.deleteProperty(URL, "createObjectURL");
+      if (beforeRevoke) URL.revokeObjectURL = beforeRevoke;
+      else Reflect.deleteProperty(URL, "revokeObjectURL");
+    }
   });
 
 });

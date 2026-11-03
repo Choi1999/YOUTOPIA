@@ -15,6 +15,7 @@ import {
 } from "../../features/analysis/model/videoComparison";
 
 import { deriveComparisonHighlights } from "../../features/analysis/model/comparisonHighlights";
+import { serializeSyntheticComparisonCsv, SYNTHETIC_COMPARISON_CSV_FILENAME } from "../../features/analysis/model/comparisonCsv";
 
 import "./video-comparison.css";
 
@@ -85,6 +86,7 @@ export function VideoComparisonPage() {
       : "",
   );
   const [shareFeedback, setShareFeedback] = useState("");
+  const [csvFeedback, setCsvFeedback] = useState("");
   const [filter, setFilter] = useState("");
   const [readyOnly, setReadyOnly] = useState(false);
   const [entries, setEntries] = useState<Record<string, Entry>>({});
@@ -106,6 +108,7 @@ export function VideoComparisonPage() {
     setFilter("");
     setReadyOnly(false);
     setShareFeedback("");
+    setCsvFeedback("");
     setFeedback(parseComparisonQuery(current).kind === "INVALID"
       ? "공유 링크의 영상 ID나 매개변수가 올바르지 않습니다. 영상을 직접 추가하세요."
       : "");
@@ -285,6 +288,40 @@ export function VideoComparisonPage() {
 
   const ready = comparison?.kind === "READY" ? comparison : null;
   const highlights = ready ? deriveComparisonHighlights(ready) : null;
+  const csv = ready ? serializeSyntheticComparisonCsv(ready) : null;
+
+  function downloadCsv() {
+    if (!csv || typeof document === "undefined" ||
+        typeof URL.createObjectURL !== "function" ||
+        typeof URL.revokeObjectURL !== "function" ||
+        typeof Blob === "undefined") {
+      setCsvFeedback("이 환경에서는 CSV 저장을 지원하지 않습니다.");
+      return;
+    }
+
+    let objectUrl: string | null = null;
+    try {
+      const file = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
+      objectUrl = URL.createObjectURL(file);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = SYNTHETIC_COMPARISON_CSV_FILENAME;
+      anchor.style.display = "none";
+      document.body.appendChild(anchor);
+      try { anchor.click(); }
+      finally { anchor.remove(); }
+      setCsvFeedback("합성 데모 비교 CSV 저장을 시작했습니다. 실제 YouTube 분석 자료가 아닙니다.");
+    } catch {
+      setCsvFeedback("CSV 저장에 실패했습니다. 브라우저 다운로드 권한을 확인하세요.");
+    } finally {
+      if (objectUrl) {
+        const pending = objectUrl;
+        window.setTimeout(() => URL.revokeObjectURL(pending), 0);
+      }
+    }
+  }
+
+
 
   const waitingForResults =
     selected.length === 2 && (!leftEntry || !rightEntry);
@@ -551,6 +588,25 @@ export function VideoComparisonPage() {
                     같은 조건의 합성 스냅샷에 나타난 기술적 차이입니다.
                     시간에 따른 변화, 실제 영상의 우열, 원인 또는 통계적 유의성을 뜻하지 않습니다.
                   </p>
+                </section>
+              )}
+
+              {csv && (
+                <section className="video-compare__section video-compare__export"
+                  aria-labelledby="comparison-export-heading">
+                  <h3 id="comparison-export-heading">비교 결과 내보내기</h3>
+                  <p>
+                    검증된 합성 스냅샷의 감성·주제 집계만 CSV로 저장합니다.
+                    실제 YouTube 댓글 원문이나 개인 정보는 포함되지 않습니다.
+                  </p>
+                  <button type="button" className="video-compare__export-button"
+                    onClick={downloadCsv}>
+                    합성 비교 CSV 다운로드
+                  </button>
+                  {csvFeedback && (
+                    <p role="status" className="video-compare__export-status">{csvFeedback}</p>
+                  )}
+                  <p>STATIC FIXTURE · DEMO ONLY · 실제 데이터가 아닌 테스트용 CSV</p>
                 </section>
               )}
 
