@@ -383,6 +383,13 @@
       }
     }
 
+    // YU-49: Web's explicitly registered synthetic fixture availability is
+    // distinct from the current Hover worker result and Side Panel's illustrative
+    // model. Neither a valid ID nor an illustrative model authorizes metrics.
+    const availability = modelApi?.mockForTarget?.({
+      targetType: state.targetType, targetId: state.targetId,
+    })?.webAvailabilityLabel ?? null;
+
     const kind = view?.kind || "UNAVAILABLE";
     lastSummaryKind = kind;
 
@@ -468,6 +475,7 @@
       area.replaceChildren(
         el("p", "notice", notice)
       );
+      if (availability) area.appendChild(el("p", "notice", availability));
 
       if (kind === "NOT_FOUND") {
         appendYu32Request(area, state);
@@ -570,6 +578,7 @@
       )
     );
 
+    if (availability) sections.push(el("p", "notice", availability));
     area.replaceChildren(...sections);
   }
 

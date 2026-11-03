@@ -13,6 +13,28 @@
 
   const VIDEO_PATTERN = /^[A-Za-z0-9_-]{11}$/;
   const CHANNEL_PATTERN = /^UC[A-Za-z0-9_-]{22}$/;
+  /*
+   * YU-49: explicit Web synthetic fixture registration. This is ONLY a
+   * statement about what the local demo Web Repository has registered.
+   * It is not an API call, real analysis, channel membership or evidence
+   * that the illustrative hover percentages correspond to Web percentages.
+   * A Node contract test prevents drift against the Web fixture manifest.
+   */
+  const registeredVideoIds = Object.freeze([
+    "Ab0_-123xyz", "Qb0_-123xyz", "Cb0_-123xyz", "Db0_-123xyz",
+  ]);
+  const registeredChannelIds = Object.freeze([
+    "UC" + "A".repeat(22), "UC" + "B".repeat(22),
+  ]);
+
+  function webAvailability(targetType, targetId) {
+    if (targetType === "VIDEO" && VIDEO_PATTERN.test(targetId) &&
+        registeredVideoIds.includes(targetId)) return "WEB_SYNTHETIC_REGISTERED";
+    if (targetType === "CHANNEL" && CHANNEL_PATTERN.test(targetId) &&
+        registeredChannelIds.includes(targetId)) return "WEB_SYNTHETIC_REGISTERED";
+    return "WEB_DATA_NOT_FOUND";
+  }
+
   const EXAMPLES = Object.freeze([
     Object.freeze({positive:45, neutral:35, negative:20, sample:120}),
     Object.freeze({positive:38, neutral:39, negative:23, sample:90}),
@@ -31,6 +53,11 @@
     let index = 0;
     for (const char of targetId) index = (index * 31 + char.charCodeAt(0)) % EXAMPLES.length;
     const sample = EXAMPLES[index];
+    const availability = webAvailability(targetType,targetId);
+    const webAvailabilityLabel = availability === "WEB_SYNTHETIC_REGISTERED"
+      ? "웹에는 별도의 검증된 합성 fixture가 등록돼 있습니다. 이 미리보기의 가상 수치는 그 결과가 아닙니다."
+      : "웹에 등록된 분석 자료가 없습니다. 아래 수치는 화면 시연용 가상 예시일 뿐입니다.";
+
 
     /*
      * Preview와 Web 분석의 공통 식별·출처 의미를 정의한다.
@@ -72,8 +99,10 @@
       targetType,
       targetId,
       previewContract,
+      webAvailability: availability,
+      webAvailabilityLabel,
       title: targetType === "VIDEO" ? "영상 반응 미리보기" : "채널 반응 미리보기",
-      scopeLabel: targetType === "CHANNEL" ? "선정 영상 8개 (가상)" : "단일 영상 (가상)",
+      scopeLabel: targetType === "CHANNEL" ? "선정 영상 수 미확인 (가상 화면)" : "단일 영상 (가상)",
       sampleLabel: "예시 댓글 " + sample.sample + "건 (가상)",
       periodLabel: "기간: 지정되지 않음 (가상)",
       updatedLabel: "실제 갱신 시각 없음",
@@ -85,5 +114,5 @@
     });
   }
 
-  scope.YUTOPIA_HOVER_CARD_MODEL = Object.freeze({mockForTarget});
+  scope.YUTOPIA_HOVER_CARD_MODEL = Object.freeze({mockForTarget, webAvailability, registeredVideoIds, registeredChannelIds});
 })(globalThis);

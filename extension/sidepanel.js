@@ -22,6 +22,7 @@
   const preview = doc?.getElementById?.("demo-preview");
   const previewScope = doc?.getElementById?.("demo-scope");
   const previewSample = doc?.getElementById?.("demo-sample");
+  const previewAvailability = doc?.getElementById?.("demo-web-availability");
   const previewBriefing = doc?.getElementById?.("demo-briefing");
   const previewBar = doc?.getElementById?.("demo-sentiment-bar");
   const previewTopics = doc?.getElementById?.("demo-topics");
@@ -75,7 +76,7 @@
     previewModel = null;
     previewTab = "overview";
     if (preview) preview.hidden = true;
-    for (const field of [previewScope, previewSample, previewBriefing]) setText(field, "");
+    for (const field of [previewScope, previewSample, previewBriefing, previewAvailability]) setText(field, "");
     for (const name of metricNames) {
       setText(metricFields[name].value, "");
       if (metricFields[name].bar) metricFields[name].bar.style.width = "0%";
@@ -121,6 +122,8 @@
     setText(previewScope, model.scopeLabel);
     setText(previewSample, model.sampleLabel + " · " + model.periodLabel);
     setText(previewBriefing, model.briefing);
+    setText(previewAvailability, model.webAvailabilityLabel ||
+      "Web 등록 상태를 확인할 수 없습니다. 가상 시연 비율은 분석 자료가 아닙니다.");
 
     for (let i = 0; i < metricNames.length; i++) {
       const name = metricNames[i];
