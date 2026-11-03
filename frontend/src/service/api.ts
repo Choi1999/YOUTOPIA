@@ -46,6 +46,7 @@ export type Listing = {
   };
 };
 export type GameClassifications = {state:string;options:{id:string;label:string}[];meaning:string};
+export type SteamTags = {state:string;options:{tagId:string;label:string;sourceLanguage:string;gameCount:number;lastSeenAt:string;tagLastSeenAt:string}[];meaning:string};
 export type Point = {
   scheduledAt: string;
   observedAt: string;
@@ -397,6 +398,7 @@ export class ServiceApi {
     return value;
   }
   classifications(signal?:AbortSignal){return this.request<GameClassifications>("/api/v1/games/classifications",{signal});}
+  steamTags(signal?:AbortSignal){return this.request<SteamTags>("/api/v1/games/steam-tags",{signal});}
   search(params: Record<string, unknown>, signal?: AbortSignal) {
     return this.request<Listing>("/api/v1/games/search", {
       method: "POST",

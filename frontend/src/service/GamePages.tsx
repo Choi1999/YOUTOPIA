@@ -38,6 +38,10 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
   const classifications=useResource("game-classifications",signal=>serviceApi.classifications(signal));
   const selectedClassification=params.get("classification")??"ALL";
   const unknownClassification=selectedClassification!=="ALL"&&!classifications.data?.options.some(option=>option.id===selectedClassification);
+  const tags=useResource("game-steam-tags",signal=>serviceApi.steamTags(signal));
+  const selectedTag=params.get("tagId")??"ALL";
+  const tag=tags.data?.options.find(option=>option.tagId===selectedTag);
+  const unknownTag=selectedTag!=="ALL"&&!tag;
   const query = params.toString(),
     resource = useResource(query + ":" + revision, (signal) =>
       override?.key === query
@@ -57,6 +61,7 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
             platform: "ALL",
             connectionStatus: "ALL",
             classification: "ALL",
+            tagId: "ALL",
           } as Record<string, string>
         )[key]) === value
     )
@@ -103,6 +108,7 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
         connectionStatus: params.get("connectionStatus") ?? "ALL",
         days: Number(params.get("days") ?? 30),
         classification: params.get("classification") ?? "ALL",
+        tagId: params.get("tagId") ?? "ALL",
       });
       setOverride({ key: next.toString(), data });
       setRevision((n) => n + 1);
@@ -187,6 +193,14 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
           </select>
         </label>
         <label>
+          Steam 태그
+          <select aria-describedby="game-steam-tag-note" value={selectedTag} onChange={e=>change("tagId",e.target.value)} disabled={selectedTag==="ALL"&&(tags.loading||tags.data?.state!=="AVAILABLE")}>
+            <option value="ALL">전체 · 태그 해제</option>
+            {unknownTag&&<option value={selectedTag} disabled>선택 태그 확인 불가</option>}
+            {tags.data?.options.map(option=><option key={option.tagId} value={option.tagId}>{option.label}</option>)}
+          </select>
+        </label>
+        <label>
           정렬
           <select
             value={params.get("sort") ?? "dataAvailable"}
@@ -214,6 +228,7 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
       </form>
       <p className="chart-caption" id="game-classification-note">{classifications.loading?"수집 분류 확인 중":classifications.error?"수집 분류를 불러오지 못했습니다. 장르가 없다는 뜻이 아닙니다.":classifications.data?.state==="AVAILABLE"?classifications.data.meaning:classifications.data?.state==="EMPTY"?"확인된 분류 수집 이력이 없습니다. 공식 장르가 없다는 뜻이 아닙니다.":"수집 분류 원천·권한을 확인할 수 없습니다. 전체 게임 목록은 계속 이용할 수 있습니다."}</p>
       <p className="chart-caption">데이터 우선은 인기·트렌드 순위가 아닙니다. 판정 기간 {params.get("days") ?? 30}일 · CCU는 관측 슬롯, YouTube는 한국 시간 게시일 기준입니다. 양쪽 → 한쪽 → 과거 데이터 → 확인된 데이터 없음 순이며, 일부 원천 미확인 게임은 부분 판정으로 표시합니다.</p>
+      <p id="game-steam-tag-note" className="chart-caption" role={tags.error?"status":undefined}>{tags.error?"Steam 태그를 불러오지 못했습니다. 태그 없음으로 판정하지 않습니다.":tags.loading?"Steam 태그 확인 중…":tags.data?.state==="AVAILABLE"?tags.data.meaning:tags.data?.state==="EMPTY"?"조회 가능한 활성 Steam 태그 연결이 없습니다. 비활성·과거 태그 전체가 없다는 뜻은 아닙니다.":"Steam 태그 원천·권한을 확인할 수 없습니다. 태그를 해제한 목록은 계속 이용할 수 있습니다."}{tag&&<> 선택 태그 연결 마지막 확인 {time(tag.lastSeenAt)} · 태그 이름 마지막 확인 {time(tag.tagLastSeenAt)}</>}</p>
       {Boolean(failure) && <p role="alert">{errorText(failure)}</p>}
       <StatePanel
         loading={resource.loading || busy}

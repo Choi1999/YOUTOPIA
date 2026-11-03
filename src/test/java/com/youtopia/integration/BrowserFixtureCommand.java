@@ -13,9 +13,11 @@ public final class BrowserFixtureCommand {
         Instant now=Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS),first=now.minusSeconds(28*86400L);
         try(var connection=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test")+"?connectTimeout=5","postgres","");var query=connection.createStatement()){
             connection.setAutoCommit(false);
-            query.execute("TRUNCATE service.game_catalog_fixture,collector.ccu_fixture,collector.video_chart_fixture,service.app_type_fixture,service.ranking_chart_fixture,service.video_association_fixture");
+            query.execute("TRUNCATE service.game_catalog_fixture,collector.ccu_fixture,collector.video_chart_fixture,service.app_type_fixture,service.ranking_chart_fixture,service.video_association_fixture,collector.steam_tag_fixture,collector.steam_app_tag_fixture");
             query.execute("INSERT INTO service.game_catalog_fixture(app_id,steam_name,developers,steam_tracked) VALUES(570,'Browser Arena','[\"Synthetic Studio\"]',true),(730,'Browser Counter','[]',true),(900,'Browser Indie',null,false)");
             query.execute("INSERT INTO service.app_type_fixture VALUES(570,'game'),(730,'game'),(900,null)");
+            query.execute("INSERT INTO collector.steam_tag_fixture(tag_id,display_name,last_seen_at) VALUES(701,'스포츠',now()-interval '40 days'),(1254546,'축구',now()-interval '40 days'),(122,'RPG',now()-interval '40 days')");
+            query.execute("INSERT INTO collector.steam_app_tag_fixture(app_id,tag_id,last_seen_at) VALUES(570,701,now()-interval '40 days'),(730,701,now()-interval '40 days'),(570,1254546,now()-interval '40 days'),(900,122,now()-interval '40 days')");
             try(var insert=connection.prepareStatement("INSERT INTO collector.ccu_fixture(observation_id,app_id,scheduled_at,observed_at,player_count) VALUES(?,?,?,?,?)")){
                 for(int i=0;i<4;i++){insert.setLong(1,i+1);insert.setLong(2,570);insert.setTimestamp(3,Timestamp.from(now.minusSeconds((3-i)*86400L+60)));insert.setTimestamp(4,Timestamp.from(now.minusSeconds((3-i)*86400L+50)));insert.setLong(5,i==3?0:100+i*10);insert.executeUpdate();}
             }

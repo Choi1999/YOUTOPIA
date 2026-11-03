@@ -3,7 +3,8 @@ package com.youtopia.games;
 import com.youtopia.api.PageResult;
 import java.util.Set;
 
-public record GameQuery(String q, int page, int size, String sort, String direction, String platform, String connectionStatus, int days,String classification) {
+public record GameQuery(String q, int page, int size, String sort, String direction, String platform, String connectionStatus, int days,String classification,String tagId) {
+    public GameQuery(String q,int page,int size,String sort,String direction,String platform,String connectionStatus,int days,String classification){this(q,page,size,sort,direction,platform,connectionStatus,days,classification,"ALL");}
     public GameQuery(String q,int page,int size,String sort,String direction,String platform,String connectionStatus,int days){this(q,page,size,sort,direction,platform,connectionStatus,days,"ALL");}
     public GameQuery(String q,int page,int size,String sort,String direction,String platform,String connectionStatus){this(q,page,size,sort,direction,platform,connectionStatus,30);}
     public GameQuery {
@@ -14,6 +15,7 @@ public record GameQuery(String q, int page, int size, String sort, String direct
             ||!Set.of("ALL","STEAM").contains(platform)||!Set.of("ALL","CONNECTED","UNAVAILABLE","UNKNOWN").contains(connectionStatus))throw new IllegalArgumentException("Unsupported game query");
         if(days!=7&&days!=30)throw new IllegalArgumentException("Unsupported observation period");
         if(!"ALL".equals(classification))GameClassifications.parts(classification);
+        if(!"ALL".equals(tagId))GameSteamTags.id(tagId);
     }
     public static long appId(String gameId){
         if(gameId==null||!gameId.matches("steam:[1-9][0-9]{0,9}"))throw new IllegalArgumentException("Invalid game identifier");

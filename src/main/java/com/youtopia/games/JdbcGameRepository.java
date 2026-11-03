@@ -21,6 +21,9 @@ public class JdbcGameRepository implements GameRepository {
             s.append(" AND EXISTS(SELECT 1 FROM service.v_weekly_rank_observation r WHERE r.app_id=g.app_id AND r.ranking_source=? AND r.category_key IS NOT DISTINCT FROM ? AND r.period_end>r.period_start AND r.period_end<=? AND r.received_at<=?)");
             args.add(parts[0]);args.add(parts[1]);args.add(Timestamp.from(now));args.add(Timestamp.from(now));
         }
+        if(!q.tagId().equals("ALL")){
+            s.append(" AND EXISTS(SELECT 1 FROM service.v_game_steam_tag t WHERE t.app_id=g.app_id AND t.tag_id=?)");args.add(GameSteamTags.id(q.tagId()));
+        }
         return s.toString();
     }
     public long count(GameQuery q){return count(q,Instant.now());}

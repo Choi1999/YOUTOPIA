@@ -88,7 +88,7 @@ class GameListIntegrationTest {
             finally{s.execute("GRANT SELECT ON service.v_weekly_rank_observation TO ytp_test_data_ro");}
         }
     }
-    @Test void representativeOwnedPostgresPlansAndTimingsAreSavedWithoutProductionLoad()throws Exception {
+    void prepareRepresentativeFixtures()throws Exception {
         try(var c=DriverManager.getConnection(URL,"postgres","");var s=c.createStatement()){
             s.execute("TRUNCATE service.game_catalog_fixture,collector.ccu_fixture,service.ranking_chart_fixture");
             s.execute("INSERT INTO service.game_catalog_fixture(app_id,steam_name,developers,steam_tracked) SELECT i,'Synthetic '||lpad(i::text,4,'0'),'[]',i%2=0 FROM generate_series(1,360) i");
@@ -97,6 +97,9 @@ class GameListIntegrationTest {
             s.execute("CREATE INDEX IF NOT EXISTS test_ccu_app_time ON collector.ccu_fixture(app_id,observed_at DESC)");
             s.execute("ANALYZE service.game_catalog_fixture");s.execute("ANALYZE collector.ccu_fixture");s.execute("ANALYZE service.ranking_chart_fixture");
         }
+    }
+    @Test void representativeOwnedPostgresPlansAndTimingsAreSavedWithoutProductionLoad()throws Exception {
+        prepareRepresentativeFixtures();
         var cases=new ArrayList<Map<String,Object>>();var json=new ObjectMapper();
         for(String sort:List.of("dataAvailable","name","currentCcu","peak24h","lastObservedAt"))for(String classification:List.of("ALL","WEEKLY_TOP_SELLERS|")){
             var q=query(sort,sort.equals("name")||sort.equals("dataAvailable")?"ASC":"DESC",1,20,classification);

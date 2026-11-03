@@ -1198,6 +1198,27 @@ class AuthenticationIntegrationTest {
         }
         org.mockito.Mockito.verifyNoInteractions(chatProvider);
     }
+    @Test void publicSteamTagsUseIdsAcrossSearchAndPagingAndNeverHideSourceFailure()throws Exception {
+        try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var sql=c.createStatement()){
+            sql.execute("TRUNCATE service.game_catalog_fixture,collector.ccu_fixture,service.ranking_chart_fixture,collector.steam_tag_fixture,collector.steam_app_tag_fixture");
+            sql.execute("INSERT INTO service.game_catalog_fixture(app_id,steam_name,steam_tracked) VALUES(1,'Tag Alpha',true),(2,'Tag Beta',true),(3,'No tag',true)");
+            sql.execute("INSERT INTO collector.steam_tag_fixture(tag_id,display_name,last_seen_at) VALUES(701,'스포츠',now()-interval '40 days')");
+            sql.execute("INSERT INTO collector.steam_app_tag_fixture(app_id,tag_id,last_seen_at) VALUES(1,701,now()-interval '40 days'),(1,701,now()-interval '40 days'),(2,701,now()-interval '40 days')");
+            var guest=new Browser();var options=guest.get("/api/v1/games/steam-tags",200);
+            assertThat(options.path("state").asText()).isEqualTo("AVAILABLE");assertThat(options.at("/options/0/tagId").asText()).isEqualTo("701");assertThat(options.at("/options/0/label").asText()).isEqualTo("스포츠");
+            assertThat(guest.get("/api/v1/games?tagId=701&sort=name&page=1&size=1&days=7",200).at("/content/0/gameId").asText()).isEqualTo("steam:2");
+            var result=guest.post("/api/v1/games/search",Map.of("q","Tag","clientEventId",UUID.randomUUID(),"tagId","701","sort","name","days",30),200);assertThat(result.at("/page/totalElements").asInt()).isEqualTo(2);
+            for(String invalid:new String[]{"0","01","4294967296","701%20OR%201=1","701,599","SPORTS"})guest.get("/api/v1/games?tagId="+invalid,400);
+            guest.get("/api/v1/games?tagId=999",400);
+            sql.execute("REVOKE SELECT(app_id,tag_id,display_name,source_language,link_last_seen_at,tag_last_seen_at) ON service.v_game_steam_tag FROM ytp_test_data_ro");
+            try{assertThat(guest.get("/api/v1/games/steam-tags",200).path("state").asText()).isEqualTo("PERMISSION_UNCONFIRMED");guest.get("/api/v1/games?tagId=701",503);guest.get("/api/v1/games",200);}
+            finally{sql.execute("GRANT SELECT(app_id,tag_id,display_name,source_language,link_last_seen_at,tag_last_seen_at) ON service.v_game_steam_tag TO ytp_test_data_ro");}
+            sql.execute("ALTER VIEW service.v_game_steam_tag RENAME TO unbound_http_test_tags");
+            try{assertThat(guest.get("/api/v1/games/steam-tags",200).path("state").asText()).isEqualTo("PENDING_CONTRACT");guest.get("/api/v1/games?tagId=701",503);guest.get("/api/v1/games",200);}
+            finally{sql.execute("ALTER VIEW service.unbound_http_test_tags RENAME TO v_game_steam_tag");}
+        }
+        org.mockito.Mockito.verifyNoInteractions(chatProvider);
+    }
     @Test void chatProviderFailureReturnsNonSuccessMaintenanceWithoutKeyOrExceptionText()throws Exception {
         chatBudget.initializeReviewedNewBudget();var admin=new Browser();admin.post("/api/v1/admin/auth/login",Map.of("login","operator","password",PASSWORD),200);
         org.mockito.Mockito.when(chatProvider.answer(com.youtopia.chat.ChatQuestion.VIDEO_VOLUME)).thenThrow(new com.youtopia.chat.ChatFailure("PROVIDER_QUOTA"));
