@@ -1,0 +1,157 @@
+{
+  "contractVersion": "YU32_G45_L3_WINDOWS_SECURITY_LIFECYCLE_V01",
+  "status": "OFFLINE_DESIGN_ONLY",
+  "basedOn": {
+    "branch": "frontend",
+    "commit": "754863020b56c53905d2a644f6b15e528e6b56d1",
+    "reviewedDateKST": "2026-11-03",
+    "executionPhase": "G45-L3_CONTRACT_NOT_FIRST_CALL"
+  },
+  "authoritativeGatePath": "shared/contracts/yu32-youtube-readiness-v0/policy-gates.json",
+  "authority": "NON_EXECUTABLE_DESIGN_NOT_A_PRODUCTION_POLICY_ENGINE",
+  "policy": {
+    "status": "POLICY_HOLD",
+    "reviewedEvidenceCount": 0,
+    "liveCallsAuthorized": false,
+    "derivedSentimentAuthorized": false,
+    "externalDataCollected": false
+  },
+  "runtime": {
+    "candidate": "WINDOWS_NODE24_MANUAL_BACKEND_CLI",
+    "networkTransportImplemented": false,
+    "credentialReaderImplemented": false,
+    "externalIpDiscoveryImplemented": false,
+    "productionDatabaseWriterImplemented": false,
+    "scheduledExecution": false,
+    "publicHttpListener": false,
+    "browserOrExtensionExecution": false,
+    "sourceDataReadAuthorized": false
+  },
+  "authentication": {
+    "selectedMode": "NONE_PENDING_YOUTUBE_AND_PROJECT_VERIFICATION",
+    "youtubeDocumentedCandidates": [
+      "API_KEY_QUERY_KEY_PARAMETER",
+      "OAUTH2_AUTHORIZATION_BEARER"
+    ],
+    "genericGoogleApiKeyHeader": "x-goog-api-key",
+    "youtubeSpecificHeaderSupportVerified": false,
+    "useHeaderForYouTube": false,
+    "useQueryApiKeyForLive": false,
+    "useOAuthForLive": false,
+    "secretStoreCandidate": "WINDOWS_CREDENTIAL_MANAGER_DPAPI_NOT_CONFIGURED",
+    "credentialProvisioningAuthorized": false,
+    "keyReadOrWriteImplemented": false,
+    "apiRestrictionCandidate": "youtube.googleapis.com",
+    "apiRestrictionObserved": false,
+    "applicationRestrictionCandidate": "PUBLIC_EGRESS_IP",
+    "actualPublicEgressIpObserved": false,
+    "allowlistMatchesCurrentIpVerified": false,
+    "automaticUnrestrictedFallback": false,
+    "loggingCredentialOrUrlAllowed": false,
+    "manualRotationAndRevocationRunbookRequired": true
+  },
+  "firstPageCandidate": {
+    "source": "YOUTUBE",
+    "scope": "EXPLICIT_PUBLIC_VIDEO_ONLY",
+    "minVideos": 1,
+    "maxVideos": 3,
+    "maxThreadsPerPage": 100,
+    "pagesPerVideo": 1,
+    "allowedHttpMethod": "GET",
+    "allowedHost": "www.googleapis.com",
+    "allowedPath": "/youtube/v3/commentThreads",
+    "requiredQuery": [
+      "part=snippet",
+      "order=time",
+      "textFormat=plainText"
+    ],
+    "quotaUnitsPerCall": 1,
+    "plannedMaxRequests": 3,
+    "plannedMaxQuotaUnits": 3,
+    "automaticRetries": 0,
+    "redirects": 0,
+    "repliesEnumerated": false,
+    "liveDispatcherImplemented": false,
+    "transportEnabled": false,
+    "actualQuotaAndProjectCapacityVerified": false
+  },
+  "failureHandling": {
+    "stopOnUnexpectedResponse": true,
+    "failClosedOnCredentialOrIpMismatch": true,
+    "noSentimentFromProviderError": true,
+    "doNotConvertErrorToNoData": true,
+    "missingOrDeletedAndDisabledSeparate": true,
+    "partialPageNeverClaimsPopulation": true,
+    "noAutomaticNextPage": true,
+    "noRawErrorPayloadInLogs": true
+  },
+  "lifecycle": {
+    "rawCommentPersistenceAllowed": false,
+    "realSentimentProcessingAllowed": false,
+    "nonAuthorizedDataRefreshOrDeleteByDays": 30,
+    "userDataErasureByCalendarDays": 7,
+    "systemExpiryWithoutAdmin": true,
+    "systemUserErasureWithoutAdmin": true,
+    "adminManualDeletionRequiresServerAuthenticatedAdmin": true,
+    "erasureTarget": "YOUTOPIA_STORED_DATA_NOT_YOUTUBE_ORIGINAL",
+    "deletionStages": [
+      "PENDING",
+      "EXECUTING",
+      "PROPAGATING",
+      "PURGED",
+      "PURGE_FAILED"
+    ],
+    "propagationTargets": [
+      "raw-and-identity",
+      "snapshot-and-derived",
+      "report",
+      "search-index",
+      "server-cache",
+      "client-and-cdn-cache",
+      "job-and-outbox",
+      "temporary-export",
+      "backup-and-restore-fence"
+    ],
+    "tombstoneAndPolicyEpochRequired": true,
+    "noPurgedStatusBeforePropagationVerified": true,
+    "productionLifecycleImplemented": false
+  },
+  "evidence": {
+    "requiredIds": [
+      "Y45-E01",
+      "Y45-E02",
+      "Y45-E03",
+      "Y45-E04",
+      "Y45-E05",
+      "Y45-E06",
+      "Y45-E07",
+      "Y45-E08",
+      "Y45-E09",
+      "Y45-E10",
+      "Y45-E11",
+      "Y45-E12"
+    ],
+    "verifiedCount": 0,
+    "evidenceReceiptsInRepository": false,
+    "independentReviewerRequired": true,
+    "revocationChecked": false,
+    "consentAndAnalyticsUseCaseApproved": false
+  },
+  "approvals": {
+    "issueApiKey": false,
+    "changeCloudProject": false,
+    "paidCloudResources": false,
+    "firstLiveYouTubeRead": false,
+    "realDerivedSentiment": false,
+    "operationalDeletion": false,
+    "productionDeployment": false
+  },
+  "effects": {
+    "actualExternalRequests": 0,
+    "credentialsRead": 0,
+    "realCommentsProcessed": 0,
+    "realSentimentOutputs": 0,
+    "productionDeletes": 0,
+    "cloudResourcesProvisioned": 0
+  }
+}

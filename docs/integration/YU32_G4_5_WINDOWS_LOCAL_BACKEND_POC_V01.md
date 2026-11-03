@@ -27,7 +27,7 @@
 - **애플리케이션 제한:** 서버용 키는 수집기를 실행하는 Windows PC의 **현재 공인 출구 IP**만 허용하는 구성을 권장한다. 공유기 내부 사설 IP나 `127.0.0.1`을 Google API 키의 공인 IP 제한 값으로 사용하지 않는다.
 - **변동 IP:** 가정/모바일 인터넷의 공인 IP는 바뀔 수 있다. 매 실호출 전 새 출구 IP와 키 허용 목록이 일치하는지 확인하고, 일치하지 않으면 API 호출을 거부한다. **IP 제한이 안 된 키로 임시 우회하지 않는다.** 고정 IP 제공이 필요하면 그때 기존 승인 서버/Cloud 대안을 검토한다.
 - **비밀 보관:** Windows 사용자별 Credential Manager/DPAPI 보호 저장소 후보. 로컬 `.env`/PowerShell 기록/코드·GitHub·Chrome 확장·브라우저/로그에 평문 키를 저장하지 않는다. 향후 키 보관·접근·회전 구현과 별도 검수가 필요하다.
-- **헤더:** 후속 API Adapter는 지원되는 경우 Google 권장의 `x-goog-api-key` 헤더를 사용하며 키를 URL query나 오류 로그에 노출하지 않는다. 아직 HTTP Adapter는 구현하지 않았다.
+- **인증 명세 정정 (G45-L3):** YouTube Data API v3 공식 REST 명세에는 `key` 쿼리 매개변수 또는 OAuth 2.0 토큰(`Authorization: Bearer`)이 기재되어 있다. 일반 Google Cloud의 `x-goog-api-key` 헤더가 해당 YouTube `commentThreads.list`에서 지원된다는 **전용 공식 근거는 미확인**이므로 이를 전제한 Adapter를 구현하거나 활성화하지 않는다. 쿼리 키는 URL 유출 위험이 있으므로 지원 여부와 별개로 OS 비밀 보관·로그 마스킹·IP/API 제한 검수 및 별도 실행 승인 후에만 검토한다. 현재 HTTP Adapter·자격증명 읽기·실호출은 미구현이다.
 - **비용:** 초기 L0/L1에 Cloud Run/NAT/IP 추가 비용은 필수 아니다. 실제 호출·키·계정 보유 비용/정책 승인은 별도. 기존 PC·인터넷 전력 비용은 일반 개발 환경의 별도 문제다.
 
 출처: [YouTube commentThreads.list](https://developers.google.com/youtube/data/reference/rest/v3/commentThreads/list) · [Google API 키 제한](https://docs.cloud.google.com/docs/authentication/api-keys) · [Google 키 보안](https://docs.cloud.google.com/docs/authentication/api-keys-best-practices) · [YouTube 개발자 정책](https://developers.google.com/youtube/terms/developer-policies).
