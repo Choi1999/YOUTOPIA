@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it } from "vitest";
@@ -375,6 +375,83 @@ describe("YU-35 — 영상 목록 및 비교 Web UX", () => {
       .not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: A + " 추가" }))
       .toBeEnabled();
+  });
+
+  it("YU-38: watch URL을 안전하게 영상 ID로 정규화하고 미등록 데이터는 생성하지 않는다", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole("heading", { name: "감성 분포 비교" });
+
+    fireEvent.change(screen.getByLabelText("영상 ID 추가"), {
+      target: { value: "https://www.youtube.com/watch?v=" + UNKNOWN + "&t=30" },
+    });
+    await user.click(screen.getByRole("button", { name: "추가" }));
+    expect(await screen.findByText("분석 데이터 미제공")).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "비교 선택 " + UNKNOWN }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "분석 대상 영상 목록" })
+      .querySelectorAll("li")).toHaveLength(3);
+  });
+
+  it("YU-38: 다중 URL을 한 번에 추가하되 실제 합성 두 영상만 비교한다", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByRole("button", { name: "목록에서 제거 " + A }));
+    await user.click(screen.getByRole("button", { name: "목록에서 제거 " + B }));
+    const input = screen.getByLabelText("영상 ID 추가");
+    fireEvent.change(input, {
+      target: { value: "https://youtu.be/" + A + "?si=demo\nhttps://youtube.com/watch?v=" + B },
+    });
+    await user.click(screen.getByRole("button", { name: "추가" }));
+    expect(await screen.findByRole("heading", { name: "감성 분포 비교" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "분석 대상 영상 목록" })
+      .querySelectorAll("li")).toHaveLength(2);
+    expect(screen.getByRole("checkbox", { name: "비교 선택 " + A }))
+      .toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "비교 선택 " + B }))
+      .toBeChecked();
+    expect(input).toHaveValue("");
+  });
+
+  it("YU-38: 혼합된 악성 URL은 일괄 등록하지 않는다", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const input = screen.getByLabelText("영상 ID 추가");
+    fireEvent.change(input, {
+      target: { value: "https://youtu.be/" + UNKNOWN + "\nhttps://youtube.com.evil.test/watch?v=" + A },
+    });
+    await user.click(screen.getByRole("button", { name: "추가" }));
+    expect(screen.getByText(/2번째 입력: 허용되지 않은 URL/))
+      .toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "분석 대상 영상 목록" })
+      .querySelectorAll("li")).toHaveLength(2);
+    expect(screen.queryByRole("checkbox", { name: "비교 선택 " + UNKNOWN }))
+      .not.toBeInTheDocument();
+  });
+
+  it("YU-38: 기존 목록과 중복되는 공유 링크는 전체 배치를 거부한다", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    fireEvent.change(screen.getByLabelText("영상 ID 추가"), {
+      target: { value: "https://youtu.be/" + A + "\n" + UNKNOWN },
+    });
+    await user.click(screen.getByRole("button", { name: "추가" }));
+    expect(screen.getByText("이미 목록에 추가한 영상입니다.")).toBeInTheDocument();
+    expect(screen.queryByRole("checkbox", { name: "비교 선택 " + UNKNOWN }))
+      .not.toBeInTheDocument();
+  });
+
+  it("YU-38: shorts URL은 기존 정책에 따라 명시적으로 거부한다", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    fireEvent.change(screen.getByLabelText("영상 ID 추가"), {
+      target: { value: "https://youtube.com/shorts/" + UNKNOWN },
+    });
+    await user.click(screen.getByRole("button", { name: "추가" }));
+    expect(screen.getByText(/허용되지 않은 URL/)).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "분석 대상 영상 목록" })
+      .querySelectorAll("li")).toHaveLength(2);
   });
 
 });

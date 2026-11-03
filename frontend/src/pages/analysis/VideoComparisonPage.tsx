@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { createAnalysisTarget } from "../../features/analysis-target/analysisTarget";
+import { parseVideoBatch, type VideoBatchResult } from "../../features/analysis-target/videoInput";
 import { useAnalysisRepository } from "../../features/analysis/data/AnalysisRepositoryContext";
 import {
   projectDemoAnalysisSnapshot,
@@ -119,31 +120,51 @@ export function VideoComparisonPage() {
     return () => { cancelled = true; };
   }, [ids, repository]);
 
-  function addVideo(id: string) {
-    const target = createAnalysisTarget("VIDEO", id);
-    if (!target) {
-      setFeedback("YouTube 영상 ID는 영문·숫자·하이픈·밑줄로 구성된 11자여야 합니다.");
+  /*
+   * YU-38: 단일 영상 ID 또는 최대 8줄의 YouTube HTTPS URL 입력.
+   * 각 줄을 순수 함수에서 검증하고 모든 항목이 적합할 때만 일괄 추가한다.
+   * 실패/중복/목록 용량 초과에서는 어떤 목록 항목도 변경하지 않는다.
+   */
+  function addVideo(raw: string) {
+    const parsed = parseVideoBatch(raw);
+    if (parsed.kind === "INVALID") {
+      const reasons: Record<Extract<VideoBatchResult, { kind: "INVALID" }>["reason"], string> = {
+        EMPTY: "영상 ID 또는 URL을 입력하세요.",
+        TOO_LONG: "입력 길이가 제한을 초과했습니다.",
+        TOO_MANY: "한 번에 최대 8개 영상까지만 입력할 수 있습니다.",
+        DUPLICATE: "같은 영상이 여러 줄에 중복되었습니다.",
+        BAD_ID: "영상 ID가 정확한 11자가 아닙니다.",
+        UNSUPPORTED_URL: "허용되지 않은 URL입니다. YouTube watch 또는 youtu.be의 HTTPS 주소만 지원합니다.",
+        AMBIGUOUS_URL: "영상 ID가 없거나 중복된 주소입니다.",
+      };
+      setFeedback(
+        "영상 ID는 영문·숫자·하이픈·밑줄로 구성된 11자여야 합니다. " +
+        (parsed.line > 0 ? parsed.line + "번째 입력: " : "") +
+        reasons[parsed.reason],
+      );
       return;
     }
-    if (ids.includes(target.targetId)) {
+
+    if (parsed.videoIds.some(id => ids.includes(id))) {
       setFeedback("이미 목록에 추가한 영상입니다.");
       return;
     }
-    if (ids.length >= MAX_TARGETS) {
-      setFeedback("데모 목록은 최대 8개 영상까지 등록할 수 있습니다.");
+    if (ids.length + parsed.videoIds.length > MAX_TARGETS) {
+      setFeedback("데모 목록은 최대 8개 영상까지 등록할 수 있습니다. 초과 입력은 추가하지 않았습니다.");
       return;
     }
-    setIds(previous => [...previous, target.targetId]);
-    setSelected(previous =>
-      previous.length < 2 ? [...previous, target.targetId] : previous,
-    );
+    const additions = [...parsed.videoIds];
+    setIds(previous => [...previous, ...additions]);
+    setSelected(previous => [...previous, ...additions].slice(0, 2));
     setInput("");
-    setFeedback("영상 ID를 목록에 추가했습니다. 등록되지 않은 영상은 데이터 미제공으로 표시됩니다.");
+    setFeedback(
+      additions.length + "개 영상 ID를 목록에 추가했습니다. 등록되지 않은 영상은 데이터 미제공으로 표시됩니다.",
+    );
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    addVideo(input.trim());
+    addVideo(input);
   }
 
   function removeVideo(id: string) {
@@ -254,13 +275,14 @@ export function VideoComparisonPage() {
           </div>
           <form className="video-compare__form" onSubmit={onSubmit}>
             <label htmlFor="comparison-video-id">영상 ID 추가</label>
+            <p className="video-compare__input-hint">영상 ID 또는 YouTube watch/youtu.be 링크를 붙여넣으세요. 여러 영상은 한 줄에 하나씩 입력합니다.</p>
             <div className="video-compare__form-row">
-              <input
+              <textarea
                 id="comparison-video-id"
-                type="text"
-                placeholder="11자리 YouTube 영상 ID"
+                placeholder={"YouTube 영상 ID 또는 YouTube HTTPS URL\n여러 영상은 줄바꿈하여 입력"}
                 autoComplete="off"
-                maxLength={64}
+                rows={3}
+                maxLength={16400}
                 value={input}
                 onChange={event => setInput(event.target.value)}
               />

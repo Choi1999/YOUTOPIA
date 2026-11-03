@@ -53,7 +53,8 @@
   display: flex;
   gap: 8px;
 }
-.video-compare__form-row input {
+.video-compare__form-row input,
+.video-compare__form-row textarea {
   flex: 1;
   min-width: 0;
   padding: 10px;
@@ -503,4 +504,20 @@
     flex: 1;
     text-align: center;
   }
+}
+
+/* YU-38: multiline paste of explicit YouTube share URLs. */
+.video-compare__form-row textarea {
+  resize: vertical;
+  min-height: 88px;
+  line-height: 1.6;
+}
+.video-compare__form-row { align-items: flex-start; }
+.video-compare__form-row textarea { width: 100%; }
+.video-compare__form-row > button { flex: 0 0 auto; }
+.video-compare__form > .video-compare__input-hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.55;
 }
