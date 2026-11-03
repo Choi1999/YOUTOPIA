@@ -1,0 +1,102 @@
+/* YU-44/45/46: scoped synthetic channel selection, aggregate, and links. */
+.channel-analysis { gap: 18px; }
+.channel-analysis__eyebrow {
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .07em;
+  color: var(--text-secondary);
+  margin-bottom: 9px;
+}
+.channel-analysis__panel {
+  display: grid;
+  gap: 12px;
+  border-radius: 15px;
+  padding: clamp(16px, 2vw, 24px);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  min-width: 0;
+}
+.channel-analysis__panel > h2,
+.channel-analysis__heading h2 {
+  color: var(--text-primary);
+  margin: 0;
+  font-size: 17px;
+}
+.channel-analysis__panel p,
+.channel-analysis__panel li {
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.65;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.channel-analysis__panel code,
+.channel-analysis__videos strong {
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+.channel-analysis__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.channel-analysis__heading span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.channel-analysis__panel > .channel-analysis__title {
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 15px;
+}
+.channel-analysis__videos {
+  list-style: none;
+  display: grid;
+  margin: 0;
+  padding: 0;
+  gap: 9px;
+}
+.channel-analysis__videos > li {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  background: var(--bg-subtle);
+  padding: 13px;
+}
+.channel-analysis__videos > li > div {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+.channel-analysis__videos strong { font-size: 13px; }
+.channel-analysis__videos span { font-size: 12px; }
+.channel-analysis a {
+  border: 1px solid var(--border-default);
+  border-radius: 9px;
+  padding: 9px 11px;
+  background: var(--bg-subtle);
+  color: var(--text-link);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+.channel-analysis a:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+.channel-analysis__panel > .channel-analysis__note {
+  border-top: 1px solid var(--border-default);
+  padding-top: 13px;
+  margin-top: 5px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+@media (max-width: 650px) {
+  .channel-analysis__videos > li { align-items: stretch; flex-direction: column; }
+  .channel-analysis__videos a { text-align: center; }
+}
