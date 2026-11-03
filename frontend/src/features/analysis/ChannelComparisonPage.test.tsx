@@ -163,4 +163,21 @@ describe("YU-47 — two explicit synthetic channels comparison Web UI", () => {
       .toBeInTheDocument();
   });
 
+  it("YU-47-QA: preserves B-only selection until channel A is chosen", async () => {
+    const user=userEvent.setup();
+    show("/analysis/youtube/channels/compare?channel=&channel="+B);
+    const first=screen.getByRole("combobox",{name:"채널 A"});
+    const second=screen.getByRole("combobox",{name:"채널 B"});
+    expect(first).toHaveValue("");
+    expect(second).toHaveValue(B);
+    expect(screen.getByText(/채널 B가 선택되었습니다/)).toBeInTheDocument();
+    expect(screen.queryByRole("heading",{name:"감성 분포 및 차이"}))
+      .not.toBeInTheDocument();
+    await user.selectOptions(first,A);
+    expect(first).toHaveValue(A);
+    expect(second).toHaveValue(B);
+    expect(await screen.findByRole("heading",{name:"감성 분포 및 차이"}))
+      .toBeInTheDocument();
+  });
+
 });
