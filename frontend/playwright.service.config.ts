@@ -29,12 +29,14 @@ export default defineConfig({
     {
       name: "real-service",
       testMatch: "service.spec.ts",
+      grep: /real isolated Spring\/PostgreSQL\/Redis browser flow/,
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1280, height: 900 },
         colorScheme: "dark",
       },
     },
+    { name: "service-panels", testMatch: "service.spec.ts", grepInvert: /real isolated Spring\/PostgreSQL\/Redis browser flow/, use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 }, colorScheme: "dark" } },
     { name: "collection-filters", testMatch: "game-filters.spec.ts", use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 }, colorScheme: "dark" } },
     ...(["dark", "light"] as const).flatMap((colorScheme) => [
       {
