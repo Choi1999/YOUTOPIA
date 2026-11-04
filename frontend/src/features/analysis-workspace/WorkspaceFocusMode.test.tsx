@@ -1,5 +1,6 @@
 import {useState} from "react";
-import {render,screen,within} from "@testing-library/react";
+import {fireEvent,render,screen,within} from "@testing-library/react";
+import {FOCUS_DOCK_LAYOUT_KEY} from "./workspaceFocusLayout";
 import userEvent from "@testing-library/user-event";
 import {afterEach,describe,expect,it} from "vitest";
 
@@ -106,4 +107,57 @@ describe("UI-R04-C — opt-in fullscreen graph with adaptive docks",()=>{
       .toHaveAttribute("aria-pressed","true");
     expect(within(canvas).getByText("2 / 2")).toBeInTheDocument();
   });
+
+  it("resizes both docks by keyboard, restores within the tab and resets to automatic layout",async()=>{
+    const user=userEvent.setup();
+    const view=render(<Harness initial={sample("https://youtu.be/Ab0_-123xyz")}/>);
+    const launcher=screen.getByRole("button",{name:"전체 화면 집중 모드"});
+    await user.click(launcher);
+    let dialog=screen.getByRole("dialog",{name:"그래프 집중 탐색"});
+    await user.click(within(dialog).getByRole("button",{name:"대상 목록"}));
+    await user.click(within(dialog).getByRole("button",{name:"선택 상세"}));
+    const list=within(dialog).getByRole("separator",{name:"대상 목록 너비 조절"});
+    const detail=within(dialog).getByRole("separator",{name:"선택 상세 너비 조절"});
+    list.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(dialog.querySelector(".workspace-focus__body"))
+      .toHaveAttribute("data-layout","both");
+    expect(sessionStorage.getItem(FOCUS_DOCK_LAYOUT_KEY)).toContain('"version":1');
+    expect(list).toHaveAttribute("aria-valuemin","225");
+    detail.focus();
+    await user.keyboard("{End}");
+    expect(detail).toHaveAttribute("aria-valuenow",detail.getAttribute("aria-valuemax"));
+    const persisted=sessionStorage.getItem(FOCUS_DOCK_LAYOUT_KEY);
+    expect(persisted).toBeTruthy();
+    await user.keyboard("{Escape}");
+    await user.click(launcher);
+    dialog=screen.getByRole("dialog",{name:"그래프 집중 탐색"});
+    await user.click(within(dialog).getByRole("button",{name:"대상 목록"}));
+    await user.click(within(dialog).getByRole("button",{name:"선택 상세"}));
+    expect(dialog.querySelector(".workspace-focus__body")?.getAttribute("style"))
+      .toContain("--focus-list-width:");
+    expect(sessionStorage.getItem(FOCUS_DOCK_LAYOUT_KEY)).toBe(persisted);
+    await user.click(within(dialog).getByRole("button",{name:"레이아웃 기본값 복원"}));
+    expect(sessionStorage.getItem(FOCUS_DOCK_LAYOUT_KEY)).toBeNull();
+    expect(dialog.querySelector(".workspace-focus__body")?.getAttribute("style"))
+      .not.toContain("--focus-list-width:");
+    view.unmount();
+  });
+
+  it("supports pointer resizing, then removes splitters when docks close",async()=>{
+    const user=userEvent.setup();
+    render(<Harness initial={sample("https://youtu.be/Ab0_-123xyz")}/>);
+    await user.click(screen.getByRole("button",{name:"전체 화면 집중 모드"}));
+    const dialog=screen.getByRole("dialog",{name:"그래프 집중 탐색"});
+    await user.click(within(dialog).getByRole("button",{name:"대상 목록"}));
+    const handle=within(dialog).getByRole("separator",{name:"대상 목록 너비 조절"});
+    fireEvent.pointerDown(handle,{pointerId:3,button:0,clientX:350});
+    fireEvent.pointerMove(handle,{pointerId:3,clientX:390});
+    fireEvent.pointerUp(handle,{pointerId:3,clientX:390});
+    expect(sessionStorage.getItem(FOCUS_DOCK_LAYOUT_KEY)).toContain('"list":320');
+    await user.click(within(dialog).getByRole("button",{name:"대상 목록 닫기"}));
+    expect(within(dialog).queryAllByRole("separator")).toHaveLength(0);
+    expect(sessionStorage.getItem(FOCUS_DOCK_LAYOUT_KEY)).not.toBeNull();
+  });
+
 });

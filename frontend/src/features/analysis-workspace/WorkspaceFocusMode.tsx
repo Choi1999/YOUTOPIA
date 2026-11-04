@@ -1,6 +1,7 @@
 import {
   useEffect, useRef, useState,
-  type DragEvent, type FormEvent, type KeyboardEvent,
+  type CSSProperties, type DragEvent, type FormEvent, type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 
 import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
@@ -11,6 +12,12 @@ import {
   workspaceUrlTargetKey,
   type WorkspaceUrlIngestResult, type WorkspaceUrlTarget,
 } from "./workspaceUrlTargets";
+import {
+  FOCUS_DETAIL_MIN, FOCUS_LIST_MIN,
+  clampFocusDockLayout, focusDockBounds, readFocusDockLayout,
+  resizeFocusDockLayout, writeFocusDockLayout,
+  type FocusDockLayout, type FocusDockSide,
+} from "./workspaceFocusLayout";
 import "./workspace-focus.css";
 
 type Props = Readonly<{
@@ -22,6 +29,11 @@ type Props = Readonly<{
   onToggleVideoImage?: () => void;
   channelProfiles?: ApprovedChannelProfileCache;
 }>;
+
+function focusStorage(): Storage | null {
+  try { return typeof window === "undefined" ? null : window.sessionStorage; }
+  catch { return null; }
+}
 
 function kindLabel(kind: WorkspaceUrlTarget["kind"]) {
   return kind === "VIDEO" ? "영상" :
@@ -52,6 +64,49 @@ export function WorkspaceFocusMode({
     "추가된 URL은 미확인 대상입니다. 등록만으로 영상·채널 분석은 시작되지 않습니다.",
   );
   const [dragging, setDragging] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const listDockRef = useRef<HTMLElement>(null);
+  const detailDockRef = useRef<HTMLElement>(null);
+  const pointerDrag = useRef<{
+    id: number; side: FocusDockSide; x: number;
+    width: number; layout: FocusDockLayout;
+  } | null>(null);
+  const [resizingSide, setResizingSide] = useState<FocusDockSide | null>(null);
+  const [viewportWidth, setViewportWidth] = useState(
+    () => typeof window === "undefined" ? 1440 : window.innerWidth,
+  );
+  const [dockWidths, setDockWidths] = useState<FocusDockLayout | null>(
+    () => readFocusDockLayout(focusStorage()),
+  );
+  const [measuredWidths, setMeasuredWidths] = useState<FocusDockLayout>({
+    list: 280, detail: 300,
+  });
+  useEffect(() => {
+    function syncViewport() { setViewportWidth(window.innerWidth); }
+    window.addEventListener("resize", syncViewport);
+    return () => window.removeEventListener("resize", syncViewport);
+  }, []);
+  useEffect(() => { writeFocusDockLayout(focusStorage(), dockWidths); }, [dockWidths]);
+  useEffect(() => {
+    function measure() {
+      const list = Math.round(listDockRef.current?.getBoundingClientRect().width ?? 0);
+      const detail = Math.round(detailDockRef.current?.getBoundingClientRect().width ?? 0);
+      setMeasuredWidths(previous => {
+        const next = {
+          list: list > 0 ? list : previous.list,
+          detail: detail > 0 ? detail : previous.detail,
+        };
+        return next.list === previous.list && next.detail === previous.detail
+          ? previous : next;
+      });
+    }
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    [bodyRef.current, listDockRef.current, detailDockRef.current]
+      .forEach(node => { if (node) observer.observe(node); });
+    return () => observer.disconnect();
+  }, [listOpen, detailOpen]);
 
   const selected = targets.find(item => workspaceUrlTargetKey(item) === selectedKey) ?? null;
   const visible = [...targets].reverse().filter(target =>
@@ -166,6 +221,80 @@ export function WorkspaceFocusMode({
 
   const layout = listOpen && detailOpen ? "both" :
     listOpen ? "list" : detailOpen ? "detail" : "none";
+  const fittedWidths = dockWidths
+    ? clampFocusDockLayout(dockWidths, viewportWidth, listOpen, detailOpen)
+    : null;
+  const currentWidths = fittedWidths ?? measuredWidths;
+  const listBounds = focusDockBounds("list", viewportWidth, detailOpen, currentWidths.detail);
+  const detailBounds = focusDockBounds("detail", viewportWidth, listOpen, currentWidths.list);
+
+  function baselineWidths(): FocusDockLayout {
+    const list = Math.round(listDockRef.current?.getBoundingClientRect().width ?? 0);
+    const detail = Math.round(detailDockRef.current?.getBoundingClientRect().width ?? 0);
+    return fittedWidths ?? {
+      list: Math.max(FOCUS_LIST_MIN, list || measuredWidths.list),
+      detail: Math.max(FOCUS_DETAIL_MIN, detail || measuredWidths.detail),
+    };
+  }
+
+  function beginResize(side: FocusDockSide, event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.button !== 0 || viewportWidth <= 1100) return;
+    const widths = baselineWidths();
+    pointerDrag.current = {
+      id: event.pointerId, side, x: event.clientX,
+      width: widths[side], layout: widths,
+    };
+    setResizingSide(side);
+    event.currentTarget.focus();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  function moveResize(event: ReactPointerEvent<HTMLDivElement>) {
+    const drag = pointerDrag.current;
+    if (!drag || drag.id !== event.pointerId) return;
+    const delta = (event.clientX - drag.x) * (drag.side === "list" ? 1 : -1);
+    setDockWidths(resizeFocusDockLayout(
+      drag.layout, drag.side, drag.width + delta,
+      viewportWidth, listOpen, detailOpen,
+    ));
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  function endResize(event: ReactPointerEvent<HTMLDivElement>) {
+    if (pointerDrag.current?.id !== event.pointerId) return;
+    pointerDrag.current = null;
+    setResizingSide(null);
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    event.stopPropagation();
+  }
+
+  function keyboardResize(side: FocusDockSide, event: KeyboardEvent<HTMLDivElement>) {
+    const isList = side === "list";
+    const direction = event.key === "ArrowRight" ? 1 :
+      event.key === "ArrowLeft" ? -1 : 0;
+    if (!direction && event.key !== "Home" && event.key !== "End") return;
+    if (viewportWidth <= 1100) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const base = baselineWidths();
+    const bounds = focusDockBounds(side, viewportWidth,
+      isList ? detailOpen : listOpen, isList ? base.detail : base.list);
+    const desired = event.key === "Home" ? bounds.min :
+      event.key === "End" ? bounds.max :
+      base[side] + direction * (isList ? 1 : -1) * (event.shiftKey ? 25 : 12);
+    setDockWidths(resizeFocusDockLayout(
+      base, side, desired, viewportWidth, listOpen, detailOpen,
+    ));
+  }
+
+  const customStyle = fittedWidths ? ({
+    "--focus-list-width": fittedWidths.list + "px",
+    "--focus-detail-width": fittedWidths.detail + "px",
+  } as CSSProperties) : undefined;
 
   return (
     <div ref={dialogRef} className={"workspace-focus" +
@@ -211,14 +340,19 @@ export function WorkspaceFocusMode({
           <button ref={detailToggleRef} type="button"
             aria-pressed={detailOpen} aria-controls="workspace-focus-detail-dock"
             onClick={toggleDetail}>선택 상세</button>
+          {dockWidths && (
+            <button type="button" onClick={() => setDockWidths(null)}
+              aria-label="레이아웃 기본값 복원">배치 초기화</button>
+          )}
           <button ref={exitRef} type="button" className="workspace-focus__exit"
             onClick={onExit}>집중 모드 종료</button>
         </div>
       </header>
       <div className="workspace-focus__message" role="status">{message}</div>
-      <div className="workspace-focus__body" data-layout={layout}>
+      <div ref={bodyRef} className="workspace-focus__body" data-layout={layout}
+        data-resizing={resizingSide ?? undefined} style={customStyle}>
         {listOpen && (
-          <aside id="workspace-focus-target-dock"
+          <aside ref={listDockRef} id="workspace-focus-target-dock"
             className="workspace-focus__dock workspace-focus__dock--list"
             aria-label="도킹 대상 목록">
             <div className="workspace-focus__dock-heading">
@@ -255,13 +389,39 @@ export function WorkspaceFocusMode({
             </div>
           </aside>
         )}
+        {listOpen && (
+          <div className="workspace-focus__splitter workspace-focus__splitter--list"
+            role="separator" tabIndex={0} aria-orientation="vertical"
+            aria-label="대상 목록 너비 조절" aria-controls="workspace-focus-target-dock"
+            aria-valuemin={FOCUS_LIST_MIN} aria-valuemax={listBounds.max}
+            aria-valuenow={Math.max(FOCUS_LIST_MIN,
+              Math.min(listBounds.max, currentWidths.list))}
+            aria-valuetext={currentWidths.list + "픽셀"}
+            onPointerDown={event => beginResize("list", event)}
+            onPointerMove={moveResize} onPointerUp={endResize}
+            onPointerCancel={endResize}
+            onKeyDown={event => keyboardResize("list", event)} />
+        )}
         <div className="workspace-focus__graph" aria-label="중앙 그래프 탐색 영역">
           <WorkspaceUrlCanvas targets={targets} focusedKey={selectedKey}
             onFocusChange={focusTarget} allowVideoImage={allowVideoImage}
             channelProfiles={channelProfiles}/>
         </div>
         {detailOpen && (
-          <aside id="workspace-focus-detail-dock"
+          <div className="workspace-focus__splitter workspace-focus__splitter--detail"
+            role="separator" tabIndex={0} aria-orientation="vertical"
+            aria-label="선택 상세 너비 조절" aria-controls="workspace-focus-detail-dock"
+            aria-valuemin={FOCUS_DETAIL_MIN} aria-valuemax={detailBounds.max}
+            aria-valuenow={Math.max(FOCUS_DETAIL_MIN,
+              Math.min(detailBounds.max, currentWidths.detail))}
+            aria-valuetext={currentWidths.detail + "픽셀"}
+            onPointerDown={event => beginResize("detail", event)}
+            onPointerMove={moveResize} onPointerUp={endResize}
+            onPointerCancel={endResize}
+            onKeyDown={event => keyboardResize("detail", event)} />
+        )}
+        {detailOpen && (
+          <aside ref={detailDockRef} id="workspace-focus-detail-dock"
             className="workspace-focus__dock workspace-focus__dock--detail"
             aria-label="도킹 선택 상세">
             <div className="workspace-focus__dock-heading">
