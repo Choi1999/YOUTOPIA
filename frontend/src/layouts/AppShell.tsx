@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import brandDark from "../assets/navigation/brand.svg";
@@ -110,17 +111,28 @@ function NavigationItem({
 export function AppShell() {
   const reportRoute = getRoute("YU-12");
   const { pathname } = useLocation();
+  const isImmersiveWorkspace = pathname === "/analysis/youtube/workspace";
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const showWorkspaceReturn = pathname.startsWith("/analysis/youtube/") &&
-    pathname !== "/analysis/youtube/workspace";
+    !isImmersiveWorkspace;
 
   return (
-    <div className="app-shell">
+    <div className={"app-shell" + (isImmersiveWorkspace ? " app-shell--immersive-workspace" : "")}>
       <a className="skip-link" href="#main-content">본문으로 건너뛰기</a>
-      <aside className="app-sidebar" aria-label="YUTOPIA 주 탐색">
+      <aside className={"app-sidebar" +
+        (isImmersiveWorkspace && mobileNavOpen ? " app-sidebar--workspace-menu-open" : "")}
+        aria-label="YUTOPIA 주 탐색">
         <div className="sidebar-brand">
           <NavigationIcon dark={brandDark} light={brandLight} />
           <strong className="sidebar-brand-copy">YUTOPIA</strong>
         </div>
+        {isImmersiveWorkspace && (
+          <button type="button" className="workspace-mobile-menu-toggle"
+            aria-controls="workspace-sidebar-navigation" aria-expanded={mobileNavOpen}
+            onClick={() => setMobileNavOpen(open => !open)}>
+            {mobileNavOpen ? "메뉴 닫기" : "메뉴 열기"}
+          </button>
+        )}
 
         <label className="sidebar-search">
           <span className="sr-only">게임 검색</span>
@@ -128,7 +140,7 @@ export function AppShell() {
           <input disabled placeholder="게임 검색" type="search" />
         </label>
 
-        <nav className="sidebar-navigation">
+        <nav className="sidebar-navigation" id="workspace-sidebar-navigation" onClick={() => setMobileNavOpen(false)}>
           {groups.map((group) => (
             <section className="sidebar-group" key={group.label}>
               <h2 className="sidebar-group-label">{group.label}</h2>

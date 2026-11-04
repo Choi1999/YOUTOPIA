@@ -6,6 +6,7 @@ import { App } from "./app/App";
 import "./theme/tokens.css";
 import "./style.css";
 import "./app-shell.css";
+import "./theme/immersive-workspace.css";
 
 // index.html에 선언된 root 요소를 찾는다.
 // HTML의 ID를 변경하면 이 검색 ID도 함께 변경해야 한다.

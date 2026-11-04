@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 
 import { demoChannelSelections } from "../../features/analysis/data/demoChannelSelection";
 import { WorkspaceDiscoveryPanels } from "../../features/analysis-workspace/WorkspaceDiscoveryPanels";
+import { WorkspaceHero } from "../../features/analysis-workspace/WorkspaceHero";
 import { applyWorkspacePreset, WORKSPACE_PRESETS } from "../../features/analysis-workspace/analysisWorkspacePresets";
 import { withoutAllowedUtmTracking } from "../../features/analysis-target/analysisQueryTracking";
 import {
@@ -138,14 +139,11 @@ export function AnalysisWorkspacePage() {
 
   return (
     <div className="product-screen analysis-workspace">
-      <header className="product-heading">
-        <p className="analysis-workspace__eyebrow">YOUTOPIA · YU-50~55 · STATIC FIXTURE</p>
-        <h1>통합 분석 워크스페이스</h1>
-        <p>영상·채널·주제 분석을 하나의 작업 흐름으로 연결합니다.
-          등록된 합성 샘플에만 적용되며 실제 YouTube 댓글을 조회하지 않습니다.</p>
-      </header>
+      <WorkspaceHero />
 
-      <section className="analysis-workspace__panel" aria-label="분석 작업 세션">
+      <div className="analysis-workspace__layout">
+        <div className="analysis-workspace__main">
+          <section id="workspace-session" className="analysis-workspace__panel" aria-label="분석 작업 세션">
         <div className="analysis-workspace__heading">
           <div>
             <h2>분석 대상과 비교 구성</h2>
@@ -251,7 +249,9 @@ export function AnalysisWorkspacePage() {
         )}
       </section>
 
-      <section className="analysis-workspace__panel" aria-label="최근 분석 대상">
+        </div>
+        <aside className="analysis-workspace__rail" aria-label="워크스페이스 최근 선택 및 근거">
+          <section className="analysis-workspace__panel" aria-label="최근 분석 대상">
         <h2>최근 선택한 대상</h2>
         {session.recentTargets.length === 0 ? (
           <p>아직 이 작업 세션에서 변경한 대상이 없습니다.</p>
@@ -271,7 +271,7 @@ export function AnalysisWorkspacePage() {
         )}
       </section>
 
-      <section className="analysis-workspace__panel" aria-label="근거 검토">
+          <section id="workspace-evidence" className="analysis-workspace__panel" aria-label="근거 검토">
         <h2>분석 근거와 처리 표본</h2>
         <p>표본 단계·분류 완료 분모·관측 기간·버전을 원래 합성
           Repository와 검증 Projection을 통해 확인합니다.
@@ -281,6 +281,9 @@ export function AnalysisWorkspacePage() {
           <ChannelWorkspaceEvidence channelId={session.channelIds[0]} />
         </div>
       </section>
+
+        </aside>
+      </div>
 
       <p className="analysis-workspace__notice">
         STATIC FIXTURE · 이 화면은 실제 수집·실시간 분석·장기 저장·구독/결제와

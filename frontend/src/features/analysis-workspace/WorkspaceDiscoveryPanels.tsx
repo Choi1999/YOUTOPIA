@@ -138,7 +138,7 @@ export function WorkspaceDiscoveryPanels({session, onSelect}: Props) {
         )}
       </section>
 
-      <section className="analysis-workspace__panel" aria-label="분석 대상 검색">
+      <section id="workspace-catalog" className="analysis-workspace__panel" aria-label="분석 대상 검색">
         <div className="analysis-workspace__heading">
           <div>
             <h2>등록 합성 대상 검색·필터</h2>
