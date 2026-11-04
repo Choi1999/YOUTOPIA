@@ -20,6 +20,7 @@ import { SteamChartsPage, YoutubePage } from "./ChartPages";
 import { SettingsPage } from "./SettingsPage";
 import { AdminDashboard, AdminMembers, AdminMember } from "./AdminPages";
 import { ChatPreparation } from "./ChatPreparation";
+import { ChatHistoryProvider } from "./ChatHistory";
 import { UserActivity } from "./Activity";
 function RouteScrollReset() {
   const { pathname } = useLocation();
@@ -43,10 +44,10 @@ function Login({
       const from = location.state?.from;
       const next =
         typeof from === "string" &&
-        /^\/(games|charts|dashboard|settings)(\/|\?|$)/.test(from)
+        (/^\/(games|charts|dashboard)(\/|\?|$)/.test(from)||session.identity?.kind==="USER"&&/^\/settings(\/|\?|$)/.test(from)||session.identity?.kind==="ADMIN"&&/^\/admin(\/(users|members|analytics)(\/|\?|$)|\?|$)/.test(from))
           ? from
-          : "/dashboard";
-      navigate(session.identity?.kind === "ADMIN" ? "/admin" : next, {
+          : "/games";
+      navigate(next, {
         replace: true,
       });
     }
@@ -96,8 +97,9 @@ function Guard() {
 }
 function AdminGuard() {
   const session = useSession();
+  const location=useLocation();
   if (session.status === "checking") return <StatePanel loading />;
-  if (session.status === "guest") return <Navigate to="/admin/login" replace />;
+  if (session.status === "guest") return <Navigate to="/admin/login" replace state={{from:location.pathname+location.search}} />;
   if (session.status === "unavailable")
     return (
       <StatePanel
@@ -120,6 +122,7 @@ export function ServiceApp() {
   return (
     <BrowserRouter>
       <SessionProvider>
+        <ChatHistoryProvider>
         <ThemeProvider>
           <UserActivity />
           <RouteScrollReset />
@@ -167,6 +170,7 @@ export function ServiceApp() {
             />
           </Routes>
         </ThemeProvider>
+        </ChatHistoryProvider>
       </SessionProvider>
     </BrowserRouter>
   );

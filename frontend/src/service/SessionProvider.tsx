@@ -72,6 +72,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // Serialize cookie-changing requests, and invalidate responses at intent time.
   // Focus/refresh must not cancel an in-flight login or observe an older cookie.
   function mutate(operation: () => Promise<Identity | null>) {
+    window.dispatchEvent(new Event("youtopia-auth-changing"));
     const generation = clear();
     ++pendingMutations.current;
     const result = mutations.current.then(async () => {

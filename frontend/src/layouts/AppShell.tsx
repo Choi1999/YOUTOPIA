@@ -1,4 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import { ServiceSessionContext } from "../service/SessionProvider";
 
 import brandDark from "../assets/navigation/brand.svg";
 import brandLight from "../assets/navigation/brand-light.svg";
@@ -104,6 +106,7 @@ function NavigationItem({
  */
 export function AppShell({service=false,admin=false}:{service?:boolean;admin?:boolean}={}) {
   const navigate=useNavigate();
+  const session=useContext(ServiceSessionContext);
   const navigation=admin?[{label:"운영",items:[{label:"이용 현황",route:{href:"/admin",code:"usage"},dark:overviewDark,light:overviewLight},{label:"회원 조회",route:{href:"/admin/users",code:"members"},dark:projectDark,light:projectLight}]}]:service?[{label:"관측",items:[{label:"대시보드",route:{href:"/dashboard",code:"dashboard"},dark:overviewDark,light:overviewLight},{label:"게임 탐색",route:{href:"/games",code:"games"},dark:projectDark,light:projectLight}]},{label:"플랫폼",items:[{label:"Steam 차트",route:{href:"/charts/steam",code:"steam"},dark:steamDark,light:steamLight},{label:"YouTube 관측",route:{href:"/charts/youtube",code:"youtube"},dark:youtubeDark,light:youtubeLight}]}]:groups;
   const reportRoute = getRoute("YU-12");
 
@@ -141,6 +144,8 @@ export function AppShell({service=false,admin=false}:{service?:boolean;admin?:bo
 
         <div className="sidebar-operations">
           <span className="sidebar-group-label">운영</span>
+          {service&&admin&&<NavigationItem dark={projectDark} light={projectLight} href="/games" label="공개 게임 목록"/>}
+          {service&&!admin&&session?.status==="authenticated"&&session.identity?.kind==="ADMIN"&&<NavigationItem dark={settingsDark} light={settingsLight} href="/admin" label="관리자 화면"/>}
           {!service&&<NavigationItem
             dark={collectionDark}
             href={reportRoute.href}

@@ -22,7 +22,7 @@ public class AuthenticationController {
         @Override public String toString(){return "Login[redacted]";}
     }
     public record Created(UUID userId,String nextRoute,boolean emailVerified) {}
-    public record Identity(String kind,UUID id,boolean emailVerified) {}
+    public record Identity(String kind,UUID id,boolean emailVerified,String authVersion,String adminGeneration) {}
     @PostMapping("/api/v1/auth/signup")
     ResponseEntity<Created> signup(@Valid @RequestBody Signup input) {
         UUID id=service.signup(input.email(),input.password());
@@ -54,5 +54,5 @@ public class AuthenticationController {
         if(session==null || !(session.getAttribute(SessionIdentity.ATTRIBUTE) instanceof SessionIdentity identity))throw AccountProblem.invalid();
         return identity;
     }
-    private Identity view(SessionIdentity id) {return new Identity(id.kind().name(),id.id(),false);}
+    private Identity view(SessionIdentity id) {return new Identity(id.kind().name(),id.id(),false,Long.toString(id.authVersion()),id.kind()==Account.Kind.ADMIN?Long.toString(id.generation()):null);}
 }

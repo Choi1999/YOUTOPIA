@@ -4,6 +4,8 @@ export type Identity = {
   kind: "USER" | "ADMIN";
   id: string;
   emailVerified: boolean;
+  authVersion?: string;
+  adminGeneration?: string | null;
 };
 export type Theme = "system" | "dark" | "light";
 export type Settings = { version: number; values: { theme: Theme } };

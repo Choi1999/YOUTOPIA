@@ -69,6 +69,7 @@ def main():
     for name in ('RESUME.md','SECURITY.md','MANUAL-TRANSFER.md','ADMIN.md','ACCESS-MATRIX.md','IP-HTTPS.md','SERVER-REVIEW.md','CHATBOT.md','UPDATE.md'):
         shutil.copyfile(DEPLOY/name,output/name)
     shutil.copyfile(ROOT/'docs/GAME_LIST_FILTERS.md',output/'GAME_LIST_FILTERS.md')
+    shutil.copyfile(ROOT/'docs/DEMO_POLISH.md',output/'DEMO_POLISH.md')
     (output/'README.txt').write_text(
         'Public YOUTOPIA delivery; existing-host resume only. No operating action is authorized by packaging.\n'
         +'Source commit: '+sha+'\nArtifact build commit: '+provenance['build_source_sha']+'\n'

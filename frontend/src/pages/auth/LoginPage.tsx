@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import { ThemeSelector } from "../../theme/ThemeSelector";
 import { ServiceSessionContext } from "../../service/SessionProvider";
@@ -67,7 +67,8 @@ function LoginIllustration() {
 }
 
 export function LoginPage({service=false,admin=false,signup=false}:{service?:boolean;admin?:boolean;signup?:boolean}={}) {
-  const session=useContext(ServiceSessionContext);
+  const session=useContext(ServiceSessionContext),location=useLocation();
+  const rememberKey=service&&admin?"youtopia-admin-login":"youtopia-login-email";
   const recoveryRequestKey=useRef(crypto.randomUUID());
   const [busy,setBusy]=useState(false);
   const [mode, setMode] = useState<LoginMode>("email");
@@ -87,13 +88,13 @@ export function LoginPage({service=false,admin=false,signup=false}:{service?:boo
 
   useEffect(() => {
     try {
-      const savedEmail = localStorage.getItem("youtopia-login-email") ?? "";
+      const savedEmail = localStorage.getItem(rememberKey) ?? "";
       setRememberEmail(savedEmail);
       setRemember(Boolean(savedEmail));
     } catch {
       setMessage("브라우저에서 로그인 정보 저장을 허용하지 않았습니다.");
     }
-  }, []);
+  }, [rememberKey]);
 
   useEffect(() => {
     if (!dialog) return;
@@ -112,7 +113,7 @@ export function LoginPage({service=false,admin=false,signup=false}:{service?:boo
     const formData = new FormData(event.currentTarget);
     const email = String(formData.get("email") ?? "").trim();
     const password = String(formData.get("password") ?? "");
-    if(service){if(busy||mode!=="email")return;setBusy(true);setMessage("");try{await session!.login(email,password,admin);try{if(remember)localStorage.setItem("youtopia-login-email",email);else localStorage.removeItem("youtopia-login-email");}catch{/* Remembering an email is optional. */}}catch(error){setMessage(errorText(error));setMessageTone("error");}finally{setBusy(false);}return;}
+    if(service){if(busy||mode!=="email")return;setBusy(true);setMessage("");try{await session!.login(email,password,admin);try{if(remember)localStorage.setItem(rememberKey,email);else localStorage.removeItem(rememberKey);}catch{/* Remembering an email is optional. */}}catch(error){setMessage(errorText(error));setMessageTone("error");}finally{setBusy(false);}return;}
     const account = accounts.find(
       (candidate) =>
         candidate.email.toLowerCase() === email.toLowerCase() &&
@@ -142,7 +143,7 @@ export function LoginPage({service=false,admin=false,signup=false}:{service?:boo
       }
     } else {
       try {
-        localStorage.removeItem("youtopia-login-email");
+        localStorage.removeItem(rememberKey);
       } catch {
         // Email persistence is optional; it does not prevent demo login.
       }
@@ -343,7 +344,7 @@ export function LoginPage({service=false,admin=false,signup=false}:{service?:boo
               role="tab"
               type="button"
             >
-              이메일 로그인
+              {service&&admin?"관리자 ID 로그인":"이메일 로그인"}
             </button>
             <button
               aria-selected={mode === "sso"}
@@ -368,14 +369,14 @@ export function LoginPage({service=false,admin=false,signup=false}:{service?:boo
           >
             <label htmlFor="email">{service&&admin?"관리자 로그인명":mode === "sso" ? "회사 이메일 주소" : "이메일 주소"}</label>
             <input
-              autoComplete="email"
+              autoComplete={service&&admin?"username":"email"}
               id="email"
               name="email"
               onChange={(event) => {
                 setRememberEmail(event.currentTarget.value);
                 setMessage("");
               }}
-              placeholder={mode === "sso" ? "name@company.com" : "you@company.com"}
+              placeholder={service&&admin?"관리자 ID를 입력하세요":mode === "sso" ? "name@company.com" : "you@company.com"}
               required
               type={service&&admin?"text":"email"}
               value={rememberEmail}
@@ -415,7 +416,7 @@ export function LoginPage({service=false,admin=false,signup=false}:{service?:boo
                   onChange={(event) => setRemember(event.currentTarget.checked)}
                   type="checkbox"
                 />
-                <span>{service||mode === "sso" ? "이메일 기억하기" : "로그인 상태 유지"}</span>
+                <span>{service&&admin?"관리자 ID 기억하기":service||mode === "sso" ? "이메일 기억하기" : "로그인 상태 유지"}</span>
               </label>
               {mode === "email" && (
                 <button
@@ -474,7 +475,7 @@ export function LoginPage({service=false,admin=false,signup=false}:{service?:boo
           )}
         </div>
       </section>
-      {service && <p className="signup-prompt"><Link to="/games">로그인 없이 둘러보기 · 게임 목록으로</Link>{!admin && <> · <Link to="/signup" onClick={()=>setDialog("signup")}>회원가입</Link></>}</p>}
+      {service && <p className="signup-prompt"><Link to="/games">로그인 없이 둘러보기 · 게임 목록으로</Link>{!admin && <> · <Link to="/admin/login" state={location.state}>관리자 전용 로그인</Link> · <Link to="/signup" onClick={()=>setDialog("signup")}>회원가입</Link></>}{admin&&<> · <Link to="/login" state={location.state}>일반 회원 로그인</Link></>}</p>}
       {dialog && (
         <div
           className="dialog-backdrop"
