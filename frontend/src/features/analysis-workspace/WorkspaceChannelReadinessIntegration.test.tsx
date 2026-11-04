@@ -5,6 +5,8 @@ import {afterEach,describe,expect,it,vi} from "vitest";
 import {AnalysisWorkspacePage} from "../../pages/analysis/AnalysisWorkspacePage";
 import {AnalysisRepositoryProvider} from "../analysis/data/AnalysisRepositoryContext";
 import {demoAnalysisRepository} from "../analysis/data/DemoAnalysisRepository";
+import {assessChannelReadiness} from "./workspaceChannelReadiness";
+import {addWorkspaceUrlTargets} from "./workspaceUrlTargets";
 
 function show() {
   return render(
@@ -23,42 +25,57 @@ afterEach(()=>{
   vi.unstubAllGlobals();
 });
 
-describe("UI-R04-H — integrated readiness without credentials or live calls",()=>{
-  it("reveals evidence review after channel registration while keeping source gate and comparison",async()=>{
+describe("UI-R04-I — repository audit retained without consumer panel exposure",()=>{
+  it("preserves fail-closed readiness internally while omitting the eight-gate audit UI",async()=>{
     const user=userEvent.setup();
-    const fetchSpy=vi.fn(async()=>{throw Error("unexpected network")});
+    const fetchSpy=vi.fn(async()=>{throw Error("unexpected network");});
     vi.stubGlobal("fetch",fetchSpy);
+    const url="https://youtube.com/@CreatorOne";
+    const result=assessChannelReadiness(addWorkspaceUrlTargets([],url).targets);
+    expect(result).toMatchObject({
+      decision:"BLOCKED",policyGate:"POLICY_HOLD",
+      requiredGates:8,verifiedGates:0,liveCallsAuthorized:false,
+      networkExecuted:false,
+    });
+
     show();
-    expect(screen.queryByRole("region",{name:"채널 실조회 준비 상태"})).not.toBeInTheDocument();
-    await user.type(screen.getByRole("textbox",{name:/URL을 붙여넣으면/}),
-      "https://youtube.com/@CreatorOne");
+    await user.type(screen.getByRole("textbox",{name:/URL을 붙여넣으면/}),url);
     await user.click(screen.getByRole("button",{name:"URL 추가"}));
-    const review=screen.getByRole("region",{name:"채널 실조회 준비 상태"});
-    expect(within(review).getByText("BLOCKED")).toBeInTheDocument();
-    expect(within(review).getByText("0/8")).toBeInTheDocument();
-    expect(screen.getByRole("combobox",{name:"영상 A"})).toHaveValue("Ab0_-123xyz");
-    await user.click(within(review).getByRole("button",{name:"실조회 전 필수 증빙 8항목 보기"}));
-    const required=within(review).getByRole("list",{name:"실조회 전 필수 증빙"});
-    expect(within(required).getAllByRole("listitem")).toHaveLength(8);
-    expect(within(review).getByText(/미지정 · 미승인/)).toBeInTheDocument();
+    expect(screen.getByRole("region",{name:"URL로 추가한 분석 대상"}))
+      .toBeInTheDocument();
+
+    expect(screen.queryByRole("region",{name:"채널 실조회 준비 상태"}))
+      .not.toBeInTheDocument();
+    expect(screen.queryByText("0/8")).not.toBeInTheDocument();
+    expect(screen.queryByText("BLOCKED")).not.toBeInTheDocument();
+    expect(screen.queryByText("POLICY_HOLD")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button",{name:/필수 증빙 8항목/}))
+      .not.toBeInTheDocument();
     expect(fetchSpy).not.toHaveBeenCalled();
+    expect(screen.getByRole("combobox",{name:"영상 A"}))
+      .toHaveValue("Ab0_-123xyz");
   });
 
-  it("keeps the review read-only after opening focus graph and other UI controls",async()=>{
+  it("reveals analysis sample scope only on explicit user request, not policy internals",async()=>{
     const user=userEvent.setup();
-    const fetchSpy=vi.fn(async()=>{throw Error("unexpected API request")});
-    vi.stubGlobal("fetch",fetchSpy);
     show();
-    const input=screen.getByRole("textbox",{name:/URL을 붙여넣으면/});
-    await user.type(input,"https://youtube.com/channel/UC"+"A".repeat(22));
-    await user.click(screen.getByRole("button",{name:"URL 추가"}));
-    await user.click(screen.getByRole("button",{name:"전체 화면 집중 모드"}));
-    const dialog=screen.getByRole("dialog",{name:"그래프 집중 탐색"});
-    await user.click(within(dialog).getByRole("button",{name:"집중 모드 종료"}));
-    const review=screen.getByRole("region",{name:"채널 실조회 준비 상태"});
-    expect(within(review).getByText("BLOCKED")).toBeInTheDocument();
-    expect(within(review).queryByRole("textbox")).toBeNull();
-    expect(within(review).queryByRole("button",{name:/API.*실행|권한.*허용/})).toBeNull();
-    expect(fetchSpy).not.toHaveBeenCalled();
+    const scope=screen.getByRole("region",{name:"데이터 범위"});
+    const expand=within(scope).getByRole("button",{name:"데이터 범위 보기"});
+    expect(expand).toHaveAttribute("aria-expanded","false");
+    expect(screen.queryByRole("region",{name:"영상 근거 상세"}))
+      .not.toBeInTheDocument();
+
+    await user.click(expand);
+    expect(within(scope).getByRole("button",{name:"데이터 범위 접기"}))
+      .toHaveAttribute("aria-expanded","true");
+    const video=screen.getByRole("region",{name:"영상 근거 상세"});
+    expect(await within(video).findByText("120건")).toBeInTheDocument();
+    expect(within(scope).queryByText("POLICY_HOLD")).not.toBeInTheDocument();
+
+    await user.click(within(scope).getByRole("button",{name:"데이터 범위 접기"}));
+    expect(screen.queryByRole("region",{name:"영상 근거 상세"}))
+      .not.toBeInTheDocument();
+    expect(screen.getByRole("region",{name:"통합 분석 요약"}))
+      .toBeInTheDocument();
   });
 });
