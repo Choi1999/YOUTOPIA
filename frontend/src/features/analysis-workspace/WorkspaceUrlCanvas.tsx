@@ -294,7 +294,11 @@ export function WorkspaceUrlCanvas({
     updateGroups(next);
     setPicked([]); setSelectionMode(false); setNewName("");
     setGroupPanel(true);
-    navigate({ kind: "group", key: next[next.length - 1].id });
+    const created: GraphVisit = { kind: "group", key: next[next.length - 1].id };
+    setJumpGroupId(created.key);
+    setFocusedKey(null);
+    setHistory(previous => pushGraphVisit(previous, created));
+    requestCenter(created);
   }
   function jumpToGroup(id: string) {
     navigate({ kind: "group", key: id });
