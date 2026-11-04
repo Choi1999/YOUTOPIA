@@ -184,6 +184,9 @@ export function ChannelSelectionResult({
                 {aggregate.topics.map(topic => (
                   <li key={topic.topicId}>
                     <strong>{topic.topicId} · {topic.mentionCount}건</strong>
+                    <Link to={"/analysis/youtube/topics?topic=" + encodeURIComponent(topic.topicId) + "&channel=" + selection.channelId}>
+                      {topic.topicId} 주제 상세 탐색
+                    </Link>
                     <ul aria-label={topic.topicId + " 영상별 기여도"}>
                       {topic.perVideo.map(part => (
                         <li key={part.videoId}>
@@ -245,6 +248,7 @@ export function ChannelAnalysisPage() {
         <p>선정 영상 범위에 한정된 합성 데모입니다. 실제 채널 전체 반응이 아닙니다.</p>
         <nav className="channel-analysis__nav" aria-label="채널 화면 탐색">
           <Link to="/analysis/youtube/compare">영상 비교 목록으로 이동</Link>
+          <Link to="/analysis/youtube/channels/compare">합성 채널 A/B 비교</Link>
         </nav>
       </header>
       {!target ? (

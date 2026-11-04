@@ -52,7 +52,7 @@ describe("YU-44 — registered synthetic channel selection only", () => {
   });
 
   it("valid but unregistered channel must not invent data", () => {
-    renderPage("/analysis/youtube/channel/UC" + "B".repeat(22));
+    renderPage("/analysis/youtube/channel/UC" + "Z".repeat(22));
     expect(screen.getByRole("heading", { name: "채널 분석 데이터 미제공" }))
       .toBeInTheDocument();
     expect(screen.queryByRole("list", { name: "채널의 선정 영상 목록" }))
@@ -223,7 +223,7 @@ describe("YU-44 — registered synthetic channel selection only", () => {
   });
 
   it("YU-46: unrelated channel query on video detail never gets return link", async () => {
-    renderPage("/analysis/youtube/video/Ab0_-123xyz?channel=UC" + "B".repeat(22));
+    renderPage("/analysis/youtube/video/Ab0_-123xyz?channel=UC" + "Z".repeat(22));
     expect(await screen.findByRole("heading", { name: "영상 상세 분석" }))
       .toBeInTheDocument();
     expect(screen.queryByRole("link", {

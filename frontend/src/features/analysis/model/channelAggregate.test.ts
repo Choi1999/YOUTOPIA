@@ -72,14 +72,14 @@ describe("YU-45 — registered synthetic channel aggregation", () => {
   });
 
   it("does not assign arbitrary channel IDs or unregistered video IDs to channel", () => {
-    expect(getDemoChannelSelection("UC" + "B".repeat(22))).toBeNull();
+    expect(getDemoChannelSelection("UC" + "Z".repeat(22))).toBeNull();
     expect(belongsToDemoChannelSelection(demoChannelSelection.channelId, "Zb0_-123xyz"))
       .toBe(false);
     expect(belongsToDemoChannelSelection(demoChannelSelection.channelId, "Ab0_-123xyz"))
       .toBe(true);
     expect(aggregateSyntheticChannelSelection({
       ...demoChannelSelection,
-      channelId: "UC" + "B".repeat(22),
+      channelId: "UC" + "Z".repeat(22),
     }, [a, b])).toEqual({
       kind: "BLOCKED", reason: "UNREGISTERED_CHANNEL",
     });

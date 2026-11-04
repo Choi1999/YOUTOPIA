@@ -12,7 +12,7 @@ const VIDEO_B="Ab0_-123xyZ";
 const CHANNEL="UC"+"a".repeat(22);
 const DOM_IDS=[
   "selection-status","selection-details","selection-kind","selection-id",
-  "web-analysis-link","demo-preview","demo-scope","demo-sample",
+  "web-analysis-link","demo-preview","demo-scope","demo-sample","demo-web-availability",
   "demo-briefing","demo-sentiment-bar","demo-topics",
   "demo-positive","demo-neutral","demo-negative",
   "demo-bar-positive","demo-bar-neutral","demo-bar-negative",
@@ -115,6 +115,7 @@ test("YU33-01 Side Panel visibly shows the pinned VIDEO's synthetic summary only
   assert.match(f.get("demo-sentiment-bar").getAttribute("aria-label"),/가상 감성 분포/);
   assert.equal(f.get("web-analysis-link").hidden,false);
   assert.match(f.get("web-analysis-link").href,/\/analysis\/youtube\/video\/Ab0_-123xyz$/);
+  assert.match(f.get("demo-web-availability").textContent,/웹에는 별도의 검증된 합성 fixture/);
   assert.equal(f.panel.getRuntimeStatus().previewVisible,true);
   assert.equal(f.panel.getRuntimeStatus().previewTab,"overview");
   f.panel.dispose();
@@ -150,6 +151,7 @@ test("YU33-03 selection change and EMPTY response clear old preview and web navi
   f.setReply(f.response("VIDEO",VIDEO_B));
   await f.panel.refresh();
   assert.equal(f.get("demo-preview").hidden,false);
+  assert.match(f.get("demo-web-availability").textContent,/웹에 등록된 분석 자료가 없습니다/);
   assert.equal(f.get("demo-panel-overview").hidden,false,"new target resets to overview");
   assert.equal(f.get("demo-sample").textContent,
     f.model.mockForTarget({targetType:"VIDEO",targetId:VIDEO_B}).sampleLabel+" · "+
@@ -159,6 +161,7 @@ test("YU33-03 selection change and EMPTY response clear old preview and web navi
   await f.panel.refresh();
   assert.equal(f.get("demo-preview").hidden,true);
   assert.equal(f.get("demo-sample").textContent,"");
+  assert.equal(f.get("demo-web-availability").textContent,"");
   assert.equal(f.get("demo-topics").children.length,0);
   assert.equal(f.get("demo-bar-positive").style.width,"0%");
   assert.equal(f.get("web-analysis-link").hidden,true);
@@ -218,9 +221,24 @@ test("YU33-07 actual browser panel loads deterministic model and accessible tabs
     html.indexOf('src="sidepanel.js"'));
   assert.match(html,/id="demo-preview"/);
   assert.equal((html.match(/role="tab"/g)||[]).length,3);
-  assert.match(html,/DEMO · 가상 수치 · 실제 YouTube 댓글 분석이 아닙니다/);
+  assert.match(html,/DEMO · ILLUSTRATIVE_ONLY · 가상 수치 · 실제 YouTube 댓글 분석이 아닙니다/);
   assert.match(html,/추이 데이터는 아직 제공되지 않습니다/);
   assert.doesNotMatch(js,/\bfetch\s*\(|XMLHttpRequest|innerHTML/);
   assert.match(js,/pin\.source !== "STATIC_FIXTURE"/);
   assert.match(js,/valueSemantics !== "ILLUSTRATIVE_ONLY"/);
+});
+
+test("YU49-01 separate VIDEO/CHANNEL availability labels follow exact registered fixture IDs",async()=>{
+  const f=harness();
+  const CHANNEL_A="UC"+"A".repeat(22);
+  f.setReply(f.response("CHANNEL",CHANNEL_A));
+  await f.panel.refresh();
+  assert.match(f.get("demo-web-availability").textContent,/웹에는 별도의 검증된 합성 fixture/);
+  f.setReply(f.response("CHANNEL","UC"+"Z".repeat(22)));
+  await f.panel.refresh();
+  assert.match(f.get("demo-web-availability").textContent,/웹에 등록된 분석 자료가 없습니다/);
+  f.setReply(f.empty());
+  await f.panel.refresh();
+  assert.equal(f.get("demo-web-availability").textContent,"");
+  f.panel.dispose();
 });
