@@ -47,7 +47,10 @@ describe("UI-R04-I — repository audit retained without consumer panel exposure
     expect(screen.queryByRole("region",{name:"채널 실조회 준비 상태"}))
       .not.toBeInTheDocument();
     expect(screen.queryByText("0/8")).not.toBeInTheDocument();
-    expect(screen.queryByText("BLOCKED")).not.toBeInTheDocument();
+    // BLOCKED remains a legitimate analysis-status filter option in the
+    // consumer catalogue; only the *operator readiness dashboard* is gone.
+    expect(screen.queryByRole("heading",{name:"실조회 준비 상태"}))
+      .not.toBeInTheDocument();
     expect(screen.queryByText("POLICY_HOLD")).not.toBeInTheDocument();
     expect(screen.queryByRole("button",{name:/필수 증빙 8항목/}))
       .not.toBeInTheDocument();

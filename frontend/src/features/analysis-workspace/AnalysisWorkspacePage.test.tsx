@@ -133,6 +133,10 @@ describe("YU-50~52 — integrated synthetic analysis workspace", () => {
     };
     show(repo);
     expect(screen.getByRole("combobox", {name:"영상 B"})).toHaveValue("Qb0_-123xyz");
+    const user = userEvent.setup();
+    expect(screen.queryByRole("region", {name:"영상 근거 상세"}))
+      .not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", {name:"데이터 범위 보기"}));
     const video = screen.getByRole("region", {name:"영상 근거 상세"});
     expect(await within(video).findByText(/근거 검증 제한: NOT_FOUND/))
       .toBeInTheDocument();
