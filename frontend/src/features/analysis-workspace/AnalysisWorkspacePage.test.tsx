@@ -13,10 +13,13 @@ import { ANALYSIS_WORKSPACE_SESSION_KEY } from "./analysisWorkspaceSession";
 const A = demoChannelSelections[0].channelId;
 const B = demoChannelSelections[1].channelId;
 
-function show(repo: AnalysisRepository = demoAnalysisRepository) {
+function show(
+  repo: AnalysisRepository = demoAnalysisRepository,
+  path = "/analysis/youtube/workspace",
+) {
   return render(
     <AnalysisRepositoryProvider repository={repo}>
-      <MemoryRouter initialEntries={["/analysis/youtube/workspace"]}>
+      <MemoryRouter initialEntries={[path]}>
         <Routes>
           <Route path="/analysis/youtube/workspace" element={<AnalysisWorkspacePage />} />
         </Routes>
@@ -79,6 +82,25 @@ describe("YU-50~52 — integrated synthetic analysis workspace", () => {
     expect(screen.getByRole("combobox", {name:"채널 B"})).toHaveValue(B);
   });
 
+  it("allows bounded UTM but rejects unknown, duplicated, or malformed URL query", () => {
+    const start = "/analysis/youtube/workspace";
+    for (const query of [
+      "?token=secret",
+      "?utm_custom=x",
+      "?utm_source=",
+      "?utm_source=one&utm_source=two",
+    ]) {
+      const view = show(demoAnalysisRepository, start + query);
+      expect(screen.getByRole("alert")).toHaveTextContent(/지원하지 않는 URL/);
+      expect(screen.queryByRole("navigation", {name:"분석 바로가기"}))
+        .not.toBeInTheDocument();
+      view.unmount();
+    }
+    show(demoAnalysisRepository, start + "?utm_source=chatgpt.com");
+    expect(screen.getByRole("link", {name:"영상 A/B 비교 화면"}))
+      .toBeInTheDocument();
+  });
+
   it("rejects corrupt/unregistered state and blocks missing evidence", async () => {
     sessionStorage.setItem(ANALYSIS_WORKSPACE_SESSION_KEY, JSON.stringify({
       version:1, savedAt:Date.now(), videoIds:["Ab0_-123xyz","unknown"],
@@ -94,5 +116,6 @@ describe("YU-50~52 — integrated synthetic analysis workspace", () => {
       .toBeInTheDocument();
     expect(within(video).queryByText("120건")).not.toBeInTheDocument();
     expect(sessionStorage.getItem(ANALYSIS_WORKSPACE_SESSION_KEY)).toContain("BAD");
+    expect(screen.getByRole("status", {name:""})).toHaveTextContent(/이전 세션이 만료되었거나/);
   });
 });

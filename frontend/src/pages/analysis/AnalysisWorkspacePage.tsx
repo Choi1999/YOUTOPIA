@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import { demoChannelSelections } from "../../features/analysis/data/demoChannelSelection";
+import { withoutAllowedUtmTracking } from "../../features/analysis-target/analysisQueryTracking";
 import {
+  ANALYSIS_WORKSPACE_SESSION_KEY,
   ANALYSIS_WORKSPACE_TOPICS,
   buildWorkspacePaths,
   clearWorkspaceSession,
@@ -36,14 +38,31 @@ function getTabStorage(): Storage | null {
  * YU-51: Only bounded synthetic IDs and selection order enter sessionStorage.
  * YU-52: All metrics are delegated to verified existing repository projections.
  */
+function loadInitialSession(): { value: AnalysisWorkspaceSession; status: string } {
+  const storage = getTabStorage();
+  const restored = readWorkspaceSession(storage);
+  if (restored) return {
+    value: restored,
+    status: "유효한 이전 작업 세션을 복원했습니다. 이 탭에서 계속 편집할 수 있습니다.",
+  };
+  let existing = false;
+  try { existing = storage?.getItem(ANALYSIS_WORKSPACE_SESSION_KEY) != null; }
+  catch { /* A disabled storage never becomes a trusted session. */ }
+  return {
+    value: createDefaultWorkspaceSession(),
+    status: existing
+      ? "이전 세션이 만료되었거나 검증에 실패해 복원하지 않았습니다. 등록 합성 기본값만 표시합니다."
+      : "등록된 합성 데모만 선택할 수 있습니다. 변경은 이 탭의 임시 세션에 보관됩니다.",
+  };
+}
+
 export function AnalysisWorkspacePage() {
-  const [session, setSession] = useState<AnalysisWorkspaceSession>(
-    () => readWorkspaceSession(getTabStorage()) ?? createDefaultWorkspaceSession(),
-  );
-  const [feedback, setFeedback] = useState(
-    "등록된 합성 데모만 선택할 수 있습니다. 선택 변경은 이 탭의 임시 세션에 보관됩니다.",
-  );
+  const location = useLocation();
+  const [initial] = useState(loadInitialSession);
+  const [session, setSession] = useState<AnalysisWorkspaceSession>(initial.value);
+  const [feedback, setFeedback] = useState(initial.status);
   const paths = buildWorkspacePaths(session);
+  const safeQuery = withoutAllowedUtmTracking(new URLSearchParams(location.search));
 
   function persist(next: AnalysisWorkspaceSession) {
     setSession(next);
@@ -97,6 +116,22 @@ export function AnalysisWorkspacePage() {
     setFeedback(removed
       ? "작업 세션을 삭제했습니다. 등록 합성 데모의 기본 선택만 표시합니다."
       : "저장소의 삭제 여부를 확인할 수 없습니다. 화면은 기본 선택으로 초기화했습니다.");
+  }
+
+  // The workspace has no application query contract. Never silently discard
+  // unknown/duplicate parameters and show the default demo as if valid.
+  // Recognized bounded UTM attribution is the only permitted exception.
+  if (!safeQuery || [...safeQuery.keys()].length > 0) {
+    return (
+      <div className="product-screen analysis-workspace">
+        <header className="product-heading"><h1>통합 분석 워크스페이스</h1></header>
+        <section className="analysis-workspace__panel">
+          <p role="alert">지원하지 않는 URL 매개변수입니다.
+            분석 구성은 URL에서 복원하지 않으며 임의 매개변수를 무시하지 않습니다.</p>
+          <Link to="/analysis/youtube/workspace">기본 워크스페이스로 이동</Link>
+        </section>
+      </div>
+    );
   }
 
   return (
