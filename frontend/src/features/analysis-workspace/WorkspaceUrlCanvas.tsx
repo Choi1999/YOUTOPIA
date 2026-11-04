@@ -1,9 +1,10 @@
 import {
-  useRef, useState,
+  useEffect, useRef, useState,
   type CSSProperties, type FormEvent, type KeyboardEvent, type PointerEvent,
 } from "react";
 import "./workspace-url.css";
 import "./workspace-groups.css";
+import "./workspace-navigation.css";
 import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import {
@@ -17,6 +18,11 @@ import {
   moveWorkspaceNodeGroup, renameWorkspaceNodeGroup,
   type WorkspaceNodeGroup, type WorkspaceNodeGroupColor,
 } from "./workspaceNodeGroups";
+import {
+  EMPTY_GRAPH_HISTORY, centeredGraphPan, graphVisitExists,
+  pushGraphVisit, searchWorkspaceGraph, stepGraphHistory,
+  type GraphHistory, type GraphVisit,
+} from "./workspaceGraphNavigation";
 
 const PER_VIEW = 24;
 type Unit =
@@ -119,6 +125,15 @@ export function WorkspaceUrlCanvas({
     offsetX: number; offsetY: number; moved: boolean;
   } | null>(null);
   const skipGroupClick = useRef<string | null>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const jumpSequence = useRef(0);
+  const suppressedDockFocus = useRef<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [history, setHistory] = useState<GraphHistory>(EMPTY_GRAPH_HISTORY);
+  const [centerRequest, setCenterRequest] = useState<
+    Readonly<{ visit: GraphVisit; sequence: number }> | null
+  >(null);
+  const [minimapOpen, setMinimapOpen] = useState(true);
 
   const units = graphUnits(targets, groups);
   const groupedKeys = new Set(groups.flatMap(group => group.memberKeys));
@@ -132,19 +147,108 @@ export function WorkspaceUrlCanvas({
     unit.kind === "group" && unit.group.id === jumpGroupId);
   // The focus dock continues to locate an item on its page, including
   // a member of a collapsed group. Group search can jump across pages.
-  const safePage = controlledKey !== undefined && focusedUnitIndex >= 0
+  const safePage = focusedKey != null && focusedUnitIndex >= 0
     ? Math.floor(focusedUnitIndex / PER_VIEW)
     : jumpedIndex >= 0 ? Math.floor(jumpedIndex / PER_VIEW)
     : Math.min(page, totalPages - 1);
   const visible = units.slice(safePage * PER_VIEW, (safePage + 1) * PER_VIEW);
   const focused = targetMap.get(focusedKey ?? "") ?? null;
+  const searchHits = searchWorkspaceGraph(targets, groups, searchQuery);
+  const searchTargetKeys = new Set(
+    searchHits.filter(hit => hit.kind === "target").map(hit => hit.key),
+  );
+  const searchGroupKeys = new Set(
+    searchHits.filter(hit => hit.kind === "group").map(hit => hit.key),
+  );
+  const currentVisit: GraphVisit | null = focusedKey && targetMap.has(focusedKey)
+    ? { kind: "target", key: focusedKey }
+    : jumpGroupId && groups.some(group => group.id === jumpGroupId)
+    ? { kind: "group", key: jumpGroupId } : null;
+  const isValidVisit = (visit: GraphVisit) => graphVisitExists(visit, targets, groups);
+  const backward = stepGraphHistory(history, -1, isValidVisit);
+  const forward = stepGraphHistory(history, 1, isValidVisit);
   const matches = groups.filter(group => {
     const q = groupSearch.trim().toLocaleLowerCase("ko-KR");
     return !q || group.name.toLocaleLowerCase("ko-KR").includes(q) ||
       group.memberKeys.some(key => key.toLocaleLowerCase("ko-KR").includes(q));
   });
 
+  useEffect(() => {
+    // The fullscreen dock can select a node without using the canvas controls.
+    if (controlledKey == null) {
+      suppressedDockFocus.current = null;
+      return;
+    }
+    if (!targets.some(target => workspaceUrlTargetKey(target) === controlledKey))
+      return;
+    if (suppressedDockFocus.current === controlledKey) {
+      suppressedDockFocus.current = null;
+      return;
+    }
+    const visit: GraphVisit = { kind: "target", key: controlledKey };
+    setHistory(previous => pushGraphVisit(previous, visit));
+    setCenterRequest({ visit, sequence: ++jumpSequence.current });
+  }, [controlledKey, targets]);
+
+  useEffect(() => {
+    const visit = centerRequest?.visit;
+    if (!visit) return;
+    const index = visible.findIndex(unit => visit.kind === "group"
+      ? unit.kind === "group" && unit.group.id === visit.key
+      : unit.kind === "target" && unit.key === visit.key ||
+        unit.kind === "group" && unit.group.memberKeys.includes(visit.key));
+    if (index < 0) return;
+    const unit = visible[index];
+    const point = positions(index, visible.length);
+    let offset = { x: 0, y: 0 };
+    if (unit.kind === "group") {
+      offset = { x: unit.group.offsetX, y: unit.group.offsetY };
+      if (visit.kind === "target") {
+        const childIndex = unit.group.memberKeys.indexOf(visit.key);
+        if (childIndex >= 0) {
+          const child = childPosition(childIndex);
+          offset = { x: offset.x + child.x, y: offset.y + child.y };
+        }
+      }
+    }
+    const box = viewportRef.current?.getBoundingClientRect();
+    setPan(centeredGraphPan(
+      point, box?.width ?? 0, box?.height ?? 0, zoom, offset,
+    ));
+  }, [centerRequest, safePage]);
+
   if (!targets.length) return null;
+
+  function requestCenter(visit: GraphVisit) {
+    setCenterRequest({ visit, sequence: ++jumpSequence.current });
+  }
+
+  function navigate(visit: GraphVisit, remember = true) {
+    if (!graphVisitExists(visit, targets, groups)) return;
+    if (remember) setHistory(previous => pushGraphVisit(previous, visit));
+    if (visit.kind === "target") {
+      suppressedDockFocus.current = visit.key;
+      setJumpGroupId(null);
+      setFocusedKey(visit.key);
+    } else {
+      setFocusedKey(null);
+      setJumpGroupId(visit.key);
+    }
+    requestCenter(visit);
+  }
+
+  function replayNavigation(direction: -1 | 1) {
+    const next = stepGraphHistory(history, direction, isValidVisit);
+    if (!next) return;
+    setHistory(next.history);
+    navigate(next.visit, false);
+  }
+
+  function changeSearch(value: string) {
+    setSearchQuery(value);
+    const first = searchWorkspaceGraph(targets, groups, value)[0];
+    if (first) navigate({ kind: first.kind, key: first.key }, false);
+  }
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
     if (event.target !== event.currentTarget || event.button !== 0) return;
@@ -170,11 +274,13 @@ export function WorkspaceUrlCanvas({
   function fit() {
     setZoom(1); setPan({ x: 0, y: 0 }); setFocusedKey(null);
     setJumpGroupId(null);
+    setCenterRequest(null);
   }
   function changePage(direction: number) {
     setPage(value => Math.max(0, Math.min(totalPages - 1, safePage + direction)));
     setJumpGroupId(null);
     setFocusedKey(null);
+    setCenterRequest(null);
   }
   function switchChoice(key: string) {
     setPicked(current => current.includes(key)
@@ -188,14 +294,10 @@ export function WorkspaceUrlCanvas({
     updateGroups(next);
     setPicked([]); setSelectionMode(false); setNewName("");
     setGroupPanel(true);
-    setJumpGroupId(next[next.length - 1].id);
-    setFocusedKey(null);
+    navigate({ kind: "group", key: next[next.length - 1].id });
   }
   function jumpToGroup(id: string) {
-    setJumpGroupId(id);
-    setFocusedKey(null);
-    const index = units.findIndex(unit => unit.kind === "group" && unit.group.id === id);
-    if (index >= 0) setPage(Math.floor(index / PER_VIEW));
+    navigate({ kind: "group", key: id });
   }
   function beginGroupDrag(group: WorkspaceNodeGroup, event: PointerEvent<HTMLButtonElement>) {
     if (event.button !== 0) return;
@@ -261,7 +363,8 @@ export function WorkspaceUrlCanvas({
         className={"workspace-url-canvas__node " +
           (target.kind === "VIDEO" ? "is-video" : "is-channel") +
           (selected ? " is-focused" : "") +
-          (pickedForGroup ? " is-group-picked" : "")}
+          (pickedForGroup ? " is-group-picked" : "") +
+          (searchTargetKeys.has(key) ? " is-search-hit" : "")}
         aria-pressed={selectionMode ? pickedForGroup : selected}
         aria-label={selectionMode
           ? (grouped ? "그룹에 포함된 " : "그룹용 ") + kindLabel(target) +
@@ -271,7 +374,8 @@ export function WorkspaceUrlCanvas({
         style={{ left, top }}
         onClick={() => {
           if (selectionMode) switchChoice(key);
-          else { setJumpGroupId(null); setFocusedKey(selected ? null : key); }
+          else if (selected) { setFocusedKey(null); setCenterRequest(null); }
+          else navigate({ kind: "target", key });
         }}
         title={target.id}>
         <span className="workspace-url-canvas__node-bubble" aria-hidden="true">
@@ -288,6 +392,17 @@ export function WorkspaceUrlCanvas({
       <div className="workspace-url-canvas__toolbar">
         <span>EXPLORER / {targets.length} UNVERIFIED TARGETS</span>
         <div className="workspace-url-canvas__tools">
+          <button type="button" aria-label="이전 탐색"
+            disabled={!backward} onClick={() => replayNavigation(-1)}>←</button>
+          <button type="button" aria-label="다음 탐색"
+            disabled={!forward} onClick={() => replayNavigation(1)}>→</button>
+          <button type="button" aria-label="선택 중심 맞춤"
+            disabled={!currentVisit} onClick={() => {
+              if (currentVisit) requestCenter(currentVisit);
+            }}>선택 중심</button>
+          <button type="button" aria-label="미니맵"
+            aria-pressed={minimapOpen}
+            onClick={() => setMinimapOpen(value => !value)}>미니맵</button>
           <button type="button" aria-label="그래프 축소"
             onClick={() => setZoom(x => Math.max(.6, Math.round((x - .2) * 10) / 10))}>−</button>
           <button type="button" aria-label="그래프 확대"
@@ -302,6 +417,36 @@ export function WorkspaceUrlCanvas({
             그룹 {groups.length}개
           </button>
         </div>
+      </div>
+      <div className="workspace-url-canvas__unified-search">
+        <label htmlFor={controlledKey === undefined
+          ? "workspace-search-hero" : "workspace-search-focus"}>
+          영상·채널·그룹 통합 검색
+        </label>
+        <input id={controlledKey === undefined
+          ? "workspace-search-hero" : "workspace-search-focus"}
+          type="search" aria-label="그래프 통합 검색"
+          maxLength={80} value={searchQuery}
+          onChange={event => changeSearch(event.target.value)}
+          placeholder="영상 ID · 채널 ID/핸들 · 그룹 이름"/>
+        {searchQuery.trim() !== "" && (
+          <div className="workspace-url-canvas__search-results"
+            role="region" aria-label="통합 검색 결과">
+            <span>검색 결과 {searchHits.length}개
+              {searchHits.length > 8 ? " · 상위 8개 표시" : ""}
+            </span>
+            {searchHits.length === 0 && <span>일치하는 등록 대상이 없습니다.</span>}
+            {searchHits.slice(0, 8).map(hit =>
+              <button key={hit.kind + ":" + hit.key} type="button"
+                aria-label={"검색 결과 " +
+                  (hit.kind === "group" ? "그룹 " : "대상 ") + hit.label + " 이동"}
+                onClick={() => navigate({ kind: hit.kind, key: hit.key })}>
+                <strong>{hit.label}</strong>
+                <small>{hit.detail}</small>
+              </button>,
+            )}
+          </div>
+        )}
       </div>
       {selectionMode && (
         <form className="workspace-url-canvas__group-create" onSubmit={createGroup}>
@@ -387,7 +532,7 @@ export function WorkspaceUrlCanvas({
           <p>그룹은 사용자가 화면을 정리한 결과이며, 영상·채널의 실제 연결 관계가 아닙니다.</p>
         </div>
       )}
-      <div className="workspace-url-canvas__viewport"
+      <div ref={viewportRef} className="workspace-url-canvas__viewport"
         onPointerDown={handlePointerDown} onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp}
         aria-label="노드 탐색 캔버스">
@@ -404,10 +549,13 @@ export function WorkspaceUrlCanvas({
             }
             const group = unit.group;
             const expanded = !group.collapsed || (focusedKey != null &&
-              controlledKey !== undefined && group.memberKeys.includes(focusedKey));
+              group.memberKeys.includes(focusedKey));
             return (
               <div key={group.id}
-                className={"workspace-url-canvas__cluster is-" + group.color}
+                className={"workspace-url-canvas__cluster is-" + group.color +
+                  (searchGroupKeys.has(group.id) ||
+                    group.memberKeys.some(key => searchTargetKeys.has(key))
+                    ? " is-search-hit" : "")}
                 data-group={group.id}
                 style={{
                   left: point.x + "%", top: point.y + "%",
@@ -439,6 +587,41 @@ export function WorkspaceUrlCanvas({
             );
           })}
         </div>
+        {minimapOpen && (
+          <div className="workspace-url-canvas__minimap"
+            role="region" aria-label="그래프 미니맵">
+            <strong>미니맵 · {safePage + 1}/{totalPages}</strong>
+            <div className="workspace-url-canvas__minimap-plane">
+              {visible.map((unit, index) => {
+                const point = positions(index, visible.length);
+                const active = unit.kind === "target"
+                  ? unit.key === focusedKey
+                  : unit.group.id === jumpGroupId ||
+                    focusedKey != null && unit.group.memberKeys.includes(focusedKey);
+                return (
+                  <button key={unit.key} type="button"
+                    className={"workspace-url-canvas__minimap-pin" +
+                      (unit.kind === "group" ? " is-group" : "") +
+                      (active ? " is-active" : "") +
+                      (searchTargetKeys.has(unit.key) ||
+                        unit.kind === "group" &&
+                        (searchGroupKeys.has(unit.key) ||
+                         unit.group.memberKeys.some(key => searchTargetKeys.has(key)))
+                        ? " is-search-hit" : "")}
+                    aria-label={"미니맵 " +
+                      (unit.kind === "group" ? "그룹 " + unit.group.name :
+                        kindLabel(unit.target) + " " + unit.target.id) + " 이동"}
+                    title={unit.kind === "group" ? unit.group.name : unit.target.id}
+                    style={{ left: point.x + "%", top: point.y + "%" }}
+                    onClick={() => navigate(unit.kind === "group"
+                      ? { kind: "group", key: unit.group.id }
+                      : { kind: "target", key: unit.key })}/>
+                );
+              })}
+            </div>
+            <small>이 페이지의 탐색 단위 · 클릭해 중심 이동</small>
+          </div>
+        )}
       </div>
       <div className="workspace-url-canvas__bottom">
         <p>{selectionMode
