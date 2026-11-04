@@ -5,6 +5,7 @@ import { demoChannelSelections } from "../../features/analysis/data/demoChannelS
 import { WorkspaceDiscoveryPanels } from "../../features/analysis-workspace/WorkspaceDiscoveryPanels";
 import { WorkspaceHero } from "../../features/analysis-workspace/WorkspaceHero";
 import { WorkspaceUrlTargetBoard } from "../../features/analysis-workspace/WorkspaceUrlTargetBoard";
+import { WorkspaceChannelPreflightPanel } from "../../features/analysis-workspace/WorkspaceChannelPreflightPanel";
 import { ApprovedChannelProfileCache } from "../../features/analysis-workspace/workspaceChannelProfile";
 import {
   addWorkspaceUrlTargets, clearWorkspaceUrlTargets, readWorkspaceUrlTargets,
@@ -188,6 +189,7 @@ export function AnalysisWorkspacePage() {
       <WorkspaceUrlTargetBoard targets={urlTargets} onRemove={removeUrlTarget}
         onClear={clearUrlTargetList} allowVideoImage={allowVideoImage}
         channelProfiles={channelProfiles} />
+      <WorkspaceChannelPreflightPanel targets={urlTargets} />
 
       <div className="analysis-workspace__layout">
         <div className="analysis-workspace__main">
