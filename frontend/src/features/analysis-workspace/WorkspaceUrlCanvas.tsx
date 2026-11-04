@@ -458,7 +458,7 @@ export function WorkspaceUrlCanvas({
       </div>
       <p className="workspace-url-canvas__disclaimer">
         2.5D 탐색 그래프입니다. 사용자 그룹은 개인적인 공간 정리일 뿐,
-        실데이터 분석이나 영상·채널 연결 관계의 증거가 아닙니다.
+        실데이터 분석이나 연결 관계의 증거가 아닙니다.
       </p>
     </section>
   );
