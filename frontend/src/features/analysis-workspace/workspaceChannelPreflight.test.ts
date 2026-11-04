@@ -1,5 +1,9 @@
 import {describe,expect,it} from "vitest";
-import {addWorkspaceUrlTargets} from "./workspaceUrlTargets";
+import {
+  addWorkspaceUrlTargets,
+  WORKSPACE_MAX_URL_BATCH,
+  type WorkspaceUrlTarget,
+} from "./workspaceUrlTargets";
 import {
   CHANNEL_PREFLIGHT_GATE, CHANNEL_PREFLIGHT_REVIEW_BUDGET,
   planOfflineChannelMetadata, simulateChannelListResponse,
@@ -8,8 +12,16 @@ import {
 
 const ID="UC"+"A".repeat(22);
 const OTHER="UC"+"B".repeat(22);
-function registered(...raws:string[]) {
-  return addWorkspaceUrlTargets([],raws.join("\n"),1_000).targets;
+function registered(...raws:string[]): readonly WorkspaceUrlTarget[] {
+  // Match the existing intake contract: at most 32 URLs in a single batch.
+  // The preflight covers the complete per-tab collection assembled over time.
+  let current: readonly WorkspaceUrlTarget[] = [];
+  for(let start=0;start<raws.length;start+=WORKSPACE_MAX_URL_BATCH) {
+    current=addWorkspaceUrlTargets(
+      current,raws.slice(start,start+WORKSPACE_MAX_URL_BATCH).join("\n"),1_000,
+    ).targets;
+  }
+  return current;
 }
 function idUrl(id:string) {
   return "https://www.youtube.com/channel/"+id;
