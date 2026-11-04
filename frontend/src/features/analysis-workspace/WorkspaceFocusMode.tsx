@@ -8,6 +8,7 @@ import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
 import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
 import { WorkspaceChannelIdentity } from "./WorkspaceChannelIdentity";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
+import type { WorkspaceNodeGroup } from "./workspaceNodeGroups";
 import {
   workspaceUrlTargetKey,
   type WorkspaceUrlIngestResult, type WorkspaceUrlTarget,
@@ -28,6 +29,8 @@ type Props = Readonly<{
   allowVideoImage?: boolean;
   onToggleVideoImage?: () => void;
   channelProfiles?: ApprovedChannelProfileCache;
+  groups?: readonly WorkspaceNodeGroup[];
+  onGroupsChange?: (groups: readonly WorkspaceNodeGroup[]) => void;
 }>;
 
 function focusStorage(): Storage | null {
@@ -50,6 +53,7 @@ function kindLabel(kind: WorkspaceUrlTarget["kind"]) {
 export function WorkspaceFocusMode({
   targets, onAddUrls, onRemove, onExit,
   allowVideoImage = false, onToggleVideoImage, channelProfiles,
+  groups = [], onGroupsChange,
 }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const exitRef = useRef<HTMLButtonElement>(null);
@@ -381,7 +385,10 @@ export function WorkspaceFocusMode({
                         allowVideoImage={allowVideoImage} channelProfiles={channelProfiles}/>
                       <strong>{target.id}</strong>
                     </span>
-                    <span>{kindLabel(target.kind)} · 미확인</span>
+                    <span>{kindLabel(target.kind)} · 미확인
+                      {groups.find(group => group.memberKeys.includes(key))
+                        ? " · 사용자 그룹" : ""}
+                    </span>
                     <WorkspaceChannelIdentity target={target} profiles={channelProfiles} compact/>
                   </button>
                 );
@@ -405,7 +412,8 @@ export function WorkspaceFocusMode({
         <div className="workspace-focus__graph" aria-label="중앙 그래프 탐색 영역">
           <WorkspaceUrlCanvas targets={targets} focusedKey={selectedKey}
             onFocusChange={focusTarget} allowVideoImage={allowVideoImage}
-            channelProfiles={channelProfiles}/>
+            channelProfiles={channelProfiles} groups={groups}
+            onGroupsChange={onGroupsChange}/>
         </div>
         {detailOpen && (
           <div className="workspace-focus__splitter workspace-focus__splitter--detail"
