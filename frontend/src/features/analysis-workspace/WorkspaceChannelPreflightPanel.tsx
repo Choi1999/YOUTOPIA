@@ -4,6 +4,7 @@ import {
   CHANNEL_PREFLIGHT_REVIEW_BUDGET,
 } from "./workspaceChannelPreflight";
 import type { WorkspaceUrlTarget } from "./workspaceUrlTargets";
+import { WorkspaceChannelReadinessReview } from "./WorkspaceChannelReadinessReview";
 import "./workspace-preflight.css";
 
 /**
@@ -76,6 +77,7 @@ export function WorkspaceChannelPreflightPanel({
           </p>
         </div>
       )}
+      <WorkspaceChannelReadinessReview targets={targets}/>
     </section>
   );
 }
