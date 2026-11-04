@@ -5,6 +5,7 @@ import { demoChannelSelections } from "../../features/analysis/data/demoChannelS
 import { WorkspaceDiscoveryPanels } from "../../features/analysis-workspace/WorkspaceDiscoveryPanels";
 import { WorkspaceHero } from "../../features/analysis-workspace/WorkspaceHero";
 import { WorkspaceUrlTargetBoard } from "../../features/analysis-workspace/WorkspaceUrlTargetBoard";
+import { ApprovedChannelProfileCache } from "../../features/analysis-workspace/workspaceChannelProfile";
 import {
   addWorkspaceUrlTargets, clearWorkspaceUrlTargets, readWorkspaceUrlTargets,
   workspaceUrlTargetKey, writeWorkspaceUrlTargets,
@@ -75,6 +76,9 @@ export function AnalysisWorkspacePage() {
   );
   // Explicit per-page opt-in; never persisted or inferred from URL registration.
   const [allowVideoImage, setAllowVideoImage] = useState(false);
+  // Empty until a separately authorized, reviewed channel metadata reader exists.
+  // The cache is in-memory only and never triggers network calls.
+  const [channelProfiles] = useState(() => new ApprovedChannelProfileCache());
   const paths = buildWorkspacePaths(session);
   const safeQuery = withoutAllowedUtmTracking(new URLSearchParams(location.search));
 
@@ -179,9 +183,11 @@ export function AnalysisWorkspacePage() {
     <div className="product-screen analysis-workspace">
       <WorkspaceHero targets={urlTargets} onAddUrls={addUrlTargets}
         onRemoveTarget={removeUrlTarget} allowVideoImage={allowVideoImage}
-        onToggleVideoImage={() => setAllowVideoImage(enabled => !enabled)} />
+        onToggleVideoImage={() => setAllowVideoImage(enabled => !enabled)}
+        channelProfiles={channelProfiles} />
       <WorkspaceUrlTargetBoard targets={urlTargets} onRemove={removeUrlTarget}
-        onClear={clearUrlTargetList} allowVideoImage={allowVideoImage} />
+        onClear={clearUrlTargetList} allowVideoImage={allowVideoImage}
+        channelProfiles={channelProfiles} />
 
       <div className="analysis-workspace__layout">
         <div className="analysis-workspace__main">

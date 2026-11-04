@@ -1,6 +1,8 @@
 import {useState} from "react";
 import "./workspace-url.css";
 import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
+import { WorkspaceChannelIdentity } from "./WorkspaceChannelIdentity";
+import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import type {WorkspaceUrlTarget} from "./workspaceUrlTargets";
 import {workspaceUrlTargetKey} from "./workspaceUrlTargets";
 
@@ -11,6 +13,7 @@ type Props=Readonly<{
   onRemove: (key:string)=>void;
   onClear:()=>void;
   allowVideoImage?: boolean;
+  channelProfiles?: ApprovedChannelProfileCache;
 }>;
 
 function name(kind: WorkspaceUrlTarget["kind"]) {
@@ -24,7 +27,7 @@ function name(kind: WorkspaceUrlTarget["kind"]) {
  * Selecting a card enlarges its footprint if there is enough room.
  * The collection is separate from the two synthetic A/B comparison slots.
  */
-export function WorkspaceUrlTargetBoard({targets,onRemove,onClear,allowVideoImage = false}:Props) {
+export function WorkspaceUrlTargetBoard({targets,onRemove,onClear,allowVideoImage = false,channelProfiles}:Props) {
   const [selectedKey,setSelectedKey]=useState<string|null>(null);
   const [limit,setLimit]=useState(PAGE_SIZE);
   if (targets.length === 0) return null;
@@ -65,11 +68,12 @@ export function WorkspaceUrlTargetBoard({targets,onRemove,onClear,allowVideoImag
               <div className="workspace-url-board__card-body">
                 <span className="workspace-url-board__orb" aria-hidden="true">
                   <WorkspaceTargetArtwork target={target} variant="card"
-                    allowVideoImage={allowVideoImage}/>
+                    allowVideoImage={allowVideoImage} channelProfiles={channelProfiles}/>
                 </span>
                 <div>
                   <strong>{target.id}</strong>
                   <p>실제 데이터 조회 전 · 분석 결과 없음</p>
+                  <WorkspaceChannelIdentity target={target} profiles={channelProfiles} compact/>
                 </div>
               </div>
               <div className="workspace-url-board__card-controls">

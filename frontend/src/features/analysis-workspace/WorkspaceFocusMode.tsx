@@ -5,6 +5,8 @@ import {
 
 import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
 import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
+import { WorkspaceChannelIdentity } from "./WorkspaceChannelIdentity";
+import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import {
   workspaceUrlTargetKey,
   type WorkspaceUrlIngestResult, type WorkspaceUrlTarget,
@@ -18,6 +20,7 @@ type Props = Readonly<{
   onExit: () => void;
   allowVideoImage?: boolean;
   onToggleVideoImage?: () => void;
+  channelProfiles?: ApprovedChannelProfileCache;
 }>;
 
 function kindLabel(kind: WorkspaceUrlTarget["kind"]) {
@@ -34,7 +37,7 @@ function kindLabel(kind: WorkspaceUrlTarget["kind"]) {
  */
 export function WorkspaceFocusMode({
   targets, onAddUrls, onRemove, onExit,
-  allowVideoImage = false, onToggleVideoImage,
+  allowVideoImage = false, onToggleVideoImage, channelProfiles,
 }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const exitRef = useRef<HTMLButtonElement>(null);
@@ -241,10 +244,11 @@ export function WorkspaceFocusMode({
                     onClick={() => focusTarget(key)}>
                     <span className="workspace-focus__item-ident">
                       <WorkspaceTargetArtwork target={target} variant="list"
-                        allowVideoImage={allowVideoImage}/>
+                        allowVideoImage={allowVideoImage} channelProfiles={channelProfiles}/>
                       <strong>{target.id}</strong>
                     </span>
                     <span>{kindLabel(target.kind)} · 미확인</span>
+                    <WorkspaceChannelIdentity target={target} profiles={channelProfiles} compact/>
                   </button>
                 );
               })}
@@ -253,7 +257,8 @@ export function WorkspaceFocusMode({
         )}
         <div className="workspace-focus__graph" aria-label="중앙 그래프 탐색 영역">
           <WorkspaceUrlCanvas targets={targets} focusedKey={selectedKey}
-            onFocusChange={focusTarget} allowVideoImage={allowVideoImage}/>
+            onFocusChange={focusTarget} allowVideoImage={allowVideoImage}
+            channelProfiles={channelProfiles}/>
         </div>
         {detailOpen && (
           <aside id="workspace-focus-detail-dock"
@@ -270,8 +275,9 @@ export function WorkspaceFocusMode({
               <div className="workspace-focus__details">
                 <span className="workspace-focus__kind">{kindLabel(selected.kind)}</span>
                 <WorkspaceTargetArtwork target={selected} variant="detail"
-                  allowVideoImage={allowVideoImage}/>
+                  allowVideoImage={allowVideoImage} channelProfiles={channelProfiles}/>
                 <h4>{selected.id}</h4>
+                <WorkspaceChannelIdentity target={selected} profiles={channelProfiles}/>
                 <p>등록 완료 · 분석 대상 미확인</p>
                 <dl>
                   <div><dt>메타데이터</dt><dd>조회하지 않음</dd></div>

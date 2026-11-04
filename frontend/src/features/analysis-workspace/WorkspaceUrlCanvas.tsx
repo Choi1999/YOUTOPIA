@@ -1,6 +1,7 @@
 import { useState, type PointerEvent } from "react";
 import "./workspace-url.css";
 import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
+import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import {
   workspaceUrlTargetKey,
   type WorkspaceUrlTarget,
@@ -14,6 +15,7 @@ type Props = Readonly<{
   focusedKey?: string | null;
   onFocusChange?: (key: string | null) => void;
   allowVideoImage?: boolean;
+  channelProfiles?: ApprovedChannelProfileCache;
 }>;
 
 function positions(index:number, total:number) {
@@ -29,7 +31,7 @@ function positions(index:number, total:number) {
  * A static, deterministic 2.5D diagram precedes any separately approved
  * WebGL/WebGPU or provider-metadata functionality.
  */
-export function WorkspaceUrlCanvas({targets,focusedKey:controlledKey,onFocusChange,allowVideoImage = false}:Props) {
+export function WorkspaceUrlCanvas({targets,focusedKey:controlledKey,onFocusChange,allowVideoImage = false,channelProfiles}:Props) {
   const [internalFocusedKey,setInternalFocusedKey]=useState<string|null>(null);
   const focusedKey = controlledKey === undefined ? internalFocusedKey : controlledKey;
   function setFocusedKey(key:string|null) {
@@ -111,7 +113,7 @@ export function WorkspaceUrlCanvas({targets,focusedKey:controlledKey,onFocusChan
                 title={target.id}>
                 <span className="workspace-url-canvas__node-bubble" aria-hidden="true">
                   <WorkspaceTargetArtwork target={target} variant="node"
-                    allowVideoImage={allowVideoImage}/>
+                    allowVideoImage={allowVideoImage} channelProfiles={channelProfiles}/>
                 </span>
                 <span className="workspace-url-canvas__node-label">{target.id}</span>
               </button>

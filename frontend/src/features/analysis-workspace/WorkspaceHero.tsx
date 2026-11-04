@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import "./workspace-url.css";
 import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
 import { WorkspaceFocusMode } from "./WorkspaceFocusMode";
+import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import type { WorkspaceUrlIngestResult, WorkspaceUrlTarget } from "./workspaceUrlTargets";
 
 type Props = Readonly<{
@@ -11,6 +12,7 @@ type Props = Readonly<{
   onRemoveTarget?: (key: string) => void;
   allowVideoImage?: boolean;
   onToggleVideoImage?: () => void;
+  channelProfiles?: ApprovedChannelProfileCache;
 }>;
 
 /**
@@ -18,7 +20,7 @@ type Props = Readonly<{
  * local-only; no provider metadata, snapshots or real comment requests.
  * Browser link drop is text-only. File drops are deliberately unsupported.
  */
-export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget, allowVideoImage = false, onToggleVideoImage}: Props) {
+export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget, allowVideoImage = false, onToggleVideoImage, channelProfiles}: Props) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [input, setInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
@@ -171,7 +173,8 @@ export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget, allowVid
             CHANNEL / 02
           </span>
         </div>
-      ) : <WorkspaceUrlCanvas targets={targets} allowVideoImage={allowVideoImage}/>}
+      ) : <WorkspaceUrlCanvas targets={targets} allowVideoImage={allowVideoImage}
+        channelProfiles={channelProfiles}/>}
 
       {isDragging && (
         <div className="workspace-hero__drop-overlay" aria-hidden="true">
@@ -184,7 +187,8 @@ export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget, allowVid
           <WorkspaceFocusMode targets={targets} onAddUrls={onAddUrls}
             onRemove={onRemoveTarget} onExit={() => setFocusOpen(false)}
             allowVideoImage={allowVideoImage}
-            onToggleVideoImage={onToggleVideoImage}/>,
+            onToggleVideoImage={onToggleVideoImage}
+            channelProfiles={channelProfiles}/>,
           document.body,
         )}
     </header>
