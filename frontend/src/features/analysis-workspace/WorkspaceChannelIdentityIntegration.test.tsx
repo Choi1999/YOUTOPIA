@@ -45,7 +45,7 @@ describe("UI-R04-F — channel registration identity across UI surfaces",()=>{
     const detail=within(dialog).getByRole("complementary",{name:"도킹 선택 상세"});
     expect(within(detail).getByText("핸들 등록 · 채널 ID 해석 대기"))
       .toBeInTheDocument();
-    expect(within(detail).getByText(/실제 채널 프로필 조회는 정책/))
+    expect(within(detail).getByText(/채널 정보가 아직 제공되지 않습니다/))
       .toBeInTheDocument();
     expect(dialog.querySelectorAll('img[src^="https://yt3."]')).toHaveLength(0);
   });

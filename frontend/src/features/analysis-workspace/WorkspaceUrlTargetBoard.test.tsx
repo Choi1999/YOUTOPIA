@@ -29,7 +29,7 @@ describe("UI-R04-B adaptive registered-target panels",()=>{
     const region=screen.getByRole("region",{name:"URL로 추가한 분석 대상"});
     expect(region.querySelector(".workspace-url-board__grid")).toHaveAttribute("data-density","single");
     await user.click(within(region).getByRole("button",{name:"패널 확장"}));
-    expect(within(region).getByText(/제목·썸네일·댓글/)).toBeInTheDocument();
+    expect(within(region).getByText(/댓글 분석 결과는 아직 제공되지 않습니다/)).toBeInTheDocument();
     await user.click(within(region).getByRole("button",{name:"제거"}));
     expect(onRemove).toHaveBeenCalledWith("VIDEO:Ab0_-123xyz");
     await user.click(within(region).getByRole("button",{name:"URL 등록 목록 비우기"}));

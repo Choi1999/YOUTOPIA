@@ -55,7 +55,7 @@ describe("UI-R04-C — opt-in fullscreen graph with adaptive docks",()=>{
     expect(body).toHaveAttribute("data-layout","both");
     const details=within(dialog).getByRole("complementary",{name:"도킹 선택 상세"});
     expect(within(details).getByText("Ab0_-123xyz")).toBeInTheDocument();
-    expect(within(details).getByText("수집하지 않음")).toBeInTheDocument();
+    expect(within(details).getByText(/분석 정보는 아직 제공되지 않습니다/)).toBeInTheDocument();
     expect(within(dialog).getByRole("button",{name:"등록된 영상 Ab0_-123xyz 선택"}))
       .toHaveAttribute("aria-pressed","true");
     await user.click(within(list).getByRole("button",{name:"대상 목록 닫기"}));
@@ -80,7 +80,7 @@ describe("UI-R04-C — opt-in fullscreen graph with adaptive docks",()=>{
     expect(within(dialog).getByRole("button",{name:"등록된 채널 @anothercreator 선택"}))
       .toBeInTheDocument();
     const detail=within(dialog).getByRole("complementary",{name:"도킹 선택 상세"});
-    expect(within(detail).getByText("핸들 해석 대기")).toBeInTheDocument();
+    expect(within(detail).getByText(/채널 이름과 프로필은 아직 확인되지 않았습니다/)).toBeInTheDocument();
     expect(within(dialog).getByText(/신규 1개/)).toBeInTheDocument();
   });
 
