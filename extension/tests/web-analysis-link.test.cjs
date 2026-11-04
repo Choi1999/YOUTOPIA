@@ -63,6 +63,7 @@ test("Side Panel의 선택 변경 및 초기화를 반영한다", async () => {
     "selection-kind",
     "selection-id",
     "web-analysis-link",
+    "web-compare-link",
   ]) {
     elements.set(id, {
       hidden: true,
@@ -115,6 +116,7 @@ test("Side Panel의 선택 변경 및 초기화를 반영한다", async () => {
   const contract = context.YUTOPIA_PANEL_SELECTION;
   const panel = context.YUTOPIA_SIDE_PANEL;
   const link = elements.get("web-analysis-link");
+  const compare = elements.get("web-compare-link");
 
   function selection(targetType, targetId) {
     const pin = contract.makePin(
@@ -141,17 +143,25 @@ test("Side Panel의 선택 변경 및 초기화를 반영한다", async () => {
     link.href,
     "http://localhost:5173/analysis/youtube/video/Ab0_-123xyz"
   );
+  assert.equal(compare.hidden, false);
+  assert.equal(
+    compare.href,
+    "http://localhost:5173/analysis/youtube/compare?video=Ab0_-123xyz"
+  );
 
   reply = selection("VIDEO", "Ab0_-123xyZ");
   await panel.refresh();
 
   assert.match(link.href, /Ab0_-123xyZ$/);
+  assert.match(compare.href, /\?video=Ab0_-123xyZ$/);
 
   reply = selection("CHANNEL", "UC" + "a".repeat(22));
   await panel.refresh();
 
   assert.equal(link.hidden, true);
   assert.equal(link.href, "");
+  assert.equal(compare.hidden, true);
+  assert.equal(compare.href, "");
 
   reply = {
     type: contract.READ_RESULT_TYPE,
@@ -167,4 +177,29 @@ test("Side Panel의 선택 변경 및 초기화를 반영한다", async () => {
   assert.equal(link.href, "");
 
   panel.dispose();
+});
+
+test("YU-35 Side Panel 비교 URL은 유효한 VIDEO ID 하나만 허용한다", () => {
+  const context = vm.createContext({});
+  load(context, "web-analysis-link.js");
+  const api = context.YUTOPIA_WEB_ANALYSIS_LINK;
+
+  assert.equal(
+    api.buildCompareUrl("VIDEO", "Ab0_-123xyz"),
+    "http://localhost:5173/analysis/youtube/compare?video=Ab0_-123xyz"
+  );
+  assert.equal(
+    api.buildCompareUrl("CHANNEL", "UC" + "a".repeat(22)), null
+  );
+  for (const invalid of [
+    "Ab0_-123xyz&token=hidden",
+    "@unresolved",
+    "../malicious",
+    "https://evil.example/",
+    "Ab0_-123xyz ",
+    "",
+  ]) {
+    assert.equal(api.buildCompareUrl("VIDEO", invalid), null);
+  }
+  assert.equal(api.buildCompareUrl("VIDEO", null), null);
 });

@@ -14,6 +14,7 @@
   const kind = doc?.getElementById?.("selection-kind");
   const identifier = doc?.getElementById?.("selection-id");
   const webLink = doc?.getElementById?.("web-analysis-link");
+  const compareLink = doc?.getElementById?.("web-compare-link");
   const webLinkApi = scope.YUTOPIA_WEB_ANALYSIS_LINK;
   const modelApi = scope.YUTOPIA_HOVER_CARD_MODEL;
   const chromeApi = scope.chrome;
@@ -206,6 +207,23 @@
       } else {
         webLink.hidden = true;
         webLink.removeAttribute("href");
+      }
+    }
+    // YU-35: Side Panel 고정 선택이 유효한 VIDEO일 때만 비교 화면 링크를 제공한다.
+    // 화면 전환/만료/불량 pin에서는 과거 링크를 즉시 제거한다.
+    if (compareLink) {
+      const url =
+        pin?.isSynthetic === true &&
+        pin.source === "STATIC_FIXTURE"
+          ? webLinkApi?.buildCompareUrl(pin.targetType, pin.targetId)
+          : null;
+
+      if (url) {
+        compareLink.href = url;
+        compareLink.hidden = false;
+      } else {
+        compareLink.hidden = true;
+        compareLink.removeAttribute("href");
       }
     }
     renderPreview(pin);

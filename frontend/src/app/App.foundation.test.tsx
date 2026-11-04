@@ -25,10 +25,11 @@ describe("P0-1 라우터·테마·AppShell 기반", () => {
   });
 
   it("YU-01부터 YU-12까지 고유한 라우트 정의를 유지한다", () => {
-    expect(yutopiaRoutes).toHaveLength(12);
-    expect(new Set(yutopiaRoutes.map(({ code }) => code)).size).toBe(12);
-    expect(new Set(yutopiaRoutes.map(({ path }) => path)).size).toBe(12);
+    expect(yutopiaRoutes).toHaveLength(13);
+    expect(new Set(yutopiaRoutes.map(({ code }) => code)).size).toBe(13);
+    expect(new Set(yutopiaRoutes.map(({ path }) => path)).size).toBe(13);
     expect(yutopiaRoutes.find(({ code }) => code === "YU-12")?.summary).toMatch(/로컬 시뮬레이션/);
+    expect(yutopiaRoutes.find(({ code }) => code === "YU-35")?.href).toBe("/analysis/youtube/compare");
   });
 
   it("명시적으로 선택한 테마를 적용하고 기존 저장 키와 분리해 유지한다", async () => {

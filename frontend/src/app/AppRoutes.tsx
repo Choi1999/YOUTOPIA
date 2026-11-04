@@ -17,6 +17,7 @@ import { EvidenceDetailPage } from "../pages/projects/EvidenceDetailPage";
 import { IssueManagementPage } from "../pages/projects/IssueManagementPage";
 import { AIWorkspaceReportPage } from "../pages/projects/AIWorkspaceReportPage";
 import { SingleVideoAnalysisPage } from "../pages/analysis/SingleVideoAnalysisPage";
+import { VideoComparisonPage } from "../pages/analysis/VideoComparisonPage";
 import { ProjectDemoProvider } from "../features/project-demo/ProjectDemoProvider";
 import { ReviewWorkflowProvider } from "../features/project-demo/ReviewWorkflowProvider";
 import { YoutubeConsentProvider } from "../features/youtube-consent/YoutubeConsentProvider";
@@ -48,7 +49,7 @@ function RouteScrollReset() {
  */
 export function AppRoutes() {
   const placeholderRoutes = yutopiaRoutes.filter(
-    (route) => !["YU-01", "YU-02", "YU-03", "YU-04", "YU-05", "YU-06", "YU-07", "YU-08", "YU-09", "YU-10", "YU-11", "YU-12"].includes(route.code),
+    (route) => !["YU-01", "YU-02", "YU-03", "YU-04", "YU-05", "YU-06", "YU-07", "YU-08", "YU-09", "YU-10", "YU-11", "YU-12", "YU-35"].includes(route.code),
   );
 
   return (
@@ -77,6 +78,11 @@ export function AppRoutes() {
               <Route element={<IssueManagementPage />} path="/projects/:projectId/issues" />
               <Route element={<AIWorkspaceReportPage />} path="/projects/:projectId/ai-report" />
 
+              {/* YU-35: 합성 영상 목록 관리와 2영상 비교 화면 */}
+              <Route
+                element={<VideoComparisonPage />}
+                path="/analysis/youtube/compare"
+              />
               {/* 프로젝트 생성 없이 진입할 수 있는 단일 YouTube 영상 분석 화면 */}
               <Route
                   element={<SingleVideoAnalysisPage />}

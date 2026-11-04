@@ -31,6 +31,24 @@ describe("DemoAnalysisRepository", () => {
     });
   });
 
+  it("YU-35: 비교용으로 명시 등록된 두 번째 합성 영상만 FOUND 처리한다", async () => {
+    const target = createAnalysisTarget("VIDEO", "Qb0_-123xyz");
+    if (!target) throw new Error("Invalid comparison test target");
+
+    const result = await demoAnalysisRepository.getSnapshot(target);
+    expect(result.kind).toBe("FOUND");
+
+    if (result.kind === "FOUND") {
+      expect(result.snapshot.target).toEqual(target);
+      expect(result.snapshot.sourceType).toBe("STATIC_FIXTURE");
+      expect(result.snapshot.isSynthetic).toBe(true);
+      expect(result.snapshot.status).toBe("READY");
+      expect(result.snapshot.sentiment).toEqual({
+        positive: 32, neutral: 28, negative: 20,
+      });
+    }
+  });
+
   it("등록되지 않은 영상에는 분석 결과를 생성하지 않는다", async () => {
     const target = createAnalysisTarget("VIDEO", "Zb0_-123xyz");
     if (!target) throw new Error("Invalid test target");
