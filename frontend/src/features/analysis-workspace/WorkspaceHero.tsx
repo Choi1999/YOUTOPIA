@@ -5,6 +5,10 @@ import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
 import { WorkspaceFocusMode } from "./WorkspaceFocusMode";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import type { WorkspaceUrlIngestResult, WorkspaceUrlTarget } from "./workspaceUrlTargets";
+import {
+  readWorkspaceNodeGroups, reconcileWorkspaceNodeGroups, writeWorkspaceNodeGroups,
+  type WorkspaceNodeGroup,
+} from "./workspaceNodeGroups";
 
 type Props = Readonly<{
   targets?: readonly WorkspaceUrlTarget[];
@@ -14,6 +18,11 @@ type Props = Readonly<{
   onToggleVideoImage?: () => void;
   channelProfiles?: ApprovedChannelProfileCache;
 }>;
+
+function groupStorage(): Storage | null {
+  try { return typeof window === "undefined" ? null : window.sessionStorage; }
+  catch { return null; }
+}
 
 /**
  * UI-R04B: a hero-sized intake canvas. URL registration is immediate and
@@ -25,6 +34,15 @@ export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget, allowVid
   const [input, setInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [focusOpen, setFocusOpen] = useState(false);
+  // Purely user-authored grouping, separate from canonical URL targets.
+  const [nodeGroups, setNodeGroups] = useState<readonly WorkspaceNodeGroup[]>(() =>
+    readWorkspaceNodeGroups(groupStorage(), targets),
+  );
+  useEffect(() => {
+    const reconciled = reconcileWorkspaceNodeGroups(nodeGroups, targets);
+    if (reconciled !== nodeGroups) { setNodeGroups(reconciled); return; }
+    writeWorkspaceNodeGroups(groupStorage(), nodeGroups, targets);
+  }, [nodeGroups, targets]);
   const [feedback, setFeedback] = useState(
     "영상·채널 URL을 붙여넣거나 링크를 끌어다 놓으세요. 외부 데이터를 조회하지 않습니다.",
   );
@@ -174,7 +192,8 @@ export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget, allowVid
           </span>
         </div>
       ) : <WorkspaceUrlCanvas targets={targets} allowVideoImage={allowVideoImage}
-        channelProfiles={channelProfiles}/>}
+        channelProfiles={channelProfiles} groups={nodeGroups}
+        onGroupsChange={setNodeGroups}/>} 
 
       {isDragging && (
         <div className="workspace-hero__drop-overlay" aria-hidden="true">
@@ -188,7 +207,8 @@ export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget, allowVid
             onRemove={onRemoveTarget} onExit={() => setFocusOpen(false)}
             allowVideoImage={allowVideoImage}
             onToggleVideoImage={onToggleVideoImage}
-            channelProfiles={channelProfiles}/>,
+            channelProfiles={channelProfiles} groups={nodeGroups}
+            onGroupsChange={setNodeGroups}/>,
           document.body,
         )}
     </header>
