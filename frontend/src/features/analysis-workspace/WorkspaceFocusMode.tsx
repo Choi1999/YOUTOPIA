@@ -165,8 +165,9 @@ export function WorkspaceFocusMode({
         (dragging ? " workspace-focus--dragging" : "")}
       role="dialog" aria-modal="true" aria-labelledby="workspace-focus-title"
       onKeyDown={keydown}
-      onDragOver={event => {event.preventDefault();setDragging(true);}}
+      onDragOver={event => {event.preventDefault();event.stopPropagation();setDragging(true);}}
       onDragLeave={event => {
+        event.stopPropagation();
         if (!event.currentTarget.contains(event.relatedTarget as Node | null))
           setDragging(false);
       }}
