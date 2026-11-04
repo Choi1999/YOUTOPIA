@@ -140,6 +140,8 @@ export function WorkspaceUrlCanvas({
   const targetMap = new Map(targets.map(target => [workspaceUrlTargetKey(target), target]));
   const chosen = picked.filter(key => targetMap.has(key) && !groupedKeys.has(key));
   const totalPages = Math.max(1, Math.ceil(units.length / PER_VIEW));
+  const minimapColumns = Math.ceil(Math.sqrt(totalPages));
+  const minimapRows = Math.ceil(totalPages / minimapColumns);
   const focusedUnitIndex = units.findIndex(unit =>
     unit.kind === "target" ? unit.key === focusedKey :
       focusedKey != null && unit.group.memberKeys.includes(focusedKey));
@@ -594,16 +596,39 @@ export function WorkspaceUrlCanvas({
         {minimapOpen && (
           <div className="workspace-url-canvas__minimap"
             role="region" aria-label="그래프 미니맵">
-            <strong>미니맵 · {safePage + 1}/{totalPages}</strong>
+            <strong>미니맵 · 현재 {safePage + 1}/{totalPages} · 전체 {units.length}개</strong>
             <div className="workspace-url-canvas__minimap-plane">
-              {visible.map((unit, index) => {
-                const point = positions(index, visible.length);
+              {Array.from({ length: totalPages }, (_, pageIndex) => {
+                const column = pageIndex % minimapColumns;
+                const row = Math.floor(pageIndex / minimapColumns);
+                return (
+                  <div key={pageIndex} aria-hidden="true"
+                    className={"workspace-url-canvas__minimap-page" +
+                      (pageIndex === safePage ? " is-current" : "")}
+                    style={{
+                      left: column * 100 / minimapColumns + "%",
+                      top: row * 100 / minimapRows + "%",
+                      width: 100 / minimapColumns + "%",
+                      height: 100 / minimapRows + "%",
+                    }}/>
+                );
+              })}
+              {units.map((unit, index) => {
+                const unitPage = Math.floor(index / PER_VIEW);
+                const localIndex = index % PER_VIEW;
+                const count = Math.min(PER_VIEW, units.length - unitPage * PER_VIEW);
+                const point = positions(localIndex, count);
+                const column = unitPage % minimapColumns;
+                const row = Math.floor(unitPage / minimapColumns);
+                const x = (column + .08 + .84 * point.x / 100) * 100 / minimapColumns;
+                const y = (row + .08 + .84 * point.y / 100) * 100 / minimapRows;
                 const active = unit.kind === "target"
                   ? unit.key === focusedKey
                   : unit.group.id === jumpGroupId ||
                     focusedKey != null && unit.group.memberKeys.includes(focusedKey);
                 return (
                   <button key={unit.key} type="button"
+                    data-page={unitPage + 1}
                     className={"workspace-url-canvas__minimap-pin" +
                       (unit.kind === "group" ? " is-group" : "") +
                       (active ? " is-active" : "") +
@@ -615,15 +640,16 @@ export function WorkspaceUrlCanvas({
                     aria-label={"미니맵 " +
                       (unit.kind === "group" ? "그룹 " + unit.group.name :
                         kindLabel(unit.target) + " " + unit.target.id) + " 이동"}
-                    title={unit.kind === "group" ? unit.group.name : unit.target.id}
-                    style={{ left: point.x + "%", top: point.y + "%" }}
+                    title={(unit.kind === "group" ? unit.group.name : unit.target.id) +
+                      " · " + (unitPage + 1) + "페이지"}
+                    style={{ left: x + "%", top: y + "%" }}
                     onClick={() => navigate(unit.kind === "group"
                       ? { kind: "group", key: unit.group.id }
                       : { kind: "target", key: unit.key })}/>
                 );
               })}
             </div>
-            <small>이 페이지의 탐색 단위 · 클릭해 중심 이동</small>
+            <small>전체 탐색 단위 · 클릭해 페이지 이동 및 중심 정렬</small>
           </div>
         )}
       </div>
