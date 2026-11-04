@@ -1,11 +1,15 @@
+import { useState } from "react";
+
 /**
  * UI-R03/R04 — decorative CSS 3D hero, not a data chart or a WebGL scene.
  * It makes no provider requests, starts no render loop, and exposes no
  * fabricated analytics. Motion is disabled with prefers-reduced-motion.
  */
 export function WorkspaceHero() {
+  const [isPlaying, setIsPlaying] = useState(false);
   return (
-    <header className="product-heading workspace-hero">
+    <header className={"product-heading workspace-hero" +
+      (isPlaying ? " workspace-hero--is-playing" : "")}>
       <div className="workspace-hero__copy">
         <p className="workspace-hero__eyebrow">
           <span className="workspace-hero__signal" aria-hidden="true" />
@@ -29,6 +33,10 @@ export function WorkspaceHero() {
           <span><b>02</b> SYNTHETIC CHANNELS</span>
           <span><b>OFFLINE</b> DEMO ONLY</span>
         </div>
+        <button type="button" className="workspace-hero__motion-control"
+          aria-pressed={isPlaying} onClick={() => setIsPlaying(value => !value)}>
+          {isPlaying ? "3D 모션 중지" : "3D 모션 재생"}
+        </button>
       </div>
       <div className="workspace-hero__visual" aria-hidden="true">
         <div className="workspace-hero__halo" />

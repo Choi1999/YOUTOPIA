@@ -34,6 +34,22 @@ describe("UI-R01–R04: immersive responsive workspace visual contract", () => {
     expect(document.querySelector(".workspace-hero__visual"))
       .toHaveAttribute("aria-hidden", "true");
     expect(screen.getByText(/OFFLINE/)).toHaveTextContent("OFFLINE");
+    expect(screen.getByRole("button",{name:"3D 모션 재생"}))
+      .toHaveAttribute("aria-pressed","false");
+  });
+
+  it("requires explicit opt-in for nonessential 3D animation", async () => {
+    const user=userEvent.setup();
+    render(<WorkspaceHero />);
+    const play=screen.getByRole("button",{name:"3D 모션 재생"});
+    expect(document.querySelector(".workspace-hero")).not.toHaveClass("workspace-hero--is-playing");
+    await user.click(play);
+    expect(screen.getByRole("button",{name:"3D 모션 중지"}))
+      .toHaveAttribute("aria-pressed","true");
+    expect(document.querySelector(".workspace-hero")).toHaveClass("workspace-hero--is-playing");
+    await user.click(screen.getByRole("button",{name:"3D 모션 중지"}));
+    expect(screen.getByRole("button",{name:"3D 모션 재생"}))
+      .toHaveAttribute("aria-pressed","false");
   });
 
   it("adds an opt-in immersive shell without changing existing routes", async () => {

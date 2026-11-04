@@ -1,4 +1,5 @@
 import { useState, type KeyboardEvent } from "react";
+import "./workspace-relation.css";
 import { Link } from "react-router-dom";
 
 import type { WorkspaceCatalogEntry } from "./analysisWorkspaceCatalog";

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useAnalysisRepository } from "../analysis/data/AnalysisRepositoryContext";
+import { WorkspaceRelationExplorer } from "./WorkspaceRelationExplorer";
 import {
   filterWorkspaceCatalog, readWorkspaceCatalog,
   type WorkspaceCatalogEntry, type WorkspaceCatalogFilters,
@@ -137,6 +138,8 @@ export function WorkspaceDiscoveryPanels({session, onSelect}: Props) {
           </>
         )}
       </section>
+
+      {entries && <WorkspaceRelationExplorer entries={entries} session={session} onSelect={onSelect} />}
 
       <section id="workspace-catalog" className="analysis-workspace__panel" aria-label="분석 대상 검색">
         <div className="analysis-workspace__heading">
