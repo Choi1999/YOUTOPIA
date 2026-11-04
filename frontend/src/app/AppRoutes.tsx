@@ -84,7 +84,7 @@ export function AppRoutes() {
 
               {/* YU-50: 통합 합성 분석 작업 공간 */}
               <Route element={<AnalysisWorkspacePage />} path="/analysis/youtube/workspace" />
-              {/* YU-48: 선정 영상 주제별 근거 탐색 */
+              {/* YU-48: 선정 영상 주제별 근거 탐색 */}
               <Route element={<TopicExplorerPage />} path="/analysis/youtube/topics" />
               {/* YU-47: 두 명시 채널의 선정 영상 비교 */}
               <Route element={<ChannelComparisonPage />} path="/analysis/youtube/channels/compare" />
