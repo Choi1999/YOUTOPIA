@@ -28,7 +28,7 @@ describe("YU-53/54 — integrated summary and local catalogue UI", () => {
   it("renders grounded individual denominators, not a fabricated combined total", async () => {
     render(<TestHarness/>);
     const summary = screen.getByRole("region",{name:"통합 분석 요약"});
-    expect(await within(summary).findByText(/분류 완료 80건/)).toBeInTheDocument();
+    expect((await within(summary).findAllByText(/분류 완료 80건/)).length).toBe(2);
     expect(within(summary).getByText(/분류 완료 160건/)).toBeInTheDocument();
     expect(within(summary).getByText(/분류 완료 140건/)).toBeInTheDocument();
     expect(within(summary).getByRole("list",{name:"선정 채널별 주제 언급량"}))
