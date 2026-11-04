@@ -19,7 +19,7 @@ describe("UI-R04-B adaptive registered-target panels",()=>{
     expect(within(region).getAllByRole("article")).toHaveLength(3);
     expect(region.querySelector(".workspace-url-board__grid"))
       .toHaveAttribute("data-density","flex");
-    expect(within(region).getByText(/메타데이터 미확인/)).toBeInTheDocument();
+    expect(within(region).getAllByText(/메타데이터 미확인/)).toHaveLength(2);
   });
 
   it("expands only the focused panel, supports explicit removal and does not imply live analysis",async()=>{
