@@ -39,7 +39,7 @@ export function WorkspaceChannelIdentity({
       ) : (
         !compact && (
           <span className="workspace-channel-identity__pending">
-            실제 채널 프로필 조회는 정책에 따라 비활성화되어 있습니다.
+            채널 정보가 아직 제공되지 않습니다.
           </span>
         )
       )}

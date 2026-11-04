@@ -278,15 +278,10 @@ export function WorkspaceFocusMode({
                   allowVideoImage={allowVideoImage} channelProfiles={channelProfiles}/>
                 <h4>{selected.id}</h4>
                 <WorkspaceChannelIdentity target={selected} profiles={channelProfiles}/>
-                <p>등록 완료 · 분석 대상 미확인</p>
-                <dl>
-                  <div><dt>메타데이터</dt><dd>조회하지 않음</dd></div>
-                  <div><dt>댓글·감성 분석</dt><dd>수집하지 않음</dd></div>
-                  <div><dt>채널 소속 관계</dt><dd>확인되지 않음</dd></div>
-                  {selected.kind === "CHANNEL_HANDLE" && (
-                    <div><dt>채널 ID</dt><dd>핸들 해석 대기</dd></div>
-                  )}
-                </dl>
+                <p>URL이 추가됐습니다. 이 대상의 분석 정보는 아직 제공되지 않습니다.</p>
+                {selected.kind === "CHANNEL_HANDLE" && (
+                  <p>채널 이름과 프로필은 아직 확인되지 않았습니다.</p>
+                )}
                 <code>{selected.canonicalUrl}</code>
                 <a href={selected.canonicalUrl} target="_blank" rel="noopener noreferrer">
                   YouTube에서 열기
@@ -294,13 +289,13 @@ export function WorkspaceFocusMode({
                 <button type="button" onClick={removeSelected}>이 등록 대상 제거</button>
               </div>
             ) : (
-              <p>그래프 노드나 대상 목록을 선택하면 해당 ID의 확인 상태를 보여줍니다.</p>
+              <p>그래프 노드나 대상 목록에서 원하는 영상을 선택하세요.</p>
             )}
           </aside>
         )}
       </div>
       <footer className="workspace-focus__footer">
-        <span>STATIC / UNVERIFIED · 실제 YouTube 데이터를 조회하지 않습니다.</span>
+        <span>추가한 링크만으로 분석은 시작되지 않습니다.</span>
         <span>Esc: 종료 · Tab: 이동 · 캔버스: 확대/축소·드래그</span>
       </footer>
       {dragging && (

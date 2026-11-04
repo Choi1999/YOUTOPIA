@@ -45,7 +45,7 @@ export function WorkspaceUrlTargetBoard({targets,onRemove,onClear,allowVideoImag
         <div>
           <p className="workspace-url-board__eyebrow">DYNAMIC WORKSPACE / URL TARGETS</p>
           <h2>등록 대상 컬렉션 <span className="workspace-url-board__count">{count}</span></h2>
-          <p>필요한 대상만 패널로 나타납니다. 화면 너비와 패널 수에 맞춰 크기·열이 자동 조정됩니다.</p>
+          <p>추가한 영상과 채널을 확인하고 관리할 수 있습니다.</p>
         </div>
         <button type="button" onClick={onClear} className="workspace-url-board__clear">URL 등록 목록 비우기</button>
       </div>
@@ -72,7 +72,7 @@ export function WorkspaceUrlTargetBoard({targets,onRemove,onClear,allowVideoImag
                 </span>
                 <div>
                   <strong>{target.id}</strong>
-                  <p>실제 데이터 조회 전 · 분석 결과 없음</p>
+                  <p>아직 분석된 정보가 없습니다.</p>
                   <WorkspaceChannelIdentity target={target} profiles={channelProfiles} compact/>
                 </div>
               </div>
@@ -91,10 +91,8 @@ export function WorkspaceUrlTargetBoard({targets,onRemove,onClear,allowVideoImag
               </div>
               {expanded && (
                 <div className="workspace-url-board__expanded">
-                  <p><strong>현재 등록 상태</strong> URL 식별자만 검증했습니다.
-                    실제 영상·채널 존재 여부와 제목·썸네일·댓글·소속 관계는 확인되지 않았습니다.</p>
-                  <p>이 대상은 기존 합성 A/B 비교 데이터와 자동 연결되지 않습니다.
-                    실제 분석은 별도 권한·수집 계약을 통과한 후에만 가능합니다.</p>
+                  <p>이 링크는 목록에 추가됐습니다. 영상·채널의 세부 정보와
+                    댓글 분석 결과는 아직 제공되지 않습니다.</p>
                   <code>{target.canonicalUrl}</code>
                 </div>
               )}
@@ -107,8 +105,7 @@ export function WorkspaceUrlTargetBoard({targets,onRemove,onClear,allowVideoImag
         다음 {Math.min(PAGE_SIZE,count-limit)}개 패널 표시
       </button>}
       <p className="workspace-url-board__footnote">
-        등록 노드는 미확인 상태로 유지합니다. 새 노드 간 연결이나 실제 채널 소속을 추정하지 않습니다.
-        최대 등록 수는 화면·세션 성능을 위한 제한이며 A/B 비교 제한과 무관합니다.
+        추가한 URL만으로 영상·채널 사이의 관계나 분석 결과가 확정되지는 않습니다.
       </p>
     </section>
   );

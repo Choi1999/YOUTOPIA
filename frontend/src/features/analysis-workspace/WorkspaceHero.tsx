@@ -92,8 +92,8 @@ export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget, allowVid
           <strong>새로운 시야.</strong>
         </p>
         <p className="workspace-hero__description">
-          영상과 채널, 주제 사이의 흐름을 하나의 관점에서 살펴보세요.
-          검증된 합성 표본의 범위와 한계를 함께 보여줍니다.
+          영상과 채널을 추가하고 한 공간에서 자유롭게 탐색하세요.
+          현재 분석 결과는 예시 데이터입니다.
         </p>
         <form className="workspace-hero__intake" onSubmit={submit}
           aria-label="YouTube URL 빠른 등록">
