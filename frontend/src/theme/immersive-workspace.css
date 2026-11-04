@@ -1,0 +1,591 @@
+/**
+ * YOUTOPIA UI-R01–R04: opt-in visual system for AnalysisWorkspacePage only.
+ * New properties are scoped; existing login, project and extension screens
+ * keep their visual contracts. No external assets or network-font calls.
+ */
+.app-shell--immersive-workspace {
+  --xp-radiant: #7192ff;
+  --xp-electric: #88aaff;
+  --xp-mint: #63decf;
+  --xp-ink: #070d1b;
+  --xp-ambient: rgba(83, 111, 255, .12);
+  --xp-hero-border: rgba(145, 164, 255, .18);
+  --xp-hero-text: #f7f9ff;
+  --xp-hero-muted: #a9badb;
+  --xp-panel-glass: rgba(16, 24, 43, .72);
+  --xp-panel-shadow: 0 18px 70px rgba(0, 0, 0, .16);
+
+  --bg-app: #080d19;
+  --bg-surface: #11192b;
+  --bg-subtle: #172137;
+  --surface-raised: #1b2841;
+  --text-primary: #f4f7ff;
+  --text-secondary: #b2bfd7;
+  --text-muted: #8d9bb6;
+  --text-link: #a7bdff;
+  --accent-primary: #7691ff;
+  --accent-on: #070f22;
+  --border-default: #2b3853;
+  --separator-default: #2a364f;
+  --navigation-selected-background: #222f51;
+  --navigation-selected-border: #84a2ff;
+  --interaction-selected-background: #1f2b4a;
+
+  min-width: 320px;
+  grid-template-columns: 224px minmax(0, 1fr);
+  background: var(--bg-app);
+}
+:root[data-theme="light"] .app-shell--immersive-workspace {
+  --xp-radiant: #4b64da;
+  --xp-electric: #354bba;
+  --xp-mint: #097b75;
+  --xp-ambient: rgba(65, 98, 210, .09);
+  --xp-panel-glass: rgba(255,255,255,.88);
+  --xp-panel-shadow: 0 16px 54px rgba(27,53,101,.09);
+  --bg-app: #f1f4fb;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f3f6fc;
+  --surface-raised: #e9eefc;
+  --text-primary: #17243b;
+  --text-secondary: #4a5b79;
+  --text-muted: #61728e;
+  --text-link: #314bb3;
+  --accent-primary: #4765d1;
+  --accent-on: #fff;
+  --border-default: #dbe3f1;
+  --separator-default: #d9e1f0;
+  --navigation-selected-background: #e8edff;
+  --navigation-selected-border: #5371e4;
+  --interaction-selected-background: #eef2ff;
+}
+.app-shell--immersive-workspace .app-sidebar {
+  width: 224px;
+  padding: 28px 18px 22px;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-default);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-default) transparent;
+}
+.app-shell--immersive-workspace .sidebar-brand {
+  padding: 2px 10px 14px;
+  letter-spacing: .045em;
+}
+.app-shell--immersive-workspace .sidebar-brand-copy {
+  font-weight: 850;
+  letter-spacing: -.055em;
+}
+.app-shell--immersive-workspace .sidebar-navigation {
+  gap: 21px;
+}
+.app-shell--immersive-workspace .sidebar-group {
+  gap: 4px;
+}
+.app-shell--immersive-workspace .sidebar-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+.app-shell--immersive-workspace .sidebar-link {
+  width: 188px;
+  height: 43px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  font-size: 12px;
+  letter-spacing: -.01em;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+.app-shell--immersive-workspace .sidebar-link.active {
+  background: var(--navigation-selected-background);
+  border-color: var(--navigation-selected-border);
+  box-shadow: inset 0 0 0 1px rgba(138,171,255,.07);
+}
+.app-shell--immersive-workspace .sidebar-link:hover:not(:disabled) {
+  transform: translateX(2px);
+}
+.app-shell--immersive-workspace .app-main {
+  min-width: 0;
+  background:
+    radial-gradient(ellipse at 72% 0%, var(--xp-ambient), transparent 40%),
+    var(--bg-app);
+}
+
+/* Non-workspace routes have no mobile navigation button. */
+.workspace-mobile-menu-toggle { display: none; }
+
+.app-shell--immersive-workspace .product-screen.analysis-workspace {
+  width: min(100%, 1640px);
+  min-width: 0;
+  margin: 0 auto;
+  padding: clamp(18px, 3.1vw, 46px);
+  gap: clamp(18px, 2.2vw, 28px);
+}
+.app-shell--immersive-workspace .analysis-workspace__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(278px, .72fr);
+  align-items: start;
+  gap: 22px;
+  min-width: 0;
+}
+.app-shell--immersive-workspace .analysis-workspace__main,
+.app-shell--immersive-workspace .analysis-workspace__rail {
+  display: grid;
+  min-width: 0;
+  gap: 22px;
+  align-content: start;
+}
+.app-shell--immersive-workspace .analysis-workspace__rail {
+  position: sticky;
+  top: 20px;
+}
+.app-shell--immersive-workspace .analysis-workspace__panel {
+  background: var(--xp-panel-glass);
+  border: 1px solid var(--border-default);
+  border-radius: 22px;
+  box-shadow: var(--xp-panel-shadow);
+  padding: clamp(18px, 2vw, 28px);
+  gap: 20px;
+  backdrop-filter: blur(10px);
+}
+.app-shell--immersive-workspace .analysis-workspace__heading h2,
+.app-shell--immersive-workspace .analysis-workspace__panel > h2 {
+  font-size: clamp(17px, 1.65vw, 21px);
+  font-weight: 780;
+  letter-spacing: -.038em;
+}
+.app-shell--immersive-workspace .analysis-workspace__heading > div:first-child p {
+  margin-top: 7px;
+}
+.app-shell--immersive-workspace .analysis-workspace__panel p {
+  font-size: 13px;
+  line-height: 1.65;
+}
+.app-shell--immersive-workspace .analysis-workspace__grid {
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 14px;
+}
+.app-shell--immersive-workspace .analysis-workspace__grid .analysis-workspace__group:last-child {
+  grid-column: 1 / -1;
+}
+.app-shell--immersive-workspace .analysis-workspace__group {
+  padding: 18px;
+  background: var(--bg-subtle);
+  border-radius: 16px;
+}
+.app-shell--immersive-workspace .analysis-workspace__group h3 {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+.app-shell--immersive-workspace .analysis-workspace__group label {
+  font-size: 12px;
+}
+.app-shell--immersive-workspace .analysis-workspace__group select,
+.app-shell--immersive-workspace .analysis-workspace__filters :is(input, select) {
+  min-height: 43px;
+  border-radius: 10px;
+  background: var(--bg-surface);
+  border-color: var(--border-default);
+}
+.app-shell--immersive-workspace .analysis-workspace__presets {
+  background: color-mix(in srgb, var(--xp-radiant) 9%, var(--bg-subtle));
+  border-radius: 16px;
+  padding: 18px;
+}
+.app-shell--immersive-workspace .analysis-workspace__preset-options button {
+  border-radius: 13px;
+  min-height: 92px;
+  padding: 13px;
+  align-content: center;
+}
+.app-shell--immersive-workspace .analysis-workspace__preset-options button:hover:not(:disabled) {
+  background: var(--navigation-selected-background);
+  border-color: var(--navigation-selected-border);
+}
+.app-shell--immersive-workspace .analysis-workspace__feedback {
+  background: color-mix(in srgb, var(--xp-mint) 8%, var(--bg-subtle));
+  border: 1px solid color-mix(in srgb, var(--xp-mint) 22%, var(--border-default));
+  border-radius: 12px;
+}
+.app-shell--immersive-workspace .analysis-workspace__summary-grid,
+.app-shell--immersive-workspace .analysis-workspace__catalog {
+  grid-template-columns: repeat(2,minmax(0,1fr));
+}
+.app-shell--immersive-workspace .analysis-workspace__summary-grid > div,
+.app-shell--immersive-workspace .analysis-workspace__topic-summary,
+.app-shell--immersive-workspace .analysis-workspace__catalog li,
+.app-shell--immersive-workspace .analysis-workspace__evidence {
+  border-radius: 15px;
+}
+.app-shell--immersive-workspace .analysis-workspace__summary-grid li,
+.app-shell--immersive-workspace .analysis-workspace__topic-summary li {
+  border: 1px solid var(--border-default);
+  border-radius: 11px;
+}
+.app-shell--immersive-workspace .analysis-workspace__catalog li {
+  padding: 17px;
+  transition: border-color 150ms ease, transform 150ms ease;
+}
+.app-shell--immersive-workspace .analysis-workspace__catalog li:hover {
+  border-color: var(--xp-radiant);
+  transform: translateY(-2px);
+}
+.app-shell--immersive-workspace .analysis-workspace__filters {
+  grid-template-columns: repeat(2,minmax(0,1fr));
+}
+.app-shell--immersive-workspace .analysis-workspace__links a,
+.app-shell--immersive-workspace .analysis-workspace__catalog-actions a {
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  padding: 10px 13px;
+  background: var(--bg-subtle);
+  font-weight: 700;
+}
+.app-shell--immersive-workspace .analysis-workspace__links a:hover,
+.app-shell--immersive-workspace .analysis-workspace__catalog-actions a:hover {
+  border-color: var(--xp-radiant);
+  color: var(--text-primary);
+}
+.app-shell--immersive-workspace .analysis-workspace__evidence-grid {
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+.app-shell--immersive-workspace .analysis-workspace__evidence {
+  background: var(--bg-subtle);
+  border-color: var(--border-default);
+  padding: 18px;
+}
+.app-shell--immersive-workspace .analysis-workspace__counts {
+  grid-template-columns: repeat(2,minmax(0,1fr));
+}
+.app-shell--immersive-workspace .analysis-workspace__notice {
+  color: var(--text-muted);
+  font-size: 12px;
+  max-width: 950px;
+}
+.app-shell--immersive-workspace .analysis-workspace__catalog-actions button {
+  min-height: 36px;
+}
+
+/* Immersive first impression: a CSS 3D composition, not a data visualization. */
+.app-shell--immersive-workspace .workspace-hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, .75fr);
+  align-items: center;
+  gap: clamp(12px, 2vw, 40px);
+  min-height: 350px;
+  margin: 0;
+  padding: clamp(24px, 3vw, 48px);
+  overflow: hidden;
+  border: 1px solid var(--xp-hero-border);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 73% 54%, rgba(67,107,238,.26) 0, transparent 38%),
+    radial-gradient(circle at 12% 87%, rgba(19,68,126,.34) 0, transparent 44%),
+    linear-gradient(122deg, #101c35 0%, #0b1426 53%, #091022 100%);
+  color: var(--xp-hero-text);
+  box-shadow: 0 36px 90px rgba(0,0,0,.16);
+}
+.app-shell--immersive-workspace .workspace-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(163,191,255,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(163,191,255,.045) 1px, transparent 1px);
+  background-size: 35px 35px;
+  mask-image: linear-gradient(100deg, transparent 2%, #000 95%);
+}
+.workspace-hero__copy { position: relative; z-index: 2; min-width: 0; }
+.app-shell--immersive-workspace .workspace-hero .workspace-hero__eyebrow {
+  display: flex; align-items: center; gap: 9px;
+  margin: 0 0 15px;
+  color: #aabff4;
+  font-size: 10px; font-weight: 800; letter-spacing: .16em;
+}
+.workspace-hero__signal {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #6bdfd1; box-shadow: 0 0 16px rgba(107,223,209,.85);
+}
+.app-shell--immersive-workspace .workspace-hero h1 {
+  color: #cad6f3;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: .04em;
+}
+.app-shell--immersive-workspace .workspace-hero .workspace-hero__headline {
+  font-weight: 770;
+  font-size: clamp(34px, 3.7vw, 62px);
+  letter-spacing: -.07em;
+  line-height: 1.1;
+  color: #fff;
+  margin: 13px 0 0;
+}
+.workspace-hero__headline strong {
+  font-weight: inherit;
+  color: #95bbff;
+}
+.app-shell--immersive-workspace .workspace-hero .workspace-hero__description {
+  margin: 16px 0 0;
+  max-width: 505px;
+  font-size: 13px;
+  color: #b6c6e5;
+  line-height: 1.8;
+}
+.workspace-hero__actions {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 12px; margin-top: 24px;
+}
+.workspace-hero__actions a {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 14px; min-height: 42px; text-decoration: none;
+  border-radius: 11px; font-size: 12px; font-weight: 750;
+  padding: 10px 16px;
+}
+.workspace-hero__primary {
+  background: #8fa8ff;
+  color: #0a1636;
+}
+.workspace-hero__secondary {
+  border: 1px solid rgba(176,198,255,.36);
+  color: #dbe5ff;
+  background: rgba(255,255,255,.045);
+}
+.workspace-hero__actions a:hover {
+  filter: brightness(1.11);
+  transform: translateY(-1px);
+}
+.workspace-hero__actions a:focus-visible {
+  outline: 3px solid #83d8d1;
+  outline-offset: 3px;
+}
+.workspace-hero__meta {
+  display:flex; flex-wrap:wrap; gap:10px 22px;
+  margin-top: 28px;
+  color: #9aafd5; font-size: 9px;
+  letter-spacing: .055em;
+}
+.workspace-hero__meta span { white-space: nowrap; }
+.workspace-hero__meta b { color:#80ddce; font-size:11px; margin-right:5px; }
+.workspace-hero__visual {
+  position: relative;
+  width: min(100%, 390px);
+  height: 310px;
+  margin: 0 auto;
+  perspective: 900px;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+.workspace-hero__halo,
+.workspace-hero__orbit,
+.workspace-hero__ring,
+.workspace-hero__orb,
+.workspace-hero__satellite,
+.workspace-hero__diagram-label { position:absolute; }
+.workspace-hero__halo {
+  width: 260px; height: 260px; left:50%; top:50%;
+  transform:translate(-50%,-50%);
+  background: radial-gradient(circle,rgba(81,135,253,.37),transparent 63%);
+  filter: blur(26px);
+}
+.workspace-hero__orb {
+  width: 181px; height: 181px; border-radius: 50%;
+  left: 50%; top: 50%;
+  transform: translate(-50%,-50%) rotate(-27deg);
+  background:
+    radial-gradient(circle at 31% 27%,rgba(245,252,255,.95) 0,rgba(175,206,255,.6) 6%,transparent 23%),
+    radial-gradient(circle at 26% 26%,#6685ee 5%,#1d336e 46%,#0b1534 80%);
+  border: 1px solid rgba(168,195,255,.6);
+  box-shadow:
+    inset -23px -24px 45px rgba(3,7,35,.75),
+    inset 12px 10px 35px rgba(168,204,255,.17),
+    0 0 48px rgba(75,112,245,.5);
+}
+.workspace-hero__orb::after {
+  position:absolute; inset:13%; content:"";
+  border-radius:50%;
+  border:1px solid rgba(161,205,255,.17);
+  transform: rotateX(70deg);
+}
+.workspace-hero__orbit {
+  left: 50%; top:50%;
+  border:1px solid rgba(125,171,255,.33);
+  border-radius: 50%;
+  transform:translate(-50%,-50%) rotate(-18deg);
+}
+.workspace-hero__orbit--outer {width:305px;height:305px;border-style:dashed;opacity:.62;}
+.workspace-hero__orbit--inner {width:235px;height:235px;transform:translate(-50%,-50%) rotate(31deg);}
+.workspace-hero__ring {
+  left: 50%; top:50%;
+  width:320px;height:150px;
+  margin-left:-160px;margin-top:-75px;
+  border: 1px solid rgba(179,217,255,.75);
+  border-radius: 50%;
+  box-shadow: 0 0 24px rgba(87,151,255,.15);
+  transform:rotateX(62deg) rotateZ(-28deg);
+  transform-style:preserve-3d;
+  animation: xp-ring-spin 36s linear infinite;
+}
+.workspace-hero__ring--b {
+  width:265px;height:250px;margin-left:-132px;margin-top:-125px;
+  border-color:rgba(110,211,208,.43);
+  transform:rotateY(65deg) rotateZ(20deg);
+  animation:xp-ring-counter 50s linear infinite reverse;
+}
+.workspace-hero__satellite {
+  width:9px;height:9px;border-radius:50%;
+  background: #9ff9e8;
+  border:1px solid #e9fffd;
+  box-shadow: 0 0 18px rgba(130,250,232,.85);
+}
+.workspace-hero__satellite--one {left:12%;top:32%;}
+.workspace-hero__satellite--two {right:12%;bottom:21%;}
+.workspace-hero__satellite--three {left:25%;bottom:11%;width:6px;height:6px;}
+.workspace-hero__diagram-label {
+  font-size:9px;font-weight:700;letter-spacing:.12em;color:#9bbdf5;
+}
+.workspace-hero__diagram-label--one {left:3%;bottom:22%;}
+.workspace-hero__diagram-label--two {right:0;top:20%;}
+@keyframes xp-ring-spin {
+  from {transform:rotateX(62deg) rotateZ(-28deg);}
+  to {transform:rotateX(62deg) rotateZ(332deg);}
+}
+@keyframes xp-ring-counter {
+  from {transform:rotateY(65deg) rotateZ(20deg);}
+  to {transform:rotateY(65deg) rotateZ(380deg);}
+}
+
+/* Keep inherited rail behavior for tablets, without 1024px page overflow. */
+@media (max-width: 1279px) {
+  .app-shell--immersive-workspace {
+    grid-template-columns: 72px minmax(0,1fr);
+  }
+  .app-shell--immersive-workspace .app-sidebar {
+    width:72px;align-items:center;padding:20px 13px;
+  }
+  .app-shell--immersive-workspace .sidebar-navigation,
+  .app-shell--immersive-workspace .sidebar-group,
+  .app-shell--immersive-workspace .sidebar-operations {width:42px;}
+  .app-shell--immersive-workspace .sidebar-link {width:42px;justify-content:center;padding:0;}
+}
+@media (max-width: 1100px) {
+  .app-shell--immersive-workspace .analysis-workspace__layout {
+    grid-template-columns:minmax(0,1fr);
+  }
+  .app-shell--immersive-workspace .analysis-workspace__rail {
+    position:static;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .app-shell--immersive-workspace .workspace-hero {
+    grid-template-columns:minmax(0,1fr) 250px;
+    min-height:310px;
+  }
+  .app-shell--immersive-workspace .workspace-hero__visual {
+    transform:scale(.78);
+    transform-origin:center;
+  }
+}
+@media (max-width: 720px) {
+  .app-shell--immersive-workspace {
+    display:block;
+    min-width:320px;
+  }
+  .app-shell--immersive-workspace .app-sidebar {
+    position:sticky;z-index:30;top:0;
+    width:100%;height:auto;min-height:64px;
+    padding:11px 17px;
+    display:flex;flex-wrap:wrap;align-items:center;
+    gap:8px 12px;
+    overflow:visible;
+    background:var(--bg-surface);
+    border-right:0;border-bottom:1px solid var(--border-default);
+    box-shadow:0 6px 26px rgba(0,0,0,.1);
+  }
+  .app-shell--immersive-workspace .sidebar-brand {flex:1;padding:0 4px;}
+  .app-shell--immersive-workspace .sidebar-brand-copy {
+    position:static;width:auto;height:auto;overflow:visible;clip:auto;
+    white-space:normal;display:block;font-size:17px;
+  }
+  .app-shell--immersive-workspace .sidebar-search {display:none;}
+  .app-shell--immersive-workspace .workspace-mobile-menu-toggle {
+    display:inline-flex;align-items:center;justify-content:center;
+    min-height:42px;min-width:84px;padding:8px 12px;
+    border:1px solid var(--border-default);border-radius:10px;
+    background:var(--bg-subtle);color:var(--text-primary);
+    font-size:12px;font-weight:750;cursor:pointer;
+  }
+  .app-shell--immersive-workspace .workspace-mobile-menu-toggle:focus-visible {
+    outline:2px solid var(--accent-primary);outline-offset:2px;
+  }
+  .app-shell--immersive-workspace .sidebar-navigation,
+  .app-shell--immersive-workspace .sidebar-operations {display:none;}
+  .app-shell--immersive-workspace .app-sidebar--workspace-menu-open .sidebar-navigation {
+    display:flex;flex:0 0 100%;width:100%;
+    max-height:min(63vh,560px);overflow-y:auto;
+    padding:12px 2px;
+  }
+  .app-shell--immersive-workspace .app-sidebar--workspace-menu-open .sidebar-operations {
+    display:flex;flex:0 0 100%;width:100%;padding-top:8px;align-items:stretch;
+  }
+  .app-shell--immersive-workspace .sidebar-group {
+    width:100%;gap:4px;
+  }
+  .app-shell--immersive-workspace .sidebar-group-label {
+    position:static;width:auto;height:auto;overflow:visible;clip:auto;
+    white-space:normal;margin:8px 0 5px 8px;
+  }
+  .app-shell--immersive-workspace .sidebar-link {
+    width:100%;height:43px;justify-content:flex-start;padding:0 13px;
+  }
+  .app-shell--immersive-workspace .sidebar-label {
+    position:static;width:auto;height:auto;overflow:visible;clip:auto;
+    white-space:normal;
+  }
+  .app-shell--immersive-workspace .product-screen.analysis-workspace {
+    padding:16px;gap:18px;
+  }
+  .app-shell--immersive-workspace .workspace-hero {
+    grid-template-columns:minmax(0,1fr);min-height:0;padding:26px;
+  }
+  .app-shell--immersive-workspace .workspace-hero__visual {
+    width:100%;height:225px;transform:scale(.67);
+    transform-origin:center;
+  }
+  .app-shell--immersive-workspace .workspace-hero .workspace-hero__headline {
+    font-size:clamp(33px,8vw,47px);
+  }
+  .app-shell--immersive-workspace .analysis-workspace__rail,
+  .app-shell--immersive-workspace .analysis-workspace__grid,
+  .app-shell--immersive-workspace .analysis-workspace__summary-grid,
+  .app-shell--immersive-workspace .analysis-workspace__catalog {
+    grid-template-columns:minmax(0,1fr);
+  }
+  .app-shell--immersive-workspace .analysis-workspace__grid .analysis-workspace__group:last-child {
+    grid-column:auto;
+  }
+}
+@media (max-width: 430px) {
+  .app-shell--immersive-workspace .workspace-hero__visual {display:none;}
+  .app-shell--immersive-workspace .workspace-hero {padding:25px 20px;}
+  .app-shell--immersive-workspace .workspace-hero__meta {gap:8px 12px;}
+  .app-shell--immersive-workspace .analysis-workspace__panel {padding:17px;border-radius:17px;}
+  .app-shell--immersive-workspace .analysis-workspace__preset-options,
+  .app-shell--immersive-workspace .analysis-workspace__filters {
+    grid-template-columns:minmax(0,1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell--immersive-workspace *,
+  .app-shell--immersive-workspace *::before,
+  .app-shell--immersive-workspace *::after {
+    animation:none !important;
+    transition:none !important;
+    scroll-behavior:auto !important;
+  }
+  .app-shell--immersive-workspace .analysis-workspace__catalog li:hover,
+  .app-shell--immersive-workspace .sidebar-link:hover:not(:disabled),
+  .app-shell--immersive-workspace .workspace-hero__actions a:hover { transform:none; }
+}
