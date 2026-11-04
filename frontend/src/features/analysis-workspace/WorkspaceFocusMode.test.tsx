@@ -32,7 +32,11 @@ function Harness({initial}: {initial:readonly WorkspaceUrlTarget[]}) {
   );
 }
 
-afterEach(()=>{document.body.style.overflow="";sessionStorage.clear();});
+afterEach(()=>{
+  document.body.style.overflow="";
+  sessionStorage.clear();
+  Object.defineProperty(window,"innerWidth",{configurable:true,value:1024});
+});
 
 describe("UI-R04-C — opt-in fullscreen graph with adaptive docks",()=>{
   it("opens the viewport dialog, redistributes dock space and restores focus on Escape",async()=>{
@@ -109,6 +113,7 @@ describe("UI-R04-C — opt-in fullscreen graph with adaptive docks",()=>{
   });
 
   it("resizes both docks by keyboard, restores within the tab and resets to automatic layout",async()=>{
+    Object.defineProperty(window,"innerWidth",{configurable:true,value:1440});
     const user=userEvent.setup();
     const view=render(<Harness initial={sample("https://youtu.be/Ab0_-123xyz")}/>);
     const launcher=screen.getByRole("button",{name:"전체 화면 집중 모드"});
@@ -145,6 +150,7 @@ describe("UI-R04-C — opt-in fullscreen graph with adaptive docks",()=>{
   });
 
   it("supports pointer resizing, then removes splitters when docks close",async()=>{
+    Object.defineProperty(window,"innerWidth",{configurable:true,value:1440});
     const user=userEvent.setup();
     render(<Harness initial={sample("https://youtu.be/Ab0_-123xyz")}/>);
     await user.click(screen.getByRole("button",{name:"전체 화면 집중 모드"}));
