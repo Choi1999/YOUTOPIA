@@ -11,6 +11,10 @@
 // 기존 동작을 먼저 등록한다.
 importScripts("background.js");
 
+// YU-41: independent tab-scoped comparison session message handler.
+importScripts("panel-compare-contract.js", "panel-compare-worker.js");
+
+
 // 신규 합성 Summary 경계를 등록한다.
 importScripts(
   "hover-summary-contract.js",

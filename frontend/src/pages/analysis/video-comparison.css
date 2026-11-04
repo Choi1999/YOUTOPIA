@@ -598,3 +598,30 @@
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
+
+/* YU-43: explicit download of verified synthetic CSV summary only. */
+.video-compare__export {
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  padding: 15px;
+  background: var(--bg-subtle);
+}
+.video-compare__export-button {
+  justify-self: start;
+  padding: 10px 14px;
+  border: 1px solid var(--accent-primary);
+  border-radius: 9px;
+  color: var(--accent-on);
+  background: var(--accent-primary);
+  font-weight: 750;
+  font-size: 12px;
+  cursor: pointer;
+}
+.video-compare__export-button:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 3px;
+}
+.video-compare__export > .video-compare__export-status {
+  color: var(--text-primary);
+  font-weight: 650;
+}

@@ -33,6 +33,8 @@ const names = [
   "shared.js",
   "hover-card-model.js",
   "panel-selection-contract.js",
+  "panel-compare-contract.js",
+  "panel-compare-worker.js",
   "hover-summary-contract.js",
   "hover-summary-transport.js",
   "demo-hover-summary-provider.js",
@@ -229,7 +231,8 @@ test("Manifest가 신규 Worker 진입점을 사용하며 기존 권한을 유�
 test("기존 Worker와 신규 Summary 리스너가 함께 등록된다", () => {
   const worker = startWorker();
 
-  assert.equal(worker.listeners.length, 2);
+  assert.equal(worker.listeners.length, 3);
+  assert.ok(worker.context.YUTOPIA_PANEL_COMPARE);
 
   assert.ok(
     worker.context.YUTOPIA_SHARED
