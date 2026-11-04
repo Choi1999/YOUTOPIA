@@ -1,4 +1,5 @@
 import { useState, type PointerEvent } from "react";
+import "./workspace-url.css";
 import {
   workspaceUrlTargetKey,
   type WorkspaceUrlTarget,

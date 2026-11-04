@@ -1,4 +1,5 @@
 import { useState, type DragEvent, type FormEvent } from "react";
+import "./workspace-url.css";
 import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
 import type { WorkspaceUrlIngestResult, WorkspaceUrlTarget } from "./workspaceUrlTargets";
 

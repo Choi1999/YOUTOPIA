@@ -4,6 +4,12 @@ import { Link, useLocation } from "react-router-dom";
 import { demoChannelSelections } from "../../features/analysis/data/demoChannelSelection";
 import { WorkspaceDiscoveryPanels } from "../../features/analysis-workspace/WorkspaceDiscoveryPanels";
 import { WorkspaceHero } from "../../features/analysis-workspace/WorkspaceHero";
+import { WorkspaceUrlTargetBoard } from "../../features/analysis-workspace/WorkspaceUrlTargetBoard";
+import {
+  addWorkspaceUrlTargets, clearWorkspaceUrlTargets, readWorkspaceUrlTargets,
+  workspaceUrlTargetKey, writeWorkspaceUrlTargets,
+  type WorkspaceUrlTarget,
+} from "../../features/analysis-workspace/workspaceUrlTargets";
 import { applyWorkspacePreset, WORKSPACE_PRESETS } from "../../features/analysis-workspace/analysisWorkspacePresets";
 import { withoutAllowedUtmTracking } from "../../features/analysis-target/analysisQueryTracking";
 import {
@@ -64,6 +70,9 @@ export function AnalysisWorkspacePage() {
   const [initial] = useState(loadInitialSession);
   const [session, setSession] = useState<AnalysisWorkspaceSession>(initial.value);
   const [feedback, setFeedback] = useState(initial.status);
+  const [urlTargets, setUrlTargets] = useState<readonly WorkspaceUrlTarget[]>(
+    () => readWorkspaceUrlTargets(getTabStorage()),
+  );
   const paths = buildWorkspacePaths(session);
   const safeQuery = withoutAllowedUtmTracking(new URLSearchParams(location.search));
 
@@ -73,6 +82,33 @@ export function AnalysisWorkspacePage() {
     setFeedback(ok
       ? "작업 구성을 이 브라우저 탭에 보관했습니다. 페이지를 다시 열면 복원됩니다."
       : "브라우저 세션 저장소를 사용할 수 없습니다. 현재 화면에서만 선택을 유지합니다.");
+  }
+
+  function addUrlTargets(raw: string) {
+    const result = addWorkspaceUrlTargets(urlTargets, raw);
+    if (result.added.length > 0) {
+      setUrlTargets(result.targets);
+      const stored = writeWorkspaceUrlTargets(getTabStorage(), result.targets);
+      if (!stored) {
+        setFeedback("URL 등록은 화면에 반영됐지만 탭 저장소에는 보관하지 못했습니다.");
+      }
+    }
+    return result;
+  }
+
+  function removeUrlTarget(key: string) {
+    const next = urlTargets.filter(target => workspaceUrlTargetKey(target) !== key);
+    setUrlTargets(next);
+    if (!writeWorkspaceUrlTargets(getTabStorage(), next)) {
+      setFeedback("등록 목록 변경을 임시 저장소에 기록하지 못했습니다.");
+    }
+  }
+
+  function clearUrlTargetList() {
+    setUrlTargets([]);
+    if (!clearWorkspaceUrlTargets(getTabStorage())) {
+      setFeedback("URL 등록 목록을 화면에서 비웠지만 저장소 삭제는 확인되지 않았습니다.");
+    }
   }
 
   function selectPair(field: WorkspacePairKind, index: 0 | 1, value: string) {
@@ -139,7 +175,9 @@ export function AnalysisWorkspacePage() {
 
   return (
     <div className="product-screen analysis-workspace">
-      <WorkspaceHero />
+      <WorkspaceHero targets={urlTargets} onAddUrls={addUrlTargets} />
+      <WorkspaceUrlTargetBoard targets={urlTargets} onRemove={removeUrlTarget}
+        onClear={clearUrlTargetList} />
 
       <div className="analysis-workspace__layout">
         <div className="analysis-workspace__main">

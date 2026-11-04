@@ -1,4 +1,5 @@
 import {useState} from "react";
+import "./workspace-url.css";
 import type {WorkspaceUrlTarget} from "./workspaceUrlTargets";
 import {workspaceUrlTargetKey} from "./workspaceUrlTargets";
 
