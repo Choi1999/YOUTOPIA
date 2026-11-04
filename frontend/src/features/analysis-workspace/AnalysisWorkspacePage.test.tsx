@@ -43,6 +43,10 @@ describe("YU-50~52 — integrated synthetic analysis workspace", () => {
     expect(within(nav).getByRole("link", {name:"선택 주제 심층 탐색"})).toHaveAttribute(
       "href", "/analysis/youtube/topics?topic=RECIPE&channel=" + A + "&channel=" + B,
     );
+    const user = userEvent.setup();
+    expect(screen.queryByRole("region", {name:"영상 근거 상세"}))
+      .not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", {name:"데이터 범위 보기"}));
     const video = screen.getByRole("region", {name:"영상 근거 상세"});
     expect(await within(video).findByText("120건")).toBeInTheDocument();
     expect(await screen.findByText("240건")).toBeInTheDocument();
