@@ -589,3 +589,17 @@
   .app-shell--immersive-workspace .sidebar-link:hover:not(:disabled),
   .app-shell--immersive-workspace .workspace-hero__actions a:hover { transform:none; }
 }
+
+/* UI-R04-A: nonessential hero animation requires explicit opt-in. */
+.app-shell--immersive-workspace .workspace-hero__ring {animation-play-state:paused;}
+.app-shell--immersive-workspace .workspace-hero--is-playing .workspace-hero__ring {animation-play-state:running;}
+.app-shell--immersive-workspace .workspace-hero__motion-control {
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:40px;margin-top:13px;padding:8px 13px;
+  border:1px solid rgba(176,198,255,.38);border-radius:10px;
+  background:rgba(255,255,255,.045);color:#e1e9ff;font-size:11px;cursor:pointer;
+}
+.app-shell--immersive-workspace .workspace-hero__motion-control:focus-visible {outline:3px solid #83d8d1;outline-offset:3px;}
+@media(prefers-reduced-motion:reduce) {
+  .app-shell--immersive-workspace .workspace-hero--is-playing .workspace-hero__ring {animation:none!important;}
+}
