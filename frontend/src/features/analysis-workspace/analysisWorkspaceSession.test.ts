@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { demoChannelSelections } from "../analysis/data/demoChannelSelection";
 import {
@@ -17,6 +17,8 @@ import {
 const A = demoChannelSelections[0].channelId;
 const B = demoChannelSelections[1].channelId;
 const T = 1_000_000;
+
+afterEach(() => sessionStorage.clear());
 
 describe("YU-51 — bounded, synthetic-only browser-tab work session", () => {
   it("creates canonical navigation without snapshot/credential data", () => {
@@ -53,6 +55,7 @@ describe("YU-51 — bounded, synthetic-only browser-tab work session", () => {
     for (const [field, index, id] of [
       ["videoIds", 0, "Cb0_-123xyz"],
       ["videoIds", 1, "Db0_-123xyz"],
+      ["channelIds", 1, ""],
       ["channelIds", 0, B],
       ["channelIds", 1, A],
       ["videoIds", 0, "Ab0_-123xyz"],

@@ -1,0 +1,114 @@
+/* YU-50~52: responsive synthetic-only analysis workspace. */
+.analysis-workspace { gap: 18px; }
+.analysis-workspace__eyebrow {
+  color: var(--text-secondary); font-weight: 800;
+  font-size: 11px; letter-spacing: .08em;
+}
+.analysis-workspace__panel {
+  min-width: 0; background: var(--bg-surface);
+  border: 1px solid var(--border-default); border-radius: 15px;
+  padding: clamp(16px, 2.1vw, 25px); display: grid; gap: 15px;
+}
+.analysis-workspace__panel h2 {
+  margin: 0; color: var(--text-primary); font-size: 18px;
+}
+.analysis-workspace__panel p,
+.analysis-workspace__group p,
+.analysis-workspace__evidence p {
+  margin: 0; line-height: 1.7; font-size: 12px;
+  color: var(--text-secondary); overflow-wrap: anywhere;
+}
+.analysis-workspace__heading {
+  display: flex; flex-wrap: wrap; align-items: start;
+  justify-content: space-between; gap: 12px;
+}
+.analysis-workspace__heading>div:first-child { display: grid; gap: 6px; }
+.analysis-workspace__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.analysis-workspace button {
+  border: 1px solid var(--border-default); background: var(--bg-subtle);
+  color: var(--text-primary); border-radius: 9px; padding: 9px 12px;
+  cursor: pointer; font-size: 12px; font-weight: 700;
+}
+.analysis-workspace button:disabled { opacity: .45; cursor: default; }
+.analysis-workspace :is(button, select, a):focus-visible {
+  outline: 2px solid var(--accent-primary); outline-offset: 2px;
+}
+.analysis-workspace__feedback {
+  padding: 10px 12px; border-radius: 9px; background: var(--bg-subtle);
+}
+.analysis-workspace__grid {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.analysis-workspace__group {
+  display: grid; align-content: start; gap: 12px; min-width: 0;
+  padding: 14px; border: 1px solid var(--border-default);
+  border-radius: 12px; background: var(--bg-subtle);
+}
+.analysis-workspace__group h3 {
+  margin: 0; font-size: 15px; color: var(--text-primary);
+}
+.analysis-workspace__group label {
+  display: grid; gap: 6px; color: var(--text-primary);
+  font-size: 12px; font-weight: 700;
+}
+.analysis-workspace__group select {
+  width: 100%; min-width: 0; padding: 10px;
+  border-radius: 8px; border: 1px solid var(--border-default);
+  background: var(--bg-surface); color: var(--text-primary);
+  font-size: 12px;
+}
+.analysis-workspace__links {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 9px;
+}
+.analysis-workspace__links a,
+.analysis-workspace__recent a {
+  color: var(--text-link); text-decoration: none; font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.analysis-workspace__links a {
+  border: 1px solid var(--border-default); border-radius: 9px;
+  background: var(--bg-subtle); padding: 9px 12px;
+}
+.analysis-workspace__recent { display: grid; gap: 9px; margin: 0; padding-left: 20px; }
+.analysis-workspace__recent li {
+  color: var(--text-secondary); display: flex; flex-wrap: wrap;
+  gap: 9px; font-size: 12px;
+}
+.analysis-workspace__evidence-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px; align-items: start;
+}
+.analysis-workspace__evidence {
+  min-width: 0; display: grid; align-content: start; gap: 11px;
+  background: var(--bg-subtle); border: 1px solid var(--border-default);
+  border-radius: 12px; padding: 15px;
+}
+.analysis-workspace__evidence h2 { font-size: 15px; line-height: 1.4; }
+.analysis-workspace__evidence code {
+  overflow-wrap: anywhere; color: var(--text-primary);
+}
+.analysis-workspace__counts {
+  display: grid; grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 8px; margin: 0;
+}
+.analysis-workspace__counts>div {
+  border: 1px solid var(--border-default); border-radius: 9px;
+  background: var(--bg-surface); padding: 10px; min-width: 0;
+}
+.analysis-workspace__counts dt { font-size: 11px; color: var(--text-secondary); }
+.analysis-workspace__counts dd {
+  margin: 5px 0 0; font-weight: 750; font-size: 13px;
+  color: var(--text-primary); overflow-wrap: anywhere;
+}
+.analysis-workspace__notice {
+  font-size: 12px; line-height: 1.6; color: var(--text-secondary);
+}
+@media(max-width: 1080px) {
+  .analysis-workspace__grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media(max-width: 750px) {
+  .analysis-workspace__grid, .analysis-workspace__evidence-grid {
+    grid-template-columns: minmax(0,1fr);
+  }
+}
