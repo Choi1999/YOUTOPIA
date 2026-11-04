@@ -204,3 +204,37 @@
     transition:none !important;
   }
 }
+
+/* UI-R04-F: local channel identifiers, never fabricated profile photos. */
+.workspace-target-artwork--channel .workspace-target-artwork__fallback {
+  font-family:"DM Sans","Noto Sans KR",sans-serif;
+  font-size:22px;font-weight:900;letter-spacing:-.025em;
+  text-transform:uppercase;text-shadow:0 3px 14px rgba(0,0,0,.25);
+}
+.workspace-target-artwork--list.workspace-target-artwork--channel .workspace-target-artwork__fallback {font-size:14px;}
+.workspace-target-artwork--detail.workspace-target-artwork--channel .workspace-target-artwork__fallback {font-size:50px;}
+.workspace-channel-identity {
+  display:grid;align-content:start;gap:3px;min-width:0;max-width:100%;
+  line-height:1.5;color:var(--text-secondary,#b9c7df);font-size:11px;
+}
+.workspace-channel-identity__status {
+  display:block;font-weight:750;color:var(--text-link,#a4bbf7);overflow-wrap:anywhere;
+}
+.workspace-channel-identity__verified {
+  font-size:11px;color:var(--text-primary,#eef3ff);overflow-wrap:anywhere;
+}
+.workspace-channel-identity__pending {
+  font-size:10px;color:var(--text-muted,#90a5c3);overflow-wrap:anywhere;
+}
+.workspace-channel-identity--compact {font-size:10px;gap:2px;}
+.workspace-channel-identity--compact .workspace-channel-identity__status {font-size:10px;line-height:1.5;}
+.workspace-channel-identity[data-metadata-state="READY"] .workspace-channel-identity__status {color:var(--xp-mint,#6de0ce);}
+.workspace-channel-identity[data-metadata-state="FAILED"] .workspace-channel-identity__status,
+.workspace-channel-identity[data-metadata-state="STALE"] .workspace-channel-identity__status {color:var(--status-warning-text,#e6bc7d);}
+.workspace-focus__items .workspace-channel-identity {color:var(--focus-muted,#acbfdc);}
+.workspace-focus__items .workspace-channel-identity__status {font-size:10px;color:var(--focus-accent,#a4baff);}
+.workspace-focus__details .workspace-channel-identity {
+  padding:11px;border:1px solid var(--focus-border,#34496b);
+  border-radius:10px;background:var(--focus-elevated,#1a2c4d);
+}
+.workspace-url-board__card-body .workspace-channel-identity {margin-top:6px;}
