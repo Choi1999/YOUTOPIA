@@ -115,6 +115,15 @@
     linear-gradient(transparent 49%,rgba(175,202,250,.11) 50%,transparent 51%),
     #14284b;
 }
+.workspace-url-canvas__minimap-page {
+  position:absolute;
+  border:1px solid rgba(160,185,238,.19);
+  pointer-events:none;
+}
+.workspace-url-canvas__minimap-page.is-current {
+  border-color:#b5d5ff;
+  background:rgba(155,192,252,.09);
+}
 .workspace-url-canvas__minimap-pin {
   position:absolute;
   transform:translate(-50%,-50%);
