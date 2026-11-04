@@ -118,6 +118,26 @@ describe("UI-R04-L — integrated graph search, navigation and minimap", () => {
     );
   });
 
+  it("shows every graph page in the minimap and navigates across them", async () => {
+    const user = userEvent.setup();
+    render(<WorkspaceUrlCanvas targets={sample(27)}/>);
+    const canvas = screen.getByRole("region", { name: "URL 등록 대상 전체 화면 탐색" });
+    const minimap = within(canvas).getByRole("region", { name: "그래프 미니맵" });
+    expect(within(minimap).getAllByRole("button")).toHaveLength(27);
+    const lastPagePin = within(minimap).getByRole("button", {
+      name: "미니맵 영상 A0000000000 이동",
+    });
+    expect(lastPagePin).toHaveAttribute("data-page", "2");
+    expect(minimap.querySelectorAll(".workspace-url-canvas__minimap-page")).toHaveLength(2);
+    await user.click(lastPagePin);
+    expect(within(canvas).getByText("2 / 2")).toBeInTheDocument();
+    expect(minimap.querySelector(".workspace-url-canvas__minimap-page.is-current"))
+      .toHaveStyle({ left: "50%" });
+    expect(within(canvas).getByRole("button", {
+      name: "등록된 영상 A0000000000 선택",
+    })).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("hides and restores the minimap without changing graph registration", async () => {
     const user = userEvent.setup();
     render(<WorkspaceUrlCanvas targets={sample(2)}/>);
