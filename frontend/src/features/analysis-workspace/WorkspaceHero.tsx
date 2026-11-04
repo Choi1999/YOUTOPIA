@@ -9,6 +9,8 @@ type Props = Readonly<{
   targets?: readonly WorkspaceUrlTarget[];
   onAddUrls?: (input: string) => WorkspaceUrlIngestResult;
   onRemoveTarget?: (key: string) => void;
+  allowVideoImage?: boolean;
+  onToggleVideoImage?: () => void;
 }>;
 
 /**
@@ -16,7 +18,7 @@ type Props = Readonly<{
  * local-only; no provider metadata, snapshots or real comment requests.
  * Browser link drop is text-only. File drops are deliberately unsupported.
  */
-export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget}: Props) {
+export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget, allowVideoImage = false, onToggleVideoImage}: Props) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [input, setInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
@@ -110,6 +112,16 @@ export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget}: Props) 
           </p>
           <p role="status" className="workspace-hero__intake-status">{feedback}</p>
         </form>
+        {onToggleVideoImage && (
+          <div className="workspace-hero__image-consent">
+            <button type="button" aria-pressed={allowVideoImage}
+              onClick={onToggleVideoImage}>
+              {allowVideoImage ? "영상 이미지 미리보기 끄기" : "영상 이미지 미리보기 켜기"}
+            </button>
+            <span>켜면 i.ytimg.com에서 공개 영상 이미지를 불러옵니다.
+              외부 이미지 요청만 허용하며 댓글·메타데이터 API는 요청하지 않습니다.</span>
+          </div>
+        )}
         {populated && onAddUrls && onRemoveTarget && (
           <button type="button" className="workspace-hero__focus-launch"
             onClick={() => setFocusOpen(true)}>
@@ -159,7 +171,7 @@ export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget}: Props) 
             CHANNEL / 02
           </span>
         </div>
-      ) : <WorkspaceUrlCanvas targets={targets}/>}
+      ) : <WorkspaceUrlCanvas targets={targets} allowVideoImage={allowVideoImage}/>}
 
       {isDragging && (
         <div className="workspace-hero__drop-overlay" aria-hidden="true">
@@ -170,7 +182,9 @@ export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget}: Props) 
       {focusOpen && populated && onAddUrls && onRemoveTarget &&
         typeof document !== "undefined" && createPortal(
           <WorkspaceFocusMode targets={targets} onAddUrls={onAddUrls}
-            onRemove={onRemoveTarget} onExit={() => setFocusOpen(false)} />,
+            onRemove={onRemoveTarget} onExit={() => setFocusOpen(false)}
+            allowVideoImage={allowVideoImage}
+            onToggleVideoImage={onToggleVideoImage}/>,
           document.body,
         )}
     </header>

@@ -4,6 +4,7 @@ import {
 } from "react";
 
 import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
+import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
 import {
   workspaceUrlTargetKey,
   type WorkspaceUrlIngestResult, type WorkspaceUrlTarget,
@@ -15,6 +16,8 @@ type Props = Readonly<{
   onAddUrls: (raw: string) => WorkspaceUrlIngestResult;
   onRemove: (key: string) => void;
   onExit: () => void;
+  allowVideoImage?: boolean;
+  onToggleVideoImage?: () => void;
 }>;
 
 function kindLabel(kind: WorkspaceUrlTarget["kind"]) {
@@ -31,6 +34,7 @@ function kindLabel(kind: WorkspaceUrlTarget["kind"]) {
  */
 export function WorkspaceFocusMode({
   targets, onAddUrls, onRemove, onExit,
+  allowVideoImage = false, onToggleVideoImage,
 }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const exitRef = useRef<HTMLButtonElement>(null);
@@ -191,6 +195,13 @@ export function WorkspaceFocusMode({
           <button type="submit">추가하기</button>
         </form>
         <div className="workspace-focus__controls">
+          {onToggleVideoImage && (
+            <button type="button" aria-pressed={allowVideoImage}
+              onClick={onToggleVideoImage}
+              title="i.ytimg.com 공개 영상 이미지 요청. 채널 프로필은 조회하지 않음">
+              {allowVideoImage ? "영상 이미지 끄기" : "영상 이미지 켜기"}
+            </button>
+          )}
           <button ref={listToggleRef} type="button"
             aria-pressed={listOpen} aria-controls="workspace-focus-target-dock"
             onClick={toggleList}>대상 목록</button>
@@ -228,7 +239,11 @@ export function WorkspaceFocusMode({
                   <button type="button" key={key} aria-pressed={selectedKey===key}
                     aria-label={"대상 선택 " + kindLabel(target.kind) + " " + target.id}
                     onClick={() => focusTarget(key)}>
-                    <strong>{target.id}</strong>
+                    <span className="workspace-focus__item-ident">
+                      <WorkspaceTargetArtwork target={target} variant="list"
+                        allowVideoImage={allowVideoImage}/>
+                      <strong>{target.id}</strong>
+                    </span>
                     <span>{kindLabel(target.kind)} · 미확인</span>
                   </button>
                 );
@@ -238,7 +253,7 @@ export function WorkspaceFocusMode({
         )}
         <div className="workspace-focus__graph" aria-label="중앙 그래프 탐색 영역">
           <WorkspaceUrlCanvas targets={targets} focusedKey={selectedKey}
-            onFocusChange={focusTarget}/>
+            onFocusChange={focusTarget} allowVideoImage={allowVideoImage}/>
         </div>
         {detailOpen && (
           <aside id="workspace-focus-detail-dock"
@@ -254,6 +269,8 @@ export function WorkspaceFocusMode({
             {selected ? (
               <div className="workspace-focus__details">
                 <span className="workspace-focus__kind">{kindLabel(selected.kind)}</span>
+                <WorkspaceTargetArtwork target={selected} variant="detail"
+                  allowVideoImage={allowVideoImage}/>
                 <h4>{selected.id}</h4>
                 <p>등록 완료 · 분석 대상 미확인</p>
                 <dl>

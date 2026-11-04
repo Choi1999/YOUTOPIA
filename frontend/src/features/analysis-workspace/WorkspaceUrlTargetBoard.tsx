@@ -1,5 +1,6 @@
 import {useState} from "react";
 import "./workspace-url.css";
+import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
 import type {WorkspaceUrlTarget} from "./workspaceUrlTargets";
 import {workspaceUrlTargetKey} from "./workspaceUrlTargets";
 
@@ -9,6 +10,7 @@ type Props=Readonly<{
   targets: readonly WorkspaceUrlTarget[];
   onRemove: (key:string)=>void;
   onClear:()=>void;
+  allowVideoImage?: boolean;
 }>;
 
 function name(kind: WorkspaceUrlTarget["kind"]) {
@@ -22,7 +24,7 @@ function name(kind: WorkspaceUrlTarget["kind"]) {
  * Selecting a card enlarges its footprint if there is enough room.
  * The collection is separate from the two synthetic A/B comparison slots.
  */
-export function WorkspaceUrlTargetBoard({targets,onRemove,onClear}:Props) {
+export function WorkspaceUrlTargetBoard({targets,onRemove,onClear,allowVideoImage = false}:Props) {
   const [selectedKey,setSelectedKey]=useState<string|null>(null);
   const [limit,setLimit]=useState(PAGE_SIZE);
   if (targets.length === 0) return null;
@@ -62,7 +64,8 @@ export function WorkspaceUrlTargetBoard({targets,onRemove,onClear}:Props) {
               </div>
               <div className="workspace-url-board__card-body">
                 <span className="workspace-url-board__orb" aria-hidden="true">
-                  {target.kind==="VIDEO"?"▶":"◎"}
+                  <WorkspaceTargetArtwork target={target} variant="card"
+                    allowVideoImage={allowVideoImage}/>
                 </span>
                 <div>
                   <strong>{target.id}</strong>

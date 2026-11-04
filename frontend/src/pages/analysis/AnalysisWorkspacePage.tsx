@@ -73,6 +73,8 @@ export function AnalysisWorkspacePage() {
   const [urlTargets, setUrlTargets] = useState<readonly WorkspaceUrlTarget[]>(
     () => readWorkspaceUrlTargets(getTabStorage()),
   );
+  // Explicit per-page opt-in; never persisted or inferred from URL registration.
+  const [allowVideoImage, setAllowVideoImage] = useState(false);
   const paths = buildWorkspacePaths(session);
   const safeQuery = withoutAllowedUtmTracking(new URLSearchParams(location.search));
 
@@ -176,9 +178,10 @@ export function AnalysisWorkspacePage() {
   return (
     <div className="product-screen analysis-workspace">
       <WorkspaceHero targets={urlTargets} onAddUrls={addUrlTargets}
-        onRemoveTarget={removeUrlTarget} />
+        onRemoveTarget={removeUrlTarget} allowVideoImage={allowVideoImage}
+        onToggleVideoImage={() => setAllowVideoImage(enabled => !enabled)} />
       <WorkspaceUrlTargetBoard targets={urlTargets} onRemove={removeUrlTarget}
-        onClear={clearUrlTargetList} />
+        onClear={clearUrlTargetList} allowVideoImage={allowVideoImage} />
 
       <div className="analysis-workspace__layout">
         <div className="analysis-workspace__main">
