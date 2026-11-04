@@ -22,6 +22,7 @@ export const yutopiaRoutes: YutopiaRouteDefinition[] = [
   { code: "YU-11", path: "/projects/:projectId/issues", href: `/projects/${DEMO_PROJECT_ID}/issues`, title: "이슈 관리 · 담당자 검토", summary: "허용 전이와 감사 기록을 사용하는 인메모리 Kanban 시뮬레이션" },
   { code: "YU-12", path: "/projects/:projectId/ai-report", href: `/projects/${DEMO_PROJECT_ID}/ai-report`, title: "AI 워크스페이스 · 보고서 공유", summary: "마스킹 근거와 보고서 초안을 사용하는 로컬 시뮬레이션" },
   { code: "YU-35", path: "/analysis/youtube/compare", href: "/analysis/youtube/compare", title: "영상 비교 · 합성 데모", summary: "등록된 합성 영상 ID 두 개를 비교하는 로컬 데모 화면" },
+  { code: "YU-44", path: "/analysis/youtube/channel/:channelId", href: "/analysis/youtube/channel/" + "UC" + "A".repeat(22), title: "채널 상세 · 합성 데모", summary: "명시 등록 합성 채널의 선정 영상 범위만 표시하는 로컬 데모" },
 ];
 
 export function getRoute(code: YutopiaRouteDefinition["code"]) {

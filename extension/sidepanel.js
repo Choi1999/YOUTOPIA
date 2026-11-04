@@ -195,14 +195,16 @@
       const url =
         pin?.isSynthetic === true &&
         pin.source === "STATIC_FIXTURE"
-          ? webLinkApi?.buildVideoUrl(
-              pin.targetType,
-              pin.targetId
-            )
+          ? (pin.targetType === "CHANNEL"
+              ? webLinkApi?.buildChannelUrl(pin.targetType, pin.targetId)
+              : webLinkApi?.buildVideoUrl(pin.targetType, pin.targetId))
           : null;
 
       if (url) {
         webLink.href = url;
+        webLink.textContent = pin.targetType === "CHANNEL"
+          ? "웹 채널 상세 분석 보기 · 로컬 DEMO"
+          : "웹 상세 분석 보기 · 로컬 DEMO";
         webLink.hidden = false;
       } else {
         webLink.hidden = true;

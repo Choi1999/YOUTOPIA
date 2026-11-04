@@ -13,6 +13,7 @@
 
   const BASE_URL = "http://localhost:5173";
   const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
+  const CHANNEL_ID_PATTERN = /^UC[A-Za-z0-9_-]{22}$/;
 
   function buildVideoUrl(targetType, targetId) {
     if (
@@ -57,6 +58,21 @@
       encodeURIComponent(ids[0]) + "&video=" + encodeURIComponent(ids[1]);
   }
 
+  /*
+   * YU-46: a verified clicked CHANNEL target only becomes a route link.
+   * The Web endpoint itself is fail-closed for unregistered channel manifests.
+   * Never claim the channel is analyzed merely because the ID has valid syntax.
+   */
+  function buildChannelUrl(targetType, channelId) {
+    if (
+      targetType !== "CHANNEL" ||
+      typeof channelId !== "string" ||
+      !CHANNEL_ID_PATTERN.test(channelId)
+    ) return null;
+
+    return BASE_URL + "/analysis/youtube/channel/" + channelId;
+  }
+
   scope.YUTOPIA_WEB_ANALYSIS_LINK =
-    Object.freeze({ buildVideoUrl, buildCompareUrl, buildComparePairUrl });
+    Object.freeze({ buildVideoUrl, buildCompareUrl, buildComparePairUrl, buildChannelUrl });
 })(globalThis);

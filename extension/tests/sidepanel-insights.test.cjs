@@ -166,14 +166,17 @@ test("YU33-03 selection change and EMPTY response clear old preview and web navi
   assert.equal(f.panel.getRuntimeStatus().previewVisible,false);
   f.panel.dispose();
 });
-test("YU33-04 verified CHANNEL gets synthetic preview but never VIDEO deep link",async()=>{
+test("YU33/YU46-04 verified CHANNEL gets synthetic preview and CHANNEL-only Web route",async()=>{
   const f=harness();
   f.setReply(f.response("CHANNEL",CHANNEL));
   await f.panel.refresh();
   assert.equal(f.get("demo-preview").hidden,false);
   assert.match(f.get("demo-scope").textContent,/가상/);
-  assert.equal(f.get("web-analysis-link").hidden,true);
-  assert.equal(f.get("web-analysis-link").href,"");
+  assert.equal(f.get("web-analysis-link").hidden,false);
+  assert.equal(f.get("web-analysis-link").href,
+    "http://localhost:5173/analysis/youtube/channel/"+CHANNEL);
+  assert.equal(f.get("web-analysis-link").textContent,
+    "웹 채널 상세 분석 보기 · 로컬 DEMO");
   f.panel.dispose();
 });
 test("YU33-05 invalid, expired, or forged pins never show preview or links",async()=>{

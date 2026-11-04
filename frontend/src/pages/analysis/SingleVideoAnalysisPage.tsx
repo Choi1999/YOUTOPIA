@@ -13,6 +13,7 @@ import { useAnalysisRepository } from "../../features/analysis/data/AnalysisRepo
 import { projectDemoAnalysisSnapshot } from "../../features/analysis/model/analysisProjection";
 import type { AnalysisSnapshot } from "../../features/analysis/model/analysisSnapshot";
 import { parseComparisonQuery, buildComparisonSharePath } from "../../features/analysis-target/comparisonShareLink";
+import { belongsToDemoChannelSelection, demoChannelPath } from "../../features/analysis/data/demoChannelSelection";
 
 
 type LoadState =
@@ -392,6 +393,16 @@ export function SingleVideoAnalysisPage() {
       ? buildComparisonSharePath(incoming.videoIds)
       : null;
 
+  // YU-46: a channel return link is allowed only for the exact registered
+  // synthetic channel-to-video manifest. Never reflect a foreign channel ID.
+  const hints = searchParams.getAll("channel");
+  const returnToChannel = target &&
+    [...searchParams.keys()].every(key => key === "channel") &&
+    hints.length === 1 &&
+    belongsToDemoChannelSelection(hints[0], target.targetId)
+      ? demoChannelPath(hints[0])
+      : null;
+
   return (
     <div className="product-screen">
       <header className="product-heading">
@@ -402,6 +413,12 @@ export function SingleVideoAnalysisPage() {
             to="/analysis/youtube/compare">
             영상 비교 목록
           </Link>
+          {returnToChannel && (
+            <Link className="analysis-detail__compare-link"
+              to={returnToChannel}>
+              선정 합성 채널 분석으로 돌아가기
+            </Link>
+          )}
           {target && (
             <Link className="analysis-detail__compare-link"
               to={returnToComparison ??

@@ -158,8 +158,10 @@ test("Side Panel의 선택 변경 및 초기화를 반영한다", async () => {
   reply = selection("CHANNEL", "UC" + "a".repeat(22));
   await panel.refresh();
 
-  assert.equal(link.hidden, true);
-  assert.equal(link.href, "");
+  assert.equal(link.hidden, false);
+  assert.equal(link.href,
+    "http://localhost:5173/analysis/youtube/channel/UC" + "a".repeat(22));
+  assert.match(link.textContent, /채널 상세 분석/);
   assert.equal(compare.hidden, true);
   assert.equal(compare.href, "");
 
@@ -202,4 +204,24 @@ test("YU-35 Side Panel 비교 URL은 유효한 VIDEO ID 하나만 허용한다",
     assert.equal(api.buildCompareUrl("VIDEO", invalid), null);
   }
   assert.equal(api.buildCompareUrl("VIDEO", null), null);
+});
+
+
+test("YU46 registered or unregistered valid CHANNEL gets a deep link, but never VIDEO route", () => {
+  const ctx = vm.createContext({});
+  load(ctx, "web-analysis-link.js");
+  const api = ctx.YUTOPIA_WEB_ANALYSIS_LINK;
+  const known = "UC" + "A".repeat(22);
+  const unknown = "UC" + "B".repeat(22);
+  assert.equal(api.buildChannelUrl("CHANNEL", known),
+    "http://localhost:5173/analysis/youtube/channel/" + known);
+  assert.equal(api.buildChannelUrl("CHANNEL", unknown),
+    "http://localhost:5173/analysis/youtube/channel/" + unknown);
+  for (const [type, id] of [
+    ["VIDEO", known], ["CHANNEL", "@unresolved"],
+    ["CHANNEL", "../malicious"], ["CHANNEL", "UC" + "A".repeat(23)],
+    ["CHANNEL", "https://evil.example/channel/"],
+  ]) assert.equal(api.buildChannelUrl(type, id), null);
+  assert.equal(api.buildCompareUrl("CHANNEL", known), null);
+  assert.equal(api.buildVideoUrl("CHANNEL", known), null);
 });
