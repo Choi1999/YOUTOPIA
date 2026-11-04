@@ -116,6 +116,6 @@ describe("YU-50~52 — integrated synthetic analysis workspace", () => {
       .toBeInTheDocument();
     expect(within(video).queryByText("120건")).not.toBeInTheDocument();
     expect(sessionStorage.getItem(ANALYSIS_WORKSPACE_SESSION_KEY)).toContain("BAD");
-    expect(screen.getByRole("status", {name:""})).toHaveTextContent(/이전 세션이 만료되었거나/);
+    expect(screen.getByText(/이전 세션이 만료되었거나 검증에 실패/)).toBeInTheDocument();
   });
 });
