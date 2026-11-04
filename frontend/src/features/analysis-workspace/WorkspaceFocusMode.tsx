@@ -225,6 +225,7 @@ export function WorkspaceFocusMode({
                 const key=workspaceUrlTargetKey(target);
                 return (
                   <button type="button" key={key} aria-pressed={selectedKey===key}
+                    aria-label={"대상 선택 " + kindLabel(target.kind) + " " + target.id}
                     onClick={() => focusTarget(key)}>
                     <strong>{target.id}</strong>
                     <span>{kindLabel(target.kind)} · 미확인</span>

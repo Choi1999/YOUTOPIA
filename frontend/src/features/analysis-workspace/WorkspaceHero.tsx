@@ -1,11 +1,14 @@
-import { useState, type DragEvent, type FormEvent } from "react";
+import { useEffect, useState, type DragEvent, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import "./workspace-url.css";
 import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
+import { WorkspaceFocusMode } from "./WorkspaceFocusMode";
 import type { WorkspaceUrlIngestResult, WorkspaceUrlTarget } from "./workspaceUrlTargets";
 
 type Props = Readonly<{
   targets?: readonly WorkspaceUrlTarget[];
   onAddUrls?: (input: string) => WorkspaceUrlIngestResult;
+  onRemoveTarget?: (key: string) => void;
 }>;
 
 /**
@@ -13,10 +16,11 @@ type Props = Readonly<{
  * local-only; no provider metadata, snapshots or real comment requests.
  * Browser link drop is text-only. File drops are deliberately unsupported.
  */
-export function WorkspaceHero({targets = [], onAddUrls}: Props) {
+export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget}: Props) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [input, setInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [focusOpen, setFocusOpen] = useState(false);
   const [feedback, setFeedback] = useState(
     "영상·채널 URL을 붙여넣거나 링크를 끌어다 놓으세요. 외부 데이터를 조회하지 않습니다.",
   );
@@ -57,6 +61,10 @@ export function WorkspaceHero({targets = [], onAddUrls}: Props) {
   }
 
   const populated=targets.length>0;
+  useEffect(() => {
+    if(!populated && focusOpen) setFocusOpen(false);
+  }, [populated, focusOpen]);
+
   return (
     <header
       className={"product-heading workspace-hero" +
@@ -102,6 +110,12 @@ export function WorkspaceHero({targets = [], onAddUrls}: Props) {
           </p>
           <p role="status" className="workspace-hero__intake-status">{feedback}</p>
         </form>
+        {populated && onAddUrls && onRemoveTarget && (
+          <button type="button" className="workspace-hero__focus-launch"
+            onClick={() => setFocusOpen(true)}>
+            전체 화면 집중 모드
+          </button>
+        )}
         <nav className="workspace-hero__actions" aria-label="워크스페이스 빠른 이동">
           <a className="workspace-hero__primary" href="#workspace-session">
             분석 구성하기 <span aria-hidden="true">↗</span>
@@ -153,6 +167,12 @@ export function WorkspaceHero({targets = [], onAddUrls}: Props) {
           <span>화면에서만 즉시 등록 · 데이터 조회 없음</span>
         </div>
       )}
+      {focusOpen && populated && onAddUrls && onRemoveTarget &&
+        typeof document !== "undefined" && createPortal(
+          <WorkspaceFocusMode targets={targets} onAddUrls={onAddUrls}
+            onRemove={onRemoveTarget} onExit={() => setFocusOpen(false)} />,
+          document.body,
+        )}
     </header>
   );
 }

@@ -175,7 +175,8 @@ export function AnalysisWorkspacePage() {
 
   return (
     <div className="product-screen analysis-workspace">
-      <WorkspaceHero targets={urlTargets} onAddUrls={addUrlTargets} />
+      <WorkspaceHero targets={urlTargets} onAddUrls={addUrlTargets}
+        onRemoveTarget={removeUrlTarget} />
       <WorkspaceUrlTargetBoard targets={urlTargets} onRemove={removeUrlTarget}
         onClear={clearUrlTargetList} />
 
