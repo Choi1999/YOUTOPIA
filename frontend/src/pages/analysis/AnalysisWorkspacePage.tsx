@@ -5,7 +5,6 @@ import { demoChannelSelections } from "../../features/analysis/data/demoChannelS
 import { WorkspaceDiscoveryPanels } from "../../features/analysis-workspace/WorkspaceDiscoveryPanels";
 import { WorkspaceHero } from "../../features/analysis-workspace/WorkspaceHero";
 import { WorkspaceUrlTargetBoard } from "../../features/analysis-workspace/WorkspaceUrlTargetBoard";
-import { WorkspaceChannelPreflightPanel } from "../../features/analysis-workspace/WorkspaceChannelPreflightPanel";
 import { ApprovedChannelProfileCache } from "../../features/analysis-workspace/workspaceChannelProfile";
 import {
   addWorkspaceUrlTargets, clearWorkspaceUrlTargets, readWorkspaceUrlTargets,
@@ -77,6 +76,7 @@ export function AnalysisWorkspacePage() {
   );
   // Explicit per-page opt-in; never persisted or inferred from URL registration.
   const [allowVideoImage, setAllowVideoImage] = useState(false);
+  const [showEvidence, setShowEvidence] = useState(false);
   // Empty until a separately authorized, reviewed channel metadata reader exists.
   // The cache is in-memory only and never triggers network calls.
   const [channelProfiles] = useState(() => new ApprovedChannelProfileCache());
@@ -189,7 +189,6 @@ export function AnalysisWorkspacePage() {
       <WorkspaceUrlTargetBoard targets={urlTargets} onRemove={removeUrlTarget}
         onClear={clearUrlTargetList} allowVideoImage={allowVideoImage}
         channelProfiles={channelProfiles} />
-      <WorkspaceChannelPreflightPanel targets={urlTargets} />
 
       <div className="analysis-workspace__layout">
         <div className="analysis-workspace__main">
@@ -284,7 +283,7 @@ export function AnalysisWorkspacePage() {
       <WorkspaceDiscoveryPanels session={session} onSelect={selectPair} />
 
       <section className="analysis-workspace__panel" aria-label="통합 분석 바로가기">
-        <h2>기존 검증 화면으로 이동</h2>
+        <h2>분석 상세 보기</h2>
         <nav className="analysis-workspace__links" aria-label="분석 바로가기">
           {paths.videoDetail && <Link to={paths.videoDetail}>영상 A 상세 분석</Link>}
           {paths.videoCompare && <Link to={paths.videoCompare}>영상 A/B 비교 화면</Link>}
@@ -321,14 +320,29 @@ export function AnalysisWorkspacePage() {
         )}
       </section>
 
-          <section id="workspace-evidence" className="analysis-workspace__panel" aria-label="근거 검토">
-        <h2>분석 근거와 처리 표본</h2>
-        <p>표본 단계·분류 완료 분모·관측 기간·버전을 원래 합성
-          Repository와 검증 Projection을 통해 확인합니다.
-          미등록·미검증·오래된 결과를 임의 수치로 보완하지 않습니다.</p>
-        <div className="analysis-workspace__evidence-grid">
-          <VideoWorkspaceEvidence videoId={session.videoIds[0]} />
-          <ChannelWorkspaceEvidence channelId={session.channelIds[0]} />
+          <section id="workspace-evidence" className="analysis-workspace__panel" aria-label="데이터 범위">
+        <div className="analysis-workspace__heading">
+          <div>
+            <h2>데이터 범위</h2>
+            <p>현재 표시되는 예시 분석의 표본과 적용 범위를 확인할 수 있습니다.</p>
+          </div>
+          <button type="button" aria-expanded={showEvidence}
+            aria-controls="workspace-evidence-details"
+            onClick={() => setShowEvidence(value => !value)}>
+            {showEvidence ? "데이터 범위 접기" : "데이터 범위 보기"}
+          </button>
+        </div>
+        <div id="workspace-evidence-details" hidden={!showEvidence}>
+          {showEvidence && (
+            <>
+              <p>표시되는 수치는 등록된 예시 표본에 한정됩니다.
+                실제 YouTube 전체 반응이나 채널의 전체 시청자를 대표하지 않습니다.</p>
+              <div className="analysis-workspace__evidence-grid">
+                <VideoWorkspaceEvidence videoId={session.videoIds[0]} />
+                <ChannelWorkspaceEvidence channelId={session.channelIds[0]} />
+              </div>
+            </>
+          )}
         </div>
       </section>
 
@@ -336,8 +350,8 @@ export function AnalysisWorkspacePage() {
       </div>
 
       <p className="analysis-workspace__notice">
-        STATIC FIXTURE · 이 화면은 실제 수집·실시간 분석·장기 저장·구독/결제와
-        연결되지 않습니다. 영상·채널의 실제 소속과 전체 여론을 대표하지 않습니다.
+        현재 표시되는 분석 결과는 예시 데이터입니다.
+        URL을 추가해도 실제 YouTube 댓글을 수집하거나 분석하지 않습니다.
       </p>
     </div>
   );
