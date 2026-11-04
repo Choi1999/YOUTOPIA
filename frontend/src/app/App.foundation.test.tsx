@@ -73,6 +73,12 @@ describe("P0-1 라우터·테마·AppShell 기반", () => {
     expect(screen.getByRole("heading", { name: "환영합니다." })).toBeInTheDocument();
   });
 
+  it("YU-55: 유효하지 않은 영상 상세에서도 작업 공간 복귀 링크를 제공한다", () => {
+    renderAt(["/analysis/youtube/video/bad"]);
+    expect(screen.getByRole("link", {name:"통합 분석 워크스페이스로 돌아가기"}))
+      .toHaveAttribute("href", "/analysis/youtube/workspace");
+  });
+
   it("알 수 없는 경로에서 안전한 404 화면을 표시한다", () => {
     renderAt(["/not-a-yutopia-route"]);
     expect(screen.getByRole("heading", { name: "요청한 YUTOPIA 화면을 찾을 수 없습니다." })).toBeInTheDocument();

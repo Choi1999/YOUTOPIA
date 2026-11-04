@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { demoChannelSelections } from "../../features/analysis/data/demoChannelSelection";
+import { WorkspaceDiscoveryPanels } from "../../features/analysis-workspace/WorkspaceDiscoveryPanels";
+import { applyWorkspacePreset, WORKSPACE_PRESETS } from "../../features/analysis-workspace/analysisWorkspacePresets";
 import { withoutAllowedUtmTracking } from "../../features/analysis-target/analysisQueryTracking";
 import {
   ANALYSIS_WORKSPACE_SESSION_KEY,
@@ -137,7 +139,7 @@ export function AnalysisWorkspacePage() {
   return (
     <div className="product-screen analysis-workspace">
       <header className="product-heading">
-        <p className="analysis-workspace__eyebrow">YOUTOPIA · YU-50~52 · STATIC FIXTURE</p>
+        <p className="analysis-workspace__eyebrow">YOUTOPIA · YU-50~55 · STATIC FIXTURE</p>
         <h1>통합 분석 워크스페이스</h1>
         <p>영상·채널·주제 분석을 하나의 작업 흐름으로 연결합니다.
           등록된 합성 샘플에만 적용되며 실제 YouTube 댓글을 조회하지 않습니다.</p>
@@ -155,6 +157,22 @@ export function AnalysisWorkspacePage() {
           </div>
         </div>
         <p role="status" className="analysis-workspace__feedback">{feedback}</p>
+        <section className="analysis-workspace__presets" aria-label="작업 구성 프리셋">
+          <h3>고정 합성 작업 프리셋</h3>
+          <p>등록된 합성 대상의 작업 구성만 전환합니다. 최근 선택 이력은 유지합니다.</p>
+          <div className="analysis-workspace__preset-options">
+            {WORKSPACE_PRESETS.map(preset => (
+              <button key={preset.id} type="button" onClick={() => {
+                const next = applyWorkspacePreset(session, preset.id);
+                if (next) persist(next);
+                else setFeedback("허용되지 않는 프리셋입니다. 작업 구성을 변경하지 않았습니다.");
+              }}>
+                <strong>{preset.label}</strong>
+                <span>{preset.description}</span>
+              </button>
+            ))}
+          </div>
+        </section>
 
         <div className="analysis-workspace__grid">
           <section className="analysis-workspace__group" aria-label="영상 선택">
@@ -214,6 +232,8 @@ export function AnalysisWorkspacePage() {
           </section>
         </div>
       </section>
+
+      <WorkspaceDiscoveryPanels session={session} onSelect={selectPair} />
 
       <section className="analysis-workspace__panel" aria-label="통합 분석 바로가기">
         <h2>기존 검증 화면으로 이동</h2>

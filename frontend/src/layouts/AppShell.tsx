@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import brandDark from "../assets/navigation/brand.svg";
 import brandLight from "../assets/navigation/brand-light.svg";
@@ -109,6 +109,9 @@ function NavigationItem({
  */
 export function AppShell() {
   const reportRoute = getRoute("YU-12");
+  const { pathname } = useLocation();
+  const showWorkspaceReturn = pathname.startsWith("/analysis/youtube/") &&
+    pathname !== "/analysis/youtube/workspace";
 
   return (
     <div className="app-shell">
@@ -157,6 +160,14 @@ export function AppShell() {
         </div>
       </aside>
       <main className="app-main" id="main-content" tabIndex={-1}>
+        {showWorkspaceReturn && (
+          <nav className="analysis-workspace-return" aria-label="분석 워크스페이스 복귀">
+            <NavLink to="/analysis/youtube/workspace">
+              통합 분석 워크스페이스로 돌아가기
+            </NavLink>
+            <span>기존 선택은 브라우저 탭의 유효한 임시 세션에서 복원합니다.</span>
+          </nav>
+        )}
         <Outlet />
       </main>
     </div>

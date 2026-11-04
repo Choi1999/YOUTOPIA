@@ -101,6 +101,24 @@ describe("YU-50~52 — integrated synthetic analysis workspace", () => {
       .toBeInTheDocument();
   });
 
+  it("YU-55: applies a fixed demo preset and restores it after navigation", async () => {
+    const user = userEvent.setup();
+    const view = show();
+    await user.click(screen.getByRole("button",{name:/합성 채널 B 탐색/}));
+    expect(screen.getByRole("combobox",{name:"영상 A"})).toHaveValue("Cb0_-123xyz");
+    expect(screen.getByRole("combobox",{name:"영상 B"})).toHaveValue("Db0_-123xyz");
+    expect(screen.getByRole("combobox",{name:"채널 A"})).toHaveValue(B);
+    expect(screen.getByRole("combobox",{name:"주제 ID"})).toHaveValue("QUALITY");
+    expect(JSON.parse(sessionStorage.getItem(ANALYSIS_WORKSPACE_SESSION_KEY)!).topicId)
+      .toBe("QUALITY");
+    view.unmount();
+    show();
+    expect(screen.getByRole("combobox",{name:"영상 A"})).toHaveValue("Cb0_-123xyz");
+    await user.click(screen.getByRole("button",{name:/PRICE 교차 탐색/}));
+    expect(screen.getByRole("combobox",{name:"영상 A"})).toHaveValue("Qb0_-123xyz");
+    expect(screen.getByRole("combobox",{name:"주제 ID"})).toHaveValue("PRICE");
+  });
+
   it("rejects corrupt/unregistered state and blocks missing evidence", async () => {
     sessionStorage.setItem(ANALYSIS_WORKSPACE_SESSION_KEY, JSON.stringify({
       version:1, savedAt:Date.now(), videoIds:["Ab0_-123xyz","unknown"],
