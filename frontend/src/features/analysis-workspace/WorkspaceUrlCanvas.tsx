@@ -9,6 +9,9 @@ const PER_VIEW = 24;
 
 type Props = Readonly<{
   targets: readonly WorkspaceUrlTarget[];
+  /** Optional controlled focus, shared with fullscreen docking panels. */
+  focusedKey?: string | null;
+  onFocusChange?: (key: string | null) => void;
 }>;
 
 function positions(index:number, total:number) {
@@ -24,8 +27,13 @@ function positions(index:number, total:number) {
  * A static, deterministic 2.5D diagram precedes any separately approved
  * WebGL/WebGPU or provider-metadata functionality.
  */
-export function WorkspaceUrlCanvas({targets}:Props) {
-  const [focusedKey,setFocusedKey]=useState<string|null>(null);
+export function WorkspaceUrlCanvas({targets,focusedKey:controlledKey,onFocusChange}:Props) {
+  const [internalFocusedKey,setInternalFocusedKey]=useState<string|null>(null);
+  const focusedKey = controlledKey === undefined ? internalFocusedKey : controlledKey;
+  function setFocusedKey(key:string|null) {
+    if(controlledKey === undefined) setInternalFocusedKey(key);
+    onFocusChange?.(key);
+  }
   const [zoom,setZoom]=useState(1);
   const [pan,setPan]=useState({x:0,y:0});
   const [dragStart,setDragStart]=useState<{
@@ -35,8 +43,14 @@ export function WorkspaceUrlCanvas({targets}:Props) {
 
   if(!targets.length) return null;
   const totalPages=Math.ceil(targets.length/PER_VIEW);
-  const safePage=Math.min(page,totalPages-1);
   const sorted=[...targets].reverse();
+  const focusedIndex=sorted.findIndex(target =>
+    workspaceUrlTargetKey(target) === focusedKey);
+  // Selecting a target from the dock navigates to its canvas page without
+  // changing registration order or losing the current viewport controls.
+  const safePage=controlledKey !== undefined && focusedIndex >= 0
+    ? Math.floor(focusedIndex/PER_VIEW)
+    : Math.min(page,totalPages-1);
   const visible=sorted.slice(safePage*PER_VIEW,(safePage+1)*PER_VIEW);
   const focused=visible.find(t=>workspaceUrlTargetKey(t)===focusedKey)??null;
 
