@@ -1,0 +1,206 @@
+/*
+ * UI-R04-E — opt-in video artwork and explicit channel placeholders.
+ * Frame sizes are reserved before the image loads, preventing layout jumps.
+ * No URL metadata or image requests occur until the user enables previews.
+ */
+.workspace-target-artwork {
+  position:relative;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  isolation:isolate;
+  width:100%;
+  height:100%;
+  min-width:0;
+  background:
+    radial-gradient(circle at 23% 14%,rgba(187,209,255,.28),transparent 45%),
+    linear-gradient(145deg,#365890 0%,#172b53 60%,#091729 100%);
+  color:#deedff;
+}
+.workspace-target-artwork--channel {
+  background:
+    radial-gradient(circle at 23% 15%,rgba(159,250,230,.32),transparent 48%),
+    linear-gradient(145deg,#277d8b 0%,#165068 60%,#0b2b39 100%);
+}
+.workspace-target-artwork--video {
+  border-radius:inherit;
+}
+.workspace-target-artwork--channel {
+  border-radius:50%;
+}
+.workspace-target-artwork img {
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border:0;
+}
+.workspace-target-artwork__fallback {
+  position:relative;
+  z-index:1;
+  font-weight:800;
+  font-size:20px;
+  line-height:1;
+  pointer-events:none;
+  text-shadow:0 4px 20px rgba(0,0,0,.45);
+}
+/* 16:9 video nodes differ intentionally from circular channel avatars. */
+.workspace-url-canvas__node.is-video .workspace-url-canvas__node-bubble {
+  width:94px;
+  height:54px;
+  border-radius:14px;
+  overflow:hidden;
+}
+.workspace-url-canvas__node.is-channel .workspace-url-canvas__node-bubble {
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  overflow:hidden;
+}
+.workspace-url-canvas__node-bubble .workspace-target-artwork--node {
+  width:100%;
+  height:100%;
+}
+.workspace-url-board__card-body .workspace-url-board__orb {
+  width:82px;
+  height:50px;
+  border-radius:12px;
+  overflow:hidden;
+  flex:0 0 82px;
+}
+.workspace-url-board__card-body .workspace-url-board__orb:has(.workspace-target-artwork--channel) {
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  flex-basis:52px;
+}
+.workspace-target-artwork--list {
+  flex:0 0 42px;
+  width:42px;
+  height:26px;
+  border-radius:7px;
+}
+.workspace-target-artwork--list.workspace-target-artwork--channel {
+  flex-basis:34px;
+  width:34px;
+  height:34px;
+  border-radius:50%;
+}
+.workspace-target-artwork--list .workspace-target-artwork__fallback {font-size:13px;}
+.workspace-focus__item-ident {
+  display:flex;
+  flex-wrap:nowrap;
+  align-items:center;
+  min-width:0;
+  gap:10px;
+}
+.workspace-focus__item-ident strong {
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+.workspace-target-artwork--detail {
+  width:100%;
+  min-height:0;
+  height:auto;
+  aspect-ratio:16/9;
+  border:1px solid rgba(157,183,238,.32);
+  border-radius:14px;
+}
+.workspace-target-artwork--detail.workspace-target-artwork--channel {
+  width:min(100%,145px);
+  aspect-ratio:1;
+  border-radius:50%;
+  justify-self:center;
+}
+.workspace-target-artwork--detail .workspace-target-artwork__fallback {
+  font-size:35px;
+}
+.workspace-target-artwork__caption {
+  position:absolute;
+  bottom:0;
+  left:0;
+  right:0;
+  z-index:2;
+  padding:10px 12px;
+  background:linear-gradient(0deg,rgba(3,9,23,.88),transparent);
+  color:#f2f7ff !important;
+  font-size:10px !important;
+  line-height:1.5;
+  text-align:center;
+}
+.workspace-focus__controls button[aria-pressed="true"] {
+  border-color:var(--focus-accent);
+}
+.app-shell--immersive-workspace .workspace-hero__image-consent {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px 14px;
+  min-width:0;
+  margin-top:13px;
+}
+.app-shell--immersive-workspace .workspace-hero__image-consent button {
+  min-height:42px;
+  padding:9px 13px;
+  border:1px solid rgba(178,206,254,.5);
+  border-radius:10px;
+  background:rgba(91,130,215,.14);
+  color:#f0f5ff;
+  font-size:12px;
+  font-weight:750;
+  cursor:pointer;
+}
+.app-shell--immersive-workspace .workspace-hero__image-consent button[aria-pressed="true"] {
+  border-color:#7ce2d5;
+  background:rgba(80,179,167,.23);
+}
+.app-shell--immersive-workspace .workspace-hero__image-consent span {
+  flex:1 1 190px;
+  min-width:0;
+  max-width:500px;
+  font-size:11px;
+  color:#b9cae7;
+  line-height:1.6;
+}
+.app-shell--immersive-workspace .workspace-hero--populated .workspace-hero__image-consent {
+  flex:1 1 380px;
+  margin:0;
+  justify-content:flex-end;
+}
+.app-shell--immersive-workspace .workspace-hero--populated .workspace-hero__image-consent span {
+  max-width:300px;
+}
+.app-shell--immersive-workspace .workspace-hero__image-consent button:focus-visible {
+  outline:2px solid #8ae8d8;
+  outline-offset:3px;
+}
+@media(max-width:850px) {
+  .app-shell--immersive-workspace .workspace-hero--populated .workspace-hero__image-consent {
+    flex:1 1 100%;
+    justify-content:flex-start;
+  }
+}
+@media(max-width:430px) {
+  .workspace-url-canvas__node.is-video .workspace-url-canvas__node-bubble {
+    width:76px;
+    height:44px;
+    border-radius:11px;
+  }
+  .workspace-url-board__card-body .workspace-url-board__orb {
+    width:68px;
+    height:43px;
+    flex-basis:68px;
+  }
+  .app-shell--immersive-workspace .workspace-hero__image-consent span {
+    flex:1 1 100%;
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+  .workspace-target-artwork,
+  .workspace-target-artwork * {
+    animation:none !important;
+    transition:none !important;
+  }
+}
