@@ -8,6 +8,7 @@ import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
 import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
 import { WorkspaceChannelIdentity } from "./WorkspaceChannelIdentity";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
+import { metadataStateLabel, type StateScenario } from "./workspaceMetadataConsumerState";
 import type { WorkspaceNodeGroup } from "./workspaceNodeGroups";
 import type { GraphVisit } from "./workspaceGraphNavigation";
 import { hasGraphBookmark, toggleGraphBookmark } from "./workspaceGraphBookmarks";
@@ -42,6 +43,12 @@ type Props = Readonly<{
   syntheticServerEnabled?: boolean;
   syntheticServerStatus?: string;
   onToggleSyntheticServer?: () => void;
+  stateDemoAvailable?: boolean;
+  stateDemoEnabled?: boolean;
+  stateScenario?: StateScenario;
+  onStateScenarioChange?: (value:StateScenario)=>void;
+  onToggleStateDemo?: () => void;
+  onRefreshStateDemo?: () => void;
   presentation?: WorkspaceTargetPresentation;
   onSetTargetLabel?: (key: string, label: string) => boolean;
   onSetChannelArtwork?: (key: string, imageUrl: string) => boolean;
@@ -76,6 +83,9 @@ export function WorkspaceFocusMode({
   syntheticPreviewEnabled = false, onToggleSyntheticPreview,
   syntheticServerAvailable = false, syntheticServerEnabled = false,
   syntheticServerStatus = "", onToggleSyntheticServer,
+  stateDemoAvailable = false, stateDemoEnabled = false,
+  stateScenario = "READY", onStateScenarioChange, onToggleStateDemo,
+  onRefreshStateDemo,
   presentation = EMPTY_TARGET_PRESENTATION, onSetTargetLabel, onSetChannelArtwork,
   groups = [], onGroupsChange, bookmarks = [], onBookmarksChange,
 }: Props) {
@@ -422,6 +432,28 @@ export function WorkspaceFocusMode({
               {syntheticServerEnabled ? "Spring 합성 연결 끄기" : "Spring 합성 연결"}
             </button>
           )}
+          {stateDemoAvailable && onToggleStateDemo && (
+            <button type="button" aria-pressed={stateDemoEnabled}
+              onClick={onToggleStateDemo}
+              title="개발 전용 Spring 상태 계약 테스트: 실 API·인증 메타데이터 아님">
+              {stateDemoEnabled ? "상태 QA 끄기" : "메타데이터 상태 QA"}
+            </button>
+          )}
+          {stateDemoAvailable && stateDemoEnabled && onStateScenarioChange && (
+            <label>
+              QA 시나리오
+              <select aria-label="메타데이터 QA 시나리오" value={stateScenario}
+                onChange={event=>onStateScenarioChange(event.target.value as StateScenario)}>
+                <option value="READY">READY</option>
+                <option value="NOT_FOUND">NOT_FOUND</option>
+                <option value="FAILED">FAILED</option>
+                <option value="STALE">STALE</option>
+              </select>
+            </label>
+          )}
+          {stateDemoAvailable && stateDemoEnabled && onRefreshStateDemo && (
+            <button type="button" onClick={onRefreshStateDemo}>메타데이터 새로고침</button>
+          )}
           {onToggleChannelImage && (
             <button type="button" aria-pressed={allowChannelImage}
               onClick={onToggleChannelImage}
@@ -451,7 +483,7 @@ export function WorkspaceFocusMode({
         </div>
       </header>
       <div className="workspace-focus__message" role="status">
-        {(syntheticPreviewEnabled || syntheticServerEnabled) && (
+        {(syntheticPreviewEnabled || syntheticServerEnabled || stateDemoEnabled) && (
           <strong>합성 데이터 미리보기 · 실제 영상·채널 제목이나 YouTube 응답이 아닙니다. 분석 데이터 없음. </strong>
         )}
         {syntheticServerEnabled && <span>{syntheticServerStatus} · </span>}
@@ -565,6 +597,12 @@ export function WorkspaceFocusMode({
                   presentation={presentation} channelProfiles={channelProfiles}/>
                 <h4>{userFacingTargetName(selected, presentation, channelProfiles)}</h4>
                 <p className="workspace-focus__secondary-id">등록 식별자: {selected.id}</p>
+                {presentation.metadataStates?.[selectedKey ?? ""] && (
+                  <p data-metadata-status={presentation.metadataStates[selectedKey ?? ""].status}>
+                    {metadataStateLabel(presentation.metadataStates[selectedKey ?? ""])}
+                    {" · 영상·채널 소속 미검증"}
+                  </p>
+                )}
                 {presentation.synthetic?.[selectedKey ?? ""]?.channelName && (
                   <p>합성 채널 정보: {presentation.synthetic[selectedKey ?? ""].channelName}</p>
                 )}
