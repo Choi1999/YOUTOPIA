@@ -28,7 +28,8 @@ function endpoint(target: Pick<WorkspaceUrlTarget, "kind" | "id">): string | nul
     encodeURIComponent(target.id);
 }
 
-async function limitedJson(response: Response): Promise<unknown> {
+/** Shared bounded streaming reader: never interpret raw untrusted body as approval. */
+export async function limitedJson(response: Response): Promise<unknown> {
   const length = response.headers.get("content-length");
   if (length !== null && (!/^\d+$/.test(length) ||
     Number(length) > SYNTHETIC_HTTP_MAX_BYTES)) return null;
