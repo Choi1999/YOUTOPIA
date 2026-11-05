@@ -61,8 +61,12 @@ class MetadataSyntheticHttpLoopbackTest {
             assertTrue(record.path("title").asText().startsWith("합성 "));
             assertFalse(root.toString().contains("apiKey"));
             assertFalse(root.toString().contains("thumbnailUrl"));
-            assertEquals("null", spec[1].equals("VIDEO")
-                    ? "not-null" : record.path("channelName").toString());
+            if (spec[1].equals("VIDEO")) {
+                assertEquals("합성 채널 안내 · 실제 소속 미확인",
+                        record.path("channelName").asText());
+            } else {
+                assertTrue(record.path("channelName").isNull());
+            }
         }
     }
 
