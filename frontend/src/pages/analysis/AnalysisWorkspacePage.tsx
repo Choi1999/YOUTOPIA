@@ -5,6 +5,11 @@ import { demoChannelSelections } from "../../features/analysis/data/demoChannelS
 import { WorkspaceDiscoveryPanels } from "../../features/analysis-workspace/WorkspaceDiscoveryPanels";
 import { WorkspaceHero } from "../../features/analysis-workspace/WorkspaceHero";
 import { WorkspaceUrlTargetBoard } from "../../features/analysis-workspace/WorkspaceUrlTargetBoard";
+import { readFocusDockLayout } from "../../features/analysis-workspace/workspaceFocusLayout";
+import {
+  chooseWorkspaceDockTarget, createWorkspaceDockState,
+  reconcileWorkspaceDockState,
+} from "../../features/analysis-workspace/workspaceDockState";
 import { workspaceDiagnosticsEnabled } from "../../features/analysis-workspace/workspaceDiagnosticsGate";
 import { ApprovedChannelProfileCache } from "../../features/analysis-workspace/workspaceChannelProfile";
 import { createOfflineWorkspacePreview, type SyntheticWorkspaceMetadata } from "../../features/analysis-workspace/workspaceSyntheticMetadata";
@@ -91,6 +96,14 @@ export function AnalysisWorkspacePage({diagnosticsMode = false}: Readonly<{
   const [urlTargets, setUrlTargets] = useState<readonly WorkspaceUrlTarget[]>(
     () => readWorkspaceUrlTargets(getTabStorage()),
   );
+  // One selection/open-docks/widths model for graph, focus list and fallback
+  // registered-target board. The former board is hidden while focus is open.
+  const [focusOpen, setFocusOpen] = useState(true);
+  const [dockState, setDockState] = useState(() =>
+    createWorkspaceDockState(readFocusDockLayout(getTabStorage())));
+  useEffect(() => {
+    setDockState(previous => reconcileWorkspaceDockState(previous,urlTargets));
+  }, [urlTargets]);
   // Explicit per-page opt-in; never persisted or inferred from URL registration.
   const [allowVideoImage, setAllowVideoImage] = useState(false);
   const [allowChannelImage, setAllowChannelImage] = useState(false);
@@ -215,6 +228,12 @@ export function AnalysisWorkspacePage({diagnosticsMode = false}: Readonly<{
   function addUrlTargets(raw: string) {
     const result = addWorkspaceUrlTargets(urlTargets, raw);
     if (result.added.length > 0) {
+      if (!focusOpen) {
+        const newest=workspaceUrlTargetKey(result.added[result.added.length-1]);
+        setDockState(previous =>
+          chooseWorkspaceDockTarget(previous,newest,result.targets));
+        setFocusOpen(true);
+      }
       setUrlTargets(result.targets);
       const stored = writeWorkspaceUrlTargets(getTabStorage(), result.targets);
       if (!stored) {
@@ -225,10 +244,12 @@ export function AnalysisWorkspacePage({diagnosticsMode = false}: Readonly<{
   }
 
   function removeUrlTarget(key: string) {
+    const remaining=urlTargets.filter(target => workspaceUrlTargetKey(target) !== key);
+    setDockState(previous => reconcileWorkspaceDockState(previous,remaining));
     for (const target of urlTargets) {
       if (workspaceUrlTargetKey(target) === key) stateCache.invalidate(target);
     }
-    const next = urlTargets.filter(target => workspaceUrlTargetKey(target) !== key);
+    const next = remaining;
     setUrlTargets(next);
     if (!writeWorkspaceUrlTargets(getTabStorage(), next)) {
       setFeedback("등록 목록 변경을 임시 저장소에 기록하지 못했습니다.");
@@ -236,6 +257,7 @@ export function AnalysisWorkspacePage({diagnosticsMode = false}: Readonly<{
   }
 
   function clearUrlTargetList() {
+    setDockState(previous => reconcileWorkspaceDockState(previous,[]));
     stateCache.clear();
     setUrlTargets([]);
     if (!clearWorkspaceUrlTargets(getTabStorage())) {
@@ -308,6 +330,9 @@ export function AnalysisWorkspacePage({diagnosticsMode = false}: Readonly<{
   return (
     <div className="product-screen analysis-workspace">
       <WorkspaceHero diagnosticsMode={diagnosticAccess}
+        focusOpen={focusOpen} onFocusOpenChange={setFocusOpen}
+        dockState={dockState} onDockStateChange={setDockState}
+        onClearTargetList={clearUrlTargetList}
         targets={urlTargets} onAddUrls={addUrlTargets}
         onRemoveTarget={removeUrlTarget} allowVideoImage={allowVideoImage}
         onToggleVideoImage={() => setAllowVideoImage(enabled => !enabled)}
@@ -355,10 +380,18 @@ export function AnalysisWorkspacePage({diagnosticsMode = false}: Readonly<{
           setPresentation(next);
           return next !== presentation;
         }}/>
-      <WorkspaceUrlTargetBoard targets={urlTargets} onRemove={removeUrlTarget}
-        onClear={clearUrlTargetList} allowVideoImage={allowVideoImage}
-        allowChannelImage={allowChannelImage} presentation={displayedPresentation}
-        channelProfiles={channelProfiles} />
+      {!focusOpen && (
+        <WorkspaceUrlTargetBoard targets={urlTargets} onRemove={removeUrlTarget}
+          onClear={clearUrlTargetList} allowVideoImage={allowVideoImage}
+          allowChannelImage={allowChannelImage} presentation={displayedPresentation}
+          selectedKey={dockState.selectedKey}
+          onSelectTarget={key => {
+            setDockState(previous => chooseWorkspaceDockTarget(
+              previous,key,urlTargets));
+            setFocusOpen(true);
+          }}
+          channelProfiles={channelProfiles} />
+      )}
 
       <div className="analysis-workspace__layout">
         <div className="analysis-workspace__main">
