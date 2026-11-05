@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "registryId": "YU_VIDEO_G2C_BLENDER_EVIDENCE_V01",
+  "reviewedAt": "2026-11-05",
+  "provenance": "PUBLISHER_PUBLIC_DOCUMENTS_ONLY",
+  "mediaBytesExamined": false,
+  "subtitleBytesExamined": false,
+  "youtubeMediaExtracted": false,
+  "providerApiCalls": 0,
+  "actualSpendUsd": 0,
+  "modelTransmissionAuthorized": false,
+  "serviceRightsApproved": false,
+  "sourceToYoutubeEquivalent": false,
+  "spokenCaptionAlignmentVerified": false,
+  "humanGoldLabelsVerified": false,
+  "approvedRealDatasetCount": 0,
+  "films": [
+    {
+      "slot": "SYNTH-VID-05",
+      "filmId": "SINTEL",
+      "title": "Sintel",
+      "publisher": "Blender Foundation",
+      "license": "CC_BY_3_0",
+      "publisherLicenseUrl": "https://durian.blender.org/sharing/",
+      "publisherDownloadUrl": "https://durian.blender.org/download/",
+      "publishedDuration": {
+        "seconds": 888,
+        "kind": "BLENDER_STUDIO_PAGE_METADATA_NOT_MEDIA_PROBE",
+        "source": "https://studio.blender.org/projects/sintel/"
+      },
+      "publisherEnglishSrtListed": true,
+      "subtitleReference": "https://durian.blender.org/download/",
+      "youtubePointer": "https://www.youtube.com/watch?v=eRsGyueVLvQ",
+      "youtubePointerEvidence": "https://vimeo.com/59785024",
+      "youtubePointerProvenance": "DIRECTOR_CROSS_LINK_NOT_MEDIA_COMPARISON",
+      "attributionConstraint": "FILM_CREDITS_SCROLL_ON_REDISTRIBUTION_OR_SCREENING; ATTRIBUTION_OTHER_USES",
+      "separatedRightsConcern": "LOGOS_AND_TRADED_MARKS_EXCLUDED_FROM_LICENSE",
+      "candidateVariants": [
+        {
+          "variantId": "SINTEL_OFFICIAL_DISTRIBUTION",
+          "description": "Official original movie; resolution/codec must be chosen after permitted source inspection",
+          "source": "https://durian.blender.org/download/"
+        }
+      ],
+      "selectedVariantId": null,
+      "rightsForLLMProcessing": "INDEPENDENT_SCOPE_REVIEW_REQUIRED",
+      "publisherSubtitleObtained": false,
+      "publisherVideoObtained": false,
+      "localMediaFingerprint": null,
+      "localCaptionFingerprint": null,
+      "youtubeVersionContentCompared": false,
+      "captionBoundsChecked": false,
+      "speechCaptionAlignmentChecked": false,
+      "independentLegalReviewers": 0,
+      "independentGoldReviewers": 0,
+      "approvedForEvaluation": false
+    },
+    {
+      "slot": "SYNTH-VID-06",
+      "filmId": "TEARS_OF_STEEL",
+      "title": "Tears of Steel",
+      "publisher": "Blender Foundation",
+      "license": "CC_BY_3_0",
+      "publisherLicenseUrl": "https://mango.blender.org/about/",
+      "publisherDownloadUrl": "https://mango.blender.org/download/",
+      "publishedDuration": {
+        "seconds": 734,
+        "kind": "BLENDER_STUDIO_PAGE_METADATA_NOT_MEDIA_PROBE",
+        "source": "https://studio.blender.org/projects/tears-of-steel/?asset=42"
+      },
+      "publisherEnglishSrtListed": true,
+      "subtitleReference": "https://mango.blender.org/download/",
+      "youtubePointer": "https://www.youtube.com/watch?v=OHOpb2fS-cM",
+      "youtubePointerEvidence": "https://commons.wikimedia.org/wiki/File:Tears_of_Steel_in_4k_-_Official_Blender_Foundation_release.webm",
+      "youtubePointerProvenance": "THIRD_PARTY_4K_POINTER_BLENDER_POST_CONFIRMS_4K_YOUTUBE_BUT_NOT_ID",
+      "attributionConstraint": "FULL_CREDITS_SCROLL_RETAINED",
+      "separatedRightsConcern": "ACTOR_PORTRAIT_AND_PRIVACY_RIGHTS_SEPARATE_FROM_CC_LICENSE",
+      "candidateVariants": [
+        {
+          "variantId": "TOS_FIRST_HD_2012",
+          "description": "Original HD rendered version",
+          "source": "https://mango.blender.org/download/"
+        },
+        {
+          "variantId": "TOS_RERENDER_4K_2013",
+          "description": "New 4K re-rendered and re-graded edit (available as HD downscale/4K MOV)",
+          "source": "https://mango.blender.org/download/"
+        }
+      ],
+      "selectedVariantId": null,
+      "rightsForLLMProcessing": "INDEPENDENT_SCOPE_REVIEW_REQUIRED",
+      "publisherSubtitleObtained": false,
+      "publisherVideoObtained": false,
+      "localMediaFingerprint": null,
+      "localCaptionFingerprint": null,
+      "youtubeVersionContentCompared": false,
+      "captionBoundsChecked": false,
+      "speechCaptionAlignmentChecked": false,
+      "independentLegalReviewers": 0,
+      "independentGoldReviewers": 0,
+      "approvedForEvaluation": false
+    }
+  ]
+}
