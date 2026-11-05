@@ -17,6 +17,9 @@ type Props=Readonly<{
   targets: readonly WorkspaceUrlTarget[];
   onRemove: (key:string)=>void;
   onClear:()=>void;
+  selectedKey?: string|null;
+  /** In integrated mode use the graph's single selection/detail, not a card expansion. */
+  onSelectTarget?: (key:string)=>void;
   allowVideoImage?: boolean;
   allowChannelImage?: boolean;
   presentation?: WorkspaceTargetPresentation;
@@ -35,10 +38,12 @@ function name(kind: WorkspaceUrlTarget["kind"]) {
  * The collection is separate from the two synthetic A/B comparison slots.
  */
 export function WorkspaceUrlTargetBoard({
-  targets,onRemove,onClear,allowVideoImage = false, allowChannelImage = false,
+  targets,onRemove,onClear,selectedKey: externalKey,onSelectTarget,
+  allowVideoImage = false, allowChannelImage = false,
   presentation = EMPTY_TARGET_PRESENTATION, channelProfiles,
 }:Props) {
-  const [selectedKey,setSelectedKey]=useState<string|null>(null);
+  const [legacySelectedKey,setLegacySelectedKey]=useState<string|null>(null);
+  const selectedKey = onSelectTarget ? externalKey ?? null : legacySelectedKey;
   const [limit,setLimit]=useState(PAGE_SIZE);
   if (targets.length === 0) return null;
 
@@ -49,12 +54,16 @@ export function WorkspaceUrlTargetBoard({
   const density=count===1?"single":count===2?"pair":count<=6?"flex":"dense";
 
   return (
-    <section id="workspace-imports" className="analysis-workspace__panel workspace-url-board"
+    <section id="workspace-imports" className={"analysis-workspace__panel workspace-url-board" +
+        (onSelectTarget ? " workspace-url-board--integrated" : "")}
       aria-label="URL로 추가한 분석 대상">
       <div className="analysis-workspace__heading">
         <div>
-          <p className="workspace-url-board__eyebrow">DYNAMIC WORKSPACE / URL TARGETS</p>
-          <h2>등록 대상 컬렉션 <span className="workspace-url-board__count">{count}</span></h2>
+          {!onSelectTarget && (
+            <p className="workspace-url-board__eyebrow">DYNAMIC WORKSPACE / URL TARGETS</p>
+          )}
+          <h2>{onSelectTarget ? "등록 대상 목록" : "등록 대상 컬렉션"}{" "}
+            <span className="workspace-url-board__count">{count}</span></h2>
           <p>추가한 영상과 채널을 확인하고 관리할 수 있습니다.</p>
         </div>
         <button type="button" onClick={onClear} className="workspace-url-board__clear">URL 등록 목록 비우기</button>
@@ -97,18 +106,20 @@ export function WorkspaceUrlTargetBoard({
               </div>
               <div className="workspace-url-board__card-controls">
                 <button type="button" aria-pressed={expanded}
-                  onClick={()=>setSelectedKey(expanded?null:key)}>
-                  {expanded?"패널 접기":"패널 확장"}
+                  onClick={()=>onSelectTarget
+                     ? onSelectTarget(key)
+                     : setLegacySelectedKey(expanded?null:key)}>
+                  {onSelectTarget ? "그래프에서 보기" : expanded?"패널 접기":"패널 확장"}
                 </button>
                 <a href={target.canonicalUrl} target="_blank" rel="noopener noreferrer">
                   YouTube에서 열기
                 </a>
                 <button type="button" onClick={()=>{
-                  if (selectedKey===key) setSelectedKey(null);
+                  if (!onSelectTarget && selectedKey===key) setLegacySelectedKey(null);
                   onRemove(key);
                 }}>제거</button>
               </div>
-              {expanded && (
+              {expanded && !onSelectTarget && (
                 <div className="workspace-url-board__expanded">
                   <p>이 링크는 목록에 추가됐습니다. 영상·채널의 세부 정보와
                     댓글 분석 결과는 아직 제공되지 않습니다.</p>
