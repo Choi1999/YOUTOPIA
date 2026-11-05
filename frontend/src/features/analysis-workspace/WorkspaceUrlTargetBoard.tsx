@@ -1,6 +1,7 @@
 import {useState} from "react";
 import "./workspace-url.css";
 import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
+import { metadataStateLabel } from "./workspaceMetadataConsumerState";
 import { WorkspaceChannelIdentity } from "./WorkspaceChannelIdentity";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import type {WorkspaceUrlTarget} from "./workspaceUrlTargets";
@@ -75,6 +76,11 @@ export function WorkspaceUrlTargetBoard({
                     ? "합성 데이터 · 제공자 미조회"
                     : unresolved?"채널 ID 해석 대기":"URL 등록 · 메타데이터 미확인"}
                 </span>
+                {presentation.metadataStates?.[key] && (
+                  <span data-metadata-status={presentation.metadataStates[key].status}>
+                    {metadataStateLabel(presentation.metadataStates[key])}
+                  </span>
+                )}
               </div>
               <div className="workspace-url-board__card-body">
                 <span className="workspace-url-board__orb" aria-hidden="true">
