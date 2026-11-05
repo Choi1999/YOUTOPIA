@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { demoChannelSelections } from "../../features/analysis/data/demoChannelSelection";
@@ -6,6 +6,11 @@ import { WorkspaceDiscoveryPanels } from "../../features/analysis-workspace/Work
 import { WorkspaceHero } from "../../features/analysis-workspace/WorkspaceHero";
 import { WorkspaceUrlTargetBoard } from "../../features/analysis-workspace/WorkspaceUrlTargetBoard";
 import { ApprovedChannelProfileCache } from "../../features/analysis-workspace/workspaceChannelProfile";
+import {
+  readTargetPresentation, reconcileTargetPresentation, writeTargetPresentation,
+  withUserLabel, withChannelArtwork,
+  type WorkspaceTargetPresentation,
+} from "../../features/analysis-workspace/workspaceTargetPresentation";
 import {
   addWorkspaceUrlTargets, clearWorkspaceUrlTargets, readWorkspaceUrlTargets,
   workspaceUrlTargetKey, writeWorkspaceUrlTargets,
@@ -76,6 +81,15 @@ export function AnalysisWorkspacePage() {
   );
   // Explicit per-page opt-in; never persisted or inferred from URL registration.
   const [allowVideoImage, setAllowVideoImage] = useState(false);
+  const [allowChannelImage, setAllowChannelImage] = useState(false);
+  const [presentation, setPresentation] = useState<WorkspaceTargetPresentation>(
+    () => readTargetPresentation(getTabStorage(), urlTargets),
+  );
+  useEffect(() => {
+    const reconciled = reconcileTargetPresentation(presentation, urlTargets);
+    if (reconciled !== presentation) { setPresentation(reconciled); return; }
+    writeTargetPresentation(getTabStorage(), presentation, urlTargets);
+  }, [presentation, urlTargets]);
   const [showEvidence, setShowEvidence] = useState(false);
   // Empty until a separately authorized, reviewed channel metadata reader exists.
   // The cache is in-memory only and never triggers network calls.
@@ -185,9 +199,23 @@ export function AnalysisWorkspacePage() {
       <WorkspaceHero targets={urlTargets} onAddUrls={addUrlTargets}
         onRemoveTarget={removeUrlTarget} allowVideoImage={allowVideoImage}
         onToggleVideoImage={() => setAllowVideoImage(enabled => !enabled)}
-        channelProfiles={channelProfiles} />
+        allowChannelImage={allowChannelImage}
+        onToggleChannelImage={() => setAllowChannelImage(enabled => !enabled)}
+        channelProfiles={channelProfiles} defaultFocusMode
+        presentation={presentation}
+        onSetTargetLabel={(key, value) => {
+          const next = withUserLabel(presentation, urlTargets, key, value);
+          setPresentation(next);
+          return next !== presentation;
+        }}
+        onSetChannelArtwork={(key, value) => {
+          const next = withChannelArtwork(presentation, urlTargets, key, value);
+          setPresentation(next);
+          return next !== presentation;
+        }}/>
       <WorkspaceUrlTargetBoard targets={urlTargets} onRemove={removeUrlTarget}
         onClear={clearUrlTargetList} allowVideoImage={allowVideoImage}
+        allowChannelImage={allowChannelImage} presentation={presentation}
         channelProfiles={channelProfiles} />
 
       <div className="analysis-workspace__layout">
