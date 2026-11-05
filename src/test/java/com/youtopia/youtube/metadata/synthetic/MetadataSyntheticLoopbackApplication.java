@@ -69,7 +69,10 @@ public class MetadataSyntheticLoopbackApplication {
                 .requestMatchers(HttpMethod.GET,
                     "/api/v1/youtube/metadata/synthetic/videos/*",
                     "/api/v1/youtube/metadata/synthetic/channels/*",
-                    "/api/v1/youtube/metadata/synthetic/handles/*").permitAll()
+                    "/api/v1/youtube/metadata/synthetic/handles/*",
+                    "/api/v1/youtube/metadata/synthetic-state/videos/*",
+                    "/api/v1/youtube/metadata/synthetic-state/channels/*",
+                    "/api/v1/youtube/metadata/synthetic-state/handles/*").permitAll()
                 .anyRequest().denyAll())
             .formLogin(AbstractHttpConfigurer::disable)
             .httpBasic(AbstractHttpConfigurer::disable);
