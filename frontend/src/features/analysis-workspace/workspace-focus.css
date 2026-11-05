@@ -561,3 +561,48 @@
   .workspace-focus__body[data-resizing] {transition:none;cursor:col-resize;}
   .workspace-focus__body[data-resizing] * {user-select:none;}
 }
+
+/* UI-R04-N: a usable first-launch focus surface and compact, user-facing metadata editors. */
+.workspace-focus__empty {
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  align-items:center;gap:14px;text-align:center;min-height:0;
+  padding:clamp(20px,5vw,65px);
+  border:1px solid var(--focus-border);border-radius:13px;
+  color:var(--focus-text);background:var(--focus-bg);
+}
+.workspace-focus__empty strong {font-size:clamp(18px,2.5vw,32px);}
+.workspace-focus__empty p {max-width:440px;line-height:1.7;font-size:13px;color:var(--focus-muted);}
+.workspace-focus__secondary-id {
+  font-size:10px!important;
+  overflow-wrap:anywhere;
+  color:var(--focus-muted)!important;
+  margin-top:-8px!important;
+}
+.workspace-focus__editor {
+  display:grid;gap:8px;
+  min-width:0;
+  padding:11px;
+  border:1px solid var(--focus-border);
+  border-radius:11px;background:var(--focus-elevated);
+}
+.workspace-focus__editor label {font-size:12px;font-weight:700;color:var(--focus-text);}
+.workspace-focus__editor input {
+  width:100%;min-width:0;min-height:41px;
+  padding:9px 11px;font-size:12px;
+  border:1px solid var(--focus-border);border-radius:8px;
+  color:var(--focus-text);background:var(--focus-surface);
+}
+.workspace-focus__editor button {
+  min-height:40px;
+  border:1px solid var(--focus-accent);
+  border-radius:8px;
+  color:var(--focus-text);background:var(--focus-surface);
+  font-size:12px;font-weight:700;cursor:pointer;
+}
+.workspace-focus__editor small {line-height:1.5;color:var(--focus-muted);font-size:10px;}
+.workspace-focus__controls button[aria-pressed="true"] {border-color:var(--focus-mint);}
+@media(max-width:720px) {
+  .workspace-focus__empty {padding:15px;gap:7px;}
+  .workspace-focus__empty p {font-size:11px;}
+  .workspace-focus__editor {padding:8px;}
+}
