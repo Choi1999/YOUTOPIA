@@ -190,6 +190,11 @@ function validatePlan(p){
     guard(typeof e.observationNote==='string'&&e.observationNote.trim().length>=18&&
       e.observationNote.length<=500,'human evidence observation required');
    }
+   const anchorToleranceMs=q.kind==='SPEECH'?15000:30000;
+   for(const t of q.anchorLocalMs){
+    guard(g.evidence.some(e=>e.localStartMs<=t+anchorToleranceMs&&e.localEndMs>=t-anchorToleranceMs),
+     'human evidence must support each selected local publisher checkpoint');
+   }
    if(q.kind==='TEMPORAL'){
     const ordered=[...g.evidence].sort((a,b)=>a.localStartMs-b.localStartMs);
     guard(ordered[0].localStartMs<ordered[1].localStartMs,'temporal evidence must have distinct ordered events');
