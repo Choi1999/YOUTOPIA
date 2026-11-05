@@ -10,6 +10,11 @@ import { WorkspaceChannelIdentity } from "./WorkspaceChannelIdentity";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import type { WorkspaceNodeGroup } from "./workspaceNodeGroups";
 import type { GraphVisit } from "./workspaceGraphNavigation";
+import { hasGraphBookmark, toggleGraphBookmark } from "./workspaceGraphBookmarks";
+import {
+  EMPTY_TARGET_PRESENTATION, userFacingTargetName,
+  type WorkspaceTargetPresentation,
+} from "./workspaceTargetPresentation";
 import {
   workspaceUrlTargetKey,
   type WorkspaceUrlIngestResult, type WorkspaceUrlTarget,
@@ -29,6 +34,11 @@ type Props = Readonly<{
   onExit: () => void;
   allowVideoImage?: boolean;
   onToggleVideoImage?: () => void;
+  allowChannelImage?: boolean;
+  onToggleChannelImage?: () => void;
+  presentation?: WorkspaceTargetPresentation;
+  onSetTargetLabel?: (key: string, label: string) => boolean;
+  onSetChannelArtwork?: (key: string, imageUrl: string) => boolean;
   channelProfiles?: ApprovedChannelProfileCache;
   groups?: readonly WorkspaceNodeGroup[];
   onGroupsChange?: (groups: readonly WorkspaceNodeGroup[]) => void;
@@ -56,10 +66,13 @@ function kindLabel(kind: WorkspaceUrlTarget["kind"]) {
 export function WorkspaceFocusMode({
   targets, onAddUrls, onRemove, onExit,
   allowVideoImage = false, onToggleVideoImage, channelProfiles,
+  allowChannelImage = false, onToggleChannelImage,
+  presentation = EMPTY_TARGET_PRESENTATION, onSetTargetLabel, onSetChannelArtwork,
   groups = [], onGroupsChange, bookmarks = [], onBookmarksChange,
 }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const exitRef = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const listToggleRef = useRef<HTMLButtonElement>(null);
   const detailToggleRef = useRef<HTMLButtonElement>(null);
   const [listOpen, setListOpen] = useState(false);
@@ -67,6 +80,8 @@ export function WorkspaceFocusMode({
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [input, setInput] = useState("");
+  const [labelDraft, setLabelDraft] = useState("");
+  const [imageDraft, setImageDraft] = useState("");
   const [message, setMessage] = useState(
     "추가된 URL은 미확인 대상입니다. 등록만으로 영상·채널 분석은 시작되지 않습니다.",
   );
@@ -116,9 +131,20 @@ export function WorkspaceFocusMode({
   }, [listOpen, detailOpen]);
 
   const selected = targets.find(item => workspaceUrlTargetKey(item) === selectedKey) ?? null;
-  const visible = [...targets].reverse().filter(target =>
-    target.id.toLocaleLowerCase("ko-KR").includes(search.trim().toLocaleLowerCase("ko-KR")),
-  );
+  const selectedVisit: GraphVisit | null = selected
+    ? { kind:"target", key:workspaceUrlTargetKey(selected) } : null;
+  const selectedIsBookmarked = selectedVisit
+    ? hasGraphBookmark(bookmarks, selectedVisit) : false;
+  useEffect(() => {
+    setLabelDraft(selectedKey ? presentation.labels[selectedKey] ?? "" : "");
+    setImageDraft(selectedKey ? presentation.channelImages[selectedKey] ?? "" : "");
+  }, [selectedKey]);
+  const visible = [...targets].reverse().filter(target => {
+    const query = search.trim().toLocaleLowerCase("ko-KR");
+    return target.id.toLocaleLowerCase("ko-KR").includes(query) ||
+      userFacingTargetName(target, presentation, channelProfiles)
+        .toLocaleLowerCase("ko-KR").includes(query);
+  });
 
   // Restore page scrolling and the invoking control after leaving focus mode.
   useEffect(() => {
@@ -126,7 +152,7 @@ export function WorkspaceFocusMode({
       ? document.activeElement : null;
     const oldOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    exitRef.current?.focus();
+    inputRef.current?.focus();
     return () => {
       document.body.style.overflow = oldOverflow;
       if (previous?.isConnected) previous.focus();
@@ -216,6 +242,37 @@ export function WorkspaceFocusMode({
     } else if (!event.shiftKey && document.activeElement === last) {
       event.preventDefault();
       first.focus();
+    }
+  }
+
+  function toggleFocusBookmark() {
+    if (!selectedVisit || !onBookmarksChange) return;
+    onBookmarksChange(toggleGraphBookmark(
+      bookmarks, selectedVisit, targets, groups,
+    ));
+  }
+
+  function saveDisplayTitle(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedKey || !onSetTargetLabel) return;
+    const value = labelDraft.trim();
+    if (!onSetTargetLabel(selectedKey, value)) {
+      setMessage("표시 제목을 확인하세요. 120자 이하의 텍스트만 사용할 수 있습니다.");
+    } else {
+      setMessage(value ? "사용자 지정 표시 제목을 저장했습니다." :
+        "사용자 지정 제목을 초기화했습니다.");
+    }
+  }
+
+  function saveChannelImage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedKey || !onSetChannelArtwork) return;
+    const value = imageDraft.trim();
+    if (!onSetChannelArtwork(selectedKey, value)) {
+      setMessage("이미지 주소를 확인하세요. YouTube의 허용된 HTTPS 이미지 호스트만 사용할 수 있습니다.");
+    } else {
+      setMessage(value ? "사용자 지정 채널 이미지 주소를 저장했습니다. 이미지 미리보기를 켜야 불러옵니다." :
+        "사용자 지정 채널 이미지 주소를 해제했습니다.");
     }
   }
 
@@ -327,7 +384,7 @@ export function WorkspaceFocusMode({
         <form className="workspace-focus__intake" aria-label="집중 모드 URL 추가"
           onSubmit={submit}>
           <label htmlFor="focus-url-input" className="sr-only">URL 추가 입력</label>
-          <input id="focus-url-input" type="text" value={input}
+          <input ref={inputRef} id="focus-url-input" type="text" value={input}
             onChange={event => setInput(event.target.value)}
             maxLength={8192} spellCheck={false} autoComplete="off"
             placeholder="YouTube URL 붙여넣기 / 링크 드롭"/>
@@ -337,10 +394,24 @@ export function WorkspaceFocusMode({
           {onToggleVideoImage && (
             <button type="button" aria-pressed={allowVideoImage}
               onClick={onToggleVideoImage}
-              title="i.ytimg.com 공개 영상 이미지 요청. 채널 프로필은 조회하지 않음">
+              title="공개 영상 썸네일 CDN 이미지를 불러옵니다">
               {allowVideoImage ? "영상 이미지 끄기" : "영상 이미지 켜기"}
             </button>
           )}
+          {onToggleChannelImage && (
+            <button type="button" aria-pressed={allowChannelImage}
+              onClick={onToggleChannelImage}
+              title="승인된 채널 이미지 또는 직접 등록한 YouTube 이미지 주소만 불러옵니다">
+              {allowChannelImage ? "채널 이미지 끄기" : "채널 이미지 켜기"}
+            </button>
+          )}
+          <button type="button" disabled={!selectedVisit || !onBookmarksChange}
+            onClick={toggleFocusBookmark}
+            aria-pressed={selectedIsBookmarked}
+            aria-label={selectedIsBookmarked
+              ? "집중 모드 북마크 해제" : "집중 모드 북마크 추가"}>
+            {selectedIsBookmarked ? "★ 북마크됨" : "☆ 북마크 추가"}
+          </button>
           <button ref={listToggleRef} type="button"
             aria-pressed={listOpen} aria-controls="workspace-focus-target-dock"
             onClick={toggleList}>대상 목록</button>
@@ -385,8 +456,10 @@ export function WorkspaceFocusMode({
                     onClick={() => focusTarget(key)}>
                     <span className="workspace-focus__item-ident">
                       <WorkspaceTargetArtwork target={target} variant="list"
-                        allowVideoImage={allowVideoImage} channelProfiles={channelProfiles}/>
-                      <strong>{target.id}</strong>
+                        allowVideoImage={allowVideoImage}
+                        allowChannelImage={allowChannelImage}
+                        presentation={presentation} channelProfiles={channelProfiles}/>
+                      <strong>{userFacingTargetName(target, presentation, channelProfiles)}</strong>
                     </span>
                     <span>{kindLabel(target.kind)} · 미확인
                       {groups.find(group => group.memberKeys.includes(key))
@@ -413,11 +486,21 @@ export function WorkspaceFocusMode({
             onKeyDown={event => keyboardResize("list", event)} />
         )}
         <div className="workspace-focus__graph" aria-label="중앙 그래프 탐색 영역">
-          <WorkspaceUrlCanvas targets={targets} focusedKey={selectedKey}
-            onFocusChange={focusTarget} allowVideoImage={allowVideoImage}
-            channelProfiles={channelProfiles} groups={groups}
-            onGroupsChange={onGroupsChange} bookmarks={bookmarks}
-            onBookmarksChange={onBookmarksChange}/>
+          {targets.length ? (
+            <WorkspaceUrlCanvas targets={targets} focusedKey={selectedKey}
+              onFocusChange={focusTarget} allowVideoImage={allowVideoImage}
+              allowChannelImage={allowChannelImage}
+              presentation={presentation}
+              channelProfiles={channelProfiles} groups={groups}
+              onGroupsChange={onGroupsChange} bookmarks={bookmarks}
+              onBookmarksChange={onBookmarksChange}/>
+          ) : (
+            <div className="workspace-focus__empty" role="status">
+              <strong>영상 또는 채널을 추가하세요</strong>
+              <p>위 URL 입력창에 붙여넣거나 YouTube 링크를 끌어다 놓으면
+                탐색 공간에 노드가 나타납니다.</p>
+            </div>
+          )}
         </div>
         {detailOpen && (
           <div className="workspace-focus__splitter workspace-focus__splitter--detail"
@@ -444,11 +527,38 @@ export function WorkspaceFocusMode({
               }} aria-label="선택 상세 닫기">닫기</button>
             </div>
             {selected ? (
-              <div className="workspace-focus__details">
+              <div key={selectedKey ?? "none"} className="workspace-focus__details">
                 <span className="workspace-focus__kind">{kindLabel(selected.kind)}</span>
                 <WorkspaceTargetArtwork target={selected} variant="detail"
-                  allowVideoImage={allowVideoImage} channelProfiles={channelProfiles}/>
-                <h4>{selected.id}</h4>
+                  allowVideoImage={allowVideoImage}
+                  allowChannelImage={allowChannelImage}
+                  presentation={presentation} channelProfiles={channelProfiles}/>
+                <h4>{userFacingTargetName(selected, presentation, channelProfiles)}</h4>
+                <p className="workspace-focus__secondary-id">등록 식별자: {selected.id}</p>
+                {onSetTargetLabel && (
+                  <form className="workspace-focus__editor" onSubmit={saveDisplayTitle}>
+                    <label htmlFor="focus-display-title">표시 제목 (직접 입력)</label>
+                    <input id="focus-display-title" value={labelDraft}
+                      maxLength={120}
+                      placeholder={selected.kind === "VIDEO"
+                        ? "영상 제목 입력" : "채널 표시 이름 입력"}
+                      onChange={event => setLabelDraft(event.target.value)}/>
+                    <button type="submit">표시 제목 저장</button>
+                    <small>이름은 직접 입력한 표시용 텍스트입니다. 공식 제목 검증은 별도입니다.</small>
+                  </form>
+                )}
+                {selected.kind !== "VIDEO" && onSetChannelArtwork && (
+                  <form className="workspace-focus__editor" onSubmit={saveChannelImage}>
+                    <label htmlFor="focus-channel-image-url">채널 썸네일 이미지 URL</label>
+                    <input id="focus-channel-image-url" type="url"
+                      maxLength={2048} value={imageDraft}
+                      placeholder="https://yt3.googleusercontent.com/..."
+                      onChange={event => setImageDraft(event.target.value)}/>
+                    <button type="submit">채널 이미지 적용</button>
+                    <small>허용된 YouTube 이미지 주소만 적용합니다. 자동 프로필 조회는
+                      별도 API 승인 후 지원되며 현재는 직접 입력한 이미지만 표시할 수 있습니다.</small>
+                  </form>
+                )}
                 <WorkspaceChannelIdentity target={selected} profiles={channelProfiles}/>
                 <p>URL이 추가됐습니다. 이 대상의 분석 정보는 아직 제공되지 않습니다.</p>
                 {selected.kind === "CHANNEL_HANDLE" && (
