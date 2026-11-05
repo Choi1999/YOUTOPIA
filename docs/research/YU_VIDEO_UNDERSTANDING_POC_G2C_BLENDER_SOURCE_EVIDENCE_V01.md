@@ -90,3 +90,49 @@ Windows에서 `ffprobe`가 PATH에 등록되어 있어야 한다. 실행 전에 
 G2-C 게이트는 **실영상 준비가 없어도 조사 단계의 테스트를 PASS**할 수 있지만, 이때 `approvedRealDatasetCount=0`, `g3Authorized=false`, `liveCallsAuthorized=false`를 유지해야 한다.
 
 **판정:** `G2C_PUBLISHER_EVIDENCE_PASS / G2C_REAL_MEDIA_EQUIVALENCE_NOT_RUN / G3_NOT_APPROVED / EXISTING_POLICY_HOLD_UNCHANGED / NO_MERGE`.
+
+
+## 7. 2026-11-05 승인 후 실파일 확보 시도 및 진행 증거
+
+**시도 결과: 일부 공개 자막 텍스트만 접근 성공. 실제 미디어 파일 검증은 차단 상태.**
+
+- 제작자 원본 페이지 `https://durian.blender.org/download/` 및 `https://mango.blender.org/download/`의 공식 미디어/SRT 다운로드 링크를 확인했다.
+- 실제 영상 파일(수백 MB)은 현재 작업 환경의 네트워크·다운로드 경로에서 획득하지 못했으므로, **원본 바이트/SHA-256·코덱·실제 러닝타임·파일과 YouTube판의 장면/음성 동일성을 검사한 바 없다**. 사용자 Windows PC의 로컬 파일에는 접근하지 않았다.
+- Sintel의 제작자 호스트 `https://durian.blender.org/wp-content/content/subtitles/sintel_en.srt`에서 **게시 자막의 추출 텍스트를 읽는 데 성공**. 텍스트 뷰에서 1~26번 연속 타임코드가 확인되며, 첫 시작 **00:01:47,250**, 마지막 종료 **00:10:29,800**. 아래 파일에 **대사 없이 시간코드만** 기록:
+  - `shared/experiments/yu-video-understanding-poc-v0/g2c-sintel-publisher-timeline.json`
+  - 출처 등급: `PUBLISHER_SUBTITLE_TEXT_EXTRACTION_NOT_RAW_FILE` — 텍스트 추출기는 원본의 공백/줄바꿈을 바꿀 수 있으며, **원본 SRT 파일 바이트/SHA-256 확인이나 음성 동기화 증거가 아니다**.
+- Tears of Steel의 제작자 영어 자막 링크는 `https://download.blender.org/demo/movies/ToS/subtitles/TOS-en.srt`이고 서버 인덱스상 **4,764바이트로 목록 표시**되지만, 이번 실행 환경에서 해당 파일 본문은 봇 차단 및 네트워크 오류로 확보하지 못했다. **다운로드 성공이나 내용 검증을 주장하지 않는다.**
+- 자막 파서는 공백 줄이 없는 텍스트 프로젝션도 번호+타임코드 구분으로 인식하도록 보강했다. Sintel 26개 공개 타임코드를 사용해 **대사 없는 합성 SRT**를 구성하여 파서와 게시 타임라인 비교 로직을 시험한다. 이 검증은 실제 자막 파일을 판독했다는 의미가 아니다.
+- `g2c-offline-verifier.cjs`에서 사용자가 적법하게 제공한 **로컬** Sintel SRT를 검사할 때 위의 제작자 게시 텍스트 시간코드와 비교한다. `MATCHES_PUBLISHER_TEXT_EXTRACTED_TIMINGS_ONLY`는 **타임코드만 일치**함을 의미하며, 원본 바이트나 YouTube 영상·실제 음성 확인을 의미하지 않는다.
+
+### 7.1 로컬 실파일 검수 실행 전제
+
+본 단계에서 사용자 PC의 실제 영상·자막이 제공되지 않았으므로, **도구는 코드로 구현되어 있고 실제 파일 검수 결과는 아직 없음**. 사용자가 권리 허용 범위에서 공식 제작자 원본과 같은 판본의 SRT를 확보한 후 Windows PC에서 다음을 실행한다.
+
+```powershell
+cd C:\Projects\YOUTOPIA
+git fetch origin --prune
+# 실험 브랜치의 최신 파일을 격리된 작업 폴더에 가져온 후 실행.
+# 현재 작업 중인 frontend 및 미병합 PR 브랜치는 변경하지 않는다.
+$root = 'shared/experiments/yu-video-understanding-poc-v0'
+node --test "$root/tests/*.test.cjs"
+# 실제 파일의 경로로 예시를 교체
+node "$root/g2c-offline-verifier.cjs" --slot SYNTH-VID-05 --video "D:\AuthorizedMedia\sintel.mp4" --srt "D:\AuthorizedMedia\sintel_en.srt"
+node "$root/g2c-offline-verifier.cjs" --slot SYNTH-VID-06 --video "D:\AuthorizedMedia\tears_of_steel.mov" --srt "D:\AuthorizedMedia\TOS-en.srt"
+```
+
+`ffprobe`가 PATH에 필요하다. 단순 `git fetch`는 체크아웃 파일을 변경하지 않으므로 **명령 실행 전에 실험 브랜치 파일이 해당 작업 폴더에 존재하는지 확인**해야 한다. 출력 JSON의 해시·길이·SRT 범위·타임라인 비교 판정만 검수하고, 개인 파일 경로·영상 내용·계정정보·키·자막 전문은 GitHub에 게시하지 않는다.
+
+### 7.2 재평가 게이트
+
+| 증거 | 이 회차의 측정 상태 |
+|---|---|
+| 제작자 공개 SRT 원문 **텍스트 프로젝션** 분석 | Sintel 1/2, Tears 0/2 |
+| 원본 실제 SRT **파일 바이트 해시** | 0/2 |
+| 허가된 공식 영상 **파일 해시/ffprobe** | 0/2 |
+| 로컬 파일 SRT 구간과 영상 실제 길이 비교 | 0/2 |
+| 실제 음성/자막 싱크에 대한 인적 검토 | 0/2 |
+| 게시된 YouTube판과 원본의 동일성 | 0/2 |
+| 모델 API 호출/과금, G3 승인 또는 운영 병합 | 0 |
+
+**판정: `G2C_OFFICIAL_SINTEL_SUBTITLE_TEXT_PARTIAL_EVIDENCE / SOURCE_VIDEO_AND_RAW_SRT_BYTES_NOT_VERIFIED / G3_POLICY_HOLD / NO_MERGE`.**
