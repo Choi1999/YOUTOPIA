@@ -180,3 +180,19 @@ node "$root/g2c-offline-verifier.cjs" --slot SYNTH-VID-06 --video "D:\Authorized
 | G3 유료 실험 또는 병합 승인 | **없음** |
 
 **결론: 다운로드/검증의 Windows 실행 경로는 준비 완료. 실제 영상 증거는 아직 획득되지 않아 G2-C 데이터셋 준비와 G3 승격은 차단 유지.**
+
+
+## 9. 운영자 제공 실파일 검증 후 최신 상태 (2026-11-05)
+
+> 초기 이 문서에서 `0/2 NOT_RUN`이라고 기록한 항목은 **그 당시의 이력**이다. 후속 사용자 Windows 현장 실행에서 제출한 JSON을 검수한 최신 상태는 다음과 같다. 원본 MOV/MKV/SRT의 바이트는 챗봇 환경에서 직접 재검사하지 않았다.
+
+- Sintel: `SYNTH-VID-05` — 공식 ZIP 크기 일치, 제작자 MD5 MATCH, 로컬 H.264 1280×544 / `888032ms` / SRT 26구간 / `PASS_BOUNDS_ONLY`, 제작자 공개 텍스트의 타임코드 26개와 일치(바이트/음성 미검증).
+- Tears of Steel: `SYNTH-VID-06` — 공식 최초판 720p MOV의 인덱스 크기 `372178639` 바이트와 일치, 제작자 MD5는 **제공되지 않음**, 로컬 H.264 1280×534 / `734167ms` / SRT 76구간, `23000~567000ms` / `PASS_BOUNDS_ONLY`. 제작자 게시 SRT의 타임코드 추출 대조 자료는 아직 없음.
+- 두 작품 모두 로컬 영상·SRT SHA-256 산출 **보고**는 받았으나, 공개 저장소에는 전문을 게시하지 않는다. 이는 원본 제작자 SHA-256 확인, YouTube판 동일성 확인 또는 법적 사용권 승인을 뜻하지 않는다.
+- **로컬 파일 구조·SRT 경계 검사: 사용자 제출 결과 기준 2/2 PASS.**
+- **실제 음성–자막 동기화 0/2, YouTube판 동일성 0/2, 서비스 이용권·2인 골드 검수 0/2.**
+- YouTube API·LLM API 호출 0, 실험 과금 $0(사용자 제출 JSON 기준). 운영·브랜치 병합·G3 승인 없음.
+
+최신 운영자 증거 기록: [G2-C Windows 실행·검수 로그](./YU_VIDEO_G2C_WINDOWS_ACTUAL_MEDIA_OPERATOR_V01.md#8-두-작품-통합-상태-2026-11-05-최신).
+
+최종 상태: `G2C_LOCAL_FILE_METADATA_AND_SRT_BOUNDS_REPORTED_PASS_2_OF_2 / YOUTUBE_EQUIVALENCE_UNVERIFIED / AUDIO_ALIGNMENT_UNVERIFIED / G3_POLICY_HOLD / NO_MERGE`.
