@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "sourceType": "PUBLISHER_SUBTITLE_TEXT_EXTRACTION_NOT_RAW_FILE",
+  "filmId": "SINTEL",
+  "publisher": "Blender Foundation",
+  "retrievedAt": "2026-11-05",
+  "sourceUrl": "https://durian.blender.org/wp-content/content/subtitles/sintel_en.srt",
+  "sourceRole": "TIMING_OBSERVATIONS_ONLY",
+  "extractedContentSha256": null,
+  "rawFileSha256": null,
+  "rawFileBytesExamined": false,
+  "videoBytesExamined": false,
+  "captionTextStored": false,
+  "extractionTextMayNormalizeBlankLines": true,
+  "observedCueCount": 26,
+  "observedFirstStart": "00:01:47,250",
+  "observedLastEnd": "00:10:29,800",
+  "spokeAudioVerified": false,
+  "originalFileEqualityVerified": false,
+  "referenceTimings": [
+    {
+      "cue": 1,
+      "start": "00:01:47,250",
+      "end": "00:01:50,500"
+    },
+    {
+      "cue": 2,
+      "start": "00:01:51,800",
+      "end": "00:01:55,800"
+    },
+    {
+      "cue": 3,
+      "start": "00:01:58,000",
+      "end": "00:02:01,450"
+    },
+    {
+      "cue": 4,
+      "start": "00:02:01,750",
+      "end": "00:02:04,800"
+    },
+    {
+      "cue": 5,
+      "start": "00:02:05,250",
+      "end": "00:02:06,300"
+    },
+    {
+      "cue": 6,
+      "start": "00:02:07,500",
+      "end": "00:02:09,000"
+    },
+    {
+      "cue": 7,
+      "start": "00:02:09,400",
+      "end": "00:02:13,800"
+    },
+    {
+      "cue": 8,
+      "start": "00:02:15,000",
+      "end": "00:02:17,500"
+    },
+    {
+      "cue": 9,
+      "start": "00:02:18,000",
+      "end": "00:02:22,200"
+    },
+    {
+      "cue": 10,
+      "start": "00:02:23,400",
+      "end": "00:02:25,000"
+    },
+    {
+      "cue": 11,
+      "start": "00:02:28,850",
+      "end": "00:02:31,750"
+    },
+    {
+      "cue": 12,
+      "start": "00:02:32,950",
+      "end": "00:02:35,870"
+    },
+    {
+      "cue": 13,
+      "start": "00:03:27,250",
+      "end": "00:03:30,500"
+    },
+    {
+      "cue": 14,
+      "start": "00:03:30,750",
+      "end": "00:03:33,500"
+    },
+    {
+      "cue": 15,
+      "start": "00:03:48,250",
+      "end": "00:03:52,250"
+    },
+    {
+      "cue": 16,
+      "start": "00:04:10,350",
+      "end": "00:04:13,850"
+    },
+    {
+      "cue": 17,
+      "start": "00:04:25,250",
+      "end": "00:04:28,250"
+    },
+    {
+      "cue": 18,
+      "start": "00:05:04,000",
+      "end": "00:05:07,500"
+    },
+    {
+      "cue": 19,
+      "start": "00:05:38,750",
+      "end": "00:05:42,000"
+    },
+    {
+      "cue": 20,
+      "start": "00:07:25,850",
+      "end": "00:07:27,500"
+    },
+    {
+      "cue": 21,
+      "start": "00:07:32,800",
+      "end": "00:07:36,500"
+    },
+    {
+      "cue": 22,
+      "start": "00:07:37,800",
+      "end": "00:07:40,500"
+    },
+    {
+      "cue": 23,
+      "start": "00:07:40,850",
+      "end": "00:07:44,000"
+    },
+    {
+      "cue": 24,
+      "start": "00:09:17,600",
+      "end": "00:09:19,500"
+    },
+    {
+      "cue": 25,
+      "start": "00:10:21,600",
+      "end": "00:10:24,000"
+    },
+    {
+      "cue": 26,
+      "start": "00:10:26,200",
+      "end": "00:10:29,800"
+    }
+  ]
+}
