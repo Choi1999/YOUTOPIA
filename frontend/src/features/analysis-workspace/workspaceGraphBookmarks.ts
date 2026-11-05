@@ -131,11 +131,12 @@ export function getGraphBookmarkLabel(
 
 /**
  * An empty query with 'all' scope returns no results as before.
- * Non-default scopes browse registered objects; never hide or mutate the canvas.
+ * Non-default scopes browse registered objects; the canvas separately filters visible nodes.
  */
 export function filterGraphExplorerHits(
   targets: readonly WorkspaceUrlTarget[], groups: readonly WorkspaceNodeGroup[],
   bookmarks: readonly GraphVisit[], query: string, scope: GraphExplorerScope,
+  userLabels: Readonly<Record<string, string>> = {},
 ): readonly GraphSearchHit[] {
   const text = query.trim().slice(0, 80);
   if (scope === "all" && !text) return [];
@@ -153,10 +154,26 @@ export function filterGraphExplorerHits(
           detail: target.kind === "VIDEO" ? "등록 영상 · 미확인" : "등록 채널 · 미확인",
         })),
       ];
-  if (scope === "all") return source;
-  if (scope === "group") return source.filter(hit => hit.kind === "group");
-  if (scope === "bookmarked") return source.filter(hit => hasGraphBookmark(bookmarks, hit));
-  return source.filter(hit => {
+  const queryText = text.normalize("NFKC").toLocaleLowerCase("ko-KR");
+  const seen = new Set(source.map(hit => hit.kind + ":" + hit.key));
+  const aliasMatches = text ? targets.flatMap(target => {
+    const key = workspaceUrlTargetKey(target);
+    const title = userLabels[key];
+    if (!title || !title.normalize("NFKC").toLocaleLowerCase("ko-KR")
+      .includes(queryText) || seen.has("target:" + key)) return [];
+    return [{
+      kind: "target" as const, key, label: title,
+      detail: target.kind === "VIDEO" ? "등록 영상 · 직접 입력한 제목"
+        : "등록 채널 · 직접 입력한 표시 이름",
+    }];
+  }) : [];
+  const labelledSource = [...source, ...aliasMatches].map(hit =>
+    hit.kind === "target" && userLabels[hit.key]
+      ? { ...hit, label: userLabels[hit.key] } : hit);
+  if (scope === "all") return labelledSource;
+  if (scope === "group") return labelledSource.filter(hit => hit.kind === "group");
+  if (scope === "bookmarked") return labelledSource.filter(hit => hasGraphBookmark(bookmarks, hit));
+  return labelledSource.filter(hit => {
     if (hit.kind !== "target") return false;
     const target = targets.find(item => workspaceUrlTargetKey(item) === hit.key);
     return target && (scope === "video"
