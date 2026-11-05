@@ -22,6 +22,7 @@ import { ChannelAnalysisPage } from "../pages/analysis/ChannelAnalysisPage";
 import { ChannelComparisonPage } from "../pages/analysis/ChannelComparisonPage";
 import { TopicExplorerPage } from "../pages/analysis/TopicExplorerPage";
 import { AnalysisWorkspacePage } from "../pages/analysis/AnalysisWorkspacePage";
+import { DIAGNOSTIC_WORKSPACE_PATH, workspaceDiagnosticsEnabled } from "../features/analysis-workspace/workspaceDiagnosticsGate";
 import { ProjectDemoProvider } from "../features/project-demo/ProjectDemoProvider";
 import { ReviewWorkflowProvider } from "../features/project-demo/ReviewWorkflowProvider";
 import { YoutubeConsentProvider } from "../features/youtube-consent/YoutubeConsentProvider";
@@ -84,6 +85,11 @@ export function AppRoutes() {
 
               {/* YU-50: 통합 합성 분석 작업 공간 */}
               <Route element={<AnalysisWorkspacePage />} path="/analysis/youtube/workspace" />
+              {/* R04-AC: no diagnostic route in production or unflagged dev. */}
+              {workspaceDiagnosticsEnabled() && (
+                <Route element={<AnalysisWorkspacePage diagnosticsMode />}
+                  path={DIAGNOSTIC_WORKSPACE_PATH} />
+              )}
               {/* YU-48: 선정 영상 주제별 근거 탐색 */}
               <Route element={<TopicExplorerPage />} path="/analysis/youtube/topics" />
               {/* YU-47: 두 명시 채널의 선정 영상 비교 */}
