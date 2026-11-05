@@ -107,3 +107,12 @@ $script = '.\shared\experiments\yu-video-understanding-poc-v0\g2d-windows-manual
 - 현재 G1의 **6편 × 36문항은 합성 평가기**. Blender 실제 영상 2편의 전개를 기반으로 한 사람 골드 질문은 아직 없음.
 
 **G2-D의 개발 작업은 이 검수 도구/독립 테스트/실행 계약까지. 실제 미디어·YouTube 수동 비교는 운영자 실행 후 판정한다.**
+
+
+## 7. 구현·원격 CI 증거 (2026-11-05)
+
+- 구현: `shared/experiments/yu-video-understanding-poc-v0/g2d-human-review.cjs` 및 `g2d-windows-manual-review.ps1`, G2-D 자동 테스트 파일과 격리된 Windows 구문 검사 워크플로.
+- [Node 24 오프라인 Actions #41988788473](https://github.com/Choi1999/YOUTOPIA/actions/runs/41988788473), 소스 SHA `baf3bbe11ba39aa720e80dd120a1a6ee59e079c1`에서 G1~G2-D **141/141 PASS, 0 FAIL**.
+- [Windows 파서 Actions #41988291520](https://github.com/Choi1999/YOUTOPIA/actions/runs/41988291520): G2-D PowerShell 구문 검증 PASS. 실제 로컬 영상은 CI에 없어서 영상 판독/YouTube 수동 시청은 실행하지 않았다.
+- 이 결과는 **정적/합성 평가 코드 및 운영자 도구의 형식·차단 정책 테스트**에 한정한다. 이번 회차의 실제 G2-D 사람 관찰 데이터는 0건이며 완전한 영상 동등성·싱크·소유권·사용권은 아직 미검증이다.
+- 코드 검증 PASS와 실제 영화 관찰 PASS를 혼동하지 않고 `G2D_HUMAN_REVIEW_NOT_RUN / G3_NOT_APPROVED`를 유지한다.
