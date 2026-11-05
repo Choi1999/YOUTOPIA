@@ -122,3 +122,53 @@ $script = '.\shared\experiments\yu-video-understanding-poc-v0\g2c-windows-offici
 ```
 
 **판정: `SINTEL_LOCAL_MEDIA_METADATA_AND_SRT_BOUNDS_REPORTED_PASS / G2C_FULL_EVIDENCE_INCOMPLETE / G3_NOT_APPROVED`.**
+
+
+## 7. 사용자 제공 Tears of Steel 로컬 검증기 결과 (2026-11-05)
+
+> 증거 등급: **OPERATOR_SUBMITTED_TOOL_JSON / NOT_INDEPENDENTLY_REPLAYED**. 사용자가 실행한 `g2c-windows-official-media.ps1 -Mode AcquireAndVerify -Film TearsOfSteel` 출력의 비민감 요약. ChatGPT 측에서는 원본 MOV/SRT 바이트를 보유하거나 재측정하지 않았다. SHA-256 전문과 로컬 경로는 공개 저장소에 게시하지 않는다.
+
+| 항목 | 운영자 제출 관찰 | 판정 |
+|---|---|---|
+| 모드·대상 | `LOCAL_PUBLISHER_MEDIA_INSPECTED_NOT_SERVICE_APPROVED` / `TearsOfSteel` | 출력 계약 일치 |
+| 다운로드 | `publisherDownloadRequestsThisRun=2` | Blender 제작자 서버 영상 MOV·영어 SRT 요청의 로컬 실행 기록 |
+| 파일 크기 | `publisherMovieByteLengthMatchesIndex=true`, `mediaByteSize=372178639` | [공식 서버 인덱스](https://download.blender.org/demo/movies/ToS/)의 최초 HD 720p MOV 크기와 보고값 일치 |
+| 제작자 체크섬 | `publisherMd5Evidence=NOT_AVAILABLE` | 이 실험 계약의 Tears 대상에는 MD5 URL 없음. 체크섬 미검증은 **실패도 승인도 아님** |
+| 영상 SHA-256 | 64자리 해시 산출 보고, 전문 비공개 | 로컬 바이트 식별용, 제작자 측 원본 해시와 독립 비교 미실시 |
+| 실제 재생시간 | `734167ms` (12분 14.167초) | 공개 Studio 12:14 메타데이터와 근접 |
+| 영상 속성 | `1280×534`, `h264` | ffprobe 메타데이터 관찰 보고 |
+| SRT SHA-256 | 64자리 해시 산출 보고, 전문 비공개 | 로컬 SRT 식별용, 원본 게시 파일 해시와 독립 비교 미실시 |
+| SRT 구간 | `76`, `23000ms`~`567000ms` | 00:23.000~09:27.000 |
+| 자막 범위 | `PASS_BOUNDS_ONLY` | 자막 구간이 로컬 영상의 끝을 넘지 않음. 실제 말소리와 일치하거나 후반 발화가 없다는 증거는 아님 |
+| 제작자 자막 타임코드 대조 | `NO_EXTRACTED_PUBLISHER_TIMING_REFERENCE` | Sintel과 달리 공식 게시 SRT 본문 대조 자료가 없음 |
+| YouTube/LLM API 요청 | `youtubeMediaDownloadRequests=0`, `youtubeDataApiCalls=0`, `llmApiCalls=0`, `actualProviderCalls=0` | 사용자 출력 기준 보고값 |
+| 과금 | `actualSpendUsd=0` | 사용자 출력 기준 보고값 |
+| 후속 Gate | `youtubeVideoSameVersionVerified=false`, `actualSpokenCaptionAlignmentVerified=false`, `realDatasetApproved=false`, `g3Authorized=false` | 모두 **차단 유지** |
+
+**Tears of Steel의 로컬 영상 메타데이터와 자막 구문·시간 범위 검사에 관한 운영자 제출 결과는 PASS로 기록한다.** 파일 크기 일치는 SHA-256에 대한 공식 제작자 확인과 동치가 아니며, CC 라이선스·초상권·YouTube판 동일성 승인도 아니다.
+
+## 8. 두 작품 통합 상태 (2026-11-05, 최신)
+
+이 절의 현재 상태는 위에서 작성한 초기 문서의 `NOT_RUN` 및 이전 Sintel 1/2 요약보다 **시간상 최신**이다. 검증 코드는 수정하지 않았으며 이 변경은 문서화에 한정된다.
+
+| 증거 구분 | Sintel | Tears of Steel | 전체 |
+|---|---|---|---|
+| 운영자 로컬 실파일 검증 JSON 수신 | YES | YES | **2/2** |
+| 로컬 SHA-256 생성 보고 | YES | YES | **2/2** |
+| 로컬 영상 재생시간·코덱 검사 보고 | PASS | PASS | **2/2** |
+| 로컬 SRT 구문·시간 범위 검사 보고 | PASS | PASS | **2/2** |
+| 제작자 MD5와 로컬 영상 비교 | MATCH | UNAVAILABLE | **1/2** |
+| 제작자 게시 SRT 추출 타임코드 비교 | MATCH_TIMING_ONLY | REFERENCE_UNAVAILABLE | **1/2** |
+| 사람이 실제 영상 발화와 SRT 동기화 확인 | NO | NO | **0/2** |
+| YouTube 업로드판/제작자 원본 동일성 독립 검토 | NO | NO | **0/2** |
+| 서비스 사용권(제3자 권리·전송·보존 포함) 독립 검토 | NO | NO | **0/2** |
+| 사람 2명의 실제 영상 질문·근거 정답 검수 | NO | NO | **0/2** |
+| G3 유료 API 첫 호출 승인 | NO | NO | **0/2** |
+
+### 후속 검증 순서
+
+1. 실제 영상 **시작·중간·끝의 발화와 자막 타이밍**을 로컬 재생으로 검수한다. 특히 Tears는 SRT 종료(09:27) 이후 발화 누락 여부를 별도 확인한다.
+2. YouTube 공식 재생 페이지에서 허용된 방식으로 각 작품의 앞·중·끝 장면·편집 순서·오디오 이벤트를 공식 원본과 비교한다. YouTube 스트림 비인가 다운로드는 하지 않는다.
+3. 권리·보존·송신 검토와 인간 정답 독립 검수를 완료한 뒤 G3 호출 대상·최대 비용·개별 승인 여부를 결정한다. **현재 외부 API 호출 승인 없음.**
+
+최종 판정: `G2C_OPERATOR_SUBMITTED_LOCAL_FILE_AND_SRT_BOUNDS_2_OF_2_PASS / MEDIA_YOUTUBE_EQUIVALENCE_NOT_VERIFIED / SPOKEN_CAPTION_ALIGNMENT_NOT_VERIFIED / RIGHTS_AND_GOLD_BLOCKED / G3_NOT_APPROVED / NO_MERGE`.
