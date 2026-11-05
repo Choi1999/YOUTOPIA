@@ -34,7 +34,7 @@ describe("UI-R04-AA — versioned synthetic state/status contract",()=>{
     expect(ready?.record?.title).toContain(VIDEO.id);
     expect(ready?.record?.sourceAuthenticated).toBe(false);
     expect(ready?.relationVerified).toBe(false);
-    expect(metadataStateLabel(ready)).toContain("실제 제공자 미확인");
+    expect(metadataStateLabel(ready ?? undefined)).toContain("실제 제공자 미확인");
     expect(pendingMetadataState()).toMatchObject({status:"PENDING",record:null});
   });
   it("requires strict status-specific body, timestamp freshness and exact identity",()=>{
