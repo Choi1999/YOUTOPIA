@@ -40,9 +40,22 @@ jobs:
             exit 1
           fi
 
-      - name: Compile and test offline metadata contract only
+      - name: Verify synthetic route cannot open provider transport or read secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          source=src/main/java/com/youtopia/youtube/metadata/MetadataOfflineBoundaryController.java
+          test -f "$source"
+          if grep -E -n 'HttpClient|RestClient|WebClient|https?\.request|System\.getenv|ProcessBuilder|java\.net\.http|@Scheduled' "$source"; then
+            echo 'Forbidden I/O source in synthetic metadata boundary.'
+            exit 1
+          fi
+          grep -F -q '@Profile("metadata-offline-test")' "$source"
+          grep -F -q 'matchIfMissing = false' "$source"
+
+      - name: Compile and test offline metadata contract and denied HTTP boundary
         shell: bash
         run: |
           set -euo pipefail
           chmod +x ./gradlew
-          ./gradlew --no-daemon test --tests 'com.youtopia.youtube.metadata.OfflineMetadataBridgeContractTest'
+          ./gradlew --no-daemon test --tests 'com.youtopia.youtube.metadata.OfflineMetadataBridgeContractTest' --tests 'com.youtopia.youtube.metadata.MetadataOfflineBoundarySecurityTest'
