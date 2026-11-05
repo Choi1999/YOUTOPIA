@@ -46,7 +46,7 @@ function New-SafeReport(
     }
 }
 
-function Write-Report([ordered]$Value) {
+function Write-Report([System.Collections.IDictionary]$Value) {
     Write-Output (ConvertTo-Json -InputObject $Value -Compress -Depth 4)
 }
 
