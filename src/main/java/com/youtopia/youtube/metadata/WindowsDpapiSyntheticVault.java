@@ -55,9 +55,20 @@ final class WindowsDpapiSyntheticVault {
         if (Files.isSymbolicLink(p)) throw denied("SYMLINK_DENIED");
         if (Files.notExists(p, LinkOption.NOFOLLOW_LINKS)) Files.createDirectory(p);
         if (!Files.isDirectory(p, LinkOption.NOFOLLOW_LINKS)) throw denied("DIRECTORY_INVALID");
+        // Pin the storage owner to the CURRENT process identity. An
+        // attacker-precreated directory cannot make its own SID trusted.
+        Path ownerProbe = Files.createTempFile(tempRoot, "r04u-owner-", ".probe");
+        UserPrincipal processOwner;
+        try {
+            processOwner = Files.getOwner(ownerProbe, LinkOption.NOFOLLOW_LINKS);
+        } finally {
+            Files.deleteIfExists(ownerProbe);
+        }
+        UserPrincipal directoryOwner = Files.getOwner(p, LinkOption.NOFOLLOW_LINKS);
+        if (!directoryOwner.equals(processOwner)) throw denied("CURRENT_USER_OWNER_REQUIRED");
         this.root = p;
         this.file = p.resolve(FILENAME);
-        this.owner = Files.getOwner(p, LinkOption.NOFOLLOW_LINKS);
+        this.owner = directoryOwner;
         restrictToOwner(root, true);
         inspectFile();
     }
