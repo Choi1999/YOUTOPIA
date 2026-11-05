@@ -9,6 +9,10 @@ import {
   readWorkspaceNodeGroups, reconcileWorkspaceNodeGroups, writeWorkspaceNodeGroups,
   type WorkspaceNodeGroup,
 } from "./workspaceNodeGroups";
+import {
+  readGraphBookmarks, reconcileGraphBookmarks, writeGraphBookmarks,
+} from "./workspaceGraphBookmarks";
+import type { GraphVisit } from "./workspaceGraphNavigation";
 
 type Props = Readonly<{
   targets?: readonly WorkspaceUrlTarget[];
@@ -38,11 +42,20 @@ export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget, allowVid
   const [nodeGroups, setNodeGroups] = useState<readonly WorkspaceNodeGroup[]>(() =>
     readWorkspaceNodeGroups(groupStorage(), targets),
   );
+  const [bookmarks, setBookmarks] = useState<readonly GraphVisit[]>(() =>
+    readGraphBookmarks(groupStorage(), targets, nodeGroups),
+  );
   useEffect(() => {
     const reconciled = reconcileWorkspaceNodeGroups(nodeGroups, targets);
     if (reconciled !== nodeGroups) { setNodeGroups(reconciled); return; }
     writeWorkspaceNodeGroups(groupStorage(), nodeGroups, targets);
   }, [nodeGroups, targets]);
+  useEffect(() => {
+    const current = reconcileGraphBookmarks(bookmarks, targets, nodeGroups);
+    if (current !== bookmarks) { setBookmarks(current); return; }
+    writeGraphBookmarks(groupStorage(), bookmarks, targets, nodeGroups);
+  }, [bookmarks, targets, nodeGroups]);
+
   const [feedback, setFeedback] = useState(
     "영상·채널 URL을 붙여넣거나 링크를 끌어다 놓으세요. 외부 데이터를 조회하지 않습니다.",
   );
@@ -193,7 +206,8 @@ export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget, allowVid
         </div>
       ) : <WorkspaceUrlCanvas targets={targets} allowVideoImage={allowVideoImage}
         channelProfiles={channelProfiles} groups={nodeGroups}
-        onGroupsChange={setNodeGroups}/>} 
+        onGroupsChange={setNodeGroups} bookmarks={bookmarks}
+        onBookmarksChange={setBookmarks}/>}  
 
       {isDragging && (
         <div className="workspace-hero__drop-overlay" aria-hidden="true">
@@ -208,7 +222,8 @@ export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget, allowVid
             allowVideoImage={allowVideoImage}
             onToggleVideoImage={onToggleVideoImage}
             channelProfiles={channelProfiles} groups={nodeGroups}
-            onGroupsChange={setNodeGroups}/>,
+            onGroupsChange={setNodeGroups} bookmarks={bookmarks}
+            onBookmarksChange={setBookmarks}/>,
           document.body,
         )}
     </header>
