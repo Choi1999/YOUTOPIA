@@ -92,7 +92,7 @@ node --test shared/experiments/yu-video-understanding-poc-v0/tests/*.test.cjs
 node shared/experiments/yu-video-understanding-poc-v0/g2-source-provider.cjs
 ```
 
-독립 QA: 원격 GitHub Actions 실행 ID·검증 커밋/결과를 확인해서 기록한다. 모든 모의 또는 정적 검증 결과는 **실제 API 기능·저작권 허가·실영상 정확도 검증을 의미하지 않는다**.
+독립 QA: [GitHub Actions #41976588348](https://github.com/Choi1999/YOUTOPIA/actions/runs/41976588348), SHA `90632eb5e140b0ab179abe555fa21909086f9f94` — Node 24 구문 검사, 기존 G1 및 신규 G2 테스트 **총 49개 PASS / 0 FAIL**, `G1_OFFLINE_GATE_PASS` 및 `G2_DEFAULT_DENY_GATE_PASS` 확인. 문서에 검증 결과를 추가하는 커밋 이후 CI도 별도로 확인한다. 모든 모의 또는 정적 검증 결과는 **실제 API 기능·저작권 허가·실영상 정확도 검증을 의미하지 않는다**.
 
 ## 8. G2 미충족 증거 / 다음 승인
 
