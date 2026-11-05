@@ -115,3 +115,64 @@ $reviewScript = '.\shared\experiments\yu-video-understanding-poc-v0\g2d-windows-
 5. 확실한 관찰 결과만 판정하고 비식별 `observationNote`를 작성하여 저장한다. 이후 `YOUTUBE_MIDPOINT`, `YOUTUBE_ENDING` 순으로 확대한다. **일부 샘플이 일치해도 전체 편집 동일성은 미검증이다.**
 
 현재 판정: `G2D_SINTEL_LOCAL_PLAYER_MANUAL_QA_PASS_5_OF_5_REPORTED / YOUTUBE_COMPARISON_PENDING / G3_HOLD`.
+
+
+## 7. 독립 재생 / 연동 재생의 운영자 설정 (2026-11-05 추가)
+
+**목표:** 첫 번째 비교 지점에서 로컬 영화와 YouTube 영상의 대응 장면을 각각 찾아 일시정지한 뒤, 관찰된 시간 차이를 보정하여 이후 검수 시점을 편하게 탐색한다. **동일 영화·동일 편집판 인증 기능은 아니다.**
+
+### 7.1 UI 동작
+
+- **독립 재생(기본값):** 영상 두 개를 서로 다른 시점으로 자유롭게 탐색·재생할 수 있다. 브라우저를 새로 열면 항상 독립 모드로 시작한다.
+- **현재 두 시점으로 기준점 기록:** 공식 YouTube 임베드가 API에 연결되고 두 영상이 **모두 일시정지된 상태**에서만 허용한다. 로컬 시점과 YouTube 시점 차이를 초 단위로 계산한다.
+- **연동 재생:** 기준점 기록 이후 활성화할 수 있다. 연동 켜기 시 로컬 시점과 기록된 오프셋으로 YouTube 시점을 정렬한다. 이후 로컬 영상의 재생/일시정지/탐색은 YouTube에도 전달된다. YouTube 재생/일시정지 변경은 로컬에도 적용된다. YouTube의 큰 시점 점프(수동 탐색으로 보이는 불연속)를 일정 간격으로 감지하여 로컬 시점에 반영한다.
+- **로컬 → YouTube / YouTube → 로컬:** 연결 모드와 관계없이 기록된 오프셋에 따라 한쪽의 현재 시점으로 다른 쪽을 명시적으로 맞출 수 있다. YouTube 수동 탐색이 짧아 자동 감지되지 않으면 이 버튼을 사용한다.
+- **독립 재생으로 복귀:** 언제든 연동을 해제할 수 있다. 영상이 다른 편집판·인트로·컷 순서를 보여 원래 보정값이 부정확해질 경우 반드시 독립 상태에서 새 기준점을 찾고 다시 기록한다.
+- **보정값 저장:** 영상/개인 정보 유출을 막고 원본 증거와 혼동하지 않기 위해 `offsetSeconds`는 **브라우저 화면 메모리에서만 유지**한다. JSON 검수 기록의 시간, 공식 판본 판정, `g3Authorized` 등은 변경하지 않는다.
+
+### 7.2 기준점을 찾고 연동하는 순서
+
+1. 현재 Windows QA 로컬 서버가 실행 중이면 해당 터미널에서 `Ctrl+C`로 종료한다.
+2. 기존 실험 Worktree를 최신 원격 SHA로 전환한다(아래 명령). 기존 검수 JSON과 Blender 미디어는 Git Worktree 바깥 AppData에 있으므로 전환 중 유지된다.
+3. Sintel QA 화면을 다시 열고 우측의 **YouTube 플레이어 열기**를 누른다. 이때 브라우저가 외부 YouTube 공식 IFrame API를 불러온다. 별도의 YouTube Data API 키나 모델 API가 필요하지 않다.
+4. 독립 모드에서 로컬 화면과 YouTube 화면 각각에서 **같은 사건·컷 경계**를 찾는다. 둘 다 일시정지한다. 우측 임베드에 제한이 있다면 수동 비교는 가능하나 **플레이어 API 연동은 불가능**하므로 독립 모드로 유지한다.
+5. **현재 두 시점으로 기준점 기록**을 클릭한다. 예를 들어 로컬 01:28.803 / YouTube 01:31.000이라면 오프셋은 **+2.197초**가 된다. 이 값은 샘플 설명이며 실제 관찰값이 아니다.
+6. **연동 재생**을 클릭한다. 로컬 파형에서 시점을 바꾸거나 ±0.1초 버튼을 눌렀을 때 YouTube도 해당 오프셋으로 이동하는지 확인한다. 재생/일시정지 연결도 점검한다.
+7. YouTube를 직접 큰 폭으로 탐색했을 때 로컬도 이동하는지 확인한다. 짧거나 빠른 탐색은 자동 감지되지 않을 수 있으므로 **YouTube → 로컬** 버튼으로 명시 정렬한다.
+8. 다음 QA 체크포인트(`YOUTUBE_MIDPOINT`, `YOUTUBE_ENDING`)를 확인하며 시점 차이가 늘어나거나 컷 순서가 다르면 독립 재생으로 돌아가 재비교한다. **동기화 성공 자체를 `OBSERVED_MATCH`로 사용하지 않는다.**
+
+```powershell
+cd C:\Projects\YOUTOPIA
+git fetch origin --prune
+if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
+
+cd C:\Projects\YOUTOPIA-VIDEO-G2C
+if (git status --porcelain) { throw 'Worktree 변경 확인 필요' }
+git switch --detach origin/experiment/yu-video-understanding-poc-v01
+if ($LASTEXITCODE -ne 0) { throw '실험 Worktree 갱신 실패' }
+
+& .\shared\experiments\yu-video-understanding-poc-v0\g2d-open-workspace.ps1 -Film Sintel
+```
+
+### 7.3 경계·한계와 정확도
+
+**기술적 동작과 영상이 실제로 동일한지는 별개**다. 공식 [YouTube IFrame Player API](https://developers.google.com/youtube/iframe_api_reference)는 `playVideo`, `pauseVideo`, `seekTo`, `getCurrentTime`, `getDuration` 및 `onStateChange`를 제공한다. 이 기능들은 사용자가 버튼을 눌러 임베드를 열었을 때 브라우저에서 이용하며, YouTube 파일 다운로드나 서버 API 호출을 수행하지 않는다.
+
+- YouTube의 `seekTo`는 키프레임 근처로 이동할 수 있고, 재생 지연·네트워크 버퍼링·재생 속도 차이 때문에 정확히 같은 밀리초를 보장하지 않는다.
+- YouTube API는 별도의 `seeked` 이벤트를 제공하지 않는다. 구현은 **650ms 간격으로 큰 시점 점프만 감지**한다. 1~2초 이내의 수동 점프는 자동으로 따라가지 않을 수 있다.
+- 외부 임베드 정책·광고·자동재생 제한·브라우저 권한에 따라 연동 재생이나 자동 재생이 작동하지 않을 수 있다. 이 경우 로컬 독립 비교, 수동 시점 입력으로 검수해야 한다.
+- 보정값은 단일 대응 장면에서 계산한 값이므로, 중간에 컷이 추가·삭제된 판본에는 전 구간에서 적용되지 않을 수 있다.
+- 유료 LLM API, YouTube Data API 키, 영상 프레임 캡처/스트림 추출, 원본 업로드, 권리 승인, G3 승격, 브랜치 병합: **모두 없음**.
+
+### 7.4 QA 통과 기준
+
+| 기능 | 이 변경의 코드 검증 | 실제 Windows 수동 확인 |
+|---|---|---|
+| 기본 독립 모드/기준점 없는 연동 차단 | 합성 단위 테스트 | 미실시 |
+| 서로 다른 영상 시점으로 오프셋 기록 | 합성 단위 테스트 | 미실시 |
+| 독립↔연동 전환, 로컬→YouTube 탐색 | 합성 단위 테스트 | 미실시 |
+| YouTube→로컬 탐색·재생·일시정지 반영 | 합성 단위 테스트 | 미실시 |
+| 임베드 실패 시 독립 모드 복귀 | 합성 단위 테스트 | 미실시 |
+| 시간 차이·판본 차이의 인간 QA | 자동 판정 불가 | 미실시 |
+
+**현재 단계는 기능 코드 검증이며 실제 YouTube 임베드/두 영상 연동 현장 QA는 사용자 PC에서 확인해야 한다.**
