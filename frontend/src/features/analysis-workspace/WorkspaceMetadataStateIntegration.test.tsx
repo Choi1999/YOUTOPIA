@@ -11,9 +11,9 @@ import {WORKSPACE_TARGET_PRESENTATION_KEY} from "./workspaceTargetPresentation";
 const VIDEO="Ab0_-123xyz";
 function show() {
   render(<AnalysisRepositoryProvider repository={demoAnalysisRepository}>
-    <MemoryRouter initialEntries={["/analysis/youtube/workspace"]}>
-      <Routes><Route path="/analysis/youtube/workspace"
-        element={<AnalysisWorkspacePage/>}/></Routes>
+    <MemoryRouter initialEntries={["/analysis/youtube/workspace/diagnostics"]}>
+      <Routes><Route path="/analysis/youtube/workspace/diagnostics"
+        element={<AnalysisWorkspacePage diagnosticsMode/>}/></Routes>
     </MemoryRouter>
   </AnalysisRepositoryProvider>);
 }
@@ -49,6 +49,7 @@ function response(input:string) {
 }
 beforeEach(()=>{
   vi.stubEnv("DEV",true);
+  vi.stubEnv("VITE_R04AC_DIAGNOSTICS","enabled");
   vi.stubEnv("VITE_R04Y_SYNTHETIC_HTTP","enabled");
   vi.stubEnv("VITE_R04AA_METADATA_STATES","enabled");
 });
@@ -65,6 +66,7 @@ describe("UI-R04-AA — end-user graph state controls, synthetic only",()=>{
     vi.stubGlobal("fetch",fetcher);
     show();
     const focus=screen.getByRole("dialog",{name:"그래프 집중 탐색"});
+    await user.click(within(focus).getByRole("button",{name:"개발자 진단 열기"}));
     const input=within(focus).getByRole("textbox",{name:"URL 추가 입력"});
     await user.type(input,"https://youtu.be/"+VIDEO);
     await user.click(within(focus).getByRole("button",{name:"추가하기"}));
@@ -102,6 +104,7 @@ describe("UI-R04-AA — end-user graph state controls, synthetic only",()=>{
     vi.stubGlobal("fetch",fetcher);
     show();
     const focus=screen.getByRole("dialog",{name:"그래프 집중 탐색"});
+    await user.click(within(focus).getByRole("button",{name:"개발자 진단 열기"}));
     await user.type(within(focus).getByRole("textbox",{name:"URL 추가 입력"}),
       "https://youtu.be/"+VIDEO);
     await user.click(within(focus).getByRole("button",{name:"추가하기"}));
@@ -134,6 +137,7 @@ describe("UI-R04-AA — end-user graph state controls, synthetic only",()=>{
     vi.stubGlobal("fetch",vi.fn(async(input:RequestInfo|URL)=>response(String(input))));
     show();
     const focus=screen.getByRole("dialog",{name:"그래프 집중 탐색"});
+    await user.click(within(focus).getByRole("button",{name:"개발자 진단 열기"}));
     const input=within(focus).getByRole("textbox",{name:"URL 추가 입력"});
     await user.type(input,"https://youtu.be/"+VIDEO);
     await user.click(within(focus).getByRole("button",{name:"추가하기"}));
