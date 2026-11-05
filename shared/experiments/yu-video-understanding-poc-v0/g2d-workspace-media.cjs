@@ -69,7 +69,7 @@ function spawnFfmpeg(args,{onStdout=null}={}){
 async function createProxy(source,destination){
  insist(path.isAbsolute(source)&&path.isAbsolute(destination),'absolute media paths required');
  insist(fs.existsSync(source)&&fs.lstatSync(source).isFile(),'source file absent');
- if(fs.existsSync(destination)){insist(fs.statSync(destination).size>100000,'existing proxy invalid');return {cached:true,path:destination};}
+ if(fs.existsSync(destination)){const st=fs.lstatSync(destination);insist(st.isFile()&&!st.isSymbolicLink()&&st.size>100000,'existing proxy invalid');return {cached:true,path:destination};}
  const temp=destination+'.part.mp4';
  insist(!fs.existsSync(temp),'previous incomplete proxy exists; operator must inspect');
  try{
@@ -84,6 +84,7 @@ async function createProxy(source,destination){
 async function createPeaks(source,destination){
  insist(path.isAbsolute(source)&&path.isAbsolute(destination),'absolute file paths required');
  if(fs.existsSync(destination)){
+  const st=fs.lstatSync(destination);insist(st.isFile()&&!st.isSymbolicLink()&&st.size>10&&st.size<5000000,'existing waveform file invalid');
   const cached=JSON.parse(fs.readFileSync(destination,'utf8'));
   insist(cached.windowMs===50&&Array.isArray(cached.peaks)&&cached.peaks.length>0&&cached.peaks.length<400000,
     'invalid waveform cache');
