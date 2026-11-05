@@ -606,3 +606,24 @@
   .workspace-focus__empty p {font-size:11px;}
   .workspace-focus__editor {padding:8px;}
 }
+
+/* Keep bookmark and channel-artwork consent accessible in the default mobile focus layout. */
+@media(max-width:720px) {
+  .workspace-focus__controls {
+    justify-content:flex-start;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .workspace-focus__controls button {
+    flex:1 1 calc(33.333% - 6px);
+    min-height:37px;
+    white-space:normal;
+    line-height:1.2;
+  }
+}
+@media(max-width:390px) {
+  .workspace-focus__controls button {
+    flex:1 1 calc(50% - 6px);
+    font-size:10px;
+  }
+}
