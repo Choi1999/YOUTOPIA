@@ -49,7 +49,7 @@ if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
 }
 $dest = [IO.Path]::GetFullPath($OutputDirectory)
 $repoPath = [IO.Path]::GetFullPath($root).TrimEnd('\','/') + [IO.Path]::DirectorySeparatorChar
-if ($dest.StartsWith($repoPath, [StringComparison]::OrdinalIgnoreCase)) {
+if ($dest.StartsWith($repoPath, [StringComparison]::OrdinalIgnoreCase) -or $dest.TrimEnd('\','/') -ieq $root.TrimEnd('\','/')) {
   throw 'G2C_OPERATOR_FAIL_CLOSED: media destination must be outside Git repository'
 }
 if ($Mode -eq 'Plan') {
@@ -103,6 +103,7 @@ function Fetch-PublisherFile {
 Fetch-PublisherFile -Url $spec.mediaUrl -Destination $mediaDownloadedPath -MinBytes ([long]($spec.expectedPublisherArchiveBytes * 0.9))
 Fetch-PublisherFile -Url $spec.subtitleUrl -Destination $subtitlePath -MinBytes 100
 $mediaIndexSizeMatches = ((Get-Item -LiteralPath $mediaDownloadedPath).Length -eq [long]$spec.expectedPublisherArchiveBytes)
+if (-not $mediaIndexSizeMatches) { throw 'G2C_OPERATOR_FAIL_CLOSED: publisher file size does not match verified official directory listing' }
 $publisherMd5 = 'NOT_AVAILABLE'
 if ($Film -eq 'Sintel') {
   if (-not (Test-Path -LiteralPath $videoPath)) {
