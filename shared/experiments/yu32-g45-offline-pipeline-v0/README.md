@@ -86,3 +86,18 @@ Before any *future* actual YouTube retrieval/analysis: prove project+credentials
 The future source adapter must be **separately developed and reviewed** after authorization. Do not rename `STATIC_FIXTURE` to `APPROVED_PROVIDER` or remove the provenance guard as a workaround. No provider calls, payments, infrastructure deployment or branch merges are included here.
 
 Official shape: https://developers.google.com/youtube/data/reference/rest/v3/commentThreads/list and https://developers.google.com/youtube/data/reference/rest/v3/commentThreads . Provider derived-data restrictions: https://developers.google.com/youtube/terms/derived-metrics-policy .
+
+
+## UI-R04-O — metadata read-only offline readiness (NO external requests)
+
+Video/channel title and profile thumbnail auto-population requires a separate approved backend metadata reader. A new **transportless** candidate lives at src/metadata-readiness.cjs, with coverage in tests/metadata-readiness.test.cjs.
+
+- Produces limited GET **descriptors** for videos.list(id), channels.list(id), and channels.list(forHandle) — max 3 canonical targets, 1 quota unit per planned request, 0 actual requests.
+- Decodes only a bounded, caller-provided YouTube-shaped JSON response. Decoded fields are marked sourceAuthenticated=false and consumerPublicationAuthorized=false, even for valid shape.
+- Filters to safe title/thumbnail fields; only Google/YouTube image CDN hostnames on an exact HTTPS allowlist. Cache is **in memory** for 15 minutes, never approved as a live source.
+- Existing POLICY_HOLD, first-live-call hardlock, comment/derived sentiment rules, frontend image-consent behavior and protected server files are unchanged.
+- For the user-facing auto title/channel image goal, a future separately approved server transport + provenance/credential/quota/retention contract must be completed before integrating this data into frontend. See docs/integration/UI_R04O_OFFLINE_YOUTUBE_METADATA_READINESS_V01.md.
+
+~~~powershell
+node --test shared/experiments/yu32-g45-offline-pipeline-v0/tests/metadata-readiness.test.cjs
+~~~
