@@ -132,6 +132,64 @@
     </div>
    </div>
   </section>
+  <section class="review panel gold-panel" aria-label="G2-E 실제 영상 평가 질문 작성">
+   <div class="panel-head reviewhead">
+    <div><h2>G2-E · 실제 영상 평가 질문 / 정답 초안</h2>
+     <p>G2-D에서 확보한 영화에 대해 질문 6개를 작성하고 로컬 근거 구간을 기록합니다. 제출 전에는 검증된 골드 정답이 아닙니다.</p>
+    </div>
+    <span class="tinybadge caution" id="goldStage">질문 미생성</span>
+   </div>
+   <div id="goldEmpty" class="gold-empty">
+    <p>이 영화의 6개 질문 초안을 준비할 수 있습니다. 기존 영상·SRT·G2-D 검수 기록을 재사용하고 Git 저장소 밖에 새 비공개 JSON을 만듭니다.</p>
+    <button type="button" id="goldCreate" class="primary">G2-E 질문 6개 생성 (비공개)</button>
+   </div>
+   <div id="goldEditor" class="gold-editor" hidden>
+    <div class="gold-toolbar">
+     <label>평가 질문 선택
+      <select id="goldSelect" aria-label="G2-E 평가 질문 선택"></select>
+     </label>
+     <span class="small" id="goldProgress">정답 미작성 6개</span>
+    </div>
+    <p class="small" id="goldAnchor">로컬 기준 증거 시각을 확인하세요.</p>
+    <div class="fields gold-question-fields">
+     <label>최종 질문 문장 (실제 장면을 확인한 후 확정)
+      <textarea id="goldQuestion" rows="2" placeholder="장면을 직접 확인하고 질문 문장을 확정하세요."></textarea>
+     </label>
+     <label>비식별 작성자 코드
+      <input id="goldAuthor" type="text" placeholder="LOCAL_AUTHOR_1" maxlength="32"/>
+     </label>
+    </div>
+    <div class="fields gold-question-fields">
+     <label>정답 가능 여부
+      <select id="goldAnswerability">
+       <option value="">미작성</option>
+       <option value="SUPPORTED">영상 근거로 확인 가능 (SUPPORTED)</option>
+       <option value="UNSUPPORTED">영상에서 확인 불가능 (UNSUPPORTED)</option>
+       <option value="AMBIGUOUS">질문 수정 또는 재검수 필요 (AMBIGUOUS)</option>
+      </select>
+     </label>
+     <label>로컬 원본 기준 시간 (참고)
+      <input id="goldAnchorTime" readonly title="G2-D 기준점에서 파생된 값으로 수정할 수 없습니다."/>
+     </label>
+    </div>
+    <label class="note-label">사람이 확인한 답변 또는 모호성 이유
+      <textarea id="goldAnswer" rows="3" placeholder="영상의 실제 장면을 확인한 뒤, 근거가 있는 답변을 작성하세요."></textarea>
+    </label>
+    <div id="goldEvidence" class="gold-evidence"></div>
+    <div id="goldAbsenceBox" class="gold-absence" hidden>
+     <label class="note-label">확인할 수 없는 이유 (20자 이상)
+      <textarea id="goldAbsenceReason" rows="2" placeholder="어느 구간까지 직접 확인했고 왜 영화만으로 답할 수 없는지 기록하세요."></textarea>
+     </label>
+     <label class="gold-checkbox"><input id="goldFullFilm" type="checkbox"/>
+      원본 영상 전체를 직접 검토했음을 확인 (체크만으로 증명이 되지는 않음)</label>
+    </div>
+    <div class="gold-actions">
+     <span class="small">영상 기준 시점·근거 모달리티·정답은 사람이 확인해야 합니다. YouTube 시점은 검증된 골드 근거에 자동 사용하지 않습니다.</span>
+     <button type="button" id="goldSave" class="primary">이 질문의 정답 초안 저장</button>
+    </div>
+    <p class="toast" id="goldMessage" role="status">질문을 선택하고 실제 영상과 근거를 확인하세요.</p>
+   </div>
+  </section>
   <footer><span>G2-D / 사용자 PC 로컬 검수 · 음성 파형은 원본에서 생성 · YouTube 재생은 외부 서비스</span><span id="footerGate">G3: 차단 유지</span></footer>
  </main>
 </div>
