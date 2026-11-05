@@ -76,7 +76,7 @@ function providerReview(){
  };
 }
 function estimateTokenComponent({inputTokens,outputTokens},pricing=PRICING){
- guard(pricing&&pricing.quoteStatus==='PUBLIC_PRICE_SNAPSHOT_NOT_BILLING'&&pricing.referenceId==='GEMINI_PRICING','pricing provenance');
+ guard(pricing===PRICING&&pricing.quoteStatus==='PUBLIC_PRICE_SNAPSHOT_NOT_BILLING'&&pricing.referenceId==='GEMINI_PRICING','pricing snapshot override denied');
  guard(['inputTokens','outputTokens'].every(k=>Object.hasOwn({inputTokens,outputTokens},k)),'token fields');
  guard([inputTokens,outputTokens].every(v=>v===null||(Number.isSafeInteger(v)&&v>=0)),'invalid tokens');
  guard([pricing.perMillionInputUsd,pricing.perMillionOutputUsd].every(v=>v===null||(typeof v==='number'&&Number.isFinite(v)&&v>=0)),'invalid rate');
