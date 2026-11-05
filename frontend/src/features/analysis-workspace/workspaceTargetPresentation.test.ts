@@ -9,7 +9,7 @@ import {ApprovedChannelProfileCache} from "./workspaceChannelProfile";
 const targets=addWorkspaceUrlTargets([],[
   "https://youtu.be/Ab0_-123xyz",
   "https://www.youtube.com/@somecreator",
-],1000).targets;
+].join("\n"),1000).targets;
 const videoKey=workspaceUrlTargetKey(targets[0]);
 const channelKey=workspaceUrlTargetKey(targets[1]);
 const image="https://yt3.googleusercontent.com/some-channel-avatar";
