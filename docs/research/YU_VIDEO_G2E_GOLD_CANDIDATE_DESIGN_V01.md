@@ -230,3 +230,17 @@ if ($LASTEXITCODE -ne 0) { throw '실험 Worktree 갱신 실패' }
 G2-E 패널의 모든 저장은 사용자 명시 클릭이 필요하고, 저장은 기존 G2-D JSON과 독립된 **로컬 비공개 파일**에만 수행된다. Q/A가 들어간 비공개 파일은 GitHub에 올리거나 외부 공급자에게 전송하지 않는다.
 
 현재 상태: `G2E_GOLD_UI_OFFLINE_CODE_TESTED / REAL_GOLD_HUMAN_AUTHORING_PENDING / INDEPENDENT_REVIEW_0 / G3_NOT_APPROVED`.
+
+
+## 9. 구현 및 CI 확인 (2026-11-05)
+
+공개 소스는 G2-E 질문 12개 초안·오프라인 검증기·Windows 스크립트·기존 G2-D 파형 작업공간 내 G2-E 입력 패널 및 로컬 저장 API로 구성된다.
+
+- `shared/experiments/yu-video-understanding-poc-v0/g2e-question-candidates.json`: 12문항 **질문 초안만** 기록. 답변·영상 자막 원문 없음.
+- `g2e-gold-pilot.cjs`, `g2e-windows-gold-pilot.ps1`: 소스 G2-D 기록과 연결되는 비공개 정답 파일 생성 및 의미/시간·출처의 **구조 검증**.
+- `g2d-workspace-server.cjs` 및 기존 HTML/CSS/Client: 같은 로컬 작업공간에 G2-E 화면 제공, 기존 골드 파일이 있으면 재사용하며 덮어쓰지 않음, 관찰한 근거의 시작/종료 시간 기록, 사용자 저장 클릭 시에만 비공개 파일에 기록.
+- 부정 테스트: 정답/시간 증거 누락, 틀린 모달리티, 근거 지점 불일치, 비검증 YouTube 시점 사용, G3/권리/독립 검수 승인 조작, 외부 사이트의 저장 요청, 동시 수정 충돌 등.
+- [Node 24 GitHub Actions #42022955940](https://github.com/Choi1999/YOUTOPIA/actions/runs/42022955940): **194 테스트 중 193 PASS, 0 FAIL, 1 SKIP**. 건너뛴 테스트는 해당 CI의 FFmpeg 실행 파일 부재로 인한 합성 영상 변환 검증이며, G2-E 문항 검증/모의 UI 저장 API 테스트는 수행됨.
+- [Windows CI #42022707609](https://github.com/Choi1999/YOUTOPIA/actions/runs/42022707609): G2-E PowerShell 구문 검사 PASS. 실제 사용자 로컬 비공개 정답 JSON 작성, 브라우저 화면 수동 QA 및 독립 인적 검수는 **아직 수행하지 않음**.
+
+**최종 개발 상태:** `G2E_QUESTION_CANDIDATES_AND_BROWSER_AUTHORING_READY / ACTUAL_PRIVATE_GOLD_DATA_NOT_CREATED_BY_ASSISTANT / HUMAN_GOLD_0_OF_12_VERIFIED / G3_NOT_APPROVED / NO_MERGE`.
