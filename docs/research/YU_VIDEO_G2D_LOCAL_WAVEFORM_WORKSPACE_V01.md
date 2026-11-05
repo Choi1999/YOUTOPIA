@@ -176,3 +176,36 @@ if ($LASTEXITCODE -ne 0) { throw '실험 Worktree 갱신 실패' }
 | 시간 차이·판본 차이의 인간 QA | 자동 판정 불가 | 미실시 |
 
 **현재 단계는 기능 코드 검증이며 실제 YouTube 임베드/두 영상 연동 현장 QA는 사용자 PC에서 확인해야 한다.**
+
+
+## 8. 운영자 보고: 독립·연동 재생 기능 현장 QA (2026-11-05)
+
+**증거 등급: USER_REPORTED_UI_QA / NOT_INDEPENDENTLY_REPLAYED.**
+
+앞 절에서 권고한 G2-D 브라우저 현장 QA(YouTube 플레이어 열기, 각각 대응 장면 찾기, 두 영상 일시정지 후 기준점 기록, 연동 재생에서 로컬 탐색·재생·일시정지 연결, YouTube 측 탐색의 로컬 반영)에 대해 운영자가 **`QA 이상 없음`**을 보고했다.
+
+| 확인 범위 | 기록 |
+|---|---|
+| YouTube 임베드 재생 및 비교 가능한 화면 | 운영자 보고 PASS |
+| 독립 재생에서 대응 시점 탐색과 일시정지 | 운영자 보고 PASS |
+| 두 재생 시점의 기준점 기록·오프셋 표시 | 운영자 보고 PASS |
+| 연동 상태의 탐색·재생·일시정지 조작 | 운영자 보고 PASS |
+| YouTube 측 탐색 시 로컬 위치 반영 또는 명시 정렬 | 운영자 보고 PASS |
+| 임베드 오류·자동재생 제한 등 모든 장애 경로 | **별도 현장 시험 기록 없음** |
+| 음성↔SRT 실제 시간적 일치 및 YouTube 게시판 전체 동일성 | **판정 자료 미제출** |
+| 검수 JSON 두 편의 Checkpoint별 `Assess` 결과 | **아직 미수신** |
+
+운영자 보고를 근거로 **G2-D 독립/연동 영상 비교 도구의 주요 정상 사용 경로에 대한 현장 QA를 PASS로 접수**한다. 단, 이는 관찰과 기록을 돕는 UI 자체의 검수이며, 작품 두 편의 실제 동기화·정답 데이터·사용권·YouTube판 동일성 검증을 통과시킨다는 의미가 아니다.
+
+**다음 작업은 새 기능 추가가 아니라 실제 내용 검수와 기록**이다. G2-D 작업공간에서 각 작품의 `AUDIO_FIRST/MIDDLE/LAST`, `YOUTUBE_OPENING/MIDPOINT/ENDING` 및 Tears 후반 자막 커버리지 2항목을 실제로 확인한 뒤 저장하고 아래 명령으로 판정한다.
+
+```powershell
+cd C:\Projects\YOUTOPIA-VIDEO-G2C
+$script = '.\shared\experiments\yu-video-understanding-poc-v0\g2d-windows-manual-review.ps1'
+& $script -Mode Assess -Film Sintel
+& $script -Mode Assess -Film TearsOfSteel
+```
+
+실제 관찰값을 추정해 `OBSERVED_MATCH`를 채우지 않는다. 게시자·판본 또는 음성 싱크가 불확실하면 `UNCERTAIN`, 직접 관찰한 불일치는 `OBSERVED_DIFFERENCE`로 기록한다. 전 항목이 일치해도 `OPERATOR_REPORTED_SAMPLED_MATCHES_NOT_FULL_PROOF`이며 G3 유료 호출과 병합은 별도 승인 전까지 **BLOCKED**다.
+
+현 상태: `G2D_MAIN_PLAYBACK_UI_QA_OPERATOR_PASS / G2D_CONTENT_REVIEW_PENDING / G3_NOT_APPROVED / NO_MERGE`.
