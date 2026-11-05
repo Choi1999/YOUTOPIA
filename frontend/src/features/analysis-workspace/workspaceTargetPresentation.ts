@@ -8,6 +8,7 @@
 import { isApprovedChannelThumbnailUrl, type ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import { WORKSPACE_URL_TARGETS_TTL_MS, workspaceUrlTargetKey, type WorkspaceUrlTarget } from "./workspaceUrlTargets";
 import type { SyntheticWorkspaceMetadata } from "./workspaceSyntheticMetadata";
+import type { MetadataState } from "./workspaceMetadataConsumerState";
 
 export const WORKSPACE_TARGET_PRESENTATION_KEY = "youtopia-target-presentation-v1";
 export const MAX_USER_LABEL = 120;
@@ -19,6 +20,8 @@ export type WorkspaceTargetPresentation = Readonly<{
   channelImages: Readonly<Record<string, string>>;
   /** Only a transient, explicitly enabled local mock. Never serialized. */
   synthetic?: Readonly<Record<string, SyntheticWorkspaceMetadata>>;
+  /** Dev-only transient status display. Never serialized or treated as provider proof. */
+  metadataStates?: Readonly<Record<string, MetadataState>>;
 }>;
 
 export const EMPTY_TARGET_PRESENTATION: WorkspaceTargetPresentation = {
