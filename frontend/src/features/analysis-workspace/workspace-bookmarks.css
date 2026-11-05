@@ -1,0 +1,103 @@
+/* UI-R04-M: local-only user bookmarks and non-destructive result filter. */
+.workspace-url-canvas__unified-search > select {
+  min-height:37px;
+  min-width:115px;
+  border:1px solid rgba(159,190,246,.4);
+  border-radius:8px;
+  padding:6px 8px;
+  background:#132647;
+  color:#eef4ff;
+  font-size:11px;
+  cursor:pointer;
+}
+.workspace-url-canvas__unified-search > select:focus-visible {
+  outline:2px solid #9ff2ec;
+  outline-offset:2px;
+}
+.workspace-url-canvas__bookmark-manager {
+  position:relative;
+  z-index:6;
+  display:grid;
+  gap:6px;
+  max-height:170px;
+  overflow:auto;
+  padding:9px 13px;
+  border-bottom:1px solid rgba(146,170,241,.23);
+  background:rgba(14,30,62,.93);
+  color:#d5e2fa;
+}
+.workspace-url-canvas__bookmark-manager > p {
+  margin:0;
+  font-size:11px;
+  font-weight:700;
+  color:#c9defb;
+}
+.workspace-url-canvas__bookmark-manager > span {
+  font-size:11px;
+  color:#a8bcdd;
+}
+.workspace-url-canvas__bookmark-row {
+  display:flex;
+  gap:8px;
+  align-items:center;
+  min-width:0;
+}
+.workspace-url-canvas__bookmark-row button {
+  min-height:36px;
+  padding:7px 11px;
+  border:1px solid rgba(150,183,241,.3);
+  border-radius:8px;
+  background:#1b345e;
+  color:#edf3ff;
+  font-size:11px;
+  cursor:pointer;
+}
+.workspace-url-canvas__bookmark-row button:first-child {
+  display:flex;
+  align-items:center;
+  gap:9px;
+  flex:1 1 80px;
+  min-width:0;
+  text-align:left;
+  overflow-wrap:anywhere;
+}
+.workspace-url-canvas__bookmark-row button:first-child small {
+  color:#b6cae8;
+  white-space:nowrap;
+}
+.workspace-url-canvas__bookmark-row button:last-child {
+  flex:0 0 auto;
+}
+.workspace-url-canvas__bookmark-row button:focus-visible {
+  outline:2px solid #9ff2ec;
+  outline-offset:2px;
+}
+.workspace-url-canvas__node.is-bookmarked .workspace-url-canvas__node-bubble {
+  box-shadow:0 0 0 5px rgba(255,207,106,.28),0 5px 28px rgba(31,23,11,.35);
+  border-color:#ffd99c;
+}
+.workspace-url-canvas__cluster.is-bookmarked .workspace-url-canvas__group-hub {
+  box-shadow:0 0 0 5px rgba(255,207,106,.28),0 8px 35px rgba(3,9,28,.45);
+}
+.workspace-url-canvas__minimap-pin.is-bookmarked:not(.is-active) {
+  border-color:#ffdfab;
+  box-shadow:0 0 0 2px rgba(255,207,106,.38);
+}
+@media(max-width:720px) {
+  .workspace-url-canvas__unified-search > select {
+    flex:1 1 110px;
+    min-height:34px;
+  }
+  .workspace-url-canvas__bookmark-manager {
+    padding:7px;
+    max-height:130px;
+  }
+  .workspace-url-canvas__bookmark-row button {
+    min-height:36px;
+    padding:6px 7px;
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+  .workspace-url-canvas__node.is-bookmarked,
+  .workspace-url-canvas__cluster.is-bookmarked {transition:none!important;}
+}
