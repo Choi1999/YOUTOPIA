@@ -77,6 +77,7 @@ if ($Mode -eq 'Plan') {
 # never calls a model API, never edits Git and never writes media inside the repo.
 $node = Get-Command node -ErrorAction Stop
 $ffprobe = Get-Command ffprobe -ErrorAction Stop
+$script:publisherDownloadCount = 0
 $mediaDir = Join-Path $dest $Film
 New-Item -ItemType Directory -Path $mediaDir -Force | Out-Null
 $mediaDownloadedPath = Join-Path $mediaDir $spec.mediaArchive
@@ -95,6 +96,7 @@ function Fetch-PublisherFile {
     $actual = (Get-Item -LiteralPath $temporary -ErrorAction Stop).Length
     if ($actual -lt $MinBytes) { throw 'G2C_OPERATOR_FAIL_CLOSED: publisher download smaller than expected minimum' }
     Move-Item -LiteralPath $temporary -Destination $Destination -ErrorAction Stop
+    $script:publisherDownloadCount++
   }
   finally {
     if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
@@ -146,6 +148,10 @@ if ($inspected.g3Authorized -ne $false -or $inspected.providerCalls -ne 0 -or $i
 [pscustomobject]@{
   stage = 'G2-C'
   mode = 'LOCAL_PUBLISHER_MEDIA_INSPECTED_NOT_SERVICE_APPROVED'
+  publisherDownloadRequestsThisRun = $script:publisherDownloadCount
+  youtubeMediaDownloadRequests = 0
+  youtubeDataApiCalls = 0
+  llmApiCalls = 0
   film = $Film
   publisherMovieByteLengthMatchesIndex = $mediaIndexSizeMatches
   publisherMd5Evidence = $publisherMd5
