@@ -5,6 +5,7 @@ import {
 } from "react";
 
 import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
+import { WorkspaceDiagnosticsDock } from "./WorkspaceDiagnosticsDock";
 import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
 import { WorkspaceChannelIdentity } from "./WorkspaceChannelIdentity";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
@@ -37,6 +38,7 @@ type Props = Readonly<{
   onToggleVideoImage?: () => void;
   allowChannelImage?: boolean;
   onToggleChannelImage?: () => void;
+  diagnosticsMode?: boolean;
   syntheticPreviewEnabled?: boolean;
   onToggleSyntheticPreview?: () => void;
   syntheticServerAvailable?: boolean;
@@ -80,6 +82,7 @@ export function WorkspaceFocusMode({
   targets, onAddUrls, onRemove, onExit,
   allowVideoImage = false, onToggleVideoImage, channelProfiles,
   allowChannelImage = false, onToggleChannelImage,
+  diagnosticsMode = false,
   syntheticPreviewEnabled = false, onToggleSyntheticPreview,
   syntheticServerAvailable = false, syntheticServerEnabled = false,
   syntheticServerStatus = "", onToggleSyntheticServer,
@@ -418,41 +421,21 @@ export function WorkspaceFocusMode({
               {allowVideoImage ? "영상 이미지 끄기" : "영상 이미지 켜기"}
             </button>
           )}
-          {onToggleSyntheticPreview && (
-            <button type="button" aria-pressed={syntheticPreviewEnabled}
-              onClick={onToggleSyntheticPreview}
-              title="로컬 합성 제목·채널명·썸네일, 실제 Google/YouTube 조회 없음">
-              {syntheticPreviewEnabled ? "합성 정보 끄기" : "합성 정보 미리보기"}
-            </button>
-          )}
-          {syntheticServerAvailable && onToggleSyntheticServer && (
-            <button type="button" aria-pressed={syntheticServerEnabled}
-              onClick={onToggleSyntheticServer}
-              title="로컬 Spring Boot 테스트 서버의 합성 JSON만 조회합니다. 실제 YouTube API 없음">
-              {syntheticServerEnabled ? "Spring 합성 연결 끄기" : "Spring 합성 연결"}
-            </button>
-          )}
-          {stateDemoAvailable && onToggleStateDemo && (
-            <button type="button" aria-pressed={stateDemoEnabled}
-              onClick={onToggleStateDemo}
-              title="개발 전용 Spring 상태 계약 테스트: 실 API·인증 메타데이터 아님">
-              {stateDemoEnabled ? "상태 QA 끄기" : "메타데이터 상태 QA"}
-            </button>
-          )}
-          {stateDemoAvailable && stateDemoEnabled && onStateScenarioChange && (
-            <label>
-              QA 시나리오
-              <select aria-label="메타데이터 QA 시나리오" value={stateScenario}
-                onChange={event=>onStateScenarioChange(event.target.value as StateScenario)}>
-                <option value="READY">READY</option>
-                <option value="NOT_FOUND">NOT_FOUND</option>
-                <option value="FAILED">FAILED</option>
-                <option value="STALE">STALE</option>
-              </select>
-            </label>
-          )}
-          {stateDemoAvailable && stateDemoEnabled && onRefreshStateDemo && (
-            <button type="button" onClick={onRefreshStateDemo}>메타데이터 새로고침</button>
+          {diagnosticsMode && (
+            <WorkspaceDiagnosticsDock
+              syntheticPreviewEnabled={syntheticPreviewEnabled}
+              onToggleSyntheticPreview={onToggleSyntheticPreview}
+              syntheticServerAvailable={syntheticServerAvailable}
+              syntheticServerEnabled={syntheticServerEnabled}
+              syntheticServerStatus={syntheticServerStatus}
+              onToggleSyntheticServer={onToggleSyntheticServer}
+              stateDemoAvailable={stateDemoAvailable}
+              stateDemoEnabled={stateDemoEnabled}
+              stateScenario={stateScenario}
+              onStateScenarioChange={onStateScenarioChange}
+              onToggleStateDemo={onToggleStateDemo}
+              onRefreshStateDemo={onRefreshStateDemo}
+            />
           )}
           {onToggleChannelImage && (
             <button type="button" aria-pressed={allowChannelImage}
