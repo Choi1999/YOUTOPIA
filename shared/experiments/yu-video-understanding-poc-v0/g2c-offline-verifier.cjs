@@ -80,7 +80,7 @@ function parseSrt(text){
  let previousStart=-1,previousEnd=0,overlapCount=0,rows=[];
  for(let i=0;i<blocks.length;i++){
   const lines=blocks[i].split('\n');
-  check(lines.length>=3&&lines[0].trim()===String(i+1),'SRT cue number');
+  check(lines.length>=2&&lines[0].trim()===String(i+1),'SRT cue number');
   const match=/^\s*(\d{2,4}:[0-5]\d:[0-5]\d[,.]\d{3})\s+-->\s+(\d{2,4}:[0-5]\d:[0-5]\d[,.]\d{3})(?:\s+.*)?$/.exec(lines[1]);
   check(match,'SRT time range');
   const startMs=ms(match[1]),endMs=ms(match[2]);
