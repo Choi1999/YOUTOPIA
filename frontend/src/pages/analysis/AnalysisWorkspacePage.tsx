@@ -5,6 +5,7 @@ import { demoChannelSelections } from "../../features/analysis/data/demoChannelS
 import { WorkspaceDiscoveryPanels } from "../../features/analysis-workspace/WorkspaceDiscoveryPanels";
 import { WorkspaceHero } from "../../features/analysis-workspace/WorkspaceHero";
 import { WorkspaceUrlTargetBoard } from "../../features/analysis-workspace/WorkspaceUrlTargetBoard";
+import { workspaceDiagnosticsEnabled } from "../../features/analysis-workspace/workspaceDiagnosticsGate";
 import { ApprovedChannelProfileCache } from "../../features/analysis-workspace/workspaceChannelProfile";
 import { createOfflineWorkspacePreview, type SyntheticWorkspaceMetadata } from "../../features/analysis-workspace/workspaceSyntheticMetadata";
 import { fetchSyntheticHttpMetadata, syntheticHttpDevEnabled } from "../../features/analysis-workspace/workspaceSyntheticHttpClient";
@@ -77,7 +78,12 @@ function loadInitialSession(): { value: AnalysisWorkspaceSession; status: string
   };
 }
 
-export function AnalysisWorkspacePage() {
+export function AnalysisWorkspacePage({diagnosticsMode = false}: Readonly<{
+  diagnosticsMode?: boolean;
+}> = {}) {
+  // The regular product route never exposes or executes test controls, even
+  // when the developer has enabled synthetic servers in the same Vite process.
+  const diagnosticAccess = diagnosticsMode && workspaceDiagnosticsEnabled();
   const location = useLocation();
   const [initial] = useState(loadInitialSession);
   const [session, setSession] = useState<AnalysisWorkspaceSession>(initial.value);
@@ -90,7 +96,7 @@ export function AnalysisWorkspacePage() {
   const [allowChannelImage, setAllowChannelImage] = useState(false);
   // Explicit local-only synthetic preview, never persisted or fetched.
   const [syntheticPreviewEnabled, setSyntheticPreviewEnabled] = useState(false);
-  const syntheticServerAvailable = syntheticHttpDevEnabled();
+  const syntheticServerAvailable = diagnosticAccess && syntheticHttpDevEnabled();
   const [syntheticServerEnabled, setSyntheticServerEnabled] = useState(false);
   const [syntheticServerRecords, setSyntheticServerRecords] = useState<
     Readonly<Record<string, SyntheticWorkspaceMetadata>>
@@ -99,7 +105,7 @@ export function AnalysisWorkspacePage() {
     "테스트 전용 Spring 서버 합성 조회 대기",
   );
   // Status-contract demo is independent of provider data and opt-in only.
-  const stateDemoAvailable = metadataStateDevEnabled();
+  const stateDemoAvailable = diagnosticAccess && metadataStateDevEnabled();
   const [stateDemoEnabled, setStateDemoEnabled] = useState(false);
   const [stateScenario, setStateScenario] = useState<StateScenario>("READY");
   const [stateRefresh, setStateRefresh] = useState(0);
@@ -188,11 +194,11 @@ export function AnalysisWorkspacePage() {
     if (stateDemoEnabled && value.status === "READY" && value.record)
       stateReadyRecords[key] = value.record;
   }
-  const displayedPresentation: WorkspaceTargetPresentation = stateDemoEnabled
+  const displayedPresentation: WorkspaceTargetPresentation = diagnosticAccess && stateDemoEnabled
     ? { ...presentation, synthetic: stateReadyRecords, metadataStates: stateRecords }
-    : syntheticServerEnabled
+    : diagnosticAccess && syntheticServerEnabled
       ? { ...presentation, synthetic: syntheticServerRecords }
-      : syntheticPreviewEnabled
+      : diagnosticAccess && syntheticPreviewEnabled
         ? { ...presentation, synthetic: createOfflineWorkspacePreview(urlTargets) }
         : presentation;
   const paths = buildWorkspacePaths(session);
@@ -301,42 +307,43 @@ export function AnalysisWorkspacePage() {
 
   return (
     <div className="product-screen analysis-workspace">
-      <WorkspaceHero targets={urlTargets} onAddUrls={addUrlTargets}
+      <WorkspaceHero diagnosticsMode={diagnosticAccess}
+        targets={urlTargets} onAddUrls={addUrlTargets}
         onRemoveTarget={removeUrlTarget} allowVideoImage={allowVideoImage}
         onToggleVideoImage={() => setAllowVideoImage(enabled => !enabled)}
         allowChannelImage={allowChannelImage}
         onToggleChannelImage={() => setAllowChannelImage(enabled => !enabled)}
         channelProfiles={channelProfiles} defaultFocusMode
-        syntheticPreviewEnabled={syntheticPreviewEnabled}
-        onToggleSyntheticPreview={() => {
+        syntheticPreviewEnabled={diagnosticAccess && syntheticPreviewEnabled}
+        onToggleSyntheticPreview={diagnosticAccess ? () => {
           setSyntheticServerEnabled(false);
           setStateDemoEnabled(false);
           setSyntheticPreviewEnabled(v => !v);
-        }}
+        } : undefined}
         syntheticServerAvailable={syntheticServerAvailable}
         syntheticServerEnabled={syntheticServerEnabled}
         syntheticServerStatus={syntheticServerStatus}
-        onToggleSyntheticServer={() => {
+        onToggleSyntheticServer={diagnosticAccess ? () => {
           setSyntheticPreviewEnabled(false);
           setStateDemoEnabled(false);
           setSyntheticServerEnabled(v => !v);
-        }}
+        } : undefined}
         stateDemoAvailable={stateDemoAvailable}
-        stateDemoEnabled={stateDemoEnabled}
+        stateDemoEnabled={diagnosticAccess && stateDemoEnabled}
         stateScenario={stateScenario}
-        onStateScenarioChange={scenario => {
+        onStateScenarioChange={diagnosticAccess ? scenario => {
           stateCache.clear();
           setStateScenario(scenario);
-        }}
-        onToggleStateDemo={() => {
+        } : undefined}
+        onToggleStateDemo={diagnosticAccess ? () => {
           setSyntheticPreviewEnabled(false);
           setSyntheticServerEnabled(false);
           setStateDemoEnabled(v => !v);
-        }}
-        onRefreshStateDemo={() => {
+        } : undefined}
+        onRefreshStateDemo={diagnosticAccess ? () => {
           stateCache.clear();
           setStateRefresh(v => v + 1);
-        }}
+        } : undefined}
         presentation={displayedPresentation}
         onSetTargetLabel={(key, value) => {
           const next = withUserLabel(presentation, urlTargets, key, value);
