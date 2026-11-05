@@ -75,22 +75,37 @@ function ms(v){
 }
 function parseSrt(text){
  check(typeof text==='string'&&text.length>0&&text.length<=5_000_000,'SRT size');
- const blocks=text.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n').trim().split(/\n[ \t]*\n+/);
- check(blocks.length>0&&blocks.length<=30000,'SRT block count');
- let previousStart=-1,previousEnd=0,overlapCount=0,rows=[];
- for(let i=0;i<blocks.length;i++){
-  const lines=blocks[i].split('\n');
-  check(lines.length>=2&&lines[0].trim()===String(i+1),'SRT cue number');
-  const match=/^\s*(\d{2,4}:[0-5]\d:[0-5]\d[,.]\d{3})\s+-->\s+(\d{2,4}:[0-5]\d:[0-5]\d[,.]\d{3})(?:\s+.*)?$/.exec(lines[1]);
-  check(match,'SRT time range');
-  const startMs=ms(match[1]),endMs=ms(match[2]);
+ const lines=text.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n').trim().split('\n');
+ check(lines.length>=3&&lines.length<=120000,'SRT line count');
+ const rangePattern=/^\s*(\d{2,4}:[0-5]\d:[0-5]\d[,.]\d{3})\s+-->\s+(\d{2,4}:[0-5]\d:[0-5]\d[,.]\d{3})(?:\s+.*)?$/;
+ let cursor=0,previousStart=-1,previousEnd=0,overlapCount=0,rows=[];
+ while(cursor<lines.length){
+  while(cursor<lines.length&&!lines[cursor].trim())cursor++;
+  if(cursor===lines.length)break;
+  check(rows.length<30000,'SRT cue count');
+  const expectedId=String(rows.length+1);
+  check(lines[cursor++].trim()===expectedId,'SRT cue number');
+  const timeRange=rangePattern.exec(lines[cursor++]||'');
+  check(timeRange,'SRT time range');
+  const startMs=ms(timeRange[1]),endMs=ms(timeRange[2]);
   check(startMs>=0&&endMs>startMs&&startMs>=previousStart,'SRT cue order or duration');
-  check(lines.slice(2).some(s=>s.trim().length>0),'SRT empty text');
-  if(i>0&&startMs<previousEnd)overlapCount++;
+  let textRows=0;
+  while(cursor<lines.length){
+   const line=lines[cursor];
+   if(!line.trim()){cursor++;break;}
+   // Support publisher SRTs whose cues are adjacent with NO blank separator.
+   // A numeric cue header followed by any arrow line is considered a new cue,
+   // even when the new time is malformed: it must then fail the next validation.
+   if(/^\d+$/.test(line.trim())&&/-->/.test(lines[cursor+1]||''))break;
+   textRows++;cursor++;
+  }
+  check(textRows>0,'SRT empty text');
+  if(rows.length&&startMs<previousEnd)overlapCount++;
   rows.push({startMs,endMs});previousStart=startMs;previousEnd=endMs;
  }
+ check(rows.length>0,'SRT cue count');
  return {cueCount:rows.length,firstStartMs:rows[0].startMs,lastEndMs:rows[rows.length-1].endMs,
-  overlapCount:overlapCount,rangeOnly:true,spokenAlignment:'NOT_CHECKED',rows};
+  overlapCount,rangeOnly:true,spokenAlignment:'NOT_CHECKED',rows};
 }
 function checkCaptionBounds(subtitle,durationMs){
  check(subtitle&&Array.isArray(subtitle.rows)&&Number.isSafeInteger(durationMs)&&durationMs>0,'local media duration required');
