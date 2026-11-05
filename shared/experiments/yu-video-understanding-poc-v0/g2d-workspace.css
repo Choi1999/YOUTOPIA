@@ -94,3 +94,20 @@ a{color:#97dbf2;text-decoration:none}a:hover{text-decoration:underline}
 footer{display:flex;justify-content:space-between;align-items:center;gap:20px;color:#92a4ba;font-size:11px;padding:0 4px 7px}
 @media(max-width:1180px){.dual{grid-template-columns:minmax(0,1fr)}.page{grid-template-columns:208px minmax(0,1fr)}}
 @media(max-width:770px){.page{display:block}.side{border-right:0;border-bottom:1px solid var(--line)}.checkpoint-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.main{padding:12px}.edit-grid{grid-template-columns:1fr}.topbar{height:auto;padding:13px;flex-wrap:wrap}.fields{grid-template-columns:1fr 1fr}}
+
+
+/* G2-D explicit dual-player offset calibration; remains local-operator only. */
+.syncbar{padding:13px 16px 12px}
+.syncbar-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.syncbar-head strong{font-size:13px}
+.syncbar-head p{font-size:11px;color:var(--muted);margin:4px 0 0;line-height:1.45}
+.syncbar-controls{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:11px}
+.syncbar-controls button{padding:8px 10px;font-size:12px}
+.sync-toggle{display:flex;align-items:center;border:1px solid #4a647a;border-radius:10px;overflow:hidden;flex-shrink:0}
+.sync-toggle button{border-radius:0;border:0;background:#122538;color:#b7c9db}
+.sync-toggle button.selected{background:#175e62;color:#e6fffb}
+.offset-readout{font-size:11px;color:var(--muted);white-space:nowrap;border:1px solid #33475d;border-radius:8px;padding:8px 10px}
+.offset-readout strong{font-size:13px;font-variant-numeric:tabular-nums;color:#aadff2}
+.syncbar-foot{display:flex;justify-content:space-between;gap:14px;margin-top:10px;flex-wrap:wrap}
+#syncState{max-width:340px;white-space:normal;text-align:right}
+@media(max-width:770px){.syncbar-head{align-items:flex-start}.syncbar-controls{gap:7px}.sync-toggle{width:100%}.sync-toggle button{flex:1}}
