@@ -449,6 +449,7 @@ export function WorkspaceUrlCanvas({
         <span className="workspace-url-canvas__node-label">
           {userFacingTargetName(target, presentation, channelProfiles)}
         </span>
+        <span className="workspace-url-canvas__node-id">{target.id}</span>
       </button>
     );
   }
