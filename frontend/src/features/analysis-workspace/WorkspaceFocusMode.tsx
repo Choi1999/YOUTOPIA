@@ -38,6 +38,10 @@ type Props = Readonly<{
   onToggleChannelImage?: () => void;
   syntheticPreviewEnabled?: boolean;
   onToggleSyntheticPreview?: () => void;
+  syntheticServerAvailable?: boolean;
+  syntheticServerEnabled?: boolean;
+  syntheticServerStatus?: string;
+  onToggleSyntheticServer?: () => void;
   presentation?: WorkspaceTargetPresentation;
   onSetTargetLabel?: (key: string, label: string) => boolean;
   onSetChannelArtwork?: (key: string, imageUrl: string) => boolean;
@@ -70,6 +74,8 @@ export function WorkspaceFocusMode({
   allowVideoImage = false, onToggleVideoImage, channelProfiles,
   allowChannelImage = false, onToggleChannelImage,
   syntheticPreviewEnabled = false, onToggleSyntheticPreview,
+  syntheticServerAvailable = false, syntheticServerEnabled = false,
+  syntheticServerStatus = "", onToggleSyntheticServer,
   presentation = EMPTY_TARGET_PRESENTATION, onSetTargetLabel, onSetChannelArtwork,
   groups = [], onGroupsChange, bookmarks = [], onBookmarksChange,
 }: Props) {
@@ -409,6 +415,13 @@ export function WorkspaceFocusMode({
               {syntheticPreviewEnabled ? "합성 정보 끄기" : "합성 정보 미리보기"}
             </button>
           )}
+          {syntheticServerAvailable && onToggleSyntheticServer && (
+            <button type="button" aria-pressed={syntheticServerEnabled}
+              onClick={onToggleSyntheticServer}
+              title="로컬 Spring Boot 테스트 서버의 합성 JSON만 조회합니다. 실제 YouTube API 없음">
+              {syntheticServerEnabled ? "Spring 합성 연결 끄기" : "Spring 합성 연결"}
+            </button>
+          )}
           {onToggleChannelImage && (
             <button type="button" aria-pressed={allowChannelImage}
               onClick={onToggleChannelImage}
@@ -438,9 +451,10 @@ export function WorkspaceFocusMode({
         </div>
       </header>
       <div className="workspace-focus__message" role="status">
-        {syntheticPreviewEnabled && (
+        {(syntheticPreviewEnabled || syntheticServerEnabled) && (
           <strong>합성 데이터 미리보기 · 실제 영상·채널 제목이나 YouTube 응답이 아닙니다. 분석 데이터 없음. </strong>
         )}
+        {syntheticServerEnabled && <span>{syntheticServerStatus} · </span>}
         {message}
       </div>
       <div ref={bodyRef} className="workspace-focus__body" data-layout={layout}
