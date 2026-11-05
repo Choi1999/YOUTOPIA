@@ -4,7 +4,8 @@ import { createPortal } from "react-dom";
 import "./workspace-url.css";
 import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
 import { WorkspaceFocusMode } from "./WorkspaceFocusMode";
-import type { WorkspaceDockState } from "./workspaceDockState";
+import { chooseWorkspaceDockTarget,
+  type WorkspaceDockState } from "./workspaceDockState";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import type { StateScenario } from "./workspaceMetadataConsumerState";
 import type { WorkspaceUrlIngestResult, WorkspaceUrlTarget } from "./workspaceUrlTargets";
@@ -254,6 +255,12 @@ export function WorkspaceHero({
         </div>
       ) : focusOpen && onAddUrls && onRemoveTarget ? null :
         <WorkspaceUrlCanvas targets={targets} allowVideoImage={allowVideoImage}
+        focusedKey={dockState && onDockStateChange ? dockState.selectedKey : undefined}
+        onFocusChange={dockState && onDockStateChange ? key => {
+          onDockStateChange(previous => chooseWorkspaceDockTarget(
+            previous,key,targets));
+          if (key) setFocusOpen(true);
+        } : undefined}
         allowChannelImage={allowChannelImage} presentation={presentation}
         channelProfiles={channelProfiles} groups={nodeGroups}
         onGroupsChange={setNodeGroups} bookmarks={bookmarks}
