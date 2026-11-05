@@ -1,8 +1,10 @@
-import { useEffect, useState, type DragEvent, type FormEvent } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction,
+  type DragEvent, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import "./workspace-url.css";
 import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
 import { WorkspaceFocusMode } from "./WorkspaceFocusMode";
+import type { WorkspaceDockState } from "./workspaceDockState";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import type { StateScenario } from "./workspaceMetadataConsumerState";
 import type { WorkspaceUrlIngestResult, WorkspaceUrlTarget } from "./workspaceUrlTargets";
@@ -22,6 +24,11 @@ type Props = Readonly<{
   targets?: readonly WorkspaceUrlTarget[];
   onAddUrls?: (input: string) => WorkspaceUrlIngestResult;
   onRemoveTarget?: (key: string) => void;
+  onClearTargetList?: () => void;
+  dockState?: WorkspaceDockState;
+  onDockStateChange?: Dispatch<SetStateAction<WorkspaceDockState>>;
+  focusOpen?: boolean;
+  onFocusOpenChange?: (open: boolean) => void;
   allowVideoImage?: boolean;
   onToggleVideoImage?: () => void;
   allowChannelImage?: boolean;
@@ -57,7 +64,9 @@ function groupStorage(): Storage | null {
  * Browser link drop is text-only. File drops are deliberately unsupported.
  */
 export function WorkspaceHero({
-  targets = [], onAddUrls, onRemoveTarget, allowVideoImage = false,
+  targets = [], onAddUrls, onRemoveTarget, onClearTargetList,
+  dockState, onDockStateChange, focusOpen: controlledFocusOpen, onFocusOpenChange,
+  allowVideoImage = false,
   onToggleVideoImage, allowChannelImage = false, onToggleChannelImage,
   diagnosticsMode = false,
   syntheticPreviewEnabled = false, onToggleSyntheticPreview,
@@ -72,7 +81,12 @@ export function WorkspaceHero({
   const [isPlaying, setIsPlaying] = useState(false);
   const [input, setInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
-  const [focusOpen, setFocusOpen] = useState(defaultFocusMode);
+  const [localFocusOpen, setLocalFocusOpen] = useState(defaultFocusMode);
+  const focusOpen = controlledFocusOpen ?? localFocusOpen;
+  function setFocusOpen(open: boolean) {
+    if (onFocusOpenChange) onFocusOpenChange(open);
+    else setLocalFocusOpen(open);
+  }
   // Purely user-authored grouping, separate from canonical URL targets.
   const [nodeGroups, setNodeGroups] = useState<readonly WorkspaceNodeGroup[]>(() =>
     readWorkspaceNodeGroups(groupStorage(), targets),
@@ -255,7 +269,9 @@ export function WorkspaceHero({
         typeof document !== "undefined" && createPortal(
           <WorkspaceFocusMode diagnosticsMode={diagnosticsMode}
             targets={targets} onAddUrls={onAddUrls}
-            onRemove={onRemoveTarget} onExit={() => setFocusOpen(false)}
+            onRemove={onRemoveTarget} onClearTargets={onClearTargetList}
+            dockState={dockState} onDockStateChange={onDockStateChange}
+            onExit={() => setFocusOpen(false)}
             allowVideoImage={allowVideoImage}
             onToggleVideoImage={onToggleVideoImage}
             allowChannelImage={allowChannelImage}
