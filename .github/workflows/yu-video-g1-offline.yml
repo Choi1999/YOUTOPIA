@@ -9,6 +9,7 @@ on:
       - docs/research/YU_VIDEO_UNDERSTANDING_POC_G2_SOURCE_PROVIDER_REVIEW_V01.md
       - docs/research/YU_VIDEO_UNDERSTANDING_POC_G2B_CANDIDATE_REVIEW_V01.md
       - docs/research/YU_VIDEO_UNDERSTANDING_POC_G2C_BLENDER_SOURCE_EVIDENCE_V01.md
+      - docs/research/YU_VIDEO_G2D_HUMAN_SYNC_YOUTUBE_REVIEW_V01.md
       - .github/workflows/yu-video-g1-offline.yml
   pull_request:
     paths:
