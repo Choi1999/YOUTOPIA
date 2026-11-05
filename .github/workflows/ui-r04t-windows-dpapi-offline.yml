@@ -83,5 +83,5 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          & .\gradlew.bat --no-daemon test --tests 'com.youtopia.youtube.metadata.WindowsDpapiVaultReadinessTest'
-          if ($LASTEXITCODE -ne 0) { throw 'R04T Java boundary test failed.' }
+          & .\gradlew.bat --no-daemon test --tests 'com.youtopia.youtube.metadata.WindowsDpapiVaultReadinessTest' --tests 'com.youtopia.youtube.metadata.WindowsDpapiSyntheticVaultTest'
+          if ($LASTEXITCODE -ne 0) { throw 'R04U Windows Java native DPAPI synthetic and report contract tests failed.' }
