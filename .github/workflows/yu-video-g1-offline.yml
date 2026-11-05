@@ -1,4 +1,4 @@
-name: YOUTOPIA video understanding G1 G2 G2B offline
+name: YOUTOPIA video understanding G1 G2 G2B G2C offline
 on:
   push:
     branches:
@@ -8,6 +8,7 @@ on:
       - docs/research/YU_VIDEO_UNDERSTANDING_POC_G1_QA_V01.md
       - docs/research/YU_VIDEO_UNDERSTANDING_POC_G2_SOURCE_PROVIDER_REVIEW_V01.md
       - docs/research/YU_VIDEO_UNDERSTANDING_POC_G2B_CANDIDATE_REVIEW_V01.md
+      - docs/research/YU_VIDEO_UNDERSTANDING_POC_G2C_BLENDER_SOURCE_EVIDENCE_V01.md
       - .github/workflows/yu-video-g1-offline.yml
   pull_request:
     paths:
@@ -29,6 +30,7 @@ jobs:
           node --check shared/experiments/yu-video-understanding-poc-v0/g1-offline.cjs
           node --check shared/experiments/yu-video-understanding-poc-v0/g2-source-provider.cjs
           node --check shared/experiments/yu-video-understanding-poc-v0/g2b-research-audit.cjs
+          node --check shared/experiments/yu-video-understanding-poc-v0/g2c-offline-verifier.cjs
           node --test shared/experiments/yu-video-understanding-poc-v0/tests/*.test.cjs
       - name: Fail-closed gate
         run: |
@@ -70,4 +72,21 @@ jobs:
                  x.actualSpendUsd!==0||x.mergeAuthorized!==false)
                  process.exit(1);
               process.stdout.write("G2B_DEFAULT_DENY_GATE_PASS\n");
+            });'
+
+      - name: G2-C publisher provenance without claiming local media verification
+        run: |
+          node shared/experiments/yu-video-understanding-poc-v0/g2c-offline-verifier.cjs | node -e '
+            let s="";process.stdin.on("data",v=>s+=v);
+            process.stdin.on("end",()=>{const x=JSON.parse(s);
+              if(x.status!=="PUBLISHER_RIGHTS_AND_SUBTITLE_LISTINGS_DOCUMENTED_MEDIA_UNVERIFIED"||
+                 x.documentaryEvidenceCount!==2||x.records.length!==2||
+                 x.records.some(r=>!r.officialSrtListingConfirmed||r.readyForG3)||
+                 x.filmRightsForServiceApproved!==0||x.sourceFileHashesVerified!==0||
+                 x.youtubeVersionEquivalencesVerified!==0||x.captionSyntaxRealFilesVerified!==0||
+                 x.spokenCaptionAlignmentsVerified!==0||x.humanGoldReviewed!==0||
+                 x.externalCalls!==0||x.actualSpendUsd!==0||
+                 x.liveCallsAuthorized!==false||x.g3Authorized!==false||x.merged!==false)
+                process.exit(1);
+              process.stdout.write("G2C_PUBLISHER_METADATA_PASS_MEDIA_STILL_UNVERIFIED\n");
             });'
