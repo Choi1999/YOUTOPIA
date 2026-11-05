@@ -59,7 +59,7 @@ describe("UI-R04-C — opt-in fullscreen graph with adaptive docks",()=>{
     await user.click(within(list).getByRole("button",{name:"대상 선택 영상 Ab0_-123xyz"}));
     expect(body).toHaveAttribute("data-layout","both");
     const details=within(dialog).getByRole("complementary",{name:"도킹 선택 상세"});
-    expect(within(details).getByText("Ab0_-123xyz")).toBeInTheDocument();
+    expect(within(details).getByText("등록 식별자: Ab0_-123xyz")).toBeInTheDocument();
     expect(within(details).getByText(/분석 정보는 아직 제공되지 않습니다/)).toBeInTheDocument();
     expect(within(dialog).getByRole("button",{name:"등록된 영상 Ab0_-123xyz 선택"}))
       .toHaveAttribute("aria-pressed","true");
