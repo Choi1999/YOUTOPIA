@@ -159,3 +159,30 @@ test('HTTP JSON body parser keeps Korean notes when UTF-8 bytes split mid-charac
  const parsed=await task;
  assert.equal(parsed.note,'발화 시작 시각과 장면을 직접 확인');
 });
+
+test('FFmpeg synthetic H264+AAC clip produces playable MP4 proxy and sampled waveform',
+ {skip:require('node:child_process').spawnSync('ffmpeg',['-version'],{encoding:'utf8'}).status!==0},
+ async()=>{
+  const {execFileSync}=require('node:child_process');
+  const dir=temp();
+  try{
+   const source=path.join(dir,'synthetic.mkv'),proxy=path.join(dir,'proxy.mp4'),wave=path.join(dir,'peaks.json');
+   execFileSync('ffmpeg',['-nostdin','-hide_banner','-v','error','-y',
+    '-f','lavfi','-i','color=c=black:s=160x90:r=10:d=2',
+    '-f','lavfi','-i','sine=frequency=440:sample_rate=44100:duration=2',
+    '-map','0:v:0','-map','1:a:0','-c:v','libx264','-pix_fmt','yuv420p','-c:a','aac','-shortest',source],
+    {timeout:30000,windowsHide:true});
+   const video=await media.createProxy(source,proxy);
+   const audio=await media.createPeaks(source,wave);
+   assert.equal(video.cached,false);assert.equal(audio.cached,false);
+   assert.ok(fs.statSync(proxy).size>10000);
+   assert.equal(audio.info.windowMs,50);
+   assert.ok(audio.info.peaks.length>=30&&audio.info.peaks.length<=45);
+   assert.ok(audio.info.peaks.some(x=>x>.01));
+   assert.equal((await media.createProxy(source,proxy)).cached,true);
+   assert.equal((await media.createPeaks(source,wave)).cached,true);
+   const raw=execFileSync('ffprobe',['-v','error','-show_entries','stream=codec_name','-of','json',proxy],{encoding:'utf8'});
+   const inspected=JSON.parse(raw);
+   assert.ok(inspected.streams.some(x=>x.codec_name==='h264'));
+  }finally{fs.rmSync(dir,{recursive:true,force:true});}
+ });
