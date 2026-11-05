@@ -88,3 +88,30 @@ $reviewScript = '.\shared\experiments\yu-video-understanding-poc-v0\g2d-windows-
 | 2인 골드 정답·권리·G3 유료 API 및 운영 병합 | **승인 보류** |
 
 현재의 작업공간은 **실험 브랜치 내 QA 도구**이지 정식 YOUTOPIA 사용자 기능이 아니다. 사용자는 JSON을 직접 편집하는 대신 이 화면에서 검수 결과를 입력할 수 있지만, 저장된 데이터에 의해 서비스/G3 승인 상태가 자동으로 바뀌지는 않는다.
+
+
+## 6. 운영자 보고: Sintel 로컬 플레이어 기능 QA (2026-11-05)
+
+**증거 등급: USER_REPORTED_VISUAL_FUNCTIONAL_QA / NOT_INDEPENDENTLY_REPLAYED.**
+
+사용자는 실제 Windows PC 브라우저에서 G2-D 작업공간과 오디오 파형이 표시된다고 보고한 뒤, 다음 **5개 기능이 모두 정상 작동**한다고 확인했다.
+
+| 기능 | 운영자 보고 |
+|---|---|
+| 로컬 Sintel 영상과 소리 재생 | PASS |
+| 파형 클릭 시 로컬 영상 재생 위치 이동 | PASS |
+| 재생 시각 밀리초 단위 표시 | PASS |
+| 앞뒤 0.1초 단위 이동 | PASS |
+| 해당 시점의 영어 SRT 표시 | PASS |
+
+이 확인은 화면 재생 기능의 수동 QA이며, 소리 진폭 파형이 인물 발화의 시작점을 정확히 나타낸다는 뜻이 아니다. **AUDIO_FIRST의 실제 음성 타이밍 일치, YouTube 공식 게시자 확인·임베드 동작·영상 판본 일치, JSON 저장 기능, Tears 영상 UI 수동 검증은 이 보고만으로 PASS 처리하지 않는다.** 영상 전체 동일성/권리/G3 게이트는 여전히 차단이다.
+
+### 다음 운영자 QA: YOUTUBE_OPENING
+
+1. Sintel에서 `YOUTUBE_OPENING`을 선택한다. 원본 기준 체크포인트 시간은 `localMs=88803` (약 **01:28.803**). 비교 전후 여러 초간을 재생한다.
+2. 우측 `YouTube 플레이어 열기`를 클릭하고, 영상이 임베드에서 정상 실행되는지 확인한다. 재생이 제한되면 우측 원본 페이지 링크로 비교한다.
+3. 업로더와 YouTube 총 재생시간을 직접 확인해 기록한다. 공식 제작자임을 확인할 근거가 없으면 `UNVERIFIED`를 사용하고 **`OBSERVED_MATCH`를 강제로 선택하지 않는다**.
+4. YouTube에서 같은 사건/컷 순서/음성 이벤트를 실제로 찾은 뒤 해당 시각을 mm:ss.SSS 형식으로 `YouTube 대응 장면 시각`에 입력한다. 시스템은 YouTube 시간을 자동으로 읽거나 제어하지 않는다.
+5. 확실한 관찰 결과만 판정하고 비식별 `observationNote`를 작성하여 저장한다. 이후 `YOUTUBE_MIDPOINT`, `YOUTUBE_ENDING` 순으로 확대한다. **일부 샘플이 일치해도 전체 편집 동일성은 미검증이다.**
+
+현재 판정: `G2D_SINTEL_LOCAL_PLAYER_MANUAL_QA_PASS_5_OF_5_REPORTED / YOUTUBE_COMPARISON_PENDING / G3_HOLD`.
