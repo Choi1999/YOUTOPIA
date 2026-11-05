@@ -47,7 +47,7 @@
   function failed(){youtube=null;ready=false;linked=false;offset=null;apiAvailable=false;lastYTObserved=null;notify();}
   function capture(){
    if(!ready)throw Error('YouTube 공식 임베드 플레이어 연결 후 기준점을 기록하세요.');
-   if(!local.paused||selectedYoutubeState===1)throw Error('두 영상을 일시정지한 뒤 같은 장면에서 기준점을 기록하세요.');
+   if(!local.paused||![2,5].includes(selectedYoutubeState))throw Error('두 영상을 일시정지한 뒤 같은 장면에서 기준점을 기록하세요.');
    const yt=safeYoutubeTime();
    if(yt===null||localDuration()<=0||safeYoutubeDuration()<=0)throw Error('양쪽 플레이어가 로드된 후 다시 시도하세요.');
    offset=offsetSeconds(local.currentTime,yt);linked=false;lastYTObserved={time:yt,at:now()};notify();return status();
