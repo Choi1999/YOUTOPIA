@@ -115,8 +115,8 @@ jobs:
 
 
   r04y-loopback-http-integration:
-    name: UI-R04-Y Vite-to-Spring synthetic HTTP (NO real API)
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/ui-r04y-react-same-origin-synthetic-http-v01'
+    name: UI-R04-AA Vite-to-Spring state HTTP (NO real API)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/ui-r04aa-metadata-status-cache-react-v01'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -127,7 +127,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: Choi1999/YOUTOPIA
-          ref: 1c2a5edb13097f48c685447e6310f5c0f8e2b341
+          ref: 942818374c00a4edeeee82f24dd8ea241d6e1a95
           path: _r04x_backend
 
       - name: Setup Java 21
@@ -174,7 +174,7 @@ jobs:
         run: |
           set -euo pipefail
           pnpm --dir frontend install --frozen-lockfile
-          setsid env VITE_R04Y_SYNTHETIC_HTTP=enabled \
+          setsid env VITE_R04Y_SYNTHETIC_HTTP=enabled VITE_R04AA_METADATA_STATES=enabled \
             pnpm --dir frontend dev --host 127.0.0.1 \
             > /tmp/r04y-vite.log 2>&1 &
           echo $! > /tmp/r04y-vite.pid
@@ -191,6 +191,9 @@ jobs:
 
       - name: Verify three same-origin GETs actually traverse Vite to Spring
         run: node frontend/scripts/checkR04YSyntheticHttp.mjs
+
+      - name: Verify versioned READY/NOT_FOUND/FAILED/STALE state contract through Vite
+        run: node frontend/scripts/checkR04AAMetadataStates.mjs
 
       - name: Stop only the two owned localhost fixture processes
         if: always()
