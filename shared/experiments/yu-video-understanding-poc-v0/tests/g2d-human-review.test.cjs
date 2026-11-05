@@ -151,5 +151,16 @@ test('Potential edition offset drift is surfaced, not treated as equivalence',()
  const x=fill(packet());const scenes=x.checkpoints.filter(c=>c.kind==='YOUTUBE_SCENE');
  scenes[0].observedYoutubeMs+=3000;
  const out=g.assess(x);assert.equal(out.youtubeSampleOffsetConsistency,'NOT_ESTABLISHED');
- assert.equal(out.status,'OPERATOR_REPORTED_SAMPLED_MATCHES_NOT_FULL_PROOF');
+ assert.equal(out.status,'OPERATOR_REPORTED_DIFFERENCES_REQUIRE_REVIEW');
+});
+
+test('Even a manually claimed complete scene match cannot ignore YouTube duration difference',()=>{
+ const x=fill(packet());x.observedYoutubeDurationMs=x.local.durationMs+10000;
+ const r=g.assess(x);assert.equal(r.reportedYoutubeDurationClass,'DURATION_DISCREPANCY_REVIEW');
+ assert.equal(r.status,'OPERATOR_REPORTED_DIFFERENCES_REQUIRE_REVIEW');
+ assert.equal(r.g3Authorized,false);
+});
+test('local user-supplied media is not incorrectly called rights-authorized',()=>{
+ const x=packet();assert.equal(x.sourceType,'USER_SUPPLIED_LOCAL_MEDIA_RIGHTS_UNVERIFIED');
+ assert.equal(g.assess(x).filmRightsForServiceVerified,false);
 });
