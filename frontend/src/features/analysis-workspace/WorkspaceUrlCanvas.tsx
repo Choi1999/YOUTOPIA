@@ -779,7 +779,7 @@ export function WorkspaceUrlCanvas({
           ? "그룹으로 묶을 노드를 선택하세요. 기존 분석 데이터나 관계는 변경되지 않습니다."
           : focused
           ? userFacingTargetName(focused, presentation, channelProfiles) +
-            " · URL만 등록됨 · 실제 제목·분석 미확인"
+            " · URL만 등록됨 · 존재 여부·채널 소속·분석 미확인"
           : "노드를 선택하거나 그룹을 접어 정리하세요. 빈 공간을 드래그하면 이동합니다."}</p>
         {totalPages > 1 && (
           <div className="workspace-url-canvas__pager">
