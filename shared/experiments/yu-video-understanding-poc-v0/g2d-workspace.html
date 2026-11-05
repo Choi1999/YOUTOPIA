@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>YOUTOPIA · G2-D Review Workspace</title>
+<link rel="stylesheet" href="/style.css"/>
+<script src="/client.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+ <div class="brand"><span class="mark">Y</span><div><strong>YOUTOPIA <span class="muted">/ QA LAB</span></strong><small>G2-D · 오프라인 원본 및 영상 판본 비교</small></div></div>
+ <div class="headright"><span class="pill" id="filmLabel">영상 확인 중</span><span class="pill live"><span class="dot"></span>로컬 작업공간</span><span class="pill" id="progressLabel">—</span></div>
+</header>
+<div class="page">
+ <aside class="side">
+  <div class="sectiontitle">검수 항목 <span id="checkpointCount">—</span></div>
+  <p class="hint">항목을 선택하면 원본의 해당 시점으로 이동합니다. 비교 결과를 직접 확인한 뒤 입력하세요.</p>
+  <div class="checkpoint-list" id="checkpoints"></div>
+  <section class="sidefoot">
+   <div class="miniheading">검수 상태</div>
+   <div class="stats" id="stats"></div>
+   <p class="small">샘플 검수가 모두 일치해도 영상 전체의 판본 동일성·사용권이 승인되지는 않습니다.</p>
+  </section>
+ </aside>
+ <main class="main">
+  <div class="dual">
+   <section class="viewer panel">
+    <div class="panel-head"><div><h2>로컬 원본</h2><p>사용자 PC에 저장된 Blender 영화 · 브라우저 재생용 사본</p></div><span class="tinybadge">로컬 전용</span></div>
+    <div class="video-frame">
+     <video id="localVideo" preload="metadata" playsinline controls src="/movie"></video>
+     <div id="subtitle" class="subtitle" aria-live="off"></div>
+    </div>
+    <div class="transport">
+     <button id="prev5" type="button" title="5초 되감기">−5초</button>
+     <button id="prev01" type="button" title="0.1초 되감기">−0.1초</button>
+     <button id="playPause" type="button" class="primary">재생 / 일시정지</button>
+     <button id="next01" type="button" title="0.1초 앞으로">+0.1초</button>
+     <button id="next5" type="button" title="5초 앞으로">+5초</button>
+     <span class="timecode" id="localTime">00:00.000</span>
+    </div>
+    <div class="wave-panel">
+     <div class="wave-title"><div><h3>오디오 파형 <span class="wavelegend">Waveform · 50ms 간격</span></h3><p>파형은 음량을 나타냅니다. 대사와 배경음악·효과음을 자동 구분하지 않습니다.</p></div>
+      <label class="zoomlabel">표시 범위 <select id="zoom"><option value="20">20초</option><option value="60" selected>60초</option><option value="120">120초</option><option value="full">영상 전체</option></select></label>
+     </div>
+     <canvas id="wave" width="1400" height="184" role="img" aria-label="원본 영화 소리의 시간별 진폭 파형과 SRT 자막 구간. 클릭하면 로컬 영상이 해당 시점으로 이동합니다."></canvas>
+     <div class="legend"><span><i class="key wave"></i>소리 크기</span><span><i class="key caption"></i>자막 구간</span><span><i class="key playhead"></i>현재 시점</span><span><i class="key cue"></i>검수 지점</span></div>
+    </div>
+    <div class="current-subtitle"><span>SRT 현재 자막</span><strong id="captionText">재생하면 해당 시점의 자막이 표시됩니다.</strong></div>
+   </section>
+   <section class="viewer panel">
+    <div class="panel-head"><div><h2>YouTube 비교 영상</h2><p>공식 플레이어 후보 · 게시자 및 판본의 동일성 미확인</p></div><span class="tinybadge caution">외부 플레이어</span></div>
+    <div class="video-frame embed-zone" id="youtubeArea">
+     <div class="embed-pre" id="embedPrompt">
+      <div class="yticon">▶</div>
+      <strong>YouTube 재생 화면</strong>
+      <p>버튼을 누르면 외부 YouTube 플레이어가 연결됩니다. 영상은 다운로드하거나 서버에 저장하지 않습니다.</p>
+      <button id="loadEmbed" type="button" class="primary">YouTube 플레이어 열기</button>
+     </div>
+     <iframe id="youtubeFrame" title="YouTube reference film" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture; web-share" allowfullscreen hidden></iframe>
+    </div>
+    <div class="yt-meta">
+     <a id="youtubeLink" target="_blank" rel="noopener noreferrer">YouTube 원본 페이지에서 열기 <span aria-hidden="true">↗</span></a>
+     <p id="editionCaveat" class="small"></p>
+     <div class="fields">
+      <label>게시자 확인
+       <select id="uploader">
+        <option value="NOT_REVIEWED">아직 확인하지 않음</option>
+        <option value="UNVERIFIED">확인했으나 불확실</option>
+        <option value="OFFICIAL_OWNER_CONFIRMED">공식 게시자 확인</option>
+        <option value="THIRD_PARTY">제3자 게시물 확인</option>
+       </select>
+      </label>
+      <label>YouTube 전체 길이
+       <input id="youtubeDuration" type="text" placeholder="예: 12:14 또는 12:14.000"/>
+      </label>
+     </div>
+     <p class="small">임베드 제한(게시자 설정·연령 제한 등)이 있으면 외부 페이지로 열어 비교하세요. YouTube 시각은 사람이 직접 기록합니다.</p>
+    </div>
+   </section>
+  </div>
+  <section class="review panel">
+   <div class="panel-head reviewhead"><div><h2>검수 판정</h2><p id="checkpointPrompt">좌측에서 검수 항목을 선택하세요.</p></div><span id="checkpointId" class="tinybadge">—</span></div>
+   <div class="edit-grid">
+    <div class="edit-left">
+     <div class="fields">
+      <label>판정
+       <select id="verdict">
+        <option value="NOT_REVIEWED">미검수</option>
+        <option value="OBSERVED_MATCH">일치 확인</option>
+        <option value="OBSERVED_DIFFERENCE">차이 확인</option>
+        <option value="UNCERTAIN">불확실</option>
+       </select>
+      </label>
+      <label id="recordTimeLabel">관찰한 시간
+       <input id="observedTime" type="text" placeholder="mm:ss.SSS"/>
+      </label>
+     </div>
+     <div class="edit-actions">
+      <button id="captureLocal" type="button">현재 로컬 시점을 기록</button>
+      <span class="small" id="timeHelp">AUDIO: 실제 발화 시작 시간 / YOUTUBE: YouTube 대응 장면 시각</span>
+     </div>
+     <label class="note-label">관찰 기록 <span class="muted">(12~300자 · 인물 신원·대사 전문 입력 금지)</span>
+      <textarea id="note" rows="3" placeholder="직접 관찰한 장면·소리·컷 순서를 구체적으로 기록하세요."></textarea>
+     </label>
+    </div>
+    <div class="edit-right">
+     <div class="current-check"><span>확인할 로컬 시간</span><strong id="targetTime">—</strong><span class="small" id="cueIndex">—</span></div>
+     <button id="jumpTarget" type="button">이 검수 지점으로 이동</button>
+     <button id="save" type="button" class="primary wide">관찰 결과 저장</button>
+     <div role="status" id="toast" class="toast">아직 저장하지 않은 변경 사항이 있을 수 있습니다.</div>
+    </div>
+   </div>
+  </section>
+  <footer><span>G2-D / 사용자 PC 로컬 검수 · 음성 파형은 원본에서 생성 · YouTube 재생은 외부 서비스</span><span id="footerGate">G3: 차단 유지</span></footer>
+ </main>
+</div>
+</body>
+</html>
