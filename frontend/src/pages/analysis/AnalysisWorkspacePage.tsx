@@ -8,6 +8,10 @@ import { WorkspaceUrlTargetBoard } from "../../features/analysis-workspace/Works
 import { ApprovedChannelProfileCache } from "../../features/analysis-workspace/workspaceChannelProfile";
 import { createOfflineWorkspacePreview, type SyntheticWorkspaceMetadata } from "../../features/analysis-workspace/workspaceSyntheticMetadata";
 import { fetchSyntheticHttpMetadata, syntheticHttpDevEnabled } from "../../features/analysis-workspace/workspaceSyntheticHttpClient";
+import { fetchMetadataStateHttp, metadataStateDevEnabled } from "../../features/analysis-workspace/workspaceMetadataStateHttpClient";
+import { EMPTY_METADATA_STATE, InMemoryMetadataStateCache,
+  pendingMetadataState, type MetadataState, type StateScenario,
+} from "../../features/analysis-workspace/workspaceMetadataConsumerState";
 import {
   readTargetPresentation, reconcileTargetPresentation, writeTargetPresentation,
   withUserLabel, withChannelArtwork,
@@ -94,6 +98,13 @@ export function AnalysisWorkspacePage() {
   const [syntheticServerStatus, setSyntheticServerStatus] = useState(
     "테스트 전용 Spring 서버 합성 조회 대기",
   );
+  // Status-contract demo is independent of provider data and opt-in only.
+  const stateDemoAvailable = metadataStateDevEnabled();
+  const [stateDemoEnabled, setStateDemoEnabled] = useState(false);
+  const [stateScenario, setStateScenario] = useState<StateScenario>("READY");
+  const [stateRefresh, setStateRefresh] = useState(0);
+  const [stateRecords, setStateRecords] = useState<Readonly<Record<string, MetadataState>>>({});
+  const [stateCache] = useState(() => new InMemoryMetadataStateCache());
   const [presentation, setPresentation] = useState<WorkspaceTargetPresentation>(
     () => readTargetPresentation(getTabStorage(), urlTargets),
   );
@@ -142,11 +153,48 @@ export function AnalysisWorkspacePage() {
     return () => controller.abort();
   }, [syntheticServerAvailable, syntheticServerEnabled, urlTargets]);
 
-  const displayedPresentation: WorkspaceTargetPresentation = syntheticServerEnabled
-    ? { ...presentation, synthetic: syntheticServerRecords }
-    : syntheticPreviewEnabled
-      ? { ...presentation, synthetic: createOfflineWorkspacePreview(urlTargets) }
-      : presentation;
+  useEffect(() => {
+    if (!stateDemoAvailable || !stateDemoEnabled) {
+      setStateRecords({});
+      return;
+    }
+    const abort = new AbortController();
+    const chosen = urlTargets.slice(0, 3);
+    const initial: Record<string, MetadataState> = {};
+    for (const target of chosen) {
+      initial[workspaceUrlTargetKey(target)] =
+        stateScenario === "READY" ? stateCache.get(target) ?? pendingMetadataState()
+          : pendingMetadataState();
+    }
+    setStateRecords(initial);
+    void (async () => {
+      for (const target of chosen) {
+        if (abort.signal.aborted) return;
+        const key = workspaceUrlTargetKey(target);
+        if (initial[key].status === "READY" || initial[key].status === "STALE") continue;
+        const fetched = await fetchMetadataStateHttp(target,stateScenario,abort.signal);
+        if (abort.signal.aborted) return;
+        const result: MetadataState = fetched ??
+          {...EMPTY_METADATA_STATE,status:"FAILED",reason:"CONTRACT_OR_NETWORK_FAILURE"};
+        if (result.status === "READY") stateCache.put(target,result);
+        setStateRecords(current => ({...current,[key]:result}));
+      }
+    })();
+    return () => abort.abort();
+  }, [stateDemoAvailable,stateDemoEnabled,stateScenario,stateRefresh,urlTargets,stateCache]);
+
+  const stateReadyRecords: Record<string, SyntheticWorkspaceMetadata> = {};
+  for (const [key,value] of Object.entries(stateRecords)) {
+    if (stateDemoEnabled && value.status === "READY" && value.record)
+      stateReadyRecords[key] = value.record;
+  }
+  const displayedPresentation: WorkspaceTargetPresentation = stateDemoEnabled
+    ? { ...presentation, synthetic: stateReadyRecords, metadataStates: stateRecords }
+    : syntheticServerEnabled
+      ? { ...presentation, synthetic: syntheticServerRecords }
+      : syntheticPreviewEnabled
+        ? { ...presentation, synthetic: createOfflineWorkspacePreview(urlTargets) }
+        : presentation;
   const paths = buildWorkspacePaths(session);
   const safeQuery = withoutAllowedUtmTracking(new URLSearchParams(location.search));
 
@@ -171,6 +219,9 @@ export function AnalysisWorkspacePage() {
   }
 
   function removeUrlTarget(key: string) {
+    for (const target of urlTargets) {
+      if (workspaceUrlTargetKey(target) === key) stateCache.invalidate(target);
+    }
     const next = urlTargets.filter(target => workspaceUrlTargetKey(target) !== key);
     setUrlTargets(next);
     if (!writeWorkspaceUrlTargets(getTabStorage(), next)) {
@@ -179,6 +230,7 @@ export function AnalysisWorkspacePage() {
   }
 
   function clearUrlTargetList() {
+    stateCache.clear();
     setUrlTargets([]);
     if (!clearWorkspaceUrlTargets(getTabStorage())) {
       setFeedback("URL 등록 목록을 화면에서 비웠지만 저장소 삭제는 확인되지 않았습니다.");
@@ -258,6 +310,7 @@ export function AnalysisWorkspacePage() {
         syntheticPreviewEnabled={syntheticPreviewEnabled}
         onToggleSyntheticPreview={() => {
           setSyntheticServerEnabled(false);
+          setStateDemoEnabled(false);
           setSyntheticPreviewEnabled(v => !v);
         }}
         syntheticServerAvailable={syntheticServerAvailable}
@@ -265,7 +318,24 @@ export function AnalysisWorkspacePage() {
         syntheticServerStatus={syntheticServerStatus}
         onToggleSyntheticServer={() => {
           setSyntheticPreviewEnabled(false);
+          setStateDemoEnabled(false);
           setSyntheticServerEnabled(v => !v);
+        }}
+        stateDemoAvailable={stateDemoAvailable}
+        stateDemoEnabled={stateDemoEnabled}
+        stateScenario={stateScenario}
+        onStateScenarioChange={scenario => {
+          stateCache.clear();
+          setStateScenario(scenario);
+        }}
+        onToggleStateDemo={() => {
+          setSyntheticPreviewEnabled(false);
+          setSyntheticServerEnabled(false);
+          setStateDemoEnabled(v => !v);
+        }}
+        onRefreshStateDemo={() => {
+          stateCache.clear();
+          setStateRefresh(v => v + 1);
         }}
         presentation={displayedPresentation}
         onSetTargetLabel={(key, value) => {
