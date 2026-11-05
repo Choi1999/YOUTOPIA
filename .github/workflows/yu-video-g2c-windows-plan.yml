@@ -1,14 +1,18 @@
-name: YOUTOPIA G2C Windows official-media plan only
+name: YOUTOPIA G2C G2D Windows plans only
 on:
   push:
     branches:
       - experiment/yu-video-understanding-poc-v01
     paths:
       - shared/experiments/yu-video-understanding-poc-v0/g2c-windows-official-media.ps1
+      - shared/experiments/yu-video-understanding-poc-v0/g2d-windows-manual-review.ps1
+      - shared/experiments/yu-video-understanding-poc-v0/g2d-human-review.cjs
       - .github/workflows/yu-video-g2c-windows-plan.yml
   pull_request:
     paths:
       - shared/experiments/yu-video-understanding-poc-v0/g2c-windows-official-media.ps1
+      - shared/experiments/yu-video-understanding-poc-v0/g2d-windows-manual-review.ps1
+      - shared/experiments/yu-video-understanding-poc-v0/g2d-human-review.cjs
       - .github/workflows/yu-video-g2c-windows-plan.yml
 permissions:
   contents: read
@@ -53,3 +57,16 @@ jobs:
           $folder = Join-Path $env:LOCALAPPDATA 'YOUTOPIA\G2C-AuthorizedPublisherMedia'
           if (Test-Path -LiteralPath $folder) { throw 'G2C_PLAN_CREATED_MEDIA_DIRECTORY' }
           Write-Host 'G2C_WINDOWS_NO_DOWNLOAD_NO_REPO_WRITE_PASS'
+
+      - name: Parse G2-D manual review PowerShell without local media or network
+        shell: pwsh
+        run: |
+          $script = (Resolve-Path '.\shared\experiments\yu-video-understanding-poc-v0\g2d-windows-manual-review.ps1').Path
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($script, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($null -ne $errors -and $errors.Count -gt 0) {
+            throw ("G2D_POWERSHELL_PARSE_FAILED: " + ($errors | Out-String))
+          }
+          node --check .\shared\experiments\yu-video-understanding-poc-v0\g2d-human-review.cjs
+          Write-Host 'G2D_WINDOWS_PARSE_ONLY_PASS_NO_MEDIA_NO_YOUTUBE_NO_LLM'
