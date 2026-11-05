@@ -79,3 +79,27 @@ node "$root/g2c-offline-verifier.cjs" --slot SYNTH-VID-06 --video "D:\Authorized
 - **본 단계는 원격 CI에서 실제 미디어를 다루지 않는다.** 원격 CI는 공개 근거 JSON/합성 SRT 테스트만 수행하고 로컬 `--video/--srt` 모드는 실행하지 않는다.
 
 상세 근거: `docs/research/YU_VIDEO_UNDERSTANDING_POC_G2C_BLENDER_SOURCE_EVIDENCE_V01.md`.
+
+
+## G2-C publisher subtitle text follow-up (2026-11-05)
+
+Sintel 공식 제작자 SRT URL: `https://durian.blender.org/wp-content/content/subtitles/sintel_en.srt`. 공개 자막의 **추출 텍스트**에서 26개 연속 구간(첫 시작 01:47.250, 마지막 종료 10:29.800)을 확인했다. **실제 파일의 원본 바이트 SHA-256은 측정하지 않았다.** 구조화된 시간코드만 `g2c-sintel-publisher-timeline.json`에 있고 대사 전문은 저장하지 않는다. 이후 허가된 로컬 Sintel SRT 검사 결과의 `caption.publisherTimings`은 원본 게시 자막 **텍스트 타임코드 일치 여부**만 표기한다.
+
+Tears of Steel 공식 영어 자막 URL: `https://download.blender.org/demo/movies/ToS/subtitles/TOS-en.srt`. 서버 파일 목록으로 공개 주소를 확인했으나 이번 작업 환경에서 파일 본문을 내려받지 못했다. 공식 영상 2개의 원본 다운로드도 이 환경에서는 실패하여 **실제 영상 ffprobe / 원본 자막 파일 검증은 아직 0/2**다. GitHub CI는 합성 테스트만 실행한다.
+
+Windows PC에서 기존 개발 브랜치를 변경하지 않고 **새 Git Worktree**에 검증기를 체크아웃하려면 다음을 사용한다.
+
+```powershell
+cd C:\Projects\YOUTOPIA
+if (git status --porcelain) { throw '기존 작업 트리에 변경 사항이 있으므로 먼저 검토하세요.' }
+git fetch origin --prune
+$testBranch = 'origin/experiment/yu-video-understanding-poc-v01'
+git show-ref --verify --quiet "refs/remotes/$testBranch"
+if ($LASTEXITCODE -ne 0) { throw '원격 실험 브랜치를 찾지 못했습니다.' }
+git worktree add --detach C:\Projects\YOUTOPIA-VIDEO-G2C $testBranch
+cd C:\Projects\YOUTOPIA-VIDEO-G2C
+$root = 'shared/experiments/yu-video-understanding-poc-v0'
+node --test "$root/tests/*.test.cjs"
+```
+
+이후 해당 Worktree에서 허가받은 원본 영상과 동일 판본 SRT를 `--video`, `--srt`로 지정해 검사한다. 파일들은 Git에 추가하지 않는다. Worktree 경로가 이미 존재하면 자동 덮어쓰기하지 말고 그 Worktree를 먼저 확인한다.
