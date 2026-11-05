@@ -16,6 +16,7 @@
  };
  let data,review,revision,selected=0,saving=false,dirty=false,dragStart=null,waveRect=null;
  let sync=null,youtubeApiRequested=false,youtubePlayer=null;
+ let goldPacket=null,goldRevision=null,goldSelected=0,goldDirty=false,goldEvidenceRows=[];
  function showSyncMessage(message,kind=''){el.syncObserved.textContent=message;if(kind==='err')note(message,'err');}
  function syncStatus(state){
   if(!state)return;
@@ -105,6 +106,169 @@
   external.onerror=()=>{if(sync)sync.failed();showSyncMessage('YouTube API 스크립트 연결 실패 · 독립 재생만 사용할 수 있습니다.','err');};
   document.head.appendChild(external);
  }
+ // G2-E question and local evidence authoring. Never auto-labels a film fact.
+ function ge(id){return document.getElementById(id);}
+ function goldMsg(text,error=false){ge('goldMessage').textContent=text;ge('goldMessage').className='toast'+(error?' err':'');}
+ function goldDirtyNow(){goldDirty=true;goldMsg('골드 초안 입력 중입니다. 이 질문의 정답 초안 저장을 눌러야 기록됩니다.');}
+ function goldStatus(){
+  if(!goldPacket)return;
+  const count=goldPacket.questions.filter(q=>q.gold.answerability!==null&&q.gold.answerability!=='AMBIGUOUS').length;
+  const ambiguous=goldPacket.questions.filter(q=>q.gold.answerability==='AMBIGUOUS').length;
+  ge('goldProgress').textContent='작성 '+count+'/6'+(ambiguous?' · 재검수 '+ambiguous:'')+' · 골드 승인 전';
+  ge('goldStage').textContent=count===6&&ambiguous===0?'작성 완료 · 독립 검수 전':'골드 초안 · 미검증';
+  ge('goldStage').className='tinybadge caution';
+ }
+ function goldEvidenceEditor(q){
+  const host=ge('goldEvidence');host.replaceChildren();goldEvidenceRows=[];
+  if(ge('goldAnswerability').value!=='SUPPORTED')return;
+  const existing=q.gold.evidence.length?q.gold.evidence:
+    Array.from({length:q.requiredEvidenceCount},()=>({modality:q.requiredModalities[0],
+      localStartMs:null,localEndMs:null,youtubeObservedMs:null,observationNote:''}));
+  existing.forEach((e,i)=>{
+   const box=document.createElement('div');box.className='gold-evidence-row';
+   const title=document.createElement('div');title.className='gold-evidence-title';
+   title.textContent='로컬 원본 근거 #'+(i+1)+' · 기준 '+fmt(q.anchorLocalMs[Math.min(i,q.anchorLocalMs.length-1)]??0);
+   box.append(title);
+   const fields=document.createElement('div');fields.className='gold-evidence-fields';
+   function field(label,type,value){
+    const holder=document.createElement('label');holder.textContent=label;
+    let inp;
+    if(type==='select'){
+     inp=document.createElement('select');
+     for(const allowed of q.requiredModalities){const opt=document.createElement('option');opt.value=allowed;opt.textContent=allowed;inp.append(opt);}
+     inp.value=value||q.requiredModalities[0];
+    }else{
+     inp=document.createElement('input');inp.type='text';inp.placeholder='mm:ss.SSS';inp.value=value===null?'':fmt(value);
+    }
+    inp.addEventListener('input',goldDirtyNow);holder.append(inp);fields.append(holder);return inp;
+   }
+   const modality=field('근거 모달리티','select',e.modality);
+   const start=field('근거 시작 시각','time',e.localStartMs);
+   const end=field('근거 종료 시각','time',e.localEndMs);
+   box.append(fields);
+   const controls=document.createElement('div');controls.className='gold-capture';
+   function control(label,cb){
+    const button=document.createElement('button');button.type='button';button.textContent=label;button.addEventListener('click',cb);controls.append(button);
+   }
+   control('이 기준점으로 이동',()=>{
+    const t=q.anchorLocalMs[Math.min(i,q.anchorLocalMs.length-1)];
+    if(t===undefined)return;
+    sync?.setLinked(false);el.video.pause();el.video.currentTime=Math.max(0,t/1000-4);onTick();
+   });
+   control('현재 시점 → 시작',()=>{start.value=fmt(el.video.currentTime*1000);goldDirtyNow();});
+   control('현재 시점 → 종료',()=>{end.value=fmt(el.video.currentTime*1000);goldDirtyNow();});
+   box.append(controls);
+   const notes=document.createElement('label');notes.textContent='근거 장면을 직접 확인한 관찰 기록 (18~500자)';
+   const textarea=document.createElement('textarea');textarea.rows=2;textarea.placeholder='실제 영상에서 본 행동이나 직접 들은 내용을 설명하세요. 확인하지 않은 사실은 작성하지 마세요.';
+   textarea.value=e.observationNote||'';textarea.addEventListener('input',goldDirtyNow);notes.append(textarea);box.append(notes);
+   goldEvidenceRows.push({modality,start,end,notes:textarea});
+   host.append(box);
+  });
+ }
+ function renderGoldQuestion(){
+  if(!goldPacket)return;
+  const q=goldPacket.questions[goldSelected];
+  ge('goldQuestion').value=q.finalQuestionText||q.questionDraft;
+  ge('goldAuthor').value=q.authorCode||'LOCAL_AUTHOR_1';
+  ge('goldAnswerability').value=q.gold.answerability||'';
+  ge('goldAnswer').value=q.gold.answerText||'';
+  ge('goldAbsenceReason').value=q.gold.absenceRationale||'';
+  ge('goldFullFilm').checked=q.gold.fullMovieReviewed;
+  ge('goldAnchorTime').value=q.anchorLocalMs.length?q.anchorLocalMs.map(fmt).join(' / '):'영화 전체 확인';
+  ge('goldAnchor').textContent='종류: '+q.kind+' · G2-D 검수 지점: '+
+   (q.anchorCheckpointIds.length?q.anchorCheckpointIds.join(' / '):'특정 시각 없음 · 전체 원본 확인 필요')+
+   ' · 근거 '+q.requiredEvidenceCount+'개 이상';
+  ge('goldAnswerability').querySelector('option[value="SUPPORTED"]').disabled=q.kind==='UNSUPPORTED';
+  ge('goldAnswerability').querySelector('option[value="UNSUPPORTED"]').disabled=q.kind!=='UNSUPPORTED';
+  const unsupported=ge('goldAnswerability').value==='UNSUPPORTED';
+  ge('goldAbsenceBox').hidden=!unsupported;
+  goldEvidenceEditor(q);goldStatus();goldDirty=false;
+ }
+ function selectGoldQuestion(index,force=false){
+  if(!goldPacket)return;
+  if(!force&&goldDirty&&!window.confirm('G2-E 질문에 저장하지 않은 변경 사항이 있습니다. 버리고 이동하시겠습니까?')){
+   ge('goldSelect').value=String(goldSelected);return;
+  }
+  goldSelected=index;ge('goldSelect').value=String(index);
+  sync?.setLinked(false);
+  const q=goldPacket.questions[index];
+  if(q.anchorLocalMs.length){el.video.pause();el.video.currentTime=Math.max(0,q.anchorLocalMs[0]/1000-4);onTick();}
+  renderGoldQuestion();goldMsg('영상과 SRT를 직접 확인한 뒤 질문·정답·근거 시간을 작성하세요.');
+ }
+ function showGoldSession(body){
+  if(!body.exists){ge('goldEmpty').hidden=false;ge('goldEditor').hidden=true;ge('goldStage').textContent='질문 미생성';return;}
+  goldPacket=body.packet;goldRevision=body.revision;goldSelected=0;goldDirty=false;
+  ge('goldEmpty').hidden=true;ge('goldEditor').hidden=false;
+  const select=ge('goldSelect');select.replaceChildren();
+  goldPacket.questions.forEach((q,i)=>{
+   const o=document.createElement('option');o.value=String(i);o.textContent=q.id+' · '+q.kind+' · '+q.questionDraft;
+   select.append(o);
+  });
+  selectGoldQuestion(0,true);
+ }
+ function collectGoldEdits(){
+  if(!goldPacket)throw Error('먼저 질문을 생성하세요.');
+  const packet=structuredClone(goldPacket),q=packet.questions[goldSelected];
+  const result=ge('goldAnswerability').value;
+  if(!result)throw Error('정답 가능 여부를 선택하세요. 미작성 문항은 기존 상태 그대로 유지할 수 있습니다.');
+  q.finalQuestionText=ge('goldQuestion').value.trim();
+  q.authorCode=ge('goldAuthor').value.trim();
+  q.gold.answerability=result;q.gold.answerText=ge('goldAnswer').value.trim();
+  q.gold.absenceRationale=null;q.gold.fullMovieReviewed=false;q.gold.evidence=[];
+  if(result==='SUPPORTED'){
+   if(q.kind==='UNSUPPORTED')throw Error('근거 부족 질문은 SUPPORTED로 처리할 수 없습니다.');
+   q.gold.evidence=goldEvidenceRows.map(e=>{
+    const start=parseTime(e.start.value),end=parseTime(e.end.value);
+    if(start===null||end===null)throw Error('근거 시작·종료 시각을 모두 기록하세요.');
+    return {modality:e.modality.value,localStartMs:start,localEndMs:end,
+      youtubeObservedMs:null,observationNote:e.notes.value.trim()};
+   });
+  }else if(result==='UNSUPPORTED'){
+   if(q.kind!=='UNSUPPORTED')throw Error('이 유형은 UNSUPPORTED 판정을 사용할 수 없습니다.');
+   q.gold.absenceRationale=ge('goldAbsenceReason').value.trim();
+   q.gold.fullMovieReviewed=ge('goldFullFilm').checked;
+  }
+  return packet;
+ }
+ async function saveGold(){
+  const btn=ge('goldSave');btn.disabled=true;
+  try{
+   const packet=collectGoldEdits();
+   const r=await fetch('/api/g2e/save',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({packet,revision:goldRevision})});
+   const d=await r.json();if(!r.ok)throw Error(d.error||'정답 초안 저장이 거절되었습니다.');
+   goldPacket=packet;goldRevision=d.revision;goldDirty=false;
+   renderGoldQuestion();goldMsg('비공개 로컬 JSON 저장 완료 · '+d.summary.status);
+  }catch(e){goldMsg(e.message||'골드 초안 입력 오류',true);}
+  finally{btn.disabled=false;}
+ }
+ async function initializeGold(){
+  const button=ge('goldCreate');
+  button.addEventListener('click',async()=>{
+   button.disabled=true;goldMsg('질문 6개를 비공개 로컬 파일에 생성합니다.');
+   try{
+    const r=await fetch('/api/g2e/plan',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const d=await r.json();if(!r.ok)throw Error(d.error||'질문 생성 실패');
+    showGoldSession(d);goldMsg('질문 후보 6개가 생성되었습니다. 정답은 아직 모두 비어 있습니다.');
+   }catch(e){goldMsg(e.message,true);}finally{button.disabled=false;}
+  });
+  ge('goldSelect').addEventListener('change',()=>selectGoldQuestion(Number(ge('goldSelect').value)));
+  ge('goldAnswerability').addEventListener('change',()=>{
+   goldDirtyNow();const q=goldPacket.questions[goldSelected];
+   ge('goldAbsenceBox').hidden=ge('goldAnswerability').value!=='UNSUPPORTED';
+   goldEvidenceEditor(q);
+  });
+  for(const id of ['goldQuestion','goldAuthor','goldAnswer','goldAbsenceReason','goldFullFilm']){
+   ge(id).addEventListener('input',goldDirtyNow);
+  }
+  ge('goldSave').addEventListener('click',saveGold);
+  try{
+   const r=await fetch('/api/g2e/session');const data=await r.json();
+   if(!r.ok)throw Error(data.error||'골드 파일을 불러오지 못했습니다.');
+   showGoldSession(data);
+  }catch(e){goldMsg(e.message,true);ge('goldCreate').disabled=true;}
+ }
+
  function fmt(ms){
   ms=Math.max(0,Math.round(Number(ms)||0));
   const h=Math.floor(ms/3600000),m=Math.floor(ms/60000)%60,s=Math.floor(ms/1000)%60,sub=String(ms%1000).padStart(3,'0');
@@ -309,6 +473,7 @@
   });
   // Local review data stays in this origin. Only official YouTube IFrame controls are external.
   note('로컬 영상과 검수 데이터를 읽었습니다. 확인된 사실만 기록하세요.');
+  await initializeGold();
  }
  load().catch(e=>{note(e.message||'실행 오류','err');});
 })();
