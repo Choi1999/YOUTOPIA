@@ -5,6 +5,10 @@ import { WorkspaceChannelIdentity } from "./WorkspaceChannelIdentity";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import type {WorkspaceUrlTarget} from "./workspaceUrlTargets";
 import {workspaceUrlTargetKey} from "./workspaceUrlTargets";
+import {
+  EMPTY_TARGET_PRESENTATION, userFacingTargetName,
+  type WorkspaceTargetPresentation,
+} from "./workspaceTargetPresentation";
 
 const PAGE_SIZE=12;
 
@@ -13,6 +17,8 @@ type Props=Readonly<{
   onRemove: (key:string)=>void;
   onClear:()=>void;
   allowVideoImage?: boolean;
+  allowChannelImage?: boolean;
+  presentation?: WorkspaceTargetPresentation;
   channelProfiles?: ApprovedChannelProfileCache;
 }>;
 
@@ -27,7 +33,10 @@ function name(kind: WorkspaceUrlTarget["kind"]) {
  * Selecting a card enlarges its footprint if there is enough room.
  * The collection is separate from the two synthetic A/B comparison slots.
  */
-export function WorkspaceUrlTargetBoard({targets,onRemove,onClear,allowVideoImage = false,channelProfiles}:Props) {
+export function WorkspaceUrlTargetBoard({
+  targets,onRemove,onClear,allowVideoImage = false, allowChannelImage = false,
+  presentation = EMPTY_TARGET_PRESENTATION, channelProfiles,
+}:Props) {
   const [selectedKey,setSelectedKey]=useState<string|null>(null);
   const [limit,setLimit]=useState(PAGE_SIZE);
   if (targets.length === 0) return null;
@@ -68,10 +77,12 @@ export function WorkspaceUrlTargetBoard({targets,onRemove,onClear,allowVideoImag
               <div className="workspace-url-board__card-body">
                 <span className="workspace-url-board__orb" aria-hidden="true">
                   <WorkspaceTargetArtwork target={target} variant="card"
-                    allowVideoImage={allowVideoImage} channelProfiles={channelProfiles}/>
+                    allowVideoImage={allowVideoImage} allowChannelImage={allowChannelImage}
+                    presentation={presentation} channelProfiles={channelProfiles}/>
                 </span>
                 <div>
-                  <strong>{target.id}</strong>
+                  <strong>{userFacingTargetName(target, presentation, channelProfiles)}</strong>
+                  <small className="workspace-url-board__id">식별자: {target.id}</small>
                   <p>아직 분석된 정보가 없습니다.</p>
                   <WorkspaceChannelIdentity target={target} profiles={channelProfiles} compact/>
                 </div>
