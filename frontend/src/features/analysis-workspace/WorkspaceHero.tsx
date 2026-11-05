@@ -4,6 +4,7 @@ import "./workspace-url.css";
 import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
 import { WorkspaceFocusMode } from "./WorkspaceFocusMode";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
+import type { StateScenario } from "./workspaceMetadataConsumerState";
 import type { WorkspaceUrlIngestResult, WorkspaceUrlTarget } from "./workspaceUrlTargets";
 import {
   readWorkspaceNodeGroups, reconcileWorkspaceNodeGroups, writeWorkspaceNodeGroups,
@@ -31,6 +32,12 @@ type Props = Readonly<{
   syntheticServerEnabled?: boolean;
   syntheticServerStatus?: string;
   onToggleSyntheticServer?: () => void;
+  stateDemoAvailable?: boolean;
+  stateDemoEnabled?: boolean;
+  stateScenario?: StateScenario;
+  onStateScenarioChange?: (value:StateScenario)=>void;
+  onToggleStateDemo?: () => void;
+  onRefreshStateDemo?: () => void;
   presentation?: WorkspaceTargetPresentation;
   onSetTargetLabel?: (key: string, value: string) => boolean;
   onSetChannelArtwork?: (key: string, value: string) => boolean;
@@ -54,6 +61,9 @@ export function WorkspaceHero({
   syntheticPreviewEnabled = false, onToggleSyntheticPreview,
   syntheticServerAvailable = false, syntheticServerEnabled = false,
   syntheticServerStatus = "", onToggleSyntheticServer,
+  stateDemoAvailable = false, stateDemoEnabled = false,
+  stateScenario = "READY", onStateScenarioChange,
+  onToggleStateDemo, onRefreshStateDemo,
   channelProfiles, presentation = EMPTY_TARGET_PRESENTATION,
   onSetTargetLabel, onSetChannelArtwork, defaultFocusMode = false,
 }: Props) {
@@ -195,6 +205,15 @@ export function WorkspaceHero({
               : "개발 전용: 로컬 Spring 테스트 서버만 조회 · Google API 요청 없음"}</span>
           </div>
         )}
+        {stateDemoAvailable && onToggleStateDemo && (
+          <div className="workspace-hero__image-consent">
+            <button type="button" aria-pressed={stateDemoEnabled}
+              onClick={onToggleStateDemo}>
+              {stateDemoEnabled ? "메타데이터 상태 QA 끄기" : "메타데이터 상태 QA"}
+            </button>
+            <span>개발용 READY/NOT_FOUND/FAILED/STALE 테스트 · 실제 조회 없음</span>
+          </div>
+        )}
         {populated && onAddUrls && onRemoveTarget && (
           <button type="button" className="workspace-hero__focus-launch"
             onClick={() => setFocusOpen(true)}>
@@ -271,6 +290,12 @@ export function WorkspaceHero({
             syntheticServerEnabled={syntheticServerEnabled}
             syntheticServerStatus={syntheticServerStatus}
             onToggleSyntheticServer={onToggleSyntheticServer}
+            stateDemoAvailable={stateDemoAvailable}
+            stateDemoEnabled={stateDemoEnabled}
+            stateScenario={stateScenario}
+            onStateScenarioChange={onStateScenarioChange}
+            onToggleStateDemo={onToggleStateDemo}
+            onRefreshStateDemo={onRefreshStateDemo}
             presentation={presentation}
             onSetTargetLabel={onSetTargetLabel}
             onSetChannelArtwork={onSetChannelArtwork}
