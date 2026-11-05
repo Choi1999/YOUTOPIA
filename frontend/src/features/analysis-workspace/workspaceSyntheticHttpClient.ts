@@ -60,8 +60,7 @@ async function limitedJson(response: Response): Promise<unknown> {
     offset += chunk.length;
   }
   try {
-    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes))
-      as unknown;
+    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as unknown;
   } catch {
     return null;
   } finally {
