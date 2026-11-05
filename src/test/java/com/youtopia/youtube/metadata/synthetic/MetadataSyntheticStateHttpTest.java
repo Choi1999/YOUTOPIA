@@ -63,8 +63,10 @@ class MetadataSyntheticStateHttpTest {
                 assertTrue(root.path("title").asText().startsWith("합성 "));
                 assertTrue(root.path("observedAt").asLong() > 0);
                 assertTrue(root.path("expiresAt").asLong() > 0);
+                assertTrue(root.path("expiresAt").asLong() >
+                        root.path("observedAt").asLong());
                 assertEquals(row[0].equals("READY"),
-                        root.path("expiresAt").asLong() > root.path("observedAt").asLong());
+                        root.path("expiresAt").asLong() > System.currentTimeMillis());
                 assertEquals(row[3].equals("VIDEO"),
                         root.path("channelName").isTextual());
                 assertEquals(row[3].equals("VIDEO") ?
