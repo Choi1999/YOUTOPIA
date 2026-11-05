@@ -97,6 +97,9 @@ describe("UI-R04-C — opt-in fullscreen graph with adaptive docks",()=>{
     await user.click(within(dialog).getByRole("button",{name:"등록된 영상 Ab0_-123xyz 선택"}));
     await user.click(within(dialog).getByRole("button",{name:"이 등록 대상 제거"}));
     expect(screen.getByTestId("registered-count")).toHaveTextContent("0");
+    // Empty focus workspace stays open so another URL can be added immediately.
+    expect(within(dialog).getByText("영상 또는 채널을 추가하세요")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button",{name:"집중 모드 종료"}));
     expect(screen.queryByRole("dialog",{name:"그래프 집중 탐색"})).not.toBeInTheDocument();
     expect(document.body.style.overflow).toBe("");
   });
