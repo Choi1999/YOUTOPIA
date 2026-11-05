@@ -17,9 +17,9 @@ export default defineConfig(({command, mode}) => {
       proxy: {
         // Use regex route boundaries: the old prefix must NOT implicitly
         // forward synthetic-state routes without the additional state flag.
-        "^/api/v1/youtube/metadata/synthetic/(videos|channels|handles)/": loopback,
+        "^/api/v1/youtube/metadata/synthetic(?:/|$)": loopback,
         ...(statesEnabled ? {
-          "^/api/v1/youtube/metadata/synthetic-state/(videos|channels|handles)/": loopback,
+          "^/api/v1/youtube/metadata/synthetic-state(?:/|$)": loopback,
         } : {}),
       },
     } : undefined,
