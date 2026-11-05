@@ -79,3 +79,46 @@ $script = '.\shared\experiments\yu-video-understanding-poc-v0\g2c-windows-offici
 - YouTube판 비교·LLM 유료 실험·운영 전환·병합: NOT_APPROVED.
 
 **G2-C는 실영상 증거를 아직 요구하므로 G3 전환이 불가하다.**
+
+
+## 6. 사용자 제공 Sintel 로컬 검증기 출력 검토 (2026-11-05)
+
+> 증거 등급: **OPERATOR_SUBMITTED_TOOL_JSON / NOT_INDEPENDENTLY_REPLAYED**. 이 기록은 사용자가 제공한 PowerShell 출력에서 발췌한 **비민감 요약**이다. 원본 영상·SRT의 바이트는 이 대화 실행 환경에 전달되지 않았으며 해당 파일의 해시 전문과 사용자 로컬 경로는 공개 저장소에 싣지 않았다.
+
+| 항목 | 사용자 제출 결과 | 검수 판단 |
+|---|---|---|
+| film / mode | `Sintel` / `LOCAL_PUBLISHER_MEDIA_INSPECTED_NOT_SERVICE_APPROVED` | 예상 출력 형식 일치 |
+| 공식 배포 서버 다운로드 요청 | 3회 | 영상 ZIP + 영어 SRT + 공개 MD5 확인 요청으로 해석 가능. **YouTube 다운로드가 아님** |
+| 배포 ZIP 크기 | `publisherMovieByteLengthMatchesIndex=true` | 공개 배포 인덱스 크기 검사 PASS(운영자 출력 기준) |
+| 제작자 MD5 | `MATCHES_PUBLISHER_MD5` | 제공자 MD5 비교 PASS(운영자 출력 기준). MD5 단독으로 라이선스·원본 판본/YouTube판 인증하지 않음 |
+| 압축 해제된 영상 SHA-256 | **64자리 값 산출, 비공개** | 해시 생성 보고, 직접 독립 재검증 아님 |
+| 미디어 바이트 | `681285280` | ZIP 크기가 아닌 **압축 해제된 MKV 크기** |
+| 실제 영상 런타임 | `888032ms` (14:48.032) | 공식 게시 14:48 메타데이터와 근접 |
+| 영상 속성 | `1280×544`, `h264` | 해상도·코덱 실측 보고 |
+| 영어 자막 SHA-256 | **64자리 값 산출, 비공개** | 로컬 SRT 파일 해시 생성 보고 |
+| 자막 구간 | 26개, 첫 시작 `107250ms`, 마지막 끝 `629800ms` | SRT 구문 및 영상 경계 검사 `PASS_BOUNDS_ONLY` |
+| 공식 Sintel 게시 자막 타임코드 | `MATCHES_PUBLISHER_TEXT_EXTRACTED_TIMINGS_ONLY` | 타임코드 대조 PASS. **발화/음성 동기화나 SRT 바이트 동일성은 미증명** |
+| API 요청 및 과금 | YouTube/LLM API 호출 0, 과금 $0 | 사용자 도구 출력 보고 |
+| `youtubeVideoSameVersionVerified` | `false` | 원본-YouTube판 독립 확인 필요 |
+| `actualSpokenCaptionAlignmentVerified` | `false` | 실제 발화·SRT 타임코드 시청 검토 필요 |
+| `realDatasetApproved`, `g3Authorized` | 모두 `false` | 기존 정책 게이트 유지 |
+
+**Sintel의 파일 메타데이터·자막 시간 범위에 관한 운영자 제출 검증은 PASS로 기록**하되, **G2-C 전체 데이터셋 승인과 구별**한다.
+
+- Sintel 로컬 파일 보고: **1/2** 작품의 운영자 제출 증거 확보
+- Tears of Steel 로컬 파일 보고: **0/2**, 아직 결과 없음
+- 사람에 의한 실제 음성–자막 동기화: **0/2**
+- YouTube 게시본–Blender 원본 판본 확인: **0/2**
+- 별도 서비스 이용권·2인 골드 검수: **0/2**
+- G3 실호출 / 기능 브랜치 병합: **승인 없음**
+
+### 다음 실행
+
+현재 `C:\Projects\YOUTOPIA-VIDEO-G2C`의 동일 Worktree에서 아래 명령으로 Tears of Steel의 공식 **최초 HD 720p판**에 대한 로컬 검증기를 실행한다. 사전에 로컬 디스크 여유·네트워크 허용 여부를 확인한다.
+
+```powershell
+$script = '.\shared\experiments\yu-video-understanding-poc-v0\g2c-windows-official-media.ps1'
+& $script -Mode AcquireAndVerify -Film TearsOfSteel
+```
+
+**판정: `SINTEL_LOCAL_MEDIA_METADATA_AND_SRT_BOUNDS_REPORTED_PASS / G2C_FULL_EVIDENCE_INCOMPLETE / G3_NOT_APPROVED`.**
