@@ -82,4 +82,9 @@ node "$dir/g2b-research-audit.cjs"
 - ⑤ 원본/YouTube/자막 판본 정합성·실제 러닝타임·장르 적합성 검수 및 두 명의 독립 정답 검수.
 - ⑥ 실제 입력 준비 후 별도 사용자 승인 하에 모델 계정·과금·프라이버시·무재시도/예산 차단 점검.
 
+### 원격 CI 실증 (2026-11-05)
+
+- [GitHub Actions #41978129657](https://github.com/Choi1999/YOUTOPIA/actions/runs/41978129657), 검증 커밋 `4f80182ef5b3866179733f771c877700b8b408c4`: Node 24 G1·G2·G2-B **80개 테스트 PASS / 0 FAIL**, 구문 점검 및 G1/G2/G2-B 차단 검증 단계 성공.
+- 코드/원장/공개 문서만 테스트했다. 실제 동영상 처리 정확도·권리 범위·다운로드 가능 여부·타임코드 정합성·상업 서비스 허가 증거는 여전히 0건.
+
 **최종 판정: `G2B_CANDIDATE_RESEARCH_COMPLETE / G2B_DATASET_VALIDATION_BLOCKED / G3_NOT_APPROVED / LIVE_CALLS=0 / NO_MERGE`.**
