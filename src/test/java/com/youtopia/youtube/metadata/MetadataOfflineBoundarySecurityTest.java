@@ -71,6 +71,7 @@ class MetadataOfflineBoundarySecurityTest {
                     .andExpect(content().contentTypeCompatibleWith(
                             MediaType.APPLICATION_PROBLEM_JSON))
                     .andExpect(jsonPath("code").value("METADATA_UNAVAILABLE"))
+                    .andExpect(jsonPath("instance").value("/api/v1/youtube/metadata"))
                     .andExpect(jsonPath("status").value(503))
                     .andExpect(header().string("Cache-Control", "no-store"))
                     .andExpect(content().string(not(containsString("sourceAuthenticated"))))
