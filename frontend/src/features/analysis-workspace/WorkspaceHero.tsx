@@ -25,6 +25,8 @@ type Props = Readonly<{
   onToggleVideoImage?: () => void;
   allowChannelImage?: boolean;
   onToggleChannelImage?: () => void;
+  syntheticPreviewEnabled?: boolean;
+  onToggleSyntheticPreview?: () => void;
   presentation?: WorkspaceTargetPresentation;
   onSetTargetLabel?: (key: string, value: string) => boolean;
   onSetChannelArtwork?: (key: string, value: string) => boolean;
@@ -45,6 +47,7 @@ function groupStorage(): Storage | null {
 export function WorkspaceHero({
   targets = [], onAddUrls, onRemoveTarget, allowVideoImage = false,
   onToggleVideoImage, allowChannelImage = false, onToggleChannelImage,
+  syntheticPreviewEnabled = false, onToggleSyntheticPreview,
   channelProfiles, presentation = EMPTY_TARGET_PRESENTATION,
   onSetTargetLabel, onSetChannelArtwork, defaultFocusMode = false,
 }: Props) {
@@ -166,6 +169,15 @@ export function WorkspaceHero({
               외부 이미지 요청만 허용하며 댓글·메타데이터 API는 요청하지 않습니다.</span>
           </div>
         )}
+        {onToggleSyntheticPreview && (
+          <div className="workspace-hero__image-consent">
+            <button type="button" aria-pressed={syntheticPreviewEnabled}
+              onClick={onToggleSyntheticPreview}>
+              {syntheticPreviewEnabled ? "합성 메타데이터 미리보기 끄기" : "합성 메타데이터 미리보기 켜기"}
+            </button>
+            <span>합성 제목·채널·썸네일 (실제 제공자 데이터 아님). 외부 이미지/API 요청 없음.</span>
+          </div>
+        )}
         {populated && onAddUrls && onRemoveTarget && (
           <button type="button" className="workspace-hero__focus-launch"
             onClick={() => setFocusOpen(true)}>
@@ -236,6 +248,8 @@ export function WorkspaceHero({
             onToggleVideoImage={onToggleVideoImage}
             allowChannelImage={allowChannelImage}
             onToggleChannelImage={onToggleChannelImage}
+            syntheticPreviewEnabled={syntheticPreviewEnabled}
+            onToggleSyntheticPreview={onToggleSyntheticPreview}
             presentation={presentation}
             onSetTargetLabel={onSetTargetLabel}
             onSetChannelArtwork={onSetChannelArtwork}
