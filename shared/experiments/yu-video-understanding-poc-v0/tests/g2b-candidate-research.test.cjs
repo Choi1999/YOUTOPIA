@@ -16,7 +16,7 @@ test('all six candidates remain blocked from actual data use',()=>{
 });
 test('registered media and caption availability is metadata only',()=>{
  const r=g2b.audit(g2b.load());assert.equal(r.officialVideoListings,5);
- assert.equal(r.officialTimedCaptionListings,3);assert.equal(r.officialTranscriptListings,3);
+ assert.equal(r.officialTimedCaptionListings,4);assert.equal(r.officialTranscriptListings,3);
  assert.equal(r.mediaOrCaptionBytesDownloaded,false);
 });
 test('only three YouTube pointers are documented without version equivalence',()=>{
