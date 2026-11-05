@@ -13,6 +13,9 @@ import {
   readGraphBookmarks, reconcileGraphBookmarks, writeGraphBookmarks,
 } from "./workspaceGraphBookmarks";
 import type { GraphVisit } from "./workspaceGraphNavigation";
+import {
+  EMPTY_TARGET_PRESENTATION, type WorkspaceTargetPresentation,
+} from "./workspaceTargetPresentation";
 
 type Props = Readonly<{
   targets?: readonly WorkspaceUrlTarget[];
@@ -20,6 +23,12 @@ type Props = Readonly<{
   onRemoveTarget?: (key: string) => void;
   allowVideoImage?: boolean;
   onToggleVideoImage?: () => void;
+  allowChannelImage?: boolean;
+  onToggleChannelImage?: () => void;
+  presentation?: WorkspaceTargetPresentation;
+  onSetTargetLabel?: (key: string, value: string) => boolean;
+  onSetChannelArtwork?: (key: string, value: string) => boolean;
+  defaultFocusMode?: boolean;
   channelProfiles?: ApprovedChannelProfileCache;
 }>;
 
@@ -33,11 +42,16 @@ function groupStorage(): Storage | null {
  * local-only; no provider metadata, snapshots or real comment requests.
  * Browser link drop is text-only. File drops are deliberately unsupported.
  */
-export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget, allowVideoImage = false, onToggleVideoImage, channelProfiles}: Props) {
+export function WorkspaceHero({
+  targets = [], onAddUrls, onRemoveTarget, allowVideoImage = false,
+  onToggleVideoImage, allowChannelImage = false, onToggleChannelImage,
+  channelProfiles, presentation = EMPTY_TARGET_PRESENTATION,
+  onSetTargetLabel, onSetChannelArtwork, defaultFocusMode = false,
+}: Props) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [input, setInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
-  const [focusOpen, setFocusOpen] = useState(false);
+  const [focusOpen, setFocusOpen] = useState(defaultFocusMode);
   // Purely user-authored grouping, separate from canonical URL targets.
   const [nodeGroups, setNodeGroups] = useState<readonly WorkspaceNodeGroup[]>(() =>
     readWorkspaceNodeGroups(groupStorage(), targets),
@@ -96,9 +110,6 @@ export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget, allowVid
   }
 
   const populated=targets.length>0;
-  useEffect(() => {
-    if(!populated && focusOpen) setFocusOpen(false);
-  }, [populated, focusOpen]);
 
   return (
     <header
@@ -205,6 +216,7 @@ export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget, allowVid
           </span>
         </div>
       ) : <WorkspaceUrlCanvas targets={targets} allowVideoImage={allowVideoImage}
+        allowChannelImage={allowChannelImage} presentation={presentation}
         channelProfiles={channelProfiles} groups={nodeGroups}
         onGroupsChange={setNodeGroups} bookmarks={bookmarks}
         onBookmarksChange={setBookmarks}/>}  
@@ -215,12 +227,17 @@ export function WorkspaceHero({targets = [], onAddUrls, onRemoveTarget, allowVid
           <span>화면에서만 즉시 등록 · 데이터 조회 없음</span>
         </div>
       )}
-      {focusOpen && populated && onAddUrls && onRemoveTarget &&
+      {focusOpen && onAddUrls && onRemoveTarget &&
         typeof document !== "undefined" && createPortal(
           <WorkspaceFocusMode targets={targets} onAddUrls={onAddUrls}
             onRemove={onRemoveTarget} onExit={() => setFocusOpen(false)}
             allowVideoImage={allowVideoImage}
             onToggleVideoImage={onToggleVideoImage}
+            allowChannelImage={allowChannelImage}
+            onToggleChannelImage={onToggleChannelImage}
+            presentation={presentation}
+            onSetTargetLabel={onSetTargetLabel}
+            onSetChannelArtwork={onSetChannelArtwork}
             channelProfiles={channelProfiles} groups={nodeGroups}
             onGroupsChange={setNodeGroups} bookmarks={bookmarks}
             onBookmarksChange={setBookmarks}/>,
