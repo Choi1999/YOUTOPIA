@@ -101,3 +101,20 @@ Video/channel title and profile thumbnail auto-population requires a separate ap
 ~~~powershell
 node --test shared/experiments/yu32-g45-offline-pipeline-v0/tests/metadata-readiness.test.cjs
 ~~~
+
+
+## UI-R04-P — guarded metadata lifecycle (still OFFLINE, no API calls)
+
+The backend-candidate module src/metadata-guarded-lifecycle.cjs wraps the UI-R04-O pure metadata plan/decoder with a strict **non-executing** lifecycle:
+
+- canonical POLICY_HOLD checked at every operation; no credentials, HTTP route, HTTPS transport, or provider execution;
+- simulated 6 planned quota units / 60 seconds and at most 3 pending single-use tickets, zero automatic retries, zero actual provider requests;
+- atomic shape validation of all supplied synthetic response bodies, safe simulated HTTP failure taxonomy (no raw provider error body), 15-minute cache;
+- false provenance and false consumer publication flags on every result.
+
+~~~powershell
+node --check shared/experiments/yu32-g45-offline-pipeline-v0/src/metadata-guarded-lifecycle.cjs
+node --test shared/experiments/yu32-g45-offline-pipeline-v0/tests/metadata-guarded-lifecycle.test.cjs
+~~~
+
+This **does not** make video titles or channel profile pictures appear automatically in YOUTOPIA. Real server credentials, quota journal, authenticated YouTube API transport, policy authorization and frontend integration require later independent approval. See docs/integration/UI_R04P_METADATA_SERVER_GUARDED_LIFECYCLE_V01.md.
