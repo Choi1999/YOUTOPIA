@@ -58,9 +58,13 @@ function corsAndHost(req,port){
 }
 function readJsonLimited(req,max=128000){
  return new Promise((resolve,reject)=>{
-  let n=0,buf='';
-  req.on('data',chunk=>{n+=chunk.length;if(n>max){reject(Error('G2D_WORKSPACE_FAIL_CLOSED: request too large'));req.destroy();return;}buf+=chunk.toString('utf8');});
-  req.on('end',()=>{try{resolve(JSON.parse(buf));}catch{reject(Error('G2D_WORKSPACE_FAIL_CLOSED: bad JSON'));}});
+  let n=0;const chunks=[];
+  req.on('data',chunk=>{
+   n+=chunk.length;
+   if(n>max){reject(Error('G2D_WORKSPACE_FAIL_CLOSED: request too large'));req.destroy();return;}
+   chunks.push(chunk);
+  });
+  req.on('end',()=>{try{resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')));}catch{reject(Error('G2D_WORKSPACE_FAIL_CLOSED: bad JSON'));}});
   req.on('error',reject);
  });
 }
