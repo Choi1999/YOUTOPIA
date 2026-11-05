@@ -7,6 +7,7 @@ const http=require('node:http');
 const crypto=require('node:crypto');
 const g2c=require('./g2c-offline-verifier.cjs');
 const g2d=require('./g2d-human-review.cjs');
+const g2e=require('./g2e-gold-pilot.cjs');
 const media=require('./g2d-workspace-media.cjs');
 const FILMS=new Set(['Sintel','TearsOfSteel']);
 function deny(ok,msg){if(!ok)throw Error('G2D_WORKSPACE_FAIL_CLOSED: '+msg);}
@@ -48,6 +49,50 @@ function applyUpdate(reviewFile,film,body){
  }finally{if(fs.existsSync(tmp))fs.unlinkSync(tmp);}
  return {revision:digest(json),summary:g2d.assess(body.packet)};
 }
+function goldPathForReview(reviewFile,film){
+ deny(film==='Sintel'||film==='TearsOfSteel','gold film scope');
+ const base=path.resolve(path.dirname(reviewFile),'..','G2E-PrivateGoldDrafts');
+ return path.join(base,film+'-gold-candidates.json');
+}
+function loadGold(state){
+ deny(typeof state.goldFile==='string'&&path.extname(state.goldFile)==='.json','gold file destination');
+ if(!fs.existsSync(state.goldFile))return {exists:false,film:state.film,questionCount:6,verifiedGoldAnswers:0,g3Authorized:false};
+ safeRegularFile(state.goldFile,50,200000);
+ const raw=fs.readFileSync(state.goldFile,'utf8'),packet=JSON.parse(raw);
+ deny(packet.film===state.film,'wrong G2-E film');
+ const result=g2e.validatePlan(packet);
+ const active=fs.readFileSync(state.review,'utf8');
+ deny(packet.sourceReviewDigest===digest(active),'G2-D review source changed; reconcile before editing G2-E');
+ return {exists:true,film:state.film,packet,revision:digest(raw),summary:result};
+}
+function createGold(state){
+ deny(typeof state.goldFile==='string'&&!fs.existsSync(state.goldFile),'will not replace existing G2-E gold draft');
+ const g2dSource=fs.readFileSync(state.review,'utf8');
+ const packet=g2e.planFilm(state.film,JSON.parse(g2dSource),digest(g2dSource));
+ const parent=path.dirname(state.goldFile);
+ fs.mkdirSync(parent,{recursive:true});
+ fs.writeFileSync(state.goldFile,JSON.stringify(packet,null,2)+'\n',{flag:'wx',mode:0o600});
+ return loadGold(state);
+}
+function applyGoldUpdate(state,body){
+ deny(body&&typeof body==='object'&&!Array.isArray(body)&&
+   Object.keys(body).sort().join('|')==='packet|revision','invalid G2-E save payload');
+ const current=loadGold(state);
+ deny(current.exists&&body.revision===current.revision,'stale G2-E gold draft revision');
+ deny(body.packet&&body.packet.film===state.film&&
+   JSON.stringify(g2e.immutable(body.packet))===JSON.stringify(g2e.immutable(current.packet)),
+   'immutable G2-E provenance changed');
+ const sum=g2e.validatePlan(body.packet);
+ const json=JSON.stringify(body.packet,null,2)+'\n';
+ deny(Buffer.byteLength(json,'utf8')<200000,'G2-E report too large');
+ const tmp=state.goldFile+'.pending-'+crypto.randomBytes(8).toString('hex');
+ try{
+  fs.writeFileSync(tmp,json,{flag:'wx',mode:0o600});
+  fs.renameSync(tmp,state.goldFile);
+ }finally{if(fs.existsSync(tmp))fs.unlinkSync(tmp);}
+ return {revision:digest(json),summary:sum};
+}
+
 function corsAndHost(req,port){
  const expected='127.0.0.1:'+port;
  deny(req.headers.host===expected,'unexpected Host header');
@@ -127,6 +172,21 @@ function serverHandler(state,port,req,res){
     videoProxyMayHaveAudioTranscodeDelay:true});
    return;
   }
+  if(req.method==='GET'&&url.pathname==='/api/g2e/session'){
+   sendJson(res,loadGold(state));return;
+  }
+  if(req.method==='POST'&&url.pathname==='/api/g2e/plan'){
+   readJsonLimited(req,1000).then(body=>{
+    deny(body&&Object.keys(body).length===0,'G2-E plan body must be empty');
+    sendJson(res,createGold(state));
+   }).catch(()=>sendJson(res,{error:'G2-E question plan cannot be created; check G2-D evidence and existing private file.'},400));
+   return;
+  }
+  if(req.method==='POST'&&url.pathname==='/api/g2e/save'){
+   readJsonLimited(req,200000).then(body=>sendJson(res,applyGoldUpdate(state,body)))
+    .catch(()=>sendJson(res,{error:'G2-E save rejected: missing human evidence, invalid local timing, stale file or protected metadata. Keep the form open and review fields.'},400));
+   return;
+  }
   if(req.method==='POST'&&url.pathname==='/api/save'){
    readJsonLimited(req).then(body=>sendJson(res,applyUpdate(state.review,state.film,body)))
     .catch(()=>sendJson(res,{error:'Review rejected: invalid input, stale revision or unsupported verdict. Check local review JSON and refresh.'},400));
@@ -160,7 +220,7 @@ async function prepare({film,localAppData}){
  const expected=cur.packet.local.durationMs;
  deny(Math.abs(wav.info.totalSamples/wav.info.sampleRate*1000-expected)<2500,
   'decoded audio duration differs significantly from local video');
- return {film,review:paths.review,proxy,cues,waveform:wav.info};
+ return {film,review:paths.review,goldFile:goldPathForReview(paths.review,film),proxy,cues,waveform:wav.info};
 }
 async function start({film,localAppData,port=0}){
  deny(Number.isInteger(port)&&port>=0&&port<65536,'port');
@@ -183,4 +243,4 @@ if(require.main===module){
   await start({film,localAppData:process.env.LOCALAPPDATA});
  })().catch(e=>{process.stderr.write(String(e.message)+'\n');process.exitCode=1;});
 }
-module.exports={parseCli,loadReview,assertUpdate,applyUpdate,readJsonLimited,serveVideo,serverHandler,prepare,start,filmFiles:media.filmFiles};
+module.exports={parseCli,loadReview,assertUpdate,applyUpdate,goldPathForReview,loadGold,createGold,applyGoldUpdate,readJsonLimited,serveVideo,serverHandler,prepare,start,filmFiles:media.filmFiles};
