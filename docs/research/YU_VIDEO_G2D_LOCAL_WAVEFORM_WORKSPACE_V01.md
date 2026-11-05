@@ -209,3 +209,35 @@ $script = '.\shared\experiments\yu-video-understanding-poc-v0\g2d-windows-manual
 실제 관찰값을 추정해 `OBSERVED_MATCH`를 채우지 않는다. 게시자·판본 또는 음성 싱크가 불확실하면 `UNCERTAIN`, 직접 관찰한 불일치는 `OBSERVED_DIFFERENCE`로 기록한다. 전 항목이 일치해도 `OPERATOR_REPORTED_SAMPLED_MATCHES_NOT_FULL_PROOF`이며 G3 유료 호출과 병합은 별도 승인 전까지 **BLOCKED**다.
 
 현 상태: `G2D_MAIN_PLAYBACK_UI_QA_OPERATOR_PASS / G2D_CONTENT_REVIEW_PENDING / G3_NOT_APPROVED / NO_MERGE`.
+
+
+## 9. 운영자 제출 Sintel G2-D 표본 6/6 결과 (2026-11-05, 최신)
+
+**증거 등급: USER_SUBMITTED_LOCAL_ASSESS_JSON / NOT_INDEPENDENTLY_REPLAYED.**
+
+사용자가 Windows 로컬 `g2d-windows-manual-review.ps1 -Mode Assess -Film Sintel`을 실행하고 제출한 최종 출력으로, 초기 `OPERATOR_REPORTED_DIFFERENCES_REQUIRE_REVIEW`(오프셋 편차 2,803ms)를 재검수한 후 최신 상태를 기록한다.
+
+| 검증 항목 | 최종 사용자 제출 결과 |
+|---|---|
+| 상태 | `OPERATOR_REPORTED_SAMPLED_MATCHES_NOT_FULL_PROOF` |
+| 6개 체크포인트 | `match=6`, `difference=0`, `unknown=0`, `unreviewed=0` |
+| AUDIO_SYNC | 3/3 일치 보고 |
+| YOUTUBE_SCENE | 3/3 일치 보고 |
+| YouTube 게시자 | `OFFICIAL_OWNER_CONFIRMED` (운영자 관찰·독립 검증 아님) |
+| YouTube 전체 재생시간 차이 | `-32ms` (`WITHIN_TWO_SECONDS_NOT_FULL_EQUIVALENCE`) |
+| 세 샘플 YouTube-로컬 오프셋 최대 편차 | **1,000ms** |
+| 샘플 오프셋 일관성 | `OPERATOR_REPORTED_CONSISTENT` |
+| 사용자 보고 근거의 독립 검수자 | `0` |
+| 전체 음성–자막 싱크 검증 | `false` |
+| 전체 YouTube 게시본–로컬 판본 동등성 | `false` |
+| 서비스 사용권 / 골드 질문 정답 검수 | `false` |
+| G3 외부 모델 API 실행 승인 | `false` |
+| 외부 공급자 API 호출·실험 비용 | `0` / `$0` (사용자 로컬 검증 출력 기준) |
+
+**구별할 점:** 사용자는 재생 편의상 오프셋을 +5초로 통일하겠다고 보고했으나, 실제 제출된 최종 `Assess` 값은 `youtubeSampleOffsetSpreadMs=1000`이다. 즉 **세 개의 기록된 오프셋이 정확히 모두 +5,000ms라는 증거는 아니다.** 단위 테스트의 2,000ms 허용 범위 안이므로 표본 일치 검수는 통과했다. 숫자를 인위적으로 0으로 맞추거나 기록을 변경할 필요는 없다.
+
+**범위:** 본 PASS는 Sintel의 **운영자 제출 표본 6/6에 관한 판정**이다. 영화 전체 편집판 동일성, 법적 권리, 사람 2명의 독립 검수 또는 G3 실행 허가를 뜻하지 않는다.
+
+**다음 검수:** Tears of Steel(2012 First HD 720p)의 `AUDIO_FIRST/MIDDLE/LAST` 3개, `YOUTUBE_OPENING/MIDPOINT/ENDING` 3개, SRT 종료 후 `CAPTION_COVERAGE` 2개를 사용자 Windows의 동일한 QA 도구에서 검토하고 로컬 JSON을 저장한다. YouTube 후보는 4K 리렌더판일 가능성이 있어 장면·편집 차이 여부를 독립적으로 주의 깊게 기록한다. 우선 실제 출력 `-Mode Assess -Film TearsOfSteel`을 받아 분리 판정한다.
+
+최신 상태: `G2D_SINTEL_OPERATOR_SAMPLED_MATCH_PASS_6_OF_6 / TEARS_G2D_CONTENT_REVIEW_PENDING / FULL_EDITION_EQUIVALENCE_NOT_VERIFIED / G3_NOT_APPROVED / NO_MERGE`.
