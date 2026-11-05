@@ -356,3 +356,22 @@
   overflow-wrap:anywhere;
   margin-top:3px;
 }
+
+
+/* UI-R04-AD-2: compact fallback list only when immersive focus is closed.
+   Selection opens the SAME graph/detail, so no secondary expanded panel. */
+.workspace-url-board--integrated .workspace-url-board__card {
+  min-height:0;
+  padding:12px;
+  gap:9px;
+  border-radius:12px;
+}
+.workspace-url-board--integrated .workspace-url-board__card--focused {
+  grid-column:auto;
+}
+.workspace-url-board--integrated .workspace-url-board__card-body p {
+  margin-top:2px;
+}
+.workspace-url-board--integrated .workspace-url-board__grid {
+  grid-auto-flow:row;
+}
