@@ -229,7 +229,8 @@ export function WorkspaceFocusMode({
     // The modal stays keyboard-contained even when docks appear/disappear.
     const focusable = Array.from(
       dialogRef.current?.querySelectorAll<HTMLElement>(
-        "button:not([disabled]), input:not([disabled]), a[href], " +
+        "button:not([disabled]), input:not([disabled]), " +
+        "select:not([disabled]), textarea:not([disabled]), a[href], " +
         '[tabindex="0"]',
       ) ?? [],
     );
