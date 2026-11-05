@@ -28,6 +28,10 @@ import {
   filterGraphExplorerHits, getGraphBookmarkLabel, hasGraphBookmark,
   toggleGraphBookmark, type GraphExplorerScope,
 } from "./workspaceGraphBookmarks";
+import {
+  EMPTY_TARGET_PRESENTATION, userFacingTargetName,
+  type WorkspaceTargetPresentation,
+} from "./workspaceTargetPresentation";
 
 const PER_VIEW = 24;
 type Unit =
@@ -40,6 +44,8 @@ type Props = Readonly<{
   focusedKey?: string | null;
   onFocusChange?: (key: string | null) => void;
   allowVideoImage?: boolean;
+  allowChannelImage?: boolean;
+  presentation?: WorkspaceTargetPresentation;
   channelProfiles?: ApprovedChannelProfileCache;
   groups?: readonly WorkspaceNodeGroup[];
   onGroupsChange?: (groups: readonly WorkspaceNodeGroup[]) => void;
@@ -96,7 +102,9 @@ function kindLabel(target: WorkspaceUrlTarget) {
  */
 export function WorkspaceUrlCanvas({
   targets, focusedKey: controlledKey, onFocusChange,
-  allowVideoImage = false, channelProfiles, groups: givenGroups, onGroupsChange,
+  allowVideoImage = false, allowChannelImage = false,
+  presentation = EMPTY_TARGET_PRESENTATION,
+  channelProfiles, groups: givenGroups, onGroupsChange,
   bookmarks: givenBookmarks, onBookmarksChange,
 }: Props) {
   const [internalFocusedKey, setInternalFocusedKey] = useState<string | null>(null);
@@ -152,7 +160,24 @@ export function WorkspaceUrlCanvas({
   >(null);
   const [minimapOpen, setMinimapOpen] = useState(true);
 
-  const units = graphUnits(targets, groups);
+  const allUnits = graphUnits(targets, groups);
+  const units: readonly Unit[] = searchScope === "all" ? allUnits :
+    searchScope === "group"
+      ? allUnits.filter(unit => unit.kind === "group") :
+    searchScope === "video" || searchScope === "channel"
+      ? [...targets].reverse().filter(target =>
+          searchScope === "video" ? target.kind === "VIDEO" : target.kind !== "VIDEO",
+        ).map(target => ({
+          kind: "target" as const, target, key: workspaceUrlTargetKey(target),
+        })) :
+    bookmarks.flatMap(visit => {
+      if (visit.kind === "group") {
+        const group = groups.find(item => item.id === visit.key);
+        return group ? [{ kind:"group" as const, group, key:group.id }] : [];
+      }
+      const target = targets.find(item => workspaceUrlTargetKey(item) === visit.key);
+      return target ? [{ kind:"target" as const, target, key:visit.key }] : [];
+    });
   const groupedKeys = new Set(groups.flatMap(group => group.memberKeys));
   const targetMap = new Map(targets.map(target => [workspaceUrlTargetKey(target), target]));
   const chosen = picked.filter(key => targetMap.has(key) && !groupedKeys.has(key));
@@ -173,7 +198,7 @@ export function WorkspaceUrlCanvas({
   const visible = units.slice(safePage * PER_VIEW, (safePage + 1) * PER_VIEW);
   const focused = targetMap.get(focusedKey ?? "") ?? null;
   const searchHits = filterGraphExplorerHits(
-    targets, groups, bookmarks, searchQuery, searchScope,
+    targets, groups, bookmarks, searchQuery, searchScope, presentation.labels,
   );
   const showSearchResults = searchQuery.trim() !== "" || searchScope !== "all";
   const searchTargetKeys = new Set(
@@ -271,7 +296,7 @@ export function WorkspaceUrlCanvas({
   function changeSearch(value: string) {
     setSearchQuery(value);
     const first = filterGraphExplorerHits(
-      targets, groups, bookmarks, value, searchScope,
+      targets, groups, bookmarks, value, searchScope, presentation.labels,
     )[0];
     if (first) navigate({ kind: first.kind, key: first.key }, false);
   }
@@ -415,12 +440,15 @@ export function WorkspaceUrlCanvas({
           else if (selected) { setFocusedKey(null); setCenterRequest(null); }
           else navigate({ kind: "target", key });
         }}
-        title={target.id}>
+        title={userFacingTargetName(target, presentation, channelProfiles)}>
         <span className="workspace-url-canvas__node-bubble" aria-hidden="true">
           <WorkspaceTargetArtwork target={target} variant="node"
-            allowVideoImage={allowVideoImage} channelProfiles={channelProfiles}/>
+            allowVideoImage={allowVideoImage} allowChannelImage={allowChannelImage}
+            presentation={presentation} channelProfiles={channelProfiles}/>
         </span>
-        <span className="workspace-url-canvas__node-label">{target.id}</span>
+        <span className="workspace-url-canvas__node-label">
+          {userFacingTargetName(target, presentation, channelProfiles)}
+        </span>
       </button>
     );
   }
@@ -478,7 +506,13 @@ export function WorkspaceUrlCanvas({
           onChange={event => changeSearch(event.target.value)}
           placeholder="영상 ID · 채널 ID/핸들 · 그룹 이름"/>
         <select aria-label="탐색 결과 유형" value={searchScope}
-          onChange={event => setSearchScope(event.target.value as GraphExplorerScope)}>
+          onChange={event => {
+            setSearchScope(event.target.value as GraphExplorerScope);
+            setPage(0);
+            setFocusedKey(null);
+            setJumpGroupId(null);
+            setCenterRequest(null);
+          }}>
           <option value="all">전체 결과</option>
           <option value="video">영상만</option>
           <option value="channel">채널만</option>
@@ -622,6 +656,11 @@ export function WorkspaceUrlCanvas({
         <div className="workspace-url-canvas__nodes"
           style={{ transform: "translate(" + pan.x + "px, " + pan.y +
             "px) scale(" + zoom + ")" }}>
+          {units.length === 0 && (
+            <div className="workspace-url-canvas__filter-empty" role="status">
+              현재 필터에 해당하는 노드가 없습니다. 필터를 변경하면 다시 표시됩니다.
+            </div>
+          )}
           {visible.map((unit, index) => {
             const point = positions(index, visible.length);
             if (unit.kind === "target") {
@@ -630,8 +669,9 @@ export function WorkspaceUrlCanvas({
               );
             }
             const group = unit.group;
-            const expanded = !group.collapsed || (focusedKey != null &&
-              group.memberKeys.includes(focusedKey));
+            const expanded = searchScope === "all" &&
+              (!group.collapsed || (focusedKey != null &&
+                group.memberKeys.includes(focusedKey)));
             return (
               <div key={group.id}
                 className={"workspace-url-canvas__cluster is-" + group.color +
@@ -674,7 +714,7 @@ export function WorkspaceUrlCanvas({
         {minimapOpen && (
           <div className="workspace-url-canvas__minimap"
             role="region" aria-label="그래프 미니맵">
-            <strong>미니맵 · 현재 {safePage + 1}/{totalPages} · 전체 {units.length}개</strong>
+            <strong>미니맵 · 현재 {safePage + 1}/{totalPages} · 표시 {units.length}개</strong>
             <div className="workspace-url-canvas__minimap-plane">
               {Array.from({ length: totalPages }, (_, pageIndex) => {
                 const column = pageIndex % minimapColumns;
@@ -720,7 +760,8 @@ export function WorkspaceUrlCanvas({
                     aria-label={"미니맵 " +
                       (unit.kind === "group" ? "그룹 " + unit.group.name :
                         kindLabel(unit.target) + " " + unit.target.id) + " 이동"}
-                    title={(unit.kind === "group" ? unit.group.name : unit.target.id) +
+                    title={(unit.kind === "group" ? unit.group.name :
+                      userFacingTargetName(unit.target, presentation, channelProfiles)) +
                       " · " + (unitPage + 1) + "페이지"}
                     style={{ left: x + "%", top: y + "%" }}
                     onClick={() => navigate(unit.kind === "group"
@@ -737,7 +778,8 @@ export function WorkspaceUrlCanvas({
         <p>{selectionMode
           ? "그룹으로 묶을 노드를 선택하세요. 기존 분석 데이터나 관계는 변경되지 않습니다."
           : focused
-          ? focused.id + " · URL만 등록됨 · 존재 여부·채널 소속·분석 미확인"
+          ? userFacingTargetName(focused, presentation, channelProfiles) +
+            " · URL만 등록됨 · 실제 제목·분석 미확인"
           : "노드를 선택하거나 그룹을 접어 정리하세요. 빈 공간을 드래그하면 이동합니다."}</p>
         {totalPages > 1 && (
           <div className="workspace-url-canvas__pager">
