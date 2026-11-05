@@ -6,7 +6,8 @@ import { WorkspaceDiscoveryPanels } from "../../features/analysis-workspace/Work
 import { WorkspaceHero } from "../../features/analysis-workspace/WorkspaceHero";
 import { WorkspaceUrlTargetBoard } from "../../features/analysis-workspace/WorkspaceUrlTargetBoard";
 import { ApprovedChannelProfileCache } from "../../features/analysis-workspace/workspaceChannelProfile";
-import { createOfflineWorkspacePreview } from "../../features/analysis-workspace/workspaceSyntheticMetadata";
+import { createOfflineWorkspacePreview, type SyntheticWorkspaceMetadata } from "../../features/analysis-workspace/workspaceSyntheticMetadata";
+import { fetchSyntheticHttpMetadata, syntheticHttpDevEnabled } from "../../features/analysis-workspace/workspaceSyntheticHttpClient";
 import {
   readTargetPresentation, reconcileTargetPresentation, writeTargetPresentation,
   withUserLabel, withChannelArtwork,
@@ -85,6 +86,14 @@ export function AnalysisWorkspacePage() {
   const [allowChannelImage, setAllowChannelImage] = useState(false);
   // Explicit local-only synthetic preview, never persisted or fetched.
   const [syntheticPreviewEnabled, setSyntheticPreviewEnabled] = useState(false);
+  const syntheticServerAvailable = syntheticHttpDevEnabled();
+  const [syntheticServerEnabled, setSyntheticServerEnabled] = useState(false);
+  const [syntheticServerRecords, setSyntheticServerRecords] = useState<
+    Readonly<Record<string, SyntheticWorkspaceMetadata>>
+  >({});
+  const [syntheticServerStatus, setSyntheticServerStatus] = useState(
+    "테스트 전용 Spring 서버 합성 조회 대기",
+  );
   const [presentation, setPresentation] = useState<WorkspaceTargetPresentation>(
     () => readTargetPresentation(getTabStorage(), urlTargets),
   );
@@ -97,9 +106,47 @@ export function AnalysisWorkspacePage() {
   // Empty until a separately authorized, reviewed channel metadata reader exists.
   // The cache is in-memory only and never triggers network calls.
   const [channelProfiles] = useState(() => new ApprovedChannelProfileCache());
-  const displayedPresentation: WorkspaceTargetPresentation = syntheticPreviewEnabled
-    ? { ...presentation, synthetic: createOfflineWorkspacePreview(urlTargets) }
-    : presentation;
+  // A server failure NEVER falls back to a guessed title or locally mocked
+  // provider result. The two synthetic modes are independent and opt-in only.
+  useEffect(() => {
+    if (!syntheticServerAvailable || !syntheticServerEnabled) {
+      setSyntheticServerRecords({});
+      return;
+    }
+    const controller = new AbortController();
+    const selected = urlTargets.slice(0, 3); // Synthetic test budget: <=3 GETs.
+    setSyntheticServerRecords({});
+    if (selected.length === 0) {
+      setSyntheticServerStatus("URL을 추가하면 로컬 Spring 테스트 서버에 합성 조회합니다.");
+      return () => controller.abort();
+    }
+    setSyntheticServerStatus("Spring 루프백 합성 서버 응답 확인 중");
+    void (async () => {
+      const verified: Record<string, SyntheticWorkspaceMetadata> = {};
+      let failed = 0;
+      for (const target of selected) {
+        if (controller.signal.aborted) return;
+        const response = await fetchSyntheticHttpMetadata(target, controller.signal);
+        if (response) verified[workspaceUrlTargetKey(target)] = response;
+        else failed++;
+      }
+      if (controller.signal.aborted) return;
+      setSyntheticServerRecords(verified);
+      setSyntheticServerStatus(
+        "Spring 테스트 서버 합성 응답 " + Object.keys(verified).length + "개 확인" +
+        (failed ? " · " + failed + "개 실패(미확인 유지)" : "") +
+        (urlTargets.length > 3 ? " · 상한 3개까지만 시험" : "") +
+        " · 실제 YouTube 조회 0건",
+      );
+    })();
+    return () => controller.abort();
+  }, [syntheticServerAvailable, syntheticServerEnabled, urlTargets]);
+
+  const displayedPresentation: WorkspaceTargetPresentation = syntheticServerEnabled
+    ? { ...presentation, synthetic: syntheticServerRecords }
+    : syntheticPreviewEnabled
+      ? { ...presentation, synthetic: createOfflineWorkspacePreview(urlTargets) }
+      : presentation;
   const paths = buildWorkspacePaths(session);
   const safeQuery = withoutAllowedUtmTracking(new URLSearchParams(location.search));
 
@@ -209,7 +256,17 @@ export function AnalysisWorkspacePage() {
         onToggleChannelImage={() => setAllowChannelImage(enabled => !enabled)}
         channelProfiles={channelProfiles} defaultFocusMode
         syntheticPreviewEnabled={syntheticPreviewEnabled}
-        onToggleSyntheticPreview={() => setSyntheticPreviewEnabled(v => !v)}
+        onToggleSyntheticPreview={() => {
+          setSyntheticServerEnabled(false);
+          setSyntheticPreviewEnabled(v => !v);
+        }}
+        syntheticServerAvailable={syntheticServerAvailable}
+        syntheticServerEnabled={syntheticServerEnabled}
+        syntheticServerStatus={syntheticServerStatus}
+        onToggleSyntheticServer={() => {
+          setSyntheticPreviewEnabled(false);
+          setSyntheticServerEnabled(v => !v);
+        }}
         presentation={displayedPresentation}
         onSetTargetLabel={(key, value) => {
           const next = withUserLabel(presentation, urlTargets, key, value);
