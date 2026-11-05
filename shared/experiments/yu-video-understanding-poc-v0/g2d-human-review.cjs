@@ -137,6 +137,7 @@ function assess(p){
  const maxOffsetSpreadMs=offsets.length>=2?Math.max(...offsets)-Math.min(...offsets):null;
  const durationDeltaMs=p.observedYoutubeDurationMs===null?null:p.observedYoutubeDurationMs-p.local.durationMs;
  const durationDiscrepancy=durationDeltaMs!==null&&Math.abs(durationDeltaMs)>2000;
+ const consistentOffsets=offsets.length===3&&maxOffsetSpreadMs<=2000;
  const timelineDrift=sceneSamples.length===3&&!consistentOffsets;
  const allSampleMatches=totals.match===p.checkpoints.length&&
  p.youtubeUploaderObservation==='OFFICIAL_OWNER_CONFIRMED'&&p.observedYoutubeDurationMs!==null;
@@ -144,7 +145,6 @@ function assess(p){
  const status=hasProblem||timelineDrift||durationDiscrepancy?'OPERATOR_REPORTED_DIFFERENCES_REQUIRE_REVIEW':
     totals.unreviewed>0||totals.unknown>0?'PENDING_HUMAN_REVIEW':
     allSampleMatches?'OPERATOR_REPORTED_SAMPLED_MATCHES_NOT_FULL_PROOF':'INCOMPLETE_REVIEW';
- const consistentOffsets=offsets.length===3&&maxOffsetSpreadMs<=2000;
  return {stage:'G2-D',status,film:p.film,publisherEdition:p.publisherEdition,
     youtubeEditionCaveat:p.youtubeEditionCaveat,
     source:'OPERATOR_ENTERED_HUMAN_OBSERVATIONS_NOT_INDEPENDENT',
