@@ -78,6 +78,9 @@ export async function fetchSyntheticHttpMetadata(
   if (!syntheticHttpDevEnabled() || signal.aborted) return null;
   const path = endpoint(target);
   if (!path) return null;
+  const timeout = new AbortController();
+  const timer = setTimeout(() => timeout.abort(), 5000);
+  const boundedSignal = AbortSignal.any([signal, timeout.signal]);
   try {
     const response = await fetcher(path, {
       method: "GET",
@@ -86,7 +89,7 @@ export async function fetchSyntheticHttpMetadata(
       redirect: "error",
       cache: "no-store",
       headers: { Accept: "application/json" },
-      signal,
+      signal: boundedSignal,
     });
     if (!response.ok || response.redirected ||
         response.headers.get("X-YOUTOPIA-Synthetic") !== SYNTHETIC_HEADER ||
@@ -94,10 +97,12 @@ export async function fetchSyntheticHttpMetadata(
           response.headers.get("content-type") ?? "")) return null;
 
     const payload = await limitedJson(response);
-    if (signal.aborted) return null;
+    if (boundedSignal.aborted) return null;
     return decodeOfflineSyntheticMetadata(payload,target);
   } catch {
     // No leaking raw server errors, body, URL, request ID or credentials.
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
