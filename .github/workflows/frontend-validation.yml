@@ -127,7 +127,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: Choi1999/YOUTOPIA
-          ref: 942818374c00a4edeeee82f24dd8ea241d6e1a95
+          ref: 5069a81979fd8ef10123e32d00fa35900b450944
           path: _r04x_backend
 
       - name: Setup Java 21
