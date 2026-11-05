@@ -36,6 +36,8 @@ type Props = Readonly<{
   onToggleVideoImage?: () => void;
   allowChannelImage?: boolean;
   onToggleChannelImage?: () => void;
+  syntheticPreviewEnabled?: boolean;
+  onToggleSyntheticPreview?: () => void;
   presentation?: WorkspaceTargetPresentation;
   onSetTargetLabel?: (key: string, label: string) => boolean;
   onSetChannelArtwork?: (key: string, imageUrl: string) => boolean;
@@ -67,6 +69,7 @@ export function WorkspaceFocusMode({
   targets, onAddUrls, onRemove, onExit,
   allowVideoImage = false, onToggleVideoImage, channelProfiles,
   allowChannelImage = false, onToggleChannelImage,
+  syntheticPreviewEnabled = false, onToggleSyntheticPreview,
   presentation = EMPTY_TARGET_PRESENTATION, onSetTargetLabel, onSetChannelArtwork,
   groups = [], onGroupsChange, bookmarks = [], onBookmarksChange,
 }: Props) {
@@ -399,6 +402,13 @@ export function WorkspaceFocusMode({
               {allowVideoImage ? "영상 이미지 끄기" : "영상 이미지 켜기"}
             </button>
           )}
+          {onToggleSyntheticPreview && (
+            <button type="button" aria-pressed={syntheticPreviewEnabled}
+              onClick={onToggleSyntheticPreview}
+              title="로컬 합성 제목·채널명·썸네일, 실제 Google/YouTube 조회 없음">
+              {syntheticPreviewEnabled ? "합성 정보 끄기" : "합성 정보 미리보기"}
+            </button>
+          )}
           {onToggleChannelImage && (
             <button type="button" aria-pressed={allowChannelImage}
               onClick={onToggleChannelImage}
@@ -427,7 +437,11 @@ export function WorkspaceFocusMode({
             onClick={onExit}>집중 모드 종료</button>
         </div>
       </header>
-      <div className="workspace-focus__message" role="status">{message}</div>
+      <div className="workspace-focus__message" role="status">
+        {syntheticPreviewEnabled
+          ? "합성 데이터 미리보기 · 실제 영상·채널 제목이나 YouTube 응답이 아닙니다. 분석 데이터 없음."
+          : message}
+      </div>
       <div ref={bodyRef} className="workspace-focus__body" data-layout={layout}
         data-resizing={resizingSide ?? undefined} style={customStyle}>
         {listOpen && (
@@ -536,6 +550,9 @@ export function WorkspaceFocusMode({
                   presentation={presentation} channelProfiles={channelProfiles}/>
                 <h4>{userFacingTargetName(selected, presentation, channelProfiles)}</h4>
                 <p className="workspace-focus__secondary-id">등록 식별자: {selected.id}</p>
+                {presentation.synthetic?.[selectedKey ?? ""]?.channelName && (
+                  <p>합성 채널 정보: {presentation.synthetic[selectedKey ?? ""].channelName}</p>
+                )}
                 {onSetTargetLabel && (
                   <form className="workspace-focus__editor" onSubmit={saveDisplayTitle}>
                     <label htmlFor="focus-display-title">표시 제목 (직접 입력)</label>
