@@ -200,9 +200,10 @@ export function WorkspaceFocusMode({
       window.matchMedia("(max-width: 720px)").matches;
   }
 
-  function focusTarget(key: string | null) {
+  function focusTarget(key: string | null,
+      registered: readonly WorkspaceUrlTarget[] = targets) {
     updateDockState(prev =>
-      chooseWorkspaceDockTarget(prev, key, targets, inNarrowViewport()));
+      chooseWorkspaceDockTarget(prev, key, registered, inNarrowViewport()));
   }
 
   function toggleList() {
@@ -223,7 +224,10 @@ export function WorkspaceFocusMode({
     );
     if (result.added.length) {
       setInput("");
-      focusTarget(workspaceUrlTargetKey(result.added[result.added.length - 1]));
+      // React props still contain the previous URL set until the next
+      // render; the just-returned canonical target list is authoritative.
+      focusTarget(workspaceUrlTargetKey(result.added[result.added.length - 1]),
+        result.targets);
     }
   }
 
