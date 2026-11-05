@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AnalysisWorkspacePage } from "../../pages/analysis/AnalysisWorkspacePage";
 import { AnalysisRepositoryProvider } from "../analysis/data/AnalysisRepositoryContext";
 import { demoAnalysisRepository } from "../analysis/data/DemoAnalysisRepository";
@@ -13,15 +13,20 @@ import { WORKSPACE_URL_TARGETS_KEY } from "./workspaceUrlTargets";
 function show() {
   return render(
     <AnalysisRepositoryProvider repository={demoAnalysisRepository}>
-      <MemoryRouter initialEntries={["/analysis/youtube/workspace"]}>
-        <Routes><Route path="/analysis/youtube/workspace"
-          element={<AnalysisWorkspacePage/>}/></Routes>
+      <MemoryRouter initialEntries={["/analysis/youtube/workspace/diagnostics"]}>
+        <Routes><Route path="/analysis/youtube/workspace/diagnostics"
+          element={<AnalysisWorkspacePage diagnosticsMode/>}/></Routes>
       </MemoryRouter>
     </AnalysisRepositoryProvider>,
   );
 }
 
+beforeEach(() => {
+  vi.stubEnv("DEV", true);
+  vi.stubEnv("VITE_R04AC_DIAGNOSTICS", "enabled");
+});
 afterEach(() => {
+  vi.unstubAllEnvs();
   sessionStorage.clear();
   document.body.style.overflow = "";
 });
@@ -31,6 +36,7 @@ describe("UI-R04-W — URL → synthetic backend envelope → graph/card/details
     const user = userEvent.setup();
     show();
     const focus = screen.getByRole("dialog", { name: "그래프 집중 탐색" });
+    await user.click(within(focus).getByRole("button",{name:"개발자 진단 열기"}));
     const input = within(focus).getByRole("textbox", { name: "URL 추가 입력" });
     await user.type(input, "https://youtu.be/Ab0_-123xyz");
     await user.click(within(focus).getByRole("button", { name: "추가하기" }));
@@ -67,6 +73,7 @@ describe("UI-R04-W — URL → synthetic backend envelope → graph/card/details
     const user = userEvent.setup();
     show();
     const focus = screen.getByRole("dialog", { name: "그래프 집중 탐색" });
+    await user.click(within(focus).getByRole("button",{name:"개발자 진단 열기"}));
     await user.click(within(focus).getByRole("button", { name: "합성 정보 미리보기" }));
     const input = within(focus).getByRole("textbox", { name: "URL 추가 입력" });
     await user.type(input, "https://youtube.com/@somecreator");
@@ -88,6 +95,7 @@ describe("UI-R04-W — URL → synthetic backend envelope → graph/card/details
     const user = userEvent.setup();
     show();
     const focus = screen.getByRole("dialog", { name: "그래프 집중 탐색" });
+    await user.click(within(focus).getByRole("button",{name:"개발자 진단 열기"}));
     await user.click(within(focus).getByRole("button", { name: "합성 정보 미리보기" }));
     await user.type(within(focus).getByRole("textbox", { name: "URL 추가 입력" }),
       "https://youtu.be/Ab0_-123xyz");
