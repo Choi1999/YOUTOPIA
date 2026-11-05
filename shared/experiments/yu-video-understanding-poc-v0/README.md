@@ -214,3 +214,38 @@ Tears of Steel을 확인하려면 PowerShell에서 `Ctrl+C`로 기존 로컬 서
 - **브라우저 한정 임시 상태:** 보정값은 JSON에 저장하지 않고 탭을 닫으면 사라진다. 기존 G2-D 검수 JSON 및 G3 기본 차단 계약은 변경하지 않았다.
 
 `docs/research/YU_VIDEO_G2D_LOCAL_WAVEFORM_WORKSPACE_V01.md`의 **7절**에 구체적 사용법과 현장 QA 절차가 있다.
+
+
+## G2-E — 12문항 실제 영상 질문 후보 및 로컬 정답 작성
+
+기존 G0 목표는 **6편×6문항=36문항**이다. 현재 검수한 실제 Blender 영화 2편에 대해 **질문 초안 12개(SPEECH 4, VISUAL 4, TEMPORAL 2, UNSUPPORTED 2)**를 생성했다. **OCR 6개 및 나머지 24문항은 후속 인터뷰/스크린캐스트 영상**에서 구성한다.
+
+공개 원장 `g2e-question-candidates.json`에는 **정답·영상 캡처·실제 자막 대사·모델 응답이 없다**. G2-D 로컬 검수 기록에서 실제 재생시각과 미디어 SHA-256만 연결한다.
+
+### 권장: 기존 영상·파형 웹 작업공간에서 작성
+
+기존 G2-D Windows Worktree를 최신 실험 커밋으로 갱신한 뒤:
+
+```powershell
+& .\shared\experiments\yu-video-understanding-poc-v0\g2d-open-workspace.ps1 -Film Sintel
+```
+
+브라우저 로컬 `http://127.0.0.1:<출력된 실제 포트>/` 화면 하단의 **G2-E 평가 질문** 패널에서 **질문 6개 생성 (비공개)**을 누르고, 실제 영상을 확인하여 답변·로컬 근거 구간을 작성한다. 영상·파형·자막의 재생 시점을 근거 시작/종료에 캡처할 수 있다. 다른 영화는 서버 종료 후 `-Film TearsOfSteel`로 실행한다.
+
+### 대안: Windows 명령으로 비공개 JSON 생성/검증
+
+```powershell
+$script = '.\shared\experiments\yu-video-understanding-poc-v0\g2e-windows-gold-pilot.ps1'
+& $script -Mode Plan -Film Sintel
+& $script -Mode Plan -Film TearsOfSteel
+
+# 실제 영상 확인/정답 작성 후
+& $script -Mode Assess -Film Sintel
+& $script -Mode Assess -Film TearsOfSteel
+```
+
+이미 작성한 골드 파일은 Plan 재실행으로 덮어쓰지 않는다. 저장 대상은 Git 저장소 밖 `%LOCALAPPDATA%\YOUTOPIA\G2E-PrivateGoldDrafts`이고, 기존 G2-D 데이터는 변경하지 않는다.
+
+**중요:** 질문 후보는 `gold.answerability=null`, `gold.answerText=null`로 시작한다. 사람의 실제 Q/A·근거가 없는 상태에서 영상 사실을 정답이라고 주장할 수 없다. 최종 골드 정답은 독립 2인 검수·불일치 조정·권리 검토가 끝나기 전까지 **0개**이고 `g3Authorized=false`, 외부 API 호출 0, 실제 지출 $0, 운영 병합 없음 상태를 유지한다.
+
+운영/증거 매뉴얼: `docs/research/YU_VIDEO_G2E_GOLD_CANDIDATE_DESIGN_V01.md`.
