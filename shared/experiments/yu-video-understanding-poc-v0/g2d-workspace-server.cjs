@@ -175,4 +175,4 @@ if(require.main===module){
   await start({film,localAppData:process.env.LOCALAPPDATA});
  })().catch(e=>{process.stderr.write(String(e.message)+'\n');process.exitCode=1;});
 }
-module.exports={parseCli,loadReview,assertUpdate,applyUpdate,readJsonLimited,serveVideo,prepare,start,filmFiles:media.filmFiles};
+module.exports={parseCli,loadReview,assertUpdate,applyUpdate,readJsonLimited,serveVideo,serverHandler,prepare,start,filmFiles:media.filmFiles};
