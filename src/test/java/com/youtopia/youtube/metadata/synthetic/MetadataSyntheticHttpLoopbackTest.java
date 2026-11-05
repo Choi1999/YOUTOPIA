@@ -72,13 +72,13 @@ class MetadataSyntheticHttpLoopbackTest {
 
     @Test
     void invalidCanonicalIdsAreRejectedWithoutEchoingOrLeaking() throws Exception {
-        var response = http.getForEntity(ROOT + "/videos/not-a-video", String.class);
+        var response = http.getForEntity(ROOT + "/videos/invalid-video-length", String.class);
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertTrue(response.getHeaders().getCacheControl().contains("no-store"));
         assertNotNull(response.getBody());
         var root = json.readTree(response.getBody());
         assertEquals("SYNTHETIC_INVALID_TARGET", root.path("code").asText());
-        assertFalse(response.getBody().contains("not-a-video"));
+        assertFalse(response.getBody().contains("invalid-video-length"));
         assertFalse(response.getBody().contains("API_KEY"));
     }
 
