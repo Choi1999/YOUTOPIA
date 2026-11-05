@@ -136,3 +136,47 @@ node "$root/g2c-offline-verifier.cjs" --slot SYNTH-VID-06 --video "D:\Authorized
 | 모델 API 호출/과금, G3 승인 또는 운영 병합 | 0 |
 
 **판정: `G2C_OFFICIAL_SINTEL_SUBTITLE_TEXT_PARTIAL_EVIDENCE / SOURCE_VIDEO_AND_RAW_SRT_BYTES_NOT_VERIFIED / G3_POLICY_HOLD / NO_MERGE`.**
+
+
+## 8. Windows 공식 원본 취득·검증 통로 (2026-11-05)
+
+### 8.1 실제 Blender 파일 배포 인덱스
+
+이번 후속 검토에서 공식 서버의 정확한 원본을 찾았다.
+
+- **Sintel updated 720p**: \`https://download.blender.org/durian/movies/Sintel.2010.720p.mkv.zip\`, 공개 디렉터리 목록 **681,285,470 bytes**.
+- **Tears of Steel 최초판 720p**: \`https://download.blender.org/demo/movies/ToS/tears_of_steel_720p.mov\`, 공개 디렉터리 목록 **372,178,639 bytes**.
+- Sintel 영어 SRT: \`https://durian.blender.org/wp-content/content/subtitles/sintel_en.srt\`.
+- Tears 영어 SRT: \`https://download.blender.org/demo/movies/ToS/subtitles/TOS-en.srt\`.
+
+이는 제작자 다운로드 서버의 **공개 인덱스에서 관찰한 바이트 길이**이지, 현 작업 환경에서 실제 파일 바이트를 확보하거나 SHA-256을 측정한 결과가 아니다.
+
+추가 저작권 주의: Blender 공식 [Tears of Steel OST copyright.txt](https://download.blender.org/demo/movies/ToS/copyright.txt)는 **Original Soundtrack 개별 파일**에 별도 CC BY-ND 3.0 조건이 적용된다고 밝힌다. 영화 본편과 OST 개별 파일을 구분하며, 이번 검증기는 OST를 별도로 내려받지 않는다.
+
+### 8.2 실행 환경 및 Windows 자동화
+
+현재 도구 실행 컨테이너에서 \`download.blender.org\`, \`durian.blender.org\`에 대한 DNS 해석이 실패하여 직접 원본 파일 취득 및 실제 \`ffprobe\` 실행은 불가능했다. **사용자 Windows 시스템에 대한 자동 접근 권한도 없다.**
+
+대신 \`g2c-windows-official-media.ps1\`을 GitHub 실험 브랜치에 제작했다.
+- 기본 \`-Mode Plan\`: **0 네트워크·0 파일 생성**, 공식 URL, 바이트 크기 및 사전 조건만 출력한다.
+- 명시적 \`-Mode AcquireAndVerify\`: Windows 로컬 PC에서 Blender 공식 파일만 다운로드하고, Sintel ZIP을 풀어 로컬 \`ffprobe\` 및 G2-C 원본/SRT SHA-256·타임코드 검증기를 실행한다. MD5 공급자 인덱스 접근 실패는 별도 미확인으로 보고하며, MD5가 일치해도 원본판/음성/YouTube 동등성을 자동 확정하지 않는다.
+- 영상과 자막은 기본적으로 Git 작업 트리 **외부**에 저장한다. 운영 DB/YouTube 스트림/LLM API/클라우드 프로젝트와는 연결하지 않는다.
+- 실행 계약 및 파일 크기·출처: [G2-C Windows 공식 원본 실행 매뉴얼](./YU_VIDEO_G2C_WINDOWS_ACTUAL_MEDIA_OPERATOR_V01.md).
+- GitHub Windows Actions에서 수행하는 것은 \`Plan\` 및 작업 트리 내부 미디어 저장 거부 시험에 한정된다. **실제 다운로드/검증 명령을 CI에 추가하지 않는다.**
+
+### 8.3 현재 증거 판정
+
+| 분류 | 최신 상태 |
+|---|---|
+| 공식 영화 파일 URL 및 공개 배포 크기 | **2/2 공식 문서 확인** |
+| Windows 계획 모드 작동 검증 | **GitHub CI PASS (다운로드 없음)** |
+| 사용자 Windows 원본 영화 실제 다운로드 | **0/2 NOT_RUN** |
+| 실영상 SHA-256/ffprobe | **0/2 NOT_RUN** |
+| 실제 영어 SRT 파일 바이트/SHA-256 | **0/2 NOT_RUN** |
+| 실제 파일 자막 경계 검사 | **0/2 NOT_RUN** |
+| 음성–자막 동기화/YouTube 원본 편집 동일성 | **0/2 NOT_VERIFIED** |
+| 법적 서비스 사용 적격성/2인 골드 검수 | **0/2 NOT_APPROVED** |
+| Gemini/YouTube API 호출 및 청구 | **0 / $0** |
+| G3 유료 실험 또는 병합 승인 | **없음** |
+
+**결론: 다운로드/검증의 Windows 실행 경로는 준비 완료. 실제 영상 증거는 아직 획득되지 않아 G2-C 데이터셋 준비와 G3 승격은 차단 유지.**
