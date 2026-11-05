@@ -1,0 +1,87 @@
+name: UI-R04-T Windows DPAPI synthetic vault gate
+
+on:
+  pull_request:
+    branches:
+      - feat/backend-bootstrap
+  push:
+    branches:
+      - feat/backend-bootstrap
+
+permissions:
+  contents: read
+
+jobs:
+  windows-dpapi-synthetic:
+    name: Windows CurrentUser DPAPI self-test (SYNTHETIC ONLY)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check platform and no-credential default mode
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $json = & ./tools/ui-r04t-windows-dpapi-vault.ps1 -Check
+          if (-not $?) { throw 'R04T Check failed without secret data.' }
+          $report = $json | ConvertFrom-Json
+          if ($report.schema -ne 'YOUTOPIA_R04T_WINDOWS_DPAPI_OFFLINE_V01' -or
+              $report.status -ne 'OFFLINE_PLATFORM_READY_NOT_AUTHORIZED' -or
+              $report.mode -ne 'Check' -or
+              $report.policy -ne 'POLICY_HOLD' -or
+              $report.dpapiScope -ne 'CURRENT_USER' -or
+              $report.supportedWindows -ne $true -or
+              $report.syntheticRoundTripSucceeded -ne $false -or
+              $report.syntheticCipherFileUsed -ne $false -or
+              $report.realApiKeyRead -ne $false -or
+              $report.actualCredentialsProvisioned -ne $false -or
+              $report.credentialReaderEnabled -ne $false -or
+              $report.cloudCliInvoked -ne $false -or
+              $report.firstLiveMetadataReadAuthorized -ne $false -or
+              $report.externalRequestsMade -ne 0) {
+            throw 'R04T Check policy guard mismatch.'
+          }
+          Write-Output 'R04T Windows offline platform check PASS (no credentials).'
+
+      - name: DPAPI CurrentUser encrypted temp-file synthetic roundtrip
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $json = & ./tools/ui-r04t-windows-dpapi-vault.ps1 -SelfTest
+          if (-not $?) { throw 'R04T synthetic roundtrip failed.' }
+          $report = $json | ConvertFrom-Json
+          if ($report.schema -ne 'YOUTOPIA_R04T_WINDOWS_DPAPI_OFFLINE_V01' -or
+              $report.status -ne 'SYNTHETIC_DPAPI_ROUNDTRIP_PASS' -or
+              $report.mode -ne 'SelfTest' -or
+              $report.policy -ne 'POLICY_HOLD' -or
+              $report.dpapiScope -ne 'CURRENT_USER' -or
+              $report.syntheticRoundTripSucceeded -ne $true -or
+              $report.syntheticCipherFileUsed -ne $true -or
+              $report.temporaryCipherFileRemoved -ne $true -or
+              $report.realApiKeyRead -ne $false -or
+              $report.productionSecretStoreModified -ne $false -or
+              $report.credentialReaderEnabled -ne $false -or
+              $report.actualCredentialsProvisioned -ne $false -or
+              $report.cloudCliInvoked -ne $false -or
+              $report.firstLiveMetadataReadAuthorized -ne $false -or
+              $report.firstLiveCommentReadAuthorized -ne $false -or
+              $report.externalRequestsMade -ne 0) {
+            throw 'R04T synthetic DPAPI or cleanup contract mismatch.'
+          }
+          Write-Output 'R04T synthetic Windows CurrentUser DPAPI roundtrip and ciphertext cleanup PASS.'
+
+      - name: Setup Java 21 for pure cross-language report validation
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Windows Java report boundary (no vault or provider execution)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & .\gradlew.bat --no-daemon test --tests 'com.youtopia.youtube.metadata.WindowsDpapiVaultReadinessTest'
+          if ($LASTEXITCODE -ne 0) { throw 'R04T Java boundary test failed.' }
