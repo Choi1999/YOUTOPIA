@@ -25,7 +25,7 @@
 ## 검증 현황
 
 - 스키마·계산기·시험 코드: 신규 실험 브랜치에서만 구현.
-- 원격 GitHub Actions: 워크플로 실행 결과를 별도 확인해야 함.
+- 원격 GitHub Actions (Node 24): **20/20 PASS, 실패 0건** — [실행 #41975162243](https://github.com/Choi1999/YOUTOPIA/actions/runs/41975162243), 코드 SHA `54bd7cca4c336b253a3b1e12b2da3ba493595edf`. Syntax 검사 및 fail-closed CLI 게이트도 PASS.
 - 실제 영상 해석 품질: NOT_RUN.
 - 실제 제공자 단가와 API 접근·처리 권리: NOT_VERIFIED.
 - 사용자 병합 승인: NOT_REQUESTED.
