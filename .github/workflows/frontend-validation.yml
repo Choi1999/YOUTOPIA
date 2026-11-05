@@ -116,7 +116,7 @@ jobs:
 
   r04y-loopback-http-integration:
     name: UI-R04-AA Vite-to-Spring state HTTP (NO real API)
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/ui-r04aa-metadata-status-cache-react-v01'
+    if: github.event_name == 'pull_request' && (github.event.pull_request.head.ref == 'feature/ui-r04aa-metadata-status-cache-react-v01' || github.event.pull_request.head.ref == 'feature/ui-r04ac-workspace-user-diagnostics-separation-v01')
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -174,7 +174,7 @@ jobs:
         run: |
           set -euo pipefail
           pnpm --dir frontend install --frozen-lockfile
-          setsid env VITE_R04Y_SYNTHETIC_HTTP=enabled VITE_R04AA_METADATA_STATES=enabled \
+          setsid env VITE_R04Y_SYNTHETIC_HTTP=enabled VITE_R04AA_METADATA_STATES=enabled VITE_R04AC_DIAGNOSTICS=enabled \
             pnpm --dir frontend dev --host 127.0.0.1 \
             > /tmp/r04y-vite.log 2>&1 &
           echo $! > /tmp/r04y-vite.pid
