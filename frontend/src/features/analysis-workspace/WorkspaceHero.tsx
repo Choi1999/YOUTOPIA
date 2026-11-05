@@ -26,6 +26,7 @@ type Props = Readonly<{
   onToggleVideoImage?: () => void;
   allowChannelImage?: boolean;
   onToggleChannelImage?: () => void;
+  diagnosticsMode?: boolean;
   syntheticPreviewEnabled?: boolean;
   onToggleSyntheticPreview?: () => void;
   syntheticServerAvailable?: boolean;
@@ -58,6 +59,7 @@ function groupStorage(): Storage | null {
 export function WorkspaceHero({
   targets = [], onAddUrls, onRemoveTarget, allowVideoImage = false,
   onToggleVideoImage, allowChannelImage = false, onToggleChannelImage,
+  diagnosticsMode = false,
   syntheticPreviewEnabled = false, onToggleSyntheticPreview,
   syntheticServerAvailable = false, syntheticServerEnabled = false,
   syntheticServerStatus = "", onToggleSyntheticServer,
@@ -185,35 +187,6 @@ export function WorkspaceHero({
               외부 이미지 요청만 허용하며 댓글·메타데이터 API는 요청하지 않습니다.</span>
           </div>
         )}
-        {onToggleSyntheticPreview && (
-          <div className="workspace-hero__image-consent">
-            <button type="button" aria-pressed={syntheticPreviewEnabled}
-              onClick={onToggleSyntheticPreview}>
-              {syntheticPreviewEnabled ? "합성 메타데이터 미리보기 끄기" : "합성 메타데이터 미리보기 켜기"}
-            </button>
-            <span>합성 제목·채널·썸네일 (실제 제공자 데이터 아님). 외부 이미지/API 요청 없음.</span>
-          </div>
-        )}
-        {syntheticServerAvailable && onToggleSyntheticServer && (
-          <div className="workspace-hero__image-consent">
-            <button type="button" aria-pressed={syntheticServerEnabled}
-              onClick={onToggleSyntheticServer}>
-              {syntheticServerEnabled ? "Spring 합성 서버 연결 끄기" : "Spring 합성 서버 연결"}
-            </button>
-            <span role="status">{syntheticServerEnabled
-              ? syntheticServerStatus
-              : "개발 전용: 로컬 Spring 테스트 서버만 조회 · Google API 요청 없음"}</span>
-          </div>
-        )}
-        {stateDemoAvailable && onToggleStateDemo && (
-          <div className="workspace-hero__image-consent">
-            <button type="button" aria-pressed={stateDemoEnabled}
-              onClick={onToggleStateDemo}>
-              {stateDemoEnabled ? "메타데이터 상태 QA 끄기" : "메타데이터 상태 QA"}
-            </button>
-            <span>개발용 READY/NOT_FOUND/FAILED/STALE 테스트 · 실제 조회 없음</span>
-          </div>
-        )}
         {populated && onAddUrls && onRemoveTarget && (
           <button type="button" className="workspace-hero__focus-launch"
             onClick={() => setFocusOpen(true)}>
@@ -231,12 +204,14 @@ export function WorkspaceHero({
             </a>
           )}
         </nav>
-        <div className="workspace-hero__meta" aria-label="시연 데이터 범위">
-          <span><b>04</b> REGISTERED VIDEOS (FIXTURE)</span>
-          <span><b>02</b> SYNTHETIC CHANNELS</span>
-          <span><b>{String(targets.length).padStart(2,"0")}</b> PASTED URLS</span>
-          <span><b>OFFLINE</b> DEMO ONLY</span>
-        </div>
+        {diagnosticsMode && (
+          <div className="workspace-hero__meta" aria-label="시연 데이터 범위">
+            <span><b>04</b> REGISTERED VIDEOS (FIXTURE)</span>
+            <span><b>02</b> SYNTHETIC CHANNELS</span>
+            <span><b>{String(targets.length).padStart(2,"0")}</b> PASTED URLS</span>
+            <span><b>OFFLINE</b> DEMO ONLY</span>
+          </div>
+        )}
         {!populated && (
           <button type="button" className="workspace-hero__motion-control"
             aria-pressed={isPlaying} onClick={()=>setIsPlaying(value=>!value)}>
@@ -278,7 +253,8 @@ export function WorkspaceHero({
       )}
       {focusOpen && onAddUrls && onRemoveTarget &&
         typeof document !== "undefined" && createPortal(
-          <WorkspaceFocusMode targets={targets} onAddUrls={onAddUrls}
+          <WorkspaceFocusMode diagnosticsMode={diagnosticsMode}
+            targets={targets} onAddUrls={onAddUrls}
             onRemove={onRemoveTarget} onExit={() => setFocusOpen(false)}
             allowVideoImage={allowVideoImage}
             onToggleVideoImage={onToggleVideoImage}
