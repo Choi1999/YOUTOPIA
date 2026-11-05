@@ -129,3 +129,49 @@ test('G1 G2 B and C still block provider work',async()=>{
  const b=g2b.audit(g2b.load());assert.equal(b.officialTimedCaptionListings,4);
  assert.equal(b.liveCallsAuthorized,false);
 });
+
+test('publisher Sintel observed cues remain timing-only, not a source-file hash',()=>{
+ const f=path.join(__dirname,'..','g2c-sintel-publisher-timeline.json');
+ const j=JSON.parse(fs.readFileSync(f,'utf8'));
+ assert.equal(j.sourceType,'PUBLISHER_SUBTITLE_TEXT_EXTRACTION_NOT_RAW_FILE');
+ assert.equal(j.observedCueCount,26);
+ assert.equal(j.rawFileSha256,null);
+ assert.equal(j.captionTextStored,false);
+ assert.equal(j.rawFileBytesExamined,false);
+ assert.equal(j.observedFirstStart,'00:01:47,250');
+ assert.equal(j.observedLastEnd,'00:10:29,800');
+});
+function sampledPublisherSrt(){
+ const j=JSON.parse(fs.readFileSync(path.join(__dirname,'..','g2c-sintel-publisher-timeline.json'),'utf8'));
+ return j.referenceTimings.map(r=>r.cue+'\n'+r.start+' --> '+r.end+'\nSYNTHETIC PLACEHOLDER').join('\n');
+}
+test('Sintel adjacent numbered cues from publisher text extraction are valid',()=>{
+ const p=g.parseSrt(sampledPublisherSrt());
+ assert.equal(p.cueCount,26);
+ assert.equal(p.firstStartMs,107250);
+ assert.equal(p.lastEndMs,629800);
+ assert.equal(p.overlapCount,0);
+ assert.equal(p.spokenAlignment,'NOT_CHECKED');
+});
+test('publisher timing exact match still never proves video equality',()=>{
+ const p=g.parseSrt(sampledPublisherSrt()),m=g.comparePublisherTimings('SYNTH-VID-05',p);
+ assert.equal(m.status,'MATCHES_PUBLISHER_TEXT_EXTRACTED_TIMINGS_ONLY');
+ assert.equal(m.publisherFileBytesConfirmed,false);
+ assert.equal(m.spokenAlignmentVerified,false);
+ assert.equal(m.videoVariantEqualityVerified,false);
+});
+test('shifted local subtitle times demand independent review',()=>{
+ const p=g.parseSrt(sampledPublisherSrt().replace('00:01:50,500','00:01:51,500'));
+ const m=g.comparePublisherTimings('SYNTH-VID-05',p);
+ assert.equal(m.status,'PUBLISHER_TEXT_TIMINGS_DIFFER_REVIEW_REQUIRED');
+});
+test('Tears cannot borrow Sintel extracted SRT reference',()=>{
+ const p=g.parseSrt(sampledPublisherSrt());
+ assert.equal(g.comparePublisherTimings('SYNTH-VID-06',p).status,'NO_EXTRACTED_PUBLISHER_TIMING_REFERENCE');
+});
+test('adjacent numeric cues with bad timestamps fail closed',()=>{
+ assert.throws(()=>g.parseSrt(sampledPublisherSrt().replace('00:01:55,800','00:75:55,800')),/SRT time range/);
+});
+test('adjacent cues with missing middle text fail closed',()=>{
+ assert.throws(()=>g.parseSrt(sampledPublisherSrt().replace('SYNTHETIC PLACEHOLDER\n2\n','2\n')),/SRT empty text/);
+});
