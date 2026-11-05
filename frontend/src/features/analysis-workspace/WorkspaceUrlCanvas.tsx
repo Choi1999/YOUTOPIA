@@ -170,7 +170,7 @@ export function WorkspaceUrlCanvas({
         ).map(target => ({
           kind: "target" as const, target, key: workspaceUrlTargetKey(target),
         })) :
-    bookmarks.flatMap(visit => {
+    bookmarks.flatMap((visit): Unit[] => {
       if (visit.kind === "group") {
         const group = groups.find(item => item.id === visit.key);
         return group ? [{ kind:"group" as const, group, key:group.id }] : [];
