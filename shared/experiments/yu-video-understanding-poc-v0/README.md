@@ -103,3 +103,32 @@ node --test "$root/tests/*.test.cjs"
 ```
 
 이후 해당 Worktree에서 허가받은 원본 영상과 동일 판본 SRT를 `--video`, `--srt`로 지정해 검사한다. 파일들은 Git에 추가하지 않는다. Worktree 경로가 이미 존재하면 자동 덮어쓰기하지 말고 그 Worktree를 먼저 확인한다.
+
+
+## G2-C Windows 공식 원본 자동 검증 (실파일 단계)
+
+작업용 Windows PC에서 최신 실험 브랜치를 **별도 Worktree**에 체크아웃하고, 아래의 읽기 전용 계획 모드로 먼저 확인한다.
+
+\`\`\`powershell
+cd C:\Projects\YOUTOPIA
+git fetch origin --prune
+$worktree = 'C:\Projects\YOUTOPIA-VIDEO-G2C'
+if (Test-Path $worktree) { throw '기존 작업 폴더 확인 필요' }
+git worktree add --detach $worktree origin/experiment/yu-video-understanding-poc-v01
+if ($LASTEXITCODE -ne 0) { throw 'git worktree 실패' }
+cd $worktree
+$script = '.\shared\experiments\yu-video-understanding-poc-v0\g2c-windows-official-media.ps1'
+& $script -Mode Plan -Film Sintel
+& $script -Mode Plan -Film TearsOfSteel
+\`\`\`
+
+이후 적법하게 공식 원본을 취득해 분석할 수 있음을 확인하고, 충분한 네트워크·저장공간(권장 2~3GB 이상)·Node·ffprobe가 준비되면 명시적 실파일 검사 모드를 실행한다.
+
+\`\`\`powershell
+& $script -Mode AcquireAndVerify -Film Sintel
+& $script -Mode AcquireAndVerify -Film TearsOfSteel
+\`\`\`
+
+\`AcquireAndVerify\`는 **Blender 공식 배포 서버에 대한 실제 파일 다운로드**를 수행하므로 \`Plan\`과 다르다. 실제 영상·SRT는 Git 저장소 외부의 사용자 Windows 로컬 폴더에 보관하며, YouTube 직접 다운로드/모델 API/운영 API·데이터베이스 변경은 하지 않는다. **원격 GitHub CI는 오직 \`Plan\`만 실행한다.**
+
+자세한 파일 목록·크기·권리·다운로드 실패 대처 및 JSON 판정 해석은 \`docs/research/YU_VIDEO_G2C_WINDOWS_ACTUAL_MEDIA_OPERATOR_V01.md\`에 있다. 로컬 실파일 결과가 없으면 G2-C 실증과 G3 승인은 계속 미완료다.
