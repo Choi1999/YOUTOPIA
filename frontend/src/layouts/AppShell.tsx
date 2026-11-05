@@ -24,6 +24,7 @@ import steamLight from "../assets/navigation/steam-light.svg";
 import youtubeDark from "../assets/navigation/youtube.svg";
 import youtubeLight from "../assets/navigation/youtube-light.svg";
 import { getRoute } from "../app/routeDefinitions";
+import { isDiagnosticWorkspacePath } from "../features/analysis-workspace/workspaceDiagnosticsGate";
 
 type NavigationIconProps = {
   dark: string;
@@ -111,7 +112,8 @@ function NavigationItem({
 export function AppShell() {
   const reportRoute = getRoute("YU-12");
   const { pathname } = useLocation();
-  const isImmersiveWorkspace = pathname === "/analysis/youtube/workspace";
+  const isImmersiveWorkspace = pathname === "/analysis/youtube/workspace" ||
+    isDiagnosticWorkspacePath(pathname);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const showWorkspaceReturn = pathname.startsWith("/analysis/youtube/") &&
     !isImmersiveWorkspace;
