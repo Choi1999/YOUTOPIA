@@ -59,7 +59,7 @@ function skeleton(film,evidence){
   }
  }
  return {
- schemaVersion:1,kind:'G2D_LOCAL_OPERATOR_REVIEW_V01',film,slot:cfg.slot,sourceType:'USER_SUPPLIED_AUTHORIZED_LOCAL_MEDIA',
+ schemaVersion:1,kind:'G2D_LOCAL_OPERATOR_REVIEW_V01',film,slot:cfg.slot,sourceType:'USER_SUPPLIED_LOCAL_MEDIA_RIGHTS_UNVERIFIED',
  provenance:'LOCAL_G2C_INSPECTION_PLUS_UNREVIEWED_MANUAL_CHECKPOINTS',
  publisherEdition:cfg.publisherEdition,youtubeEditionCaveat:cfg.editionRisk,youtubeUrl:cfg.youtubeUrl,
  local:{videoSha256:evidence.video.sha256,captionSha256:evidence.caption.sha256,durationMs:duration,
@@ -85,7 +85,7 @@ function assess(p){
  strict(p,['schemaVersion','kind','film','slot','sourceType','provenance','publisherEdition','youtubeEditionCaveat','youtubeUrl','local','observedYoutubeDurationMs','youtubeUploaderObservation','reviewerCode','checkpoints','packetDigest','realDatasetApproved','g3Authorized','externalProviderCalls'],'packet');
  const cfg=FILMS[p.film];check(!!cfg,'film');
  check(p.kind==='G2D_LOCAL_OPERATOR_REVIEW_V01'&&p.schemaVersion===1&&p.slot===cfg.slot&&p.youtubeUrl===cfg.youtubeUrl&&
- p.publisherEdition===cfg.publisherEdition&&p.youtubeEditionCaveat===cfg.editionRisk&&p.sourceType==='USER_SUPPLIED_AUTHORIZED_LOCAL_MEDIA'&&
+ p.publisherEdition===cfg.publisherEdition&&p.youtubeEditionCaveat===cfg.editionRisk&&p.sourceType==='USER_SUPPLIED_LOCAL_MEDIA_RIGHTS_UNVERIFIED'&&
  p.provenance==='LOCAL_G2C_INSPECTION_PLUS_UNREVIEWED_MANUAL_CHECKPOINTS','provenance');
  check(p.realDatasetApproved===false&&p.g3Authorized===false&&p.externalProviderCalls===0,'unauthorized promotion');
  strict(p.local,['videoSha256','captionSha256','durationMs','captionCueCount','captionLastEndMs'],'local');
@@ -135,10 +135,13 @@ function assess(p){
  const sceneSamples=p.checkpoints.filter(x=>x.kind==='YOUTUBE_SCENE'&&x.verdict===PASS);
  const offsets=sceneSamples.map(x=>x.observedYoutubeMs-x.localMs);
  const maxOffsetSpreadMs=offsets.length>=2?Math.max(...offsets)-Math.min(...offsets):null;
+ const durationDeltaMs=p.observedYoutubeDurationMs===null?null:p.observedYoutubeDurationMs-p.local.durationMs;
+ const durationDiscrepancy=durationDeltaMs!==null&&Math.abs(durationDeltaMs)>2000;
+ const timelineDrift=sceneSamples.length===3&&!consistentOffsets;
  const allSampleMatches=totals.match===p.checkpoints.length&&
  p.youtubeUploaderObservation==='OFFICIAL_OWNER_CONFIRMED'&&p.observedYoutubeDurationMs!==null;
  const hasProblem=totals.difference>0;
- const status=hasProblem?'OPERATOR_REPORTED_DIFFERENCES_REQUIRE_REVIEW':
+ const status=hasProblem||timelineDrift||durationDiscrepancy?'OPERATOR_REPORTED_DIFFERENCES_REQUIRE_REVIEW':
     totals.unreviewed>0||totals.unknown>0?'PENDING_HUMAN_REVIEW':
     allSampleMatches?'OPERATOR_REPORTED_SAMPLED_MATCHES_NOT_FULL_PROOF':'INCOMPLETE_REVIEW';
  const consistentOffsets=offsets.length===3&&maxOffsetSpreadMs<=2000;
@@ -148,6 +151,8 @@ function assess(p){
     checkpoints:p.checkpoints.length,counts:totals,byCategory:summary,
     youtubeDurationObserved:p.observedYoutubeDurationMs!==null,uploaderObserved:p.youtubeUploaderObservation,
     youtubeSampleOffsetSpreadMs:maxOffsetSpreadMs,
+    reportedYoutubeDurationDeltaMs:durationDeltaMs,
+    reportedYoutubeDurationClass:durationDeltaMs===null?'NOT_OBSERVED':durationDiscrepancy?'DURATION_DISCREPANCY_REVIEW':'WITHIN_TWO_SECONDS_NOT_FULL_EQUIVALENCE',
     youtubeSampleOffsetConsistency:consistentOffsets?'OPERATOR_REPORTED_CONSISTENT':'NOT_ESTABLISHED',
     reportedAudioSyncSamplesMatched:summary.audioSync.match,
     reportedYoutubeSceneSamplesMatched:summary.youtubeScenes.match,
