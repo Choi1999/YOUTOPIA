@@ -38,6 +38,8 @@ test('calibration is blocked until official player ready and both are paused',()
  s.attach(youtube);
  youtube.state=1;s.youtubeStateChange(1);
  assert.throws(()=>s.capture(),/일시정지/);
+ youtube.state=3;s.youtubeStateChange(3);
+ assert.throws(()=>s.capture(),/일시정지/);
  youtube.state=2;s.youtubeStateChange(2);
  local.paused=false;
  assert.throws(()=>s.capture(),/일시정지/);
