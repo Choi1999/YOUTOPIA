@@ -347,3 +347,12 @@
   .workspace-url-canvas__node-bubble,
   .workspace-url-board__card {transition:none!important;}
 }
+
+/* UI-R04-N: raw IDs are secondary to user-facing display titles. */
+.workspace-url-board__id {
+  display:block;
+  font-size:10px;
+  color:var(--text-muted);
+  overflow-wrap:anywhere;
+  margin-top:3px;
+}
