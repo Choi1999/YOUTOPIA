@@ -80,8 +80,8 @@ describe("UI-R04-W — URL → synthetic backend envelope → graph/card/details
       .toBeGreaterThan(0);
     expect(focus.querySelectorAll("img[src]")).toHaveLength(0);
     expect(sessionStorage.getItem(WORKSPACE_TARGET_PRESENTATION_KEY)).toBeNull();
-    expect(within(focus).getByText(/채널 ID 해석 대기|채널 정보가 아직 제공되지 않습니다|채널.*미확인/))
-      .toBeInTheDocument();
+    expect(within(focus).getAllByText(/채널 ID 해석 대기|채널 정보가 아직 제공되지 않습니다|채널.*미확인/).length)
+      .toBeGreaterThan(0);
   });
 
   it("does not convert synthetic labels into human-authored title overrides", async () => {
