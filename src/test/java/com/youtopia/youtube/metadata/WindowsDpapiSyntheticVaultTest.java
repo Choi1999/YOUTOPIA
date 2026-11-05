@@ -79,7 +79,9 @@ class WindowsDpapiSyntheticVaultTest {
             vault.withSynthetic(clear -> assertTrue(MessageDigest.isEqual(original, clear)));
             vault.replaceSynthetic(replacement);
             vault.withSynthetic(clear -> assertTrue(MessageDigest.isEqual(replacement, clear)));
-            assertFalse(Files.list(root).anyMatch(p -> p.getFileName().toString().startsWith("tmp-")));
+            try (var entries = Files.list(root)) {
+                assertFalse(entries.anyMatch(p -> p.getFileName().toString().startsWith("tmp-")));
+            }
             var reopened = WindowsDpapiSyntheticVault.open(root);
             reopened.withSynthetic(clear -> assertTrue(MessageDigest.isEqual(replacement, clear)));
             reopened.erase();
