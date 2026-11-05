@@ -1,4 +1,4 @@
-name: YOUTOPIA video understanding G1 G2 G2B G2C G2D offline
+name: YOUTOPIA video understanding G1 G2 G2B G2C G2D G2E offline
 on:
   push:
     branches:
@@ -10,6 +10,7 @@ on:
       - docs/research/YU_VIDEO_UNDERSTANDING_POC_G2B_CANDIDATE_REVIEW_V01.md
       - docs/research/YU_VIDEO_UNDERSTANDING_POC_G2C_BLENDER_SOURCE_EVIDENCE_V01.md
       - docs/research/YU_VIDEO_G2D_HUMAN_SYNC_YOUTUBE_REVIEW_V01.md
+      - docs/research/YU_VIDEO_G2E_GOLD_CANDIDATE_DESIGN_V01.md
       - .github/workflows/yu-video-g1-offline.yml
   pull_request:
     paths:
@@ -37,6 +38,7 @@ jobs:
           node --check shared/experiments/yu-video-understanding-poc-v0/g2d-workspace-server.cjs
           node --check shared/experiments/yu-video-understanding-poc-v0/g2d-workspace-client.js
           node --check shared/experiments/yu-video-understanding-poc-v0/g2d-playback-sync.js
+          node --check shared/experiments/yu-video-understanding-poc-v0/g2e-gold-pilot.cjs
           node --test shared/experiments/yu-video-understanding-poc-v0/tests/*.test.cjs
       - name: Fail-closed gate
         run: |
@@ -95,4 +97,17 @@ jobs:
                  x.liveCallsAuthorized!==false||x.g3Authorized!==false||x.merged!==false)
                 process.exit(1);
               process.stdout.write("G2C_PUBLISHER_METADATA_PASS_MEDIA_STILL_UNVERIFIED\n");
+            });'
+
+      - name: G2-E offline real-film question candidates must remain unlabelled and unapproved
+        run: |
+          node shared/experiments/yu-video-understanding-poc-v0/g2e-gold-pilot.cjs | node -e '
+            let s="";process.stdin.on("data",v=>s+=v);
+            process.stdin.on("end",()=>{const x=JSON.parse(s);
+              if(x.status!=="PUBLIC_QUESTION_DRAFTS_ONLY_NO_GOLD_ANSWERS"||
+                 x.pilotQuestionDrafts!==12||x.g0TargetQuestions!==36||x.filmCount!==2||
+                 x.goldAnswersVerified!==0||
+                 x.externalProviderCalls!==0||x.actualSpendUsd!==0||
+                 x.g3Authorized!==false) process.exit(1);
+              process.stdout.write("G2E_QUESTION_CANDIDATES_UNVERIFIED_GATE_PASS\n");
             });'
