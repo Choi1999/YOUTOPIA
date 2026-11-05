@@ -33,6 +33,9 @@ jobs:
           node --check shared/experiments/yu-video-understanding-poc-v0/g2b-research-audit.cjs
           node --check shared/experiments/yu-video-understanding-poc-v0/g2c-offline-verifier.cjs
           node --check shared/experiments/yu-video-understanding-poc-v0/g2d-human-review.cjs
+          node --check shared/experiments/yu-video-understanding-poc-v0/g2d-workspace-media.cjs
+          node --check shared/experiments/yu-video-understanding-poc-v0/g2d-workspace-server.cjs
+          node --check shared/experiments/yu-video-understanding-poc-v0/g2d-workspace-client.js
           node --test shared/experiments/yu-video-understanding-poc-v0/tests/*.test.cjs
       - name: Fail-closed gate
         run: |
