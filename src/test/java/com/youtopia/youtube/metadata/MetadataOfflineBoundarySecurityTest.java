@@ -74,7 +74,7 @@ class MetadataOfflineBoundarySecurityTest {
                     .andExpect(jsonPath("status").value(503))
                     .andExpect(header().string("Cache-Control", "no-store"))
                     .andExpect(content().string(not(containsString("sourceAuthenticated"))))
-                    .andExpect(content().string(not(containsString("title"))));
+                    .andExpect(content().string(not(containsString("thumbnailUrl"))));
         }
     }
 
