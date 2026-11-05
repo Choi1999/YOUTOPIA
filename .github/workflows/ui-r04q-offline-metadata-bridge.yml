@@ -58,7 +58,7 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x ./gradlew
-          ./gradlew --no-daemon test --tests 'com.youtopia.youtube.metadata.OfflineMetadataBridgeContractTest' --tests 'com.youtopia.youtube.metadata.MetadataOfflineBoundarySecurityTest' --tests 'com.youtopia.youtube.metadata.MetadataApprovalPreflightTest' --tests 'com.youtopia.youtube.metadata.WindowsDpapiVaultReadinessTest' --tests 'com.youtopia.youtube.metadata.WindowsDpapiSyntheticVaultTest' --tests 'com.youtopia.youtube.metadata.WindowsMetadataCredentialPathPreflightTest' --tests 'com.youtopia.youtube.metadata.WindowsSyntheticEnrollmentSessionTest'
+          ./gradlew --no-daemon test --tests 'com.youtopia.youtube.metadata.OfflineMetadataBridgeContractTest' --tests 'com.youtopia.youtube.metadata.MetadataOfflineBoundarySecurityTest' --tests 'com.youtopia.youtube.metadata.MetadataApprovalPreflightTest' --tests 'com.youtopia.youtube.metadata.WindowsDpapiVaultReadinessTest' --tests 'com.youtopia.youtube.metadata.WindowsDpapiSyntheticVaultTest' --tests 'com.youtopia.youtube.metadata.WindowsMetadataCredentialPathPreflightTest' --tests 'com.youtopia.youtube.metadata.WindowsSyntheticEnrollmentSessionTest' --tests 'com.youtopia.youtube.metadata.synthetic.MetadataSyntheticHttpLoopbackTest'
 
 
       - name: Offline Cloud observer check only (NO Cloud CLI or API requests)
