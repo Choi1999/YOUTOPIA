@@ -119,7 +119,8 @@ describe("UI-R04-M — shared local graph bookmarks and non-destructive filters"
     results = within(canvas).getByRole("region", { name: "통합 검색 결과" });
     expect(within(results).getAllByRole("button")).toHaveLength(2);
     expect(canvas.querySelectorAll(".workspace-url-canvas__cluster")).toHaveLength(1);
-    expect(canvas.querySelectorAll(".workspace-url-canvas__node")).toHaveLength(3);
+    // Filter scope now controls the actual graph, not just the result list.
+    expect(canvas.querySelectorAll(".workspace-url-canvas__node")).toHaveLength(1);
     await user.selectOptions(scope, "all");
     expect(within(canvas).queryByRole("region", { name: "통합 검색 결과" }))
       .not.toBeInTheDocument();
