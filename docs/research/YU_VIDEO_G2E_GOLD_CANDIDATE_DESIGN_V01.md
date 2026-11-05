@@ -170,3 +170,63 @@ G0 계약에 따라 각 문항의 정답 초안과 영상 근거는 **독립된 
 - API 호출·실험 과금·운영 데이터 수정·브랜치 병합: **0**.
 
 **판정: `G2E_PUBLIC_QUESTION_DESIGN_READY / ACTUAL_HUMAN_GOLD_NOT_AUTHORED / G3_NOT_APPROVED / NO_MERGE`.**
+
+
+## 8. 기존 G2-D 웹 작업공간의 G2-E 화면 (권장 사용자 흐름)
+
+이전 G2-D 검수에서 JSON 직접 수정이 번거로웠던 문제를 줄이기 위해, **기존 로컬 영상·오디오 파형·SRT 작업공간 아래에 G2-E 정답 작성 패널을 추가**했다. 문항 6개를 비공개 파일에 생성한 뒤, G2-D에서 사용한 로컬 원본을 재생해 답변·근거를 입력할 수 있다. 원본 영상이나 G2-D 검수 기록은 변경하지 않는다.
+
+### 8.1 실행
+
+Windows VS Code PowerShell에서 **현재 실행 중인 기존 G2-D 로컬 서버**를 먼저 `Ctrl+C`로 종료하고, 다음 명령을 실행한다. 기존 Worktree를 다시 만들거나 원본 영화를 다시 다운로드하지 않는다.
+
+```powershell
+cd C:\Projects\YOUTOPIA
+git fetch origin --prune
+if ($LASTEXITCODE -ne 0) { throw 'Git fetch 실패' }
+
+cd C:\Projects\YOUTOPIA-VIDEO-G2C
+if (git status --porcelain) { throw '기존 Worktree 변경 사항을 먼저 검토' }
+git switch --detach origin/experiment/yu-video-understanding-poc-v01
+if ($LASTEXITCODE -ne 0) { throw '실험 Worktree 갱신 실패' }
+
+& .\shared\experiments\yu-video-understanding-poc-v0\g2d-open-workspace.ps1 -Film Sintel
+```
+
+`G2D_LOCAL_WORKSPACE_READY http://127.0.0.1:<port>/` 주소를 브라우저에서 연다.
+
+### 8.2 화면에서 정답 초안 작성
+
+1. 화면 하단의 **G2-E · 실제 영상 평가 질문 / 정답 초안**으로 이동.
+2. 처음에는 **G2-E 질문 6개 생성 (비공개)**를 클릭한다. 기존 비공개 JSON이 이미 있으면 덮어쓰지 않고 읽어 온다.
+3. `G2E-SIN-01` 등 질문을 선택한다. 로컬 원본이 해당 G2-D 검수 시점보다 4초 앞부터 재생하도록 이동한다.
+4. 실제 영상·SRT를 확인한 후 최종 질문 문장과 비식별 작성자 코드를 입력한다.
+5. **정답 가능 여부**를 선택한다. `SUPPORTED`는 근거가 확인된 경우, `UNSUPPORTED`는 정답 근거 부족을 **전체 영화를 검토한 뒤** 확정한 경우, `AMBIGUOUS`는 추가 검수가 필요할 때 사용한다.
+6. 사람이 확인한 정답 초안 또는 왜 모호한지 설명하는 이유를 작성한다.
+7. `SUPPORTED`인 경우 화면 아래에 나오는 **로컬 원본 근거** 1~2개를 작성한다. `이 기준점으로 이동`, `현재 시점 → 시작`, `현재 시점 → 종료` 버튼으로 실제로 관찰한 구간을 기록하고, 모달리티와 관찰 내용을 작성한다. **파형 모양이나 SRT 번호만으로 정답 사실을 확정하지 않는다.**
+8. `UNSUPPORTED`인 경우 후반 몇 장면만 보지 말고 원본 영상 **전체**의 확인 가능성을 판단한 뒤 근거 부족 이유와 전체 영화 확인 체크를 작성한다.
+9. **이 질문의 정답 초안 저장**을 누른다. 브라우저는 서버의 구조·출처·근거 유효성 검증 결과를 받아서 저장되거나 오류를 표시한다.
+10. 나머지 5문항도 반복한 후, 영화 두 번째 편의 서버를 시작한다.
+
+**모호하거나 영상에서 근거를 찾을 수 없는 질문은 억지로 확정하지 않는다.** 검증기가 불충분한 근거를 거절하면 문항을 `AMBIGUOUS`로 기록하고 재설계한다. 모든 정답이 입력되어도 데이터셋은 `OPERATOR_DRAFT_QUESTIONS_ALL_AUTHORED_NOT_VERIFIED`이며 **독립 검수자 승인 전**이다.
+
+### 8.3 사용자 Windows 비공개 파일·검증
+
+- Sintel: `%LOCALAPPDATA%\YOUTOPIA\G2E-PrivateGoldDrafts\Sintel-gold-candidates.json`
+- Tears: `%LOCALAPPDATA%\YOUTOPIA\G2E-PrivateGoldDrafts\TearsOfSteel-gold-candidates.json`
+
+두 번째 영화 작업 시 기존 서버를 `Ctrl+C`로 종료하고 다음 명령을 실행한다.
+
+```powershell
+& .\shared\experiments\yu-video-understanding-poc-v0\g2d-open-workspace.ps1 -Film TearsOfSteel
+```
+
+입력 완료 후 `g2e-windows-gold-pilot.ps1 -Mode Assess`를 실행해 **정답 전문을 콘솔로 유출하지 않는 구조화 검증 결과**만 확인한다.
+
+### 8.4 실제 QA 및 제약
+
+새 G2-E 화면의 **로컬 Node 자동 테스트와 모의 브라우저 호출만 수행**한 상태이며 사용자 Windows에서의 G2-E 패널 실제 표시·저장·영상 구간 캡처 수동 QA는 아직 없다. 기존 G2-D 웹 플레이어는 사용자 보고로 주요 기능 PASS를 받았다. 이 결과를 G2-E 화면까지 자동 승격하지 않는다.
+
+G2-E 패널의 모든 저장은 사용자 명시 클릭이 필요하고, 저장은 기존 G2-D JSON과 독립된 **로컬 비공개 파일**에만 수행된다. Q/A가 들어간 비공개 파일은 GitHub에 올리거나 외부 공급자에게 전송하지 않는다.
+
+현재 상태: `G2E_GOLD_UI_OFFLINE_CODE_TESTED / REAL_GOLD_HUMAN_AUTHORING_PENDING / INDEPENDENT_REVIEW_0 / G3_NOT_APPROVED`.
