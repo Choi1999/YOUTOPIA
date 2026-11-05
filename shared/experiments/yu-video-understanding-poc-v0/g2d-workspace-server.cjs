@@ -100,6 +100,10 @@ function serverHandler(state,port,req,res){
    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});
    res.end(fs.readFileSync(path.join(__dirname,'g2d-workspace.html')));return;
   }
+  if(req.method==='GET'&&url.pathname==='/style.css'){
+   res.writeHead(200,{'Content-Type':'text/css; charset=utf-8','Cache-Control':'no-store'});
+   res.end(fs.readFileSync(path.join(__dirname,'g2d-workspace.css')));return;
+  }
   if(req.method==='GET'&&url.pathname==='/client.js'){
    res.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8','Cache-Control':'no-store'});
    res.end(fs.readFileSync(path.join(__dirname,'g2d-workspace-client.js')));return;
