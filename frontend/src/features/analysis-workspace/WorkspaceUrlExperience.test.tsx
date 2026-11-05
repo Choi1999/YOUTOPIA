@@ -61,7 +61,7 @@ describe("UI-R04B/AD-2 — single visible registered-target collection",()=>{
     expect(screen.queryByRole("region",{name:"URL로 추가한 분석 대상"}))
       .not.toBeInTheDocument();
     canvas=screen.getByRole("region",{name:"URL 등록 대상 전체 화면 탐색"});
-    expect(within(canvas).getByRole("button",{name:/등록된 채널 핸들 @somecreator 선택/}))
+    expect(within(canvas).getByRole("button",{name:/등록된 채널 @somecreator 선택/}))
       .toBeInTheDocument();
     await user.click(screen.getByRole("button",{name:"집중 모드 종료"}));
     board=screen.getByRole("region",{name:"URL로 추가한 분석 대상"});
