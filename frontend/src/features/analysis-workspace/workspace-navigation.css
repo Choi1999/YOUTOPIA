@@ -197,3 +197,27 @@
   .workspace-url-canvas__minimap-pin,
   .workspace-url-canvas__node.is-search-hit {transition:none!important;animation:none!important;}
 }
+
+/* UI-R04-N: show readable titles and reflect the selected graph scope. */
+.workspace-url-canvas__node-label {
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  max-width:160px;
+  overflow:hidden;
+  white-space:normal;
+  line-height:1.3;
+  overflow-wrap:anywhere;
+  text-overflow:ellipsis;
+  text-align:center;
+}
+.workspace-url-canvas__filter-empty {
+  position:absolute;
+  inset:0;
+  display:grid;place-items:center;
+  text-align:center;
+  padding:20px;
+  color:var(--text-secondary,#b6c9ea);
+  font-size:12px;
+  pointer-events:none;
+}
