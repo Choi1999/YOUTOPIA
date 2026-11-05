@@ -71,7 +71,9 @@ export function WorkspaceUrlTargetBoard({
               <div className="workspace-url-board__card-top">
                 <span className="workspace-url-board__kind">{name(target.kind)}</span>
                 <span className="workspace-url-board__unverified">
-                  {unresolved?"채널 ID 해석 대기":"URL 등록 · 메타데이터 미확인"}
+                  {presentation.synthetic?.[key]?.source === "LOCAL_SYNTHETIC_ONLY"
+                    ? "합성 데이터 · 제공자 미조회"
+                    : unresolved?"채널 ID 해석 대기":"URL 등록 · 메타데이터 미확인"}
                 </span>
               </div>
               <div className="workspace-url-board__card-body">
