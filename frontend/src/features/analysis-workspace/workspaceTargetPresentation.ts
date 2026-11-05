@@ -7,6 +7,7 @@
  */
 import { isApprovedChannelThumbnailUrl, type ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import { WORKSPACE_URL_TARGETS_TTL_MS, workspaceUrlTargetKey, type WorkspaceUrlTarget } from "./workspaceUrlTargets";
+import type { SyntheticWorkspaceMetadata } from "./workspaceSyntheticMetadata";
 
 export const WORKSPACE_TARGET_PRESENTATION_KEY = "youtopia-target-presentation-v1";
 export const MAX_USER_LABEL = 120;
@@ -16,6 +17,8 @@ const CONTROL = /[\u0000-\u001f\u007f]/;
 export type WorkspaceTargetPresentation = Readonly<{
   labels: Readonly<Record<string, string>>;
   channelImages: Readonly<Record<string, string>>;
+  /** Only a transient, explicitly enabled local mock. Never serialized. */
+  synthetic?: Readonly<Record<string, SyntheticWorkspaceMetadata>>;
 }>;
 
 export const EMPTY_TARGET_PRESENTATION: WorkspaceTargetPresentation = {
@@ -148,6 +151,11 @@ export function userFacingTargetName(
 ): string {
   const custom = presentation.labels[workspaceUrlTargetKey(target)];
   if (validLabel(custom)) return custom;
+  const local = presentation.synthetic?.[workspaceUrlTargetKey(target)];
+  if (local?.source === "LOCAL_SYNTHETIC_ONLY" &&
+      local.kind === target.kind && local.requestedId === target.id &&
+      local.sourceAuthenticated === false && local.providerRequestsMade === 0 &&
+      local.consumerPublicationAuthorized === false) return local.title;
   if (target.kind !== "VIDEO") {
     const profile = channelProfiles?.get(target);
     if (profile?.status === "READY" && profile.title) return profile.title;
