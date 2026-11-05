@@ -1,4 +1,4 @@
-name: YOUTOPIA video understanding G1 offline
+name: YOUTOPIA video understanding G1 G2 offline
 on:
   push:
     branches:
@@ -6,6 +6,7 @@ on:
     paths:
       - shared/experiments/yu-video-understanding-poc-v0/**
       - docs/research/YU_VIDEO_UNDERSTANDING_POC_G1_QA_V01.md
+      - docs/research/YU_VIDEO_UNDERSTANDING_POC_G2_SOURCE_PROVIDER_REVIEW_V01.md
       - .github/workflows/yu-video-g1-offline.yml
   pull_request:
     paths:
@@ -22,10 +23,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Syntax and synthetic tests
+      - name: Syntax and synthetic/eligibility tests
         run: |
           node --check shared/experiments/yu-video-understanding-poc-v0/g1-offline.cjs
-          node --test shared/experiments/yu-video-understanding-poc-v0/tests/offline.test.cjs
+          node --check shared/experiments/yu-video-understanding-poc-v0/g2-source-provider.cjs
+          node --test shared/experiments/yu-video-understanding-poc-v0/tests/*.test.cjs
       - name: Fail-closed gate
         run: |
           node shared/experiments/yu-video-understanding-poc-v0/g1-offline.cjs | node -e '
@@ -36,4 +38,17 @@ jobs:
                  x.quality.liveAccuracyVerified!==false||x.quality.decision!=="INCONCLUSIVE_OFFLINE_SYNTHETIC")
                 process.exit(1);
               process.stdout.write("G1_OFFLINE_GATE_PASS\n");
+            });'
+
+      - name: G2 provider and rights default-deny gate
+        run: |
+          node shared/experiments/yu-video-understanding-poc-v0/g2-source-provider.cjs | node -e '
+            let s="";process.stdin.on("data",v=>s+=v);
+            process.stdin.on("end",()=>{const x=JSON.parse(s);
+              if(x.status!=="SOURCE_PROVIDER_DOCUMENT_REVIEW_ONLY"||
+                 x.externalCalls!==0||x.actualSpendUsd!==0||x.liveCallsAuthorized!==false||
+                 x.mergeApproved!==false||x.source.approvedForG3!==false||
+                 x.source.sourceRightsVerifiedCount!==0||x.illustrativeTokenComponent.estimatedEndToEndTotalUsd!==null)
+                process.exit(1);
+              process.stdout.write("G2_DEFAULT_DENY_GATE_PASS\n");
             });'
