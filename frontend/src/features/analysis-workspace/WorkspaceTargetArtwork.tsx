@@ -55,6 +55,11 @@ export function WorkspaceTargetArtwork({
   channelProfiles?: ApprovedChannelProfileCache;
 }>) {
   const [failedSource, setFailedSource] = useState<string | null>(null);
+  const local = presentation.synthetic?.[workspaceUrlTargetKey(target)];
+  const synthetic = local?.source === "LOCAL_SYNTHETIC_ONLY" &&
+    local.kind === target.kind && local.requestedId === target.id &&
+    local.sourceAuthenticated === false && local.providerRequestsMade === 0 &&
+    local.consumerPublicationAuthorized === false;
   const channelIdentity = channelProfiles?.get(target) ?? channelProfileForTarget(target);
   // A user-pasted image URL is not approved metadata or proof of identity.
   // Both paths are blocked from image loading until consent is enabled.
@@ -66,14 +71,17 @@ export function WorkspaceTargetArtwork({
     ? (channelIdentity?.status === "READY" && channelIdentity.thumbnailUrl)
       || optionalManual
     : null;
-  const candidate = optInVideoThumbnailSource(target, allowVideoImage) ??
-    channelSource;
+  // Synthetic preview uses ONLY local CSS placeholders, never even a CDN
+  // image request. Real external previews remain a separate explicit consent.
+  const candidate = synthetic ? null :
+    optInVideoThumbnailSource(target, allowVideoImage) ?? channelSource;
   const source = candidate && failedSource !== candidate ? candidate : null;
   // Local visual identifiers only; do not mistake the initial for a real avatar.
   const fallback = target.kind === "VIDEO" ? "▶" :
     target.kind === "CHANNEL_HANDLE"
       ? target.id.slice(1,2).toUpperCase() : "C";
-  const hint = target.kind === "VIDEO"
+  const hint = synthetic ? "합성 썸네일 · 실제 YouTube 이미지 아님" :
+    target.kind === "VIDEO"
     ? allowVideoImage
       ? "영상 이미지 미확인"
       : "영상 이미지 미리보기 비활성"
@@ -90,10 +98,17 @@ export function WorkspaceTargetArtwork({
       "workspace-target-artwork workspace-target-artwork--" + variant +
       " workspace-target-artwork--" +
       (target.kind === "VIDEO" ? "video" : "channel")
-    } data-preview={source ? "requested" : "placeholder"}
+    } data-preview={synthetic ? "synthetic" : source ? "requested" : "placeholder"}
       data-channel-profile={channelIdentity?.status ?? "not-applicable"}
       title={hint} aria-hidden="true">
-      {source ? (
+      {synthetic ? (
+        <span className="workspace-target-artwork__synthetic">
+          <span className="workspace-target-artwork__synthetic-icon">
+            {target.kind === "VIDEO" ? "▶" : "C"}
+          </span>
+          <span className="workspace-target-artwork__synthetic-mark">DEMO</span>
+        </span>
+      ) : source ? (
         <img src={source} alt="" decoding="async" loading="lazy"
           referrerPolicy="no-referrer" draggable={false}
           onError={() => setFailedSource(source)}/>
@@ -102,7 +117,8 @@ export function WorkspaceTargetArtwork({
       )}
       {variant === "detail" && (
         <span className="workspace-target-artwork__caption">
-          {source ? "승인된 이미지 미리보기 · 분석 데이터 아님" : hint}
+          {synthetic ? "합성 그래픽 · 실제 제공자 이미지 아님" :
+            source ? "승인된 이미지 미리보기 · 분석 데이터 아님" : hint}
         </span>
       )}
     </span>
