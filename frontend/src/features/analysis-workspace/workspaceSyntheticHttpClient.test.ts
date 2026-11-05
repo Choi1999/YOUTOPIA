@@ -25,7 +25,7 @@ afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
 describe("UI-R04-Y — guarded same-origin HTTP reader", () => {
   it("is disabled unless both dev mode and explicit env are enabled", async () => {
-    const fetcher = vi.fn(async () => valid(VIDEO));
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _options?: RequestInit) => valid(VIDEO));
     const controller = new AbortController();
     vi.stubEnv("VITE_R04Y_SYNTHETIC_HTTP", "");
     expect(syntheticHttpDevEnabled()).toBe(false);
@@ -41,7 +41,7 @@ describe("UI-R04-Y — guarded same-origin HTTP reader", () => {
   });
 
   it("uses only relative same-origin /api synthetic GET without cookies, redirects or keys", async () => {
-    const fetcher = vi.fn(async () => valid(VIDEO));
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _options?: RequestInit) => valid(VIDEO));
     const record = await fetchSyntheticHttpMetadata(VIDEO,
       new AbortController().signal, fetcher as unknown as typeof fetch);
     expect(record?.title).toBe("합성 영상 제목 · Ab0_-123xyz");
@@ -61,7 +61,7 @@ describe("UI-R04-Y — guarded same-origin HTTP reader", () => {
 
   it("accepts exact channel or encoded handle response, never guessed membership", async () => {
     for (const target of [CHANNEL, HANDLE]) {
-      const fetcher = vi.fn(async () => valid(target));
+      const fetcher = vi.fn(async (_input: RequestInfo | URL, _options?: RequestInit) => valid(target));
       const item = await fetchSyntheticHttpMetadata(target,
         new AbortController().signal, fetcher as unknown as typeof fetch);
       expect(item?.kind).toBe(target.kind);
@@ -102,7 +102,7 @@ describe("UI-R04-Y — guarded same-origin HTTP reader", () => {
   });
 
   it("does not attempt a request for invalid identities or aborted signal", async () => {
-    const fetcher = vi.fn(async () => valid(VIDEO));
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _options?: RequestInit) => valid(VIDEO));
     const abort = new AbortController();
     abort.abort();
     expect(await fetchSyntheticHttpMetadata(VIDEO,abort.signal,
