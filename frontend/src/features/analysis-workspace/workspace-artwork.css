@@ -279,3 +279,24 @@
 .workspace-target-artwork--node .workspace-target-artwork__synthetic-mark {
   font-size:7px;
 }
+
+
+/* UI-R04-AA — status is fixture-only and never a verified provider badge. */
+.workspace-url-canvas__metadata-state {
+  display:block;
+  font-size:9px;
+  line-height:1.25;
+  max-width:160px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--text-secondary,#aec4e1);
+}
+.workspace-url-canvas__node[data-metadata-status="READY"] .workspace-url-canvas__metadata-state {
+  color:#b6d7d0;
+}
+.workspace-url-canvas__node[data-metadata-status="FAILED"] .workspace-url-canvas__metadata-state,
+.workspace-url-canvas__node[data-metadata-status="NOT_FOUND"] .workspace-url-canvas__metadata-state,
+.workspace-url-canvas__node[data-metadata-status="STALE"] .workspace-url-canvas__metadata-state {
+  color:#f0c88e;
+}
