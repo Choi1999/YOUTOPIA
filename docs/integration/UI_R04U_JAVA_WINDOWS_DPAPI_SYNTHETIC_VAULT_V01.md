@@ -16,7 +16,7 @@
 |---|---|
 | src/main/java/com/youtopia/youtube/metadata/WindowsDpapiSyntheticVault.java | Java → JNA 5.19.1 → Windows CryptProtectData/CryptUnprotectData 직접 사용. CurrentUser 범위만 사용하고 UI prompt 금지 |
 | src/test/java/com/youtopia/youtube/metadata/WindowsDpapiSyntheticVaultTest.java | 실제 Windows의 합성 키 보호·복원·회전·삭제·ACL·손상 거부 및 byte[] zeroing 검증 |
-| .github/workflows/ui-r04u-windows-native-dpapi-vault.yml | Windows-latest Java 21 native DPAPI 시험 및 정적 실행 경계 점검 |
+| .github/workflows/ui-r04t-windows-dpapi-offline.yml | 기존 검증된 Windows-latest CI에 Java native DPAPI 합성 시험을 추가하여 실행 |
 | .github/workflows/ui-r04q-offline-metadata-bridge.yml | 기존 Java 오프라인 계약 테스트에 추가 |
 | build.gradle / gradle.lockfile | net.java.dev.jna:jna-platform:5.19.1 및 JNA 5.19.1 잠금 |
 
@@ -25,7 +25,7 @@
 - 테스트 경로는 java.io.tmpdir 하위 youtopia-r04u-synthetic-{UUID}/metadata-synthetic.dpapi **정해진 고정 형태**만 허용한다. 사용자가 지정한 임의 위치, 심볼릭 링크, non-Windows 실행은 거부한다.
 - 바이트 배열이 R04U_SYNTHETIC_{UUID} 형식으로 시작하고 정확한 길이를 가질 때만 암호화한다. API 키처럼 생긴 값이나 실제 외부 비밀은 저장할 수 없도록 한다. **운영용 저장소가 아니다.**
 - Java 직접 Crypt32Util 사용. CRYPTPROTECT_UI_FORBIDDEN을 사용하며 CRYPTPROTECT_LOCAL_MACHINE 플래그를 사용하지 않는다. CurrentUser DPAPI는 동일 사용자·PC 프로필에서의 복원에 의존한다.
-- 디렉터리와 파일에 소유자에 대한 ACL을 적용하고, 다른 주체의 ALLOW 권한은 거부한다. 실제 Windows 관리자는 해당 계정의 비밀을 통제할 수 있으며 OS와 계정의 보안 모델에 종속된다.
+- 임의 폴더를 신뢰하지 않도록 현재 Java 프로세스가 만든 임시 파일의 Windows 사용자 소유권과 Vault 폴더 소유권을 대조한다. 디렉터리·파일에 소유자 ACL을 적용하고 다른 주체의 ALLOW 권한은 거부한다. 실제 Windows 관리자는 해당 계정의 비밀을 통제할 수 있으며 OS와 계정의 보안 모델에 종속된다.
 - 임시 암호문 파일을 CREATE_NEW로 생성하고 파일 내용을 flush한 다음 ATOMIC_MOVE/REPLACE_EXISTING으로 회전한다. 이동 실패 시 기존 암호문을 덮어쓰지 않는다. 임시 파일은 finally에서 제거한다.
 - 파일에는 MAGIC·길이·암호문만 저장한다. 최대 4KiB. 파손·길이 오류·DPAPI 무결성 불일치 시 반환하지 않고 실패한다.
 - 복호화 바이트 배열은 callback의 실행 중에만 유효하며 finally에서 덮어쓴다. 하지만 Java GC/native 임시 복사본까지 완벽히 제로화한다고 주장하지 않는다. caller의 원본 배열도 별도 초기화가 필요하다.
