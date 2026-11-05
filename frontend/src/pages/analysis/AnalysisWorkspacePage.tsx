@@ -6,6 +6,7 @@ import { WorkspaceDiscoveryPanels } from "../../features/analysis-workspace/Work
 import { WorkspaceHero } from "../../features/analysis-workspace/WorkspaceHero";
 import { WorkspaceUrlTargetBoard } from "../../features/analysis-workspace/WorkspaceUrlTargetBoard";
 import { ApprovedChannelProfileCache } from "../../features/analysis-workspace/workspaceChannelProfile";
+import { createOfflineWorkspacePreview } from "../../features/analysis-workspace/workspaceSyntheticMetadata";
 import {
   readTargetPresentation, reconcileTargetPresentation, writeTargetPresentation,
   withUserLabel, withChannelArtwork,
@@ -82,6 +83,8 @@ export function AnalysisWorkspacePage() {
   // Explicit per-page opt-in; never persisted or inferred from URL registration.
   const [allowVideoImage, setAllowVideoImage] = useState(false);
   const [allowChannelImage, setAllowChannelImage] = useState(false);
+  // Explicit local-only synthetic preview, never persisted or fetched.
+  const [syntheticPreviewEnabled, setSyntheticPreviewEnabled] = useState(false);
   const [presentation, setPresentation] = useState<WorkspaceTargetPresentation>(
     () => readTargetPresentation(getTabStorage(), urlTargets),
   );
@@ -94,6 +97,9 @@ export function AnalysisWorkspacePage() {
   // Empty until a separately authorized, reviewed channel metadata reader exists.
   // The cache is in-memory only and never triggers network calls.
   const [channelProfiles] = useState(() => new ApprovedChannelProfileCache());
+  const displayedPresentation: WorkspaceTargetPresentation = syntheticPreviewEnabled
+    ? { ...presentation, synthetic: createOfflineWorkspacePreview(urlTargets) }
+    : presentation;
   const paths = buildWorkspacePaths(session);
   const safeQuery = withoutAllowedUtmTracking(new URLSearchParams(location.search));
 
@@ -202,7 +208,9 @@ export function AnalysisWorkspacePage() {
         allowChannelImage={allowChannelImage}
         onToggleChannelImage={() => setAllowChannelImage(enabled => !enabled)}
         channelProfiles={channelProfiles} defaultFocusMode
-        presentation={presentation}
+        syntheticPreviewEnabled={syntheticPreviewEnabled}
+        onToggleSyntheticPreview={() => setSyntheticPreviewEnabled(v => !v)}
+        presentation={displayedPresentation}
         onSetTargetLabel={(key, value) => {
           const next = withUserLabel(presentation, urlTargets, key, value);
           setPresentation(next);
@@ -215,7 +223,7 @@ export function AnalysisWorkspacePage() {
         }}/>
       <WorkspaceUrlTargetBoard targets={urlTargets} onRemove={removeUrlTarget}
         onClear={clearUrlTargetList} allowVideoImage={allowVideoImage}
-        allowChannelImage={allowChannelImage} presentation={presentation}
+        allowChannelImage={allowChannelImage} presentation={displayedPresentation}
         channelProfiles={channelProfiles} />
 
       <div className="analysis-workspace__layout">
