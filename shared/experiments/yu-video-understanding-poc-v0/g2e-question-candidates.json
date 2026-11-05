@@ -1,0 +1,248 @@
+{
+  "schemaVersion": 1,
+  "registryId": "YU_VIDEO_G2E_BLENDER_PILOT_CANDIDATES_V01",
+  "reviewedOn": "2026-11-05",
+  "status": "PUBLIC_QUESTION_DRAFTS_ONLY_NO_GOLD_ANSWERS",
+  "provenance": "G0_EVALUATION_CONTRACT_AND_G2D_OPERATOR_REPORTED_TIMING_ANCHORS",
+  "realFilmBytesInRepo": false,
+  "questionsContainVerifiedAnswers": false,
+  "filmRightsForServiceVerified": false,
+  "independentHumanGoldApproved": false,
+  "g3Authorized": false,
+  "externalProviderCalls": 0,
+  "actualSpendUsd": 0,
+  "merged": false,
+  "fullG0Target": {
+    "filmCount": 6,
+    "questionCount": 36,
+    "genres": {
+      "INTERVIEW": 2,
+      "SCREENCAST": 2,
+      "ACTION": 2
+    },
+    "questionKinds": {
+      "SPEECH": 12,
+      "VISUAL": 8,
+      "OCR": 6,
+      "TEMPORAL": 5,
+      "UNSUPPORTED": 5
+    }
+  },
+  "pilot": {
+    "filmCount": 2,
+    "questionCount": 12,
+    "genres": {
+      "ACTION": 2
+    },
+    "questionKinds": {
+      "SPEECH": 4,
+      "VISUAL": 4,
+      "OCR": 0,
+      "TEMPORAL": 2,
+      "UNSUPPORTED": 2
+    }
+  },
+  "remaining": {
+    "filmCount": 4,
+    "questionCount": 24,
+    "genres": {
+      "INTERVIEW": 2,
+      "SCREENCAST": 2
+    },
+    "questionKinds": {
+      "SPEECH": 8,
+      "VISUAL": 4,
+      "OCR": 6,
+      "TEMPORAL": 3,
+      "UNSUPPORTED": 3
+    }
+  },
+  "filmProvenance": {
+    "Sintel": {
+      "slot": "SYNTH-VID-05",
+      "realFilmId": "SINTEL",
+      "publisherEdition": "SINTEL_UPDATED_720P_MKV",
+      "videoDurationMs": 888032,
+      "subtitleCueCount": 26,
+      "g2dStatus": "OPERATOR_REPORTED_SAMPLED_MATCHES_NOT_FULL_PROOF",
+      "youtubeTimelineMapping": "SAMPLED_OFFSET_CONSISTENCY_ONLY_NOT_FULL_PROOF"
+    },
+    "TearsOfSteel": {
+      "slot": "SYNTH-VID-06",
+      "realFilmId": "TEARS_OF_STEEL",
+      "publisherEdition": "TEARS_2012_FIRST_HD_720P_MOV",
+      "videoDurationMs": 734167,
+      "subtitleCueCount": 76,
+      "g2dStatus": "OPERATOR_REPORTED_DIFFERENCES_REQUIRE_REVIEW",
+      "youtubeTimelineMapping": "OFFSET_SPREAD_5000MS_REQUIRES_REVIEW"
+    }
+  },
+  "questions": [
+    {
+      "id": "G2E-SIN-01",
+      "film": "Sintel",
+      "kind": "SPEECH",
+      "questionDraft": "Sintel의 영어 SRT 1번 구간에서 화자는 무엇에 관해 어떤 설명을 하는가?",
+      "anchorCheckpointIds": [
+        "AUDIO_FIRST"
+      ],
+      "requiredModalities": [
+        "AUDIO",
+        "TRANSCRIPT"
+      ],
+      "requiredEvidenceCount": 1,
+      "candidateOnly": true
+    },
+    {
+      "id": "G2E-SIN-02",
+      "film": "Sintel",
+      "kind": "SPEECH",
+      "questionDraft": "Sintel의 영어 SRT 13번 구간에서 화자는 상대에게 어떤 상황을 전달하는가?",
+      "anchorCheckpointIds": [
+        "AUDIO_MIDDLE"
+      ],
+      "requiredModalities": [
+        "AUDIO",
+        "TRANSCRIPT"
+      ],
+      "requiredEvidenceCount": 1,
+      "candidateOnly": true
+    },
+    {
+      "id": "G2E-SIN-03",
+      "film": "Sintel",
+      "kind": "VISUAL",
+      "questionDraft": "Sintel 로컬 원본의 초반 약 01:28 구간에서 실제로 보이는 주요 행동 한 가지는 무엇인가?",
+      "anchorCheckpointIds": [
+        "YOUTUBE_OPENING"
+      ],
+      "requiredModalities": [
+        "FRAME"
+      ],
+      "requiredEvidenceCount": 1,
+      "candidateOnly": true
+    },
+    {
+      "id": "G2E-SIN-04",
+      "film": "Sintel",
+      "kind": "VISUAL",
+      "questionDraft": "Sintel 로컬 원본의 중반 약 07:24 구간에서 관찰되는 인물이나 대상의 움직임은 무엇인가?",
+      "anchorCheckpointIds": [
+        "YOUTUBE_MIDPOINT"
+      ],
+      "requiredModalities": [
+        "FRAME"
+      ],
+      "requiredEvidenceCount": 1,
+      "candidateOnly": true
+    },
+    {
+      "id": "G2E-SIN-05",
+      "film": "Sintel",
+      "kind": "TEMPORAL",
+      "questionDraft": "Sintel 초반 약 01:28과 중반 약 07:24의 두 시각적 사건을 실제로 일어나는 순서대로 설명하라.",
+      "anchorCheckpointIds": [
+        "YOUTUBE_OPENING",
+        "YOUTUBE_MIDPOINT"
+      ],
+      "requiredModalities": [
+        "FRAME"
+      ],
+      "requiredEvidenceCount": 2,
+      "candidateOnly": true
+    },
+    {
+      "id": "G2E-SIN-06",
+      "film": "Sintel",
+      "kind": "UNSUPPORTED",
+      "questionDraft": "Sintel에서 명시적으로 보여 주거나 말하지 않은 화면 밖 행동의 구체적 시각을 영상만으로 확정할 수 있는가?",
+      "anchorCheckpointIds": [],
+      "requiredModalities": [],
+      "requiredEvidenceCount": 0,
+      "candidateOnly": true
+    },
+    {
+      "id": "G2E-TOS-01",
+      "film": "TearsOfSteel",
+      "kind": "SPEECH",
+      "questionDraft": "Tears of Steel의 영어 SRT 1번 구간에서 화자가 전달하는 핵심 내용은 무엇인가?",
+      "anchorCheckpointIds": [
+        "AUDIO_FIRST"
+      ],
+      "requiredModalities": [
+        "AUDIO",
+        "TRANSCRIPT"
+      ],
+      "requiredEvidenceCount": 1,
+      "candidateOnly": true
+    },
+    {
+      "id": "G2E-TOS-02",
+      "film": "TearsOfSteel",
+      "kind": "SPEECH",
+      "questionDraft": "Tears of Steel의 영어 SRT 중간 구간(38번)에서 화자가 설명하는 상황은 무엇인가?",
+      "anchorCheckpointIds": [
+        "AUDIO_MIDDLE"
+      ],
+      "requiredModalities": [
+        "AUDIO",
+        "TRANSCRIPT"
+      ],
+      "requiredEvidenceCount": 1,
+      "candidateOnly": true
+    },
+    {
+      "id": "G2E-TOS-03",
+      "film": "TearsOfSteel",
+      "kind": "VISUAL",
+      "questionDraft": "Tears of Steel 로컬 원본의 초반 약 01:13 구간에서 화면에 나타나는 시각적 행동을 하나 설명하라.",
+      "anchorCheckpointIds": [
+        "YOUTUBE_OPENING"
+      ],
+      "requiredModalities": [
+        "FRAME"
+      ],
+      "requiredEvidenceCount": 1,
+      "candidateOnly": true
+    },
+    {
+      "id": "G2E-TOS-04",
+      "film": "TearsOfSteel",
+      "kind": "VISUAL",
+      "questionDraft": "Tears of Steel 로컬 원본의 중반 약 06:07 구간에서 실제로 관찰되는 인물이나 사물의 움직임은 무엇인가?",
+      "anchorCheckpointIds": [
+        "YOUTUBE_MIDPOINT"
+      ],
+      "requiredModalities": [
+        "FRAME"
+      ],
+      "requiredEvidenceCount": 1,
+      "candidateOnly": true
+    },
+    {
+      "id": "G2E-TOS-05",
+      "film": "TearsOfSteel",
+      "kind": "TEMPORAL",
+      "questionDraft": "Tears of Steel 초반 약 01:13과 중반 약 06:07의 주요 사건 두 가지를 등장 순서대로 설명하라.",
+      "anchorCheckpointIds": [
+        "YOUTUBE_OPENING",
+        "YOUTUBE_MIDPOINT"
+      ],
+      "requiredModalities": [
+        "FRAME"
+      ],
+      "requiredEvidenceCount": 2,
+      "candidateOnly": true
+    },
+    {
+      "id": "G2E-TOS-06",
+      "film": "TearsOfSteel",
+      "kind": "UNSUPPORTED",
+      "questionDraft": "Tears of Steel의 화면과 대사에 제시되지 않은 장면 밖 사건의 발생 시각을 확정할 수 있는가?",
+      "anchorCheckpointIds": [],
+      "requiredModalities": [],
+      "requiredEvidenceCount": 0,
+      "candidateOnly": true
+    }
+  ]
+}
