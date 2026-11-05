@@ -51,3 +51,31 @@ N은 1·5·20회로 평가한다. 모든 단가는 연산 시험용 **임의 가
 실 YouTube 접근, URL 수집, 대본 저장, ASR/OCR 실행, 공급자 API 연결, 비용 지출, 운영 DB 연결, Chrome 확장 연결, 기존 UI PR 병합은 모두 **이 단계의 범위 밖**이다. 기존 YOUTOPIA의 `POLICY_HOLD`와 첫 API 호출의 별도 승인 규칙은 변하지 않는다.
 
 상위 평가 계약: `docs/research/YU_VIDEO_UNDERSTANDING_POC_EVALUATION_V01.md`. G2(영상 권리·제공자 정책·요금 검증), G3(유료 API 제한 실험)는 별도 승인 이후 착수한다.
+
+## G2-C — Blender 원본·SRT 로컬 검증 (선택적)
+
+2026-11-05 공식 자료 조사에서 **Sintel / Tears of Steel 모두 CC BY 3.0 공개 배포 및 영어 SRT 목록**이 확인되었다. Sintel의 공개 자료상 재생시간은 14:48, Tears of Steel Blender Studio 공개본은 12:14다. 이 수치는 **로컬 파일에서 측정된 재생시간이 아니다.** 특히 Tears of Steel의 2012 HD 최초판과 2013 4K 재렌더판은 서로 구분해야 한다.
+
+실제 파일이 없더라도 다음 **순수 오프라인 공개 근거 점검**을 실행할 수 있다.
+
+```powershell
+$root = 'shared/experiments/yu-video-understanding-poc-v0'
+node --check "$root/g2c-offline-verifier.cjs"
+node --test "$root/tests/*.test.cjs"
+node "$root/g2c-offline-verifier.cjs"
+```
+
+권리 검토 후 **제작자 공식 배포처 등 허가된 경로로 이미 확보한 로컬 원본 파일**과 해당 판본의 영어 SRT를 직접 제공하는 경우, ffprobe 설치 및 PATH 등록 후 아래처럼 읽기 전용 검사를 실행한다. 경로는 예시이며 실제 파일을 저장소에 추가하지 않는다.
+
+```powershell
+node "$root/g2c-offline-verifier.cjs" --slot SYNTH-VID-05 --video "D:\AuthorizedMedia\sintel.mp4" --srt "D:\AuthorizedMedia\sintel.en.srt"
+node "$root/g2c-offline-verifier.cjs" --slot SYNTH-VID-06 --video "D:\AuthorizedMedia\tears_of_steel.mov" --srt "D:\AuthorizedMedia\tears.en.srt"
+```
+
+- 외부 네트워크가 없으며 자동 다운로드/YouTube 자막 추출/LLM API 전송/파일 변경을 수행하지 않는다. 도구는 사용자가 지정한 **로컬** 파일에 한정해 SHA-256, 재생시간·픽셀 규격, SRT 구간 개수/중복/원본 러닝타임 범위를 점검한다. SRT 대사 원문은 출력하지 않는다.
+- `ffprobe`의 프로토콜을 `file,pipe`로 제한하고 네트워크 URL·재생목록·임의 확장자를 거부한다. `ffprobe`가 없으면 안전하게 실패한다.
+- 영상·자막의 로컬 해시가 있어도 **YouTube 재인코딩판과의 장면·음성 동일성, 실제 발화와 자막의 시간 동기화, 서비스 범위 이용권, 독립 골드 정답 검수**는 승인되지 않는다.
+- 사용자 공개 결과에 실영상의 내용, 첨부 파일명, 자막 텍스트를 기록하지 않는다. 원본 소유권·취득/저장/전송 권한은 별도의 제한된 증거 기록에서 검토한다.
+- **본 단계는 원격 CI에서 실제 미디어를 다루지 않는다.** 원격 CI는 공개 근거 JSON/합성 SRT 테스트만 수행하고 로컬 `--video/--srt` 모드는 실행하지 않는다.
+
+상세 근거: `docs/research/YU_VIDEO_UNDERSTANDING_POC_G2C_BLENDER_SOURCE_EVIDENCE_V01.md`.
