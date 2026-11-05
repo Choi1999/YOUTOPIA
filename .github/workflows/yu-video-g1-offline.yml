@@ -1,4 +1,4 @@
-name: YOUTOPIA video understanding G1 G2 offline
+name: YOUTOPIA video understanding G1 G2 G2B offline
 on:
   push:
     branches:
@@ -7,6 +7,7 @@ on:
       - shared/experiments/yu-video-understanding-poc-v0/**
       - docs/research/YU_VIDEO_UNDERSTANDING_POC_G1_QA_V01.md
       - docs/research/YU_VIDEO_UNDERSTANDING_POC_G2_SOURCE_PROVIDER_REVIEW_V01.md
+      - docs/research/YU_VIDEO_UNDERSTANDING_POC_G2B_CANDIDATE_REVIEW_V01.md
       - .github/workflows/yu-video-g1-offline.yml
   pull_request:
     paths:
@@ -27,6 +28,7 @@ jobs:
         run: |
           node --check shared/experiments/yu-video-understanding-poc-v0/g1-offline.cjs
           node --check shared/experiments/yu-video-understanding-poc-v0/g2-source-provider.cjs
+          node --check shared/experiments/yu-video-understanding-poc-v0/g2b-research-audit.cjs
           node --test shared/experiments/yu-video-understanding-poc-v0/tests/*.test.cjs
       - name: Fail-closed gate
         run: |
@@ -51,4 +53,21 @@ jobs:
                  x.source.sourceRightsVerifiedCount!==0||x.illustrativeTokenComponent.estimatedEndToEndTotalUsd!==null)
                 process.exit(1);
               process.stdout.write("G2_DEFAULT_DENY_GATE_PASS\n");
+            });'
+
+      - name: G2-B researched candidates remain unapproved
+        run: |
+          node shared/experiments/yu-video-understanding-poc-v0/g2b-research-audit.cjs | node -e '
+            let s="";process.stdin.on("data",v=>s+=v);
+            process.stdin.on("end",()=>{const x=JSON.parse(s);
+              if(x.status!=="SIX_PUBLIC_RESEARCH_CANDIDATES_NOT_APPROVED_DATASET"||
+                 x.documentedCandidates!==6||x.sourceRightsVerified!==0||
+                 x.youtubeToSourceVersionMatchesVerified!==0||
+                 x.captionTimelineAlignmentsVerified!==0||
+                 x.humanReviewedGoldQuestionCount!==0||
+                 x.approvedRealDatasetCount!==0||
+                 x.liveCallsAuthorized!==false||x.actualProviderCalls!==0||
+                 x.actualSpendUsd!==0||x.mergeAuthorized!==false)
+                 process.exit(1);
+              process.stdout.write("G2B_DEFAULT_DENY_GATE_PASS\n");
             });'
