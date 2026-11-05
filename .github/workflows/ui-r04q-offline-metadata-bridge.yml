@@ -58,4 +58,22 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x ./gradlew
-          ./gradlew --no-daemon test --tests 'com.youtopia.youtube.metadata.OfflineMetadataBridgeContractTest' --tests 'com.youtopia.youtube.metadata.MetadataOfflineBoundarySecurityTest'
+          ./gradlew --no-daemon test --tests 'com.youtopia.youtube.metadata.OfflineMetadataBridgeContractTest' --tests 'com.youtopia.youtube.metadata.MetadataOfflineBoundarySecurityTest' --tests 'com.youtopia.youtube.metadata.MetadataApprovalPreflightTest'
+
+
+      - name: Offline Cloud observer check only (NO Cloud CLI or API requests)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $report = & ./tools/ui-r04s-metadata-cloud-evidence.ps1 -Check | ConvertFrom-Json
+          if ($report.schema -ne 'YOUTOPIA_R04S_METADATA_CLOUD_OBSERVATION_V01' -or
+              $report.status -ne 'CHECK_ONLY_NO_CLOUD_ACCESS' -or
+              $report.gcloudInvoked -ne $false -or
+              $report.projectAccessibleToLocalIdentity -ne $false -or
+              $report.youtubeDataApiEnabledLocallyObserved -ne $false -or
+              $report.currentQuotaAvailableIndependentlyVerified -ne $false -or
+              $report.metadataReadAuthorized -ne $false -or
+              $report.commentOrSentimentReadAuthorized -ne $false -or
+              $report.actualYouTubeApiRequestsMade -ne 0) {
+            throw 'R04S Cloud observer offline gate failed.'
+          }
