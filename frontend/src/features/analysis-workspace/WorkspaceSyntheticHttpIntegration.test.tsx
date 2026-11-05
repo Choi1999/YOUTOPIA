@@ -15,9 +15,9 @@ const CHANNEL = { kind:"CHANNEL_HANDLE" as const, id:"@samplecreator" };
 function mount() {
   return render(
     <AnalysisRepositoryProvider repository={demoAnalysisRepository}>
-      <MemoryRouter initialEntries={["/analysis/youtube/workspace"]}>
-        <Routes><Route path="/analysis/youtube/workspace"
-          element={<AnalysisWorkspacePage/>}/></Routes>
+      <MemoryRouter initialEntries={["/analysis/youtube/workspace/diagnostics"]}>
+        <Routes><Route path="/analysis/youtube/workspace/diagnostics"
+          element={<AnalysisWorkspacePage diagnosticsMode/>}/></Routes>
       </MemoryRouter>
     </AnalysisRepositoryProvider>
   );
@@ -36,6 +36,7 @@ function response(target: typeof VIDEO | typeof CHANNEL) {
 
 beforeEach(() => {
   vi.stubEnv("DEV",true);
+  vi.stubEnv("VITE_R04AC_DIAGNOSTICS","enabled");
   vi.stubEnv("VITE_R04Y_SYNTHETIC_HTTP","enabled");
 });
 afterEach(() => {
@@ -52,6 +53,7 @@ describe("UI-R04-Y — explicit Spring loopback synthetic response in workspace"
     vi.stubGlobal("fetch",fetcher);
     mount();
     const focus = screen.getByRole("dialog",{name:"그래프 집중 탐색"});
+    await user.click(within(focus).getByRole("button",{name:"개발자 진단 열기"}));
     await user.type(within(focus).getByRole("textbox",{name:"URL 추가 입력"}),
       "https://youtu.be/Ab0_-123xyz");
     await user.click(within(focus).getByRole("button",{name:"추가하기"}));
@@ -86,6 +88,7 @@ describe("UI-R04-Y — explicit Spring loopback synthetic response in workspace"
     vi.stubGlobal("fetch",fetcher);
     mount();
     const focus=screen.getByRole("dialog",{name:"그래프 집중 탐색"});
+    await user.click(within(focus).getByRole("button",{name:"개발자 진단 열기"}));
     await user.type(within(focus).getByRole("textbox",{name:"URL 추가 입력"}),
       "https://youtu.be/Ab0_-123xyz");
     await user.click(within(focus).getByRole("button",{name:"추가하기"}));
@@ -107,6 +110,7 @@ describe("UI-R04-Y — explicit Spring loopback synthetic response in workspace"
     vi.stubGlobal("fetch",fetcher);
     mount();
     const focus=screen.getByRole("dialog",{name:"그래프 집중 탐색"});
+    await user.click(within(focus).getByRole("button",{name:"개발자 진단 열기"}));
     await user.click(within(focus).getByRole("button",{name:"Spring 합성 연결"}));
     const input=within(focus).getByRole("textbox",{name:"URL 추가 입력"});
     await user.type(input,"https://youtu.be/Ab0_-123xyz");
