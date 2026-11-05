@@ -54,6 +54,9 @@ public final class MetadataOfflineBoundaryController {
                 "YouTube metadata is unavailable. No provider request was made.");
         problem.setTitle("Metadata unavailable");
         problem.setType(URI.create("urn:youtopia:problem:metadata-unavailable"));
+        // Spring MVC supplies the request path when instance is absent. A
+        // fixed non-target URI prevents leaking video/channel IDs into errors.
+        problem.setInstance(URI.create("/api/v1/youtube/metadata"));
         problem.setProperty("code", "METADATA_UNAVAILABLE");
         // No request URI, caller IDs, provider URLs, tokens, raw errors,
         // Cloud evidence, personal data or source credibility claims.
