@@ -44,6 +44,9 @@ describe("UI-R04-E — user-gated thumbnail previews integrated with URL workspa
       expect(img).toHaveAttribute("referrerpolicy","no-referrer");
       expect(img).toHaveAttribute("loading","lazy");
     }
+    expect(screen.queryByRole("region",{name:"URL로 추가한 분석 대상"}))
+      .not.toBeInTheDocument();
+    await user.click(screen.getByRole("button",{name:"집중 모드 종료"}));
     const board=screen.getByRole("region",{name:"URL로 추가한 분석 대상"});
     expect(board.querySelector(CDN_SELECTOR)).toBeInTheDocument();
     await user.click(screen.getByRole("button",{name:"영상 이미지 미리보기 끄기"}));
@@ -58,6 +61,7 @@ describe("UI-R04-E — user-gated thumbnail previews integrated with URL workspa
     await user.click(screen.getByRole("button",{name:"URL 추가"}));
     await user.click(screen.getByRole("button",{name:"영상 이미지 미리보기 켜기"}));
     expect(document.querySelectorAll(CDN_SELECTOR)).toHaveLength(0);
+    await user.click(screen.getByRole("button",{name:"집중 모드 종료"}));
     const board=screen.getByRole("region",{name:"URL로 추가한 분석 대상"});
     expect(within(board).getByText("채널 ID 해석 대기")).toBeInTheDocument();
     expect(board.querySelector('[title="채널 핸들·프로필 미확인"]'))
@@ -70,7 +74,7 @@ describe("UI-R04-E — user-gated thumbnail previews integrated with URL workspa
     const input=screen.getByRole("textbox",{name:/URL을 붙여넣으면/});
     await user.type(input,"https://youtu.be/Ab0_-123xyz");
     await user.click(screen.getByRole("button",{name:"URL 추가"}));
-    await user.click(screen.getByRole("button",{name:"전체 화면 집중 모드"}));
+    // Fullscreen is the initial workspace; no duplicate panel activation.
     const dialog=screen.getByRole("dialog",{name:"그래프 집중 탐색"});
     expect(dialog.querySelectorAll(CDN_SELECTOR)).toHaveLength(0);
     await user.click(within(dialog).getByRole("button",{name:"영상 이미지 켜기"}));
