@@ -5,6 +5,8 @@
 > 상태: **6_CANDIDATES_RESEARCHED / 0_RIGHTS_APPROVED / 0_MEDIA_MATCHED / 0_CAPTIONS_ALIGNED / 0_HUMAN_GOLD_VERIFIED / NO_LIVE_CALLS / NO_MERGE**  
 > 코드 원장: `shared/experiments/yu-video-understanding-poc-v0/g2b-public-candidates.json`
 
+> **2026-11-05 G2-C 공개 근거 보정:** Sintel의 공식 영어 SRT 배포를 Blender 공식 다운로드 페이지에서 확인했다. G2-B JSON 원장 내 `officialTimedCaptionsListed` 값을 `true`로 보정하고, 전체 공식 자막 목록 집계는 3→4건으로 변경했다. 이는 **자막 파일 수신·실제 발화 정렬 확인이 아니라 공개 배포 목록 확인**이다. 근거: https://durian.blender.org/download/ .
+
 ## 1. 작업 범위와 정직한 판정
 
 공개된 **권리자/제작자 공식 페이지의 텍스트·메타데이터**를 토대로 6개 연구 후보를 찾았다. 이 단계에서는 원본 동영상·자막·댓글·음성을 **다운로드, 복사, 추출, 저장하거나 API에 전송하지 않는다**. 일부 페이지에 YouTube 임베드와 MP4 다운로드 링크가 동시에 표시되더라도 둘의 영상 픽셀·오디오·편집 길이·자막 타임라인이 같다는 증거는 아니다.
