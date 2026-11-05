@@ -92,7 +92,7 @@ export function decodeMetadataState(
     source:"LOCAL_SYNTHETIC_ONLY",
     kind:target.kind,requestedId:target.id,title:x.title,
     channelName:x.channelName as string|null,
-    artwork:x.artwork,
+    artwork:x.artwork as SyntheticWorkspaceMetadata["artwork"],
     sourceAuthenticated:false,providerRequestsMade:0,
     consumerPublicationAuthorized:false,
   };
