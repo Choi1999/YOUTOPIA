@@ -75,7 +75,7 @@ function ms(v){
 }
 function parseSrt(text){
  check(typeof text==='string'&&text.length>0&&text.length<=5_000_000,'SRT size');
- const blocks=text.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n').trim().split(/\n{2,}/);
+ const blocks=text.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n').trim().split(/\n[ \t]*\n+/);
  check(blocks.length>0&&blocks.length<=30000,'SRT block count');
  let previousStart=-1,previousEnd=0,overlapCount=0,rows=[];
  for(let i=0;i<blocks.length;i++){
