@@ -41,8 +41,9 @@ describe("UI-R04-I — operator preflight remains internal, not consumer-facing"
     await user.type(screen.getByRole("textbox",{name:/URL을 붙여넣으면/}),url);
     await user.click(screen.getByRole("button",{name:"URL 추가"}));
 
-    expect(screen.getByRole("region",{name:"URL로 추가한 분석 대상"}))
-      .toBeInTheDocument();
+    // AD-2: full-screen graph is canonical; the duplicate card board is absent.
+    expect(screen.queryByRole("region",{name:"URL로 추가한 분석 대상"}))
+      .not.toBeInTheDocument();
     expect(screen.getByRole("region",{name:"URL 등록 대상 전체 화면 탐색"}))
       .toBeInTheDocument();
 
@@ -71,8 +72,7 @@ describe("UI-R04-I — operator preflight remains internal, not consumer-facing"
     await user.type(screen.getByRole("textbox",{name:/URL을 붙여넣으면/}),
       "https://youtube.com/channel/UC"+"A".repeat(22));
     await user.click(screen.getByRole("button",{name:"URL 추가"}));
-    await user.click(screen.getByRole("button",{name:"전체 화면 집중 모드"}));
-
+    // The workspace already starts in focus mode.
     const dialog=screen.getByRole("dialog",{name:"그래프 집중 탐색"});
     await user.click(within(dialog).getByRole("button",{name:"대상 목록"}));
     const list=within(dialog).getByRole("complementary",{name:"도킹 대상 목록"});
