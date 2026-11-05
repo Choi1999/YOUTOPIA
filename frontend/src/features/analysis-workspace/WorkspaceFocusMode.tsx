@@ -462,7 +462,7 @@ export function WorkspaceFocusMode({
                         presentation={presentation} channelProfiles={channelProfiles}/>
                       <strong>{userFacingTargetName(target, presentation, channelProfiles)}</strong>
                     </span>
-                    <span>{kindLabel(target.kind)} · 미확인
+                    <span>{kindLabel(target.kind)} · ID {target.id} · 미확인
                       {groups.find(group => group.memberKeys.includes(key))
                         ? " · 사용자 그룹" : ""}
                     </span>
