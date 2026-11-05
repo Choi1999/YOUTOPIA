@@ -27,6 +27,10 @@ type Props = Readonly<{
   onToggleChannelImage?: () => void;
   syntheticPreviewEnabled?: boolean;
   onToggleSyntheticPreview?: () => void;
+  syntheticServerAvailable?: boolean;
+  syntheticServerEnabled?: boolean;
+  syntheticServerStatus?: string;
+  onToggleSyntheticServer?: () => void;
   presentation?: WorkspaceTargetPresentation;
   onSetTargetLabel?: (key: string, value: string) => boolean;
   onSetChannelArtwork?: (key: string, value: string) => boolean;
@@ -48,6 +52,8 @@ export function WorkspaceHero({
   targets = [], onAddUrls, onRemoveTarget, allowVideoImage = false,
   onToggleVideoImage, allowChannelImage = false, onToggleChannelImage,
   syntheticPreviewEnabled = false, onToggleSyntheticPreview,
+  syntheticServerAvailable = false, syntheticServerEnabled = false,
+  syntheticServerStatus = "", onToggleSyntheticServer,
   channelProfiles, presentation = EMPTY_TARGET_PRESENTATION,
   onSetTargetLabel, onSetChannelArtwork, defaultFocusMode = false,
 }: Props) {
@@ -178,6 +184,17 @@ export function WorkspaceHero({
             <span>합성 제목·채널·썸네일 (실제 제공자 데이터 아님). 외부 이미지/API 요청 없음.</span>
           </div>
         )}
+        {syntheticServerAvailable && onToggleSyntheticServer && (
+          <div className="workspace-hero__image-consent">
+            <button type="button" aria-pressed={syntheticServerEnabled}
+              onClick={onToggleSyntheticServer}>
+              {syntheticServerEnabled ? "Spring 합성 서버 연결 끄기" : "Spring 합성 서버 연결"}
+            </button>
+            <span role="status">{syntheticServerEnabled
+              ? syntheticServerStatus
+              : "개발 전용: 로컬 Spring 테스트 서버만 조회 · Google API 요청 없음"}</span>
+          </div>
+        )}
         {populated && onAddUrls && onRemoveTarget && (
           <button type="button" className="workspace-hero__focus-launch"
             onClick={() => setFocusOpen(true)}>
@@ -250,6 +267,10 @@ export function WorkspaceHero({
             onToggleChannelImage={onToggleChannelImage}
             syntheticPreviewEnabled={syntheticPreviewEnabled}
             onToggleSyntheticPreview={onToggleSyntheticPreview}
+            syntheticServerAvailable={syntheticServerAvailable}
+            syntheticServerEnabled={syntheticServerEnabled}
+            syntheticServerStatus={syntheticServerStatus}
+            onToggleSyntheticServer={onToggleSyntheticServer}
             presentation={presentation}
             onSetTargetLabel={onSetTargetLabel}
             onSetChannelArtwork={onSetChannelArtwork}
