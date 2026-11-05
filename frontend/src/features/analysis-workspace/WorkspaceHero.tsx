@@ -215,7 +215,8 @@ export function WorkspaceHero({
             CHANNEL / 02
           </span>
         </div>
-      ) : <WorkspaceUrlCanvas targets={targets} allowVideoImage={allowVideoImage}
+      ) : focusOpen && onAddUrls && onRemoveTarget ? null :
+        <WorkspaceUrlCanvas targets={targets} allowVideoImage={allowVideoImage}
         allowChannelImage={allowChannelImage} presentation={presentation}
         channelProfiles={channelProfiles} groups={nodeGroups}
         onGroupsChange={setNodeGroups} bookmarks={bookmarks}
