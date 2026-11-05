@@ -3,6 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AnalysisWorkspacePage } from "../../pages/analysis/AnalysisWorkspacePage";
+import { AppRoutes } from "../../app/AppRoutes";
+import { ThemeProvider } from "../../theme/ThemeProvider";
 import { AnalysisRepositoryProvider } from "../analysis/data/AnalysisRepositoryContext";
 import { demoAnalysisRepository } from "../analysis/data/DemoAnalysisRepository";
 import {
@@ -19,6 +21,15 @@ function show(path: string) {
           <Route path={DIAGNOSTIC_WORKSPACE_PATH}
             element={<AnalysisWorkspacePage diagnosticsMode />} />
         </Routes>
+      </MemoryRouter>
+    </AnalysisRepositoryProvider>,
+  );
+}
+function showRealRoutes(path: string) {
+  return render(
+    <AnalysisRepositoryProvider repository={demoAnalysisRepository}>
+      <MemoryRouter initialEntries={[path]}>
+        <ThemeProvider><AppRoutes /></ThemeProvider>
       </MemoryRouter>
     </AnalysisRepositoryProvider>,
   );
@@ -120,4 +131,33 @@ describe("UI-R04-AC — consumer UI and developer diagnostics never mix", () => 
     expect(screen.queryByRole("button",{name:"개발자 진단 열기"}))
       .not.toBeInTheDocument();
   });
+
+  it("the REAL application router returns 404 for the diagnostic URL in production", () => {
+    vi.stubEnv("DEV", false);
+    showRealRoutes(DIAGNOSTIC_WORKSPACE_PATH);
+    expect(screen.getByRole("heading",{
+      name:"요청한 YUTOPIA 화면을 찾을 수 없습니다.",
+    })).toBeInTheDocument();
+    expect(screen.queryByRole("button",{name:"개발자 진단 열기"}))
+      .not.toBeInTheDocument();
+  });
+
+  it("the REAL application router does not register the diagnostic URL without its flag", () => {
+    vi.stubEnv("VITE_R04AC_DIAGNOSTICS", "");
+    showRealRoutes(DIAGNOSTIC_WORKSPACE_PATH);
+    expect(screen.getByRole("heading",{
+      name:"요청한 YUTOPIA 화면을 찾을 수 없습니다.",
+    })).toBeInTheDocument();
+  });
+
+  it("the REAL application router registers only a flagged DEV diagnostic route", () => {
+    showRealRoutes(DIAGNOSTIC_WORKSPACE_PATH);
+    expect(screen.getByRole("dialog",{name:"그래프 집중 탐색"}))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button",{name:"개발자 진단 열기"}))
+      .toBeInTheDocument();
+    expect(document.querySelector(".app-shell"))
+      .toHaveClass("app-shell--immersive-workspace");
+  });
+
 });
