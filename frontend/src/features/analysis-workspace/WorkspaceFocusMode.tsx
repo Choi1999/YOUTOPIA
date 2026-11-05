@@ -9,6 +9,7 @@ import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
 import { WorkspaceChannelIdentity } from "./WorkspaceChannelIdentity";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import type { WorkspaceNodeGroup } from "./workspaceNodeGroups";
+import type { GraphVisit } from "./workspaceGraphNavigation";
 import {
   workspaceUrlTargetKey,
   type WorkspaceUrlIngestResult, type WorkspaceUrlTarget,
@@ -31,6 +32,8 @@ type Props = Readonly<{
   channelProfiles?: ApprovedChannelProfileCache;
   groups?: readonly WorkspaceNodeGroup[];
   onGroupsChange?: (groups: readonly WorkspaceNodeGroup[]) => void;
+  bookmarks?: readonly GraphVisit[];
+  onBookmarksChange?: (bookmarks: readonly GraphVisit[]) => void;
 }>;
 
 function focusStorage(): Storage | null {
@@ -53,7 +56,7 @@ function kindLabel(kind: WorkspaceUrlTarget["kind"]) {
 export function WorkspaceFocusMode({
   targets, onAddUrls, onRemove, onExit,
   allowVideoImage = false, onToggleVideoImage, channelProfiles,
-  groups = [], onGroupsChange,
+  groups = [], onGroupsChange, bookmarks = [], onBookmarksChange,
 }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const exitRef = useRef<HTMLButtonElement>(null);
@@ -413,7 +416,8 @@ export function WorkspaceFocusMode({
           <WorkspaceUrlCanvas targets={targets} focusedKey={selectedKey}
             onFocusChange={focusTarget} allowVideoImage={allowVideoImage}
             channelProfiles={channelProfiles} groups={groups}
-            onGroupsChange={onGroupsChange}/>
+            onGroupsChange={onGroupsChange} bookmarks={bookmarks}
+            onBookmarksChange={onBookmarksChange}/>
         </div>
         {detailOpen && (
           <div className="workspace-focus__splitter workspace-focus__splitter--detail"
