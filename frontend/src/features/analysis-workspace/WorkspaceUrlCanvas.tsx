@@ -5,6 +5,7 @@ import {
 import "./workspace-url.css";
 import "./workspace-groups.css";
 import "./workspace-navigation.css";
+import "./workspace-bookmarks.css";
 import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import {
@@ -23,6 +24,10 @@ import {
   pushGraphVisit, searchWorkspaceGraph, stepGraphHistory,
   type GraphHistory, type GraphVisit,
 } from "./workspaceGraphNavigation";
+import {
+  filterGraphExplorerHits, getGraphBookmarkLabel, hasGraphBookmark,
+  toggleGraphBookmark, type GraphExplorerScope,
+} from "./workspaceGraphBookmarks";
 
 const PER_VIEW = 24;
 type Unit =
@@ -38,6 +43,8 @@ type Props = Readonly<{
   channelProfiles?: ApprovedChannelProfileCache;
   groups?: readonly WorkspaceNodeGroup[];
   onGroupsChange?: (groups: readonly WorkspaceNodeGroup[]) => void;
+  bookmarks?: readonly GraphVisit[];
+  onBookmarksChange?: (bookmarks: readonly GraphVisit[]) => void;
 }>;
 
 function positions(index: number, total: number) {
@@ -90,6 +97,7 @@ function kindLabel(target: WorkspaceUrlTarget) {
 export function WorkspaceUrlCanvas({
   targets, focusedKey: controlledKey, onFocusChange,
   allowVideoImage = false, channelProfiles, groups: givenGroups, onGroupsChange,
+  bookmarks: givenBookmarks, onBookmarksChange,
 }: Props) {
   const [internalFocusedKey, setInternalFocusedKey] = useState<string | null>(null);
   const focusedKey = controlledKey === undefined ? internalFocusedKey : controlledKey;
@@ -103,6 +111,13 @@ export function WorkspaceUrlCanvas({
     if (next === groups) return;
     if (onGroupsChange) onGroupsChange(next);
     else setLocalGroups(next);
+  }
+  const [localBookmarks, setLocalBookmarks] = useState<readonly GraphVisit[]>([]);
+  const bookmarks = givenBookmarks ?? localBookmarks;
+  function updateBookmarks(next: readonly GraphVisit[]) {
+    if (next === bookmarks) return;
+    if (onBookmarksChange) onBookmarksChange(next);
+    else setLocalBookmarks(next);
   }
 
   const [zoom, setZoom] = useState(1);
@@ -129,6 +144,8 @@ export function WorkspaceUrlCanvas({
   const jumpSequence = useRef(0);
   const suppressedDockFocus = useRef<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchScope, setSearchScope] = useState<GraphExplorerScope>("all");
+  const [bookmarksPanel, setBookmarksPanel] = useState(false);
   const [history, setHistory] = useState<GraphHistory>(EMPTY_GRAPH_HISTORY);
   const [centerRequest, setCenterRequest] = useState<
     Readonly<{ visit: GraphVisit; sequence: number }> | null
@@ -155,7 +172,10 @@ export function WorkspaceUrlCanvas({
     : Math.min(page, totalPages - 1);
   const visible = units.slice(safePage * PER_VIEW, (safePage + 1) * PER_VIEW);
   const focused = targetMap.get(focusedKey ?? "") ?? null;
-  const searchHits = searchWorkspaceGraph(targets, groups, searchQuery);
+  const searchHits = filterGraphExplorerHits(
+    targets, groups, bookmarks, searchQuery, searchScope,
+  );
+  const showSearchResults = searchQuery.trim() !== "" || searchScope !== "all";
   const searchTargetKeys = new Set(
     searchHits.filter(hit => hit.kind === "target").map(hit => hit.key),
   );
@@ -169,6 +189,8 @@ export function WorkspaceUrlCanvas({
   const isValidVisit = (visit: GraphVisit) => graphVisitExists(visit, targets, groups);
   const backward = stepGraphHistory(history, -1, isValidVisit);
   const forward = stepGraphHistory(history, 1, isValidVisit);
+  const currentBookmarked = currentVisit
+    ? hasGraphBookmark(bookmarks, currentVisit) : false;
   const matches = groups.filter(group => {
     const q = groupSearch.trim().toLocaleLowerCase("ko-KR");
     return !q || group.name.toLocaleLowerCase("ko-KR").includes(q) ||
@@ -248,8 +270,16 @@ export function WorkspaceUrlCanvas({
 
   function changeSearch(value: string) {
     setSearchQuery(value);
-    const first = searchWorkspaceGraph(targets, groups, value)[0];
+    const first = filterGraphExplorerHits(
+      targets, groups, bookmarks, value, searchScope,
+    )[0];
     if (first) navigate({ kind: first.kind, key: first.key }, false);
+  }
+  function toggleCurrentBookmark() {
+    if (!currentVisit) return;
+    updateBookmarks(toggleGraphBookmark(
+      bookmarks, currentVisit, targets, groups,
+    ));
   }
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
@@ -370,7 +400,9 @@ export function WorkspaceUrlCanvas({
           (target.kind === "VIDEO" ? "is-video" : "is-channel") +
           (selected ? " is-focused" : "") +
           (pickedForGroup ? " is-group-picked" : "") +
-          (searchTargetKeys.has(key) ? " is-search-hit" : "")}
+          (searchTargetKeys.has(key) ? " is-search-hit" : "") +
+          (hasGraphBookmark(bookmarks, { kind: "target", key })
+            ? " is-bookmarked" : "")}
         aria-pressed={selectionMode ? pickedForGroup : selected}
         aria-label={selectionMode
           ? (grouped ? "그룹에 포함된 " : "그룹용 ") + kindLabel(target) +
@@ -402,6 +434,16 @@ export function WorkspaceUrlCanvas({
             disabled={!backward} onClick={() => replayNavigation(-1)}>←</button>
           <button type="button" aria-label="다음 탐색"
             disabled={!forward} onClick={() => replayNavigation(1)}>→</button>
+          <button type="button" aria-label={
+            currentBookmarked ? "선택 북마크 해제" : "선택 북마크 추가"
+          } aria-pressed={currentBookmarked} disabled={!currentVisit}
+            onClick={toggleCurrentBookmark}>
+            {currentBookmarked ? "★ 저장됨" : "☆ 북마크"}
+          </button>
+          <button type="button" aria-expanded={bookmarksPanel}
+            onClick={() => setBookmarksPanel(value => !value)}>
+            북마크 {bookmarks.length}개
+          </button>
           <button type="button" aria-label="선택 중심 맞춤"
             disabled={!currentVisit} onClick={() => {
               if (currentVisit) requestCenter(currentVisit);
@@ -435,7 +477,15 @@ export function WorkspaceUrlCanvas({
           maxLength={80} value={searchQuery}
           onChange={event => changeSearch(event.target.value)}
           placeholder="영상 ID · 채널 ID/핸들 · 그룹 이름"/>
-        {searchQuery.trim() !== "" && (
+        <select aria-label="탐색 결과 유형" value={searchScope}
+          onChange={event => setSearchScope(event.target.value as GraphExplorerScope)}>
+          <option value="all">전체 결과</option>
+          <option value="video">영상만</option>
+          <option value="channel">채널만</option>
+          <option value="group">그룹만</option>
+          <option value="bookmarked">북마크만</option>
+        </select>
+        {showSearchResults && (
           <div className="workspace-url-canvas__search-results"
             role="region" aria-label="통합 검색 결과">
             <span>검색 결과 {searchHits.length}개
@@ -454,6 +504,32 @@ export function WorkspaceUrlCanvas({
           </div>
         )}
       </div>
+      {bookmarksPanel && (
+        <div className="workspace-url-canvas__bookmark-manager"
+          role="region" aria-label="북마크 목록">
+          <p>북마크 {bookmarks.length}개 · 이 탭에서만 저장 · 최대 32개</p>
+          {bookmarks.length === 0 && (
+            <span>노드나 그룹을 선택한 뒤 ☆ 북마크를 누르세요.</span>
+          )}
+          {bookmarks.map(visit => {
+            const label = getGraphBookmarkLabel(visit, targets, groups);
+            if (!label) return null;
+            return (
+              <div className="workspace-url-canvas__bookmark-row"
+                key={visit.kind + ":" + visit.key}>
+                <button type="button" aria-label={"북마크 " + label + " 이동"}
+                  onClick={() => navigate(visit)}>
+                  ★ {label} <small>{visit.kind === "group" ? "그룹" : "등록 대상"}</small>
+                </button>
+                <button type="button" aria-label={"북마크 " + label + " 제거"}
+                  onClick={() => updateBookmarks(toggleGraphBookmark(
+                    bookmarks, visit, targets, groups,
+                  ))}>제거</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
       {selectionMode && (
         <form className="workspace-url-canvas__group-create" onSubmit={createGroup}>
           <span role="status">선택 {chosen.length}/{WORKSPACE_MAX_GROUP_MEMBERS}개 ·
@@ -561,7 +637,9 @@ export function WorkspaceUrlCanvas({
                 className={"workspace-url-canvas__cluster is-" + group.color +
                   (searchGroupKeys.has(group.id) ||
                     group.memberKeys.some(key => searchTargetKeys.has(key))
-                    ? " is-search-hit" : "")}
+                    ? " is-search-hit" : "") +
+                  (hasGraphBookmark(bookmarks, { kind: "group", key: group.id })
+                    ? " is-bookmarked" : "")}
                 data-group={group.id}
                 style={{
                   left: point.x + "%", top: point.y + "%",
@@ -632,6 +710,8 @@ export function WorkspaceUrlCanvas({
                     className={"workspace-url-canvas__minimap-pin" +
                       (unit.kind === "group" ? " is-group" : "") +
                       (active ? " is-active" : "") +
+                      (hasGraphBookmark(bookmarks, { kind: unit.kind, key: unit.key })
+                        ? " is-bookmarked" : "") +
                       (searchTargetKeys.has(unit.key) ||
                         unit.kind === "group" &&
                         (searchGroupKeys.has(unit.key) ||
