@@ -1,0 +1,48 @@
+name: UI-R04-Q Spring offline metadata contract
+
+on:
+  pull_request:
+    branches:
+      - feat/backend-bootstrap
+  push:
+    branches:
+      - feat/backend-bootstrap
+
+permissions:
+  contents: read
+
+jobs:
+  metadata-contract-only:
+    name: Java 21 metadata contract — no provider calls
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Verify no metadata transport, controller or configuration was introduced
+        shell: bash
+        run: |
+          set -euo pipefail
+          source=src/main/java/com/youtopia/youtube/metadata/OfflineMetadataBridge.java
+          test -f "$source"
+          test -f gradlew
+          test -f gradle/wrapper/gradle-wrapper.jar
+          if grep -E -n '@(RestController|Controller|Service|Component|Configuration|Bean|Scheduled|Profile)|HttpClient|RestClient|WebClient|https?\.request|System\.getenv|ProcessBuilder|java\.net\.http' "$source"; then
+            echo 'Forbidden runtime path in offline metadata bridge.'
+            exit 1
+          fi
+
+      - name: Compile and test offline metadata contract only
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew --no-daemon test --tests 'com.youtopia.youtube.metadata.OfflineMetadataBridgeContractTest'
