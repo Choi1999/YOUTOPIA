@@ -134,8 +134,10 @@ describe("UI-R04-AA — end-user graph state controls, synthetic only",()=>{
     vi.stubGlobal("fetch",vi.fn(async(input:RequestInfo|URL)=>response(String(input))));
     show();
     const focus=screen.getByRole("dialog",{name:"그래프 집중 탐색"});
-    await user.type(within(focus).getByRole("textbox",{name:"URL 추가 입력"}),
-      "https://youtu.be/"+VIDEO+"\nhttps://youtube.com/@samplecreator");
+    const input=within(focus).getByRole("textbox",{name:"URL 추가 입력"});
+    await user.type(input,"https://youtu.be/"+VIDEO);
+    await user.click(within(focus).getByRole("button",{name:"추가하기"}));
+    await user.type(input,"https://youtube.com/@samplecreator");
     await user.click(within(focus).getByRole("button",{name:"추가하기"}));
     await user.click(within(focus).getByRole("button",{name:"메타데이터 상태 QA"}));
     const canvas=within(focus).getByRole("region",{name:"URL 등록 대상 전체 화면 탐색"});
