@@ -107,6 +107,28 @@ function parseSrt(text){
  return {cueCount:rows.length,firstStartMs:rows[0].startMs,lastEndMs:rows[rows.length-1].endMs,
   overlapCount,rangeOnly:true,spokenAlignment:'NOT_CHECKED',rows};
 }
+function comparePublisherTimings(slot,subtitle){
+ check(subtitle&&Array.isArray(subtitle.rows),'SRT timing evidence');
+ if(slot!=='SYNTH-VID-05')return {status:'NO_EXTRACTED_PUBLISHER_TIMING_REFERENCE',
+  publisherFileBytesConfirmed:false,spokenAlignmentVerified:false};
+ const entry=JSON.parse(fs.readFileSync(path.join(__dirname,'g2c-sintel-publisher-timeline.json'),'utf8'));
+ check(entry.schemaVersion===1&&entry.filmId==='SINTEL'&&
+  entry.sourceType==='PUBLISHER_SUBTITLE_TEXT_EXTRACTION_NOT_RAW_FILE'&&
+  entry.sourceUrl==='https://durian.blender.org/wp-content/content/subtitles/sintel_en.srt'&&
+  entry.rawFileSha256===null&&entry.rawFileBytesExamined===false&&
+  entry.originalFileEqualityVerified===false&&entry.spokeAudioVerified===false&&
+  entry.captionTextStored===false&&Array.isArray(entry.referenceTimings)&&
+  entry.referenceTimings.length===26&&entry.observedCueCount===26,'publisher text provenance');
+ let allMatch=subtitle.rows.length===26;
+ if(allMatch)for(let i=0;i<26;i++){
+   const ref=entry.referenceTimings[i];
+   check(ref.cue===i+1,'publisher cue ordering');
+   if(ms(ref.start)!==subtitle.rows[i].startMs||ms(ref.end)!==subtitle.rows[i].endMs)allMatch=false;
+ }
+ return {status:allMatch?'MATCHES_PUBLISHER_TEXT_EXTRACTED_TIMINGS_ONLY':'PUBLISHER_TEXT_TIMINGS_DIFFER_REVIEW_REQUIRED',
+  publisherCueCount:26,localCueCount:subtitle.rows.length,publisherSourceUrl:entry.sourceUrl,
+  publisherFileBytesConfirmed:false,spokenAlignmentVerified:false,videoVariantEqualityVerified:false};
+}
 function checkCaptionBounds(subtitle,durationMs){
  check(subtitle&&Array.isArray(subtitle.rows)&&Number.isSafeInteger(durationMs)&&durationMs>0,'local media duration required');
  const overflow=subtitle.rows.filter(r=>r.endMs>durationMs).length;
@@ -141,11 +163,11 @@ async function inspectLocal({slot,videoPath,srtPath}){
   '-show_entries','format=duration:stream=codec_type,codec_name,width,height,r_frame_rate',
   '-of','json',movie.path],{encoding:'utf8',timeout:90000,maxBuffer:1024*1024,windowsHide:true}));}
  catch{throw Error('G2C_FAIL_CLOSED: local ffprobe unavailable or rejected source');}
- const video=metadataFromProbe(probe),bounds=checkCaptionBounds(srt,video.durationMs);
+ const video=metadataFromProbe(probe),bounds=checkCaptionBounds(srt,video.durationMs),publisherTimings=comparePublisherTimings(slot,srt);
  const [fileHash,captionHash]=await Promise.all([hash(movie.path),hash(caption.path)]);
  return {stage:'G2-C',slot,status:'LOCAL_MEDIA_FILE_BOUNDS_REVIEW_ONLY',sourceType:'USER_SUPPLIED_LOCAL_FILE',
   video:{sha256:fileHash,byteSize:movie.sizeBytes,...video},
-  caption:{sha256:captionHash,byteSize:caption.sizeBytes,...bounds},
+  caption:{sha256:captionHash,byteSize:caption.sizeBytes,...bounds,publisherTimings},
   officialPublisherVariantMatched:false,publisherSourceRightsIndependentReview:false,
   youtubeMediaVersionMatched:false,actualSpokenCaptionAlignmentVerified:false,
   humanGoldAnnotationVerified:false,g3Authorized:false,providerCalls:0,actualSpendUsd:0,
@@ -158,4 +180,4 @@ async function main(args){
 }
 if(require.main===module){main(process.argv.slice(2)).then(x=>process.stdout.write(JSON.stringify(x,null,2)+'\n'))
  .catch(e=>{process.stderr.write((String(e.message).startsWith('G2C_FAIL_CLOSED:')?e.message:'G2C_FAIL_CLOSED: local file access or parsing error')+'\n');process.exitCode=1;});}
-module.exports={CANON,FILE,load,audit,ms,parseSrt,checkCaptionBounds,metadataFromProbe,fileAt,inspectLocal,main};
+module.exports={CANON,FILE,load,audit,ms,parseSrt,comparePublisherTimings,checkCaptionBounds,metadataFromProbe,fileAt,inspectLocal,main};
