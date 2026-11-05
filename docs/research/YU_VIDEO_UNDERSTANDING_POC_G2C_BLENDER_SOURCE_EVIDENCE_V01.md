@@ -85,6 +85,8 @@ Windows에서 `ffprobe`가 PATH에 등록되어 있어야 한다. 실행 전에 
 
 ## 6. 테스트 및 병합 상태
 
-최신 원격 CI가 확인된 뒤 실행 ID와 커밋 SHA를 여기에 추가한다. G2-C 게이트는 **실영상 준비가 없어도 조사 단계의 테스트를 PASS**할 수 있지만, 이때 `approvedRealDatasetCount=0`, `g3Authorized=false`, `liveCallsAuthorized=false`를 유지해야 한다.
+원격 [GitHub Actions #41980227424](https://github.com/Choi1999/YOUTOPIA/actions/runs/41980227424), 코드 SHA `2e7cbd42d7c409389305698e8eb91d825630a879`: Node 24 기준 **104개 PASS / 0 FAIL**, 구문 검사 및 G1·G2·G2-B·G2-C 하드 게이트 모두 PASS. 앞선 SRT 빈 블록 테스트 실패는 파서에서 빈 자막과 잘못된 인덱스 예외를 분리해 수정했으며, 수정 이후 재검증 성공을 확인했다. 이 통과는 **합성 SRT + 공개 메타데이터 검사**이며 실영상 파일/자막 원문이 입력된 테스트는 아니다. 
+
+G2-C 게이트는 **실영상 준비가 없어도 조사 단계의 테스트를 PASS**할 수 있지만, 이때 `approvedRealDatasetCount=0`, `g3Authorized=false`, `liveCallsAuthorized=false`를 유지해야 한다.
 
 **판정:** `G2C_PUBLISHER_EVIDENCE_PASS / G2C_REAL_MEDIA_EQUIVALENCE_NOT_RUN / G3_NOT_APPROVED / EXISTING_POLICY_HOLD_UNCHANGED / NO_MERGE`.
