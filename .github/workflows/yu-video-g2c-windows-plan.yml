@@ -1,0 +1,55 @@
+name: YOUTOPIA G2C Windows official-media plan only
+on:
+  push:
+    branches:
+      - experiment/yu-video-understanding-poc-v01
+    paths:
+      - shared/experiments/yu-video-understanding-poc-v0/g2c-windows-official-media.ps1
+      - .github/workflows/yu-video-g2c-windows-plan.yml
+  pull_request:
+    paths:
+      - shared/experiments/yu-video-understanding-poc-v0/g2c-windows-official-media.ps1
+      - .github/workflows/yu-video-g2c-windows-plan.yml
+permissions:
+  contents: read
+jobs:
+  windows-plan:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify zero-network Plan mode for both official Blender titles
+        shell: pwsh
+        run: |
+          $script = ".\shared\experiments\yu-video-understanding-poc-v0\g2c-windows-official-media.ps1"
+          foreach ($film in @('Sintel','TearsOfSteel')) {
+            $p = (& $script -Mode Plan -Film $film | Out-String | ConvertFrom-Json)
+            if ($p.stage -ne 'G2-C' -or $p.mode -ne 'PLAN_ONLY' -or $p.film -ne $film -or
+                $p.actualDownloads -ne 0 -or $p.downloadsAuthorizedByPlan -ne $false -or
+                $p.rawMediaVerified -ne $false -or $p.youtubeCompared -ne $false -or
+                $p.g3Authorized -ne $false -or $p.actualProviderCalls -ne 0 -or
+                $p.actualSpendUsd -ne 0 -or
+                -not $p.mediaUrl.StartsWith('https://download.blender.org/') -or
+                $p.publisherIndexBytes -lt 300000000) {
+              throw 'G2C_WINDOWS_PLAN_GATE_FAILED'
+            }
+            Write-Host "G2C_WINDOWS_PLAN_ONLY_PASS $film"
+          }
+      - name: Reject downloading into Git worktree
+        shell: pwsh
+        run: |
+          $script = ".\shared\experiments\yu-video-understanding-poc-v0\g2c-windows-official-media.ps1"
+          $blocked = $false
+          try {
+            & $script -Mode Plan -Film Sintel -OutputDirectory $env:GITHUB_WORKSPACE | Out-Null
+          }
+          catch {
+            if ($_.Exception.Message -match 'media destination must be outside Git repository') {
+              $blocked = $true
+            }
+            else { throw }
+          }
+          if (-not $blocked) { throw 'G2C_REPOSITORY_MEDIA_WRITE_NOT_BLOCKED' }
+          $folder = Join-Path $env:LOCALAPPDATA 'YOUTOPIA\G2C-AuthorizedPublisherMedia'
+          if (Test-Path -LiteralPath $folder) { throw 'G2C_PLAN_CREATED_MEDIA_DIRECTORY' }
+          Write-Host 'G2C_WINDOWS_NO_DOWNLOAD_NO_REPO_WRITE_PASS'
