@@ -140,17 +140,17 @@ G2-C에서 Blender 공식 원본과 SRT 파일에 대한 **사용자 제출 로�
 
 **기존 Worktree의 코드만 최신 실험 브랜치로 갱신**(로컬 변경이 없을 때):
 
-\`\`\`powershell
+```powershell
 cd C:\Projects\YOUTOPIA
 git fetch origin --prune
 cd C:\Projects\YOUTOPIA-VIDEO-G2C
 if (git status --porcelain) { throw 'Worktree 변경 사항을 먼저 검토하세요.' }
 git switch --detach origin/experiment/yu-video-understanding-poc-v01
-\`\`\`
+```
 
 작업용 JSON은 사용자의 **로컬 AppData 내부**, GitHub 저장소 **밖**에 생성한다. 이미 검증한 영상·SRT를 다시 다운로드하지 않는다.
 
-\`\`\`powershell
+```powershell
 $script = '.\shared\experiments\yu-video-understanding-poc-v0\g2d-windows-manual-review.ps1'
 & $script -Mode Plan -Film Sintel
 & $script -Mode Plan -Film TearsOfSteel
@@ -162,12 +162,12 @@ code "$env:LOCALAPPDATA\YOUTOPIA\G2D-ManualReviews\TearsOfSteel-manual-review.js
 # 작성 후 오프라인 집계
 & $script -Mode Assess -Film Sintel
 & $script -Mode Assess -Film TearsOfSteel
-\`\`\`
+```
 
-두 파일의 \`checkpoints[]\`에 운영자가 **직접 관찰한** \`verdict\`와 비식별 \`observationNote\`를 기입한다. AUDIO_SYNC라면 \`observedSpeechStartMs\`, YOUTUBE_SCENE이라면 \`observedYoutubeMs\`를 기록한다. YouTube 게시자 확인은 \`youtubeUploaderObservation\`, 화면에서 관찰한 길이는 \`observedYoutubeDurationMs\`에 기록한다. 전부 밀리초 단위다. 모르면 반드시 \`UNCERTAIN\` 또는 \`NOT_REVIEWED\`로 보존한다.
+두 파일의 `checkpoints[]`에 운영자가 **직접 관찰한** `verdict`와 비식별 `observationNote`를 기입한다. AUDIO_SYNC라면 `observedSpeechStartMs`, YOUTUBE_SCENE이라면 `observedYoutubeMs`를 기록한다. YouTube 게시자 확인은 `youtubeUploaderObservation`, 화면에서 관찰한 길이는 `observedYoutubeDurationMs`에 기록한다. 전부 밀리초 단위다. 모르면 반드시 `UNCERTAIN` 또는 `NOT_REVIEWED`로 보존한다.
 
 검수는 브라우저에서 YouTube 영상 **일반 재생만** 사용하며 스트림 추출/다운로드/서드파티 API 호출이 없다. 특히 Tears의 로컬 **2012년 최초 HD**와 기존 YouTube 참조 **4K 관련 링크**가 서로 다른 판본일 수 있으므로 제목만 같다고 동일성 PASS를 주지 않는다.
 
-상세 운영 계약: \`docs/research/YU_VIDEO_G2D_HUMAN_SYNC_YOUTUBE_REVIEW_V01.md\`.
+상세 운영 계약: `docs/research/YU_VIDEO_G2D_HUMAN_SYNC_YOUTUBE_REVIEW_V01.md`.
 
-\`Assess\`가 모든 샘플을 일치로 표시하더라도 출력은 \`OPERATOR_REPORTED_SAMPLED_MATCHES_NOT_FULL_PROOF\`일 뿐이며, 실제 전체 영상·음성 동등성, 권리/제3자 송신·보존, 독립 2인 골드 검수 및 G3 호출 승인은 여전히 별개다.
+`Assess`가 모든 샘플을 일치로 표시하더라도 출력은 `OPERATOR_REPORTED_SAMPLED_MATCHES_NOT_FULL_PROOF`일 뿐이며, 실제 전체 영상·음성 동등성, 권리/제3자 송신·보존, 독립 2인 골드 검수 및 G3 호출 승인은 여전히 별개다.
