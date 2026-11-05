@@ -6,12 +6,105 @@
   stats:$('stats'),video:$('localVideo'),subtitle:$('subtitle'),localTime:$('localTime'),captionText:$('captionText'),
   wave:$('wave'),zoom:$('zoom'),playPause:$('playPause'),prev5:$('prev5'),next5:$('next5'),prev01:$('prev01'),next01:$('next01'),
   youtubeFrame:$('youtubeFrame'),youtubeLink:$('youtubeLink'),loadEmbed:$('loadEmbed'),embedPrompt:$('embedPrompt'),
+  independentMode:$('independentMode'),linkedMode:$('linkedMode'),captureOffset:$('captureOffset'),
+  offsetReadout:$('offsetReadout'),syncState:$('syncState'),syncObserved:$('syncObserved'),
+  alignYoutube:$('alignYoutube'),alignLocal:$('alignLocal'),
   editionCaveat:$('editionCaveat'),uploader:$('uploader'),youtubeDuration:$('youtubeDuration'),
   prompt:$('checkpointPrompt'),checkpointId:$('checkpointId'),verdict:$('verdict'),observedTime:$('observedTime'),
   recordTimeLabel:$('recordTimeLabel'),captureLocal:$('captureLocal'),timeHelp:$('timeHelp'),note:$('note'),
   target:$('targetTime'),cueIndex:$('cueIndex'),jump:$('jumpTarget'),save:$('save'),toast:$('toast')
  };
  let data,review,revision,selected=0,saving=false,dirty=false,dragStart=null,waveRect=null;
+ let sync=null,youtubeApiRequested=false,youtubePlayer=null;
+ function showSyncMessage(message,kind=''){el.syncObserved.textContent=message;if(kind==='err')note(message,'err');}
+ function syncStatus(state){
+  if(!state)return;
+  const ready=state.ready,calibrated=state.calibrated;
+  el.captureOffset.disabled=!ready;
+  el.linkedMode.disabled=!ready||!calibrated;
+  el.alignYoutube.disabled=!ready||!calibrated;
+  el.alignLocal.disabled=!ready||!calibrated;
+  el.independentMode.classList.toggle('selected',!state.linked);
+  el.linkedMode.classList.toggle('selected',state.linked);
+  el.independentMode.setAttribute('aria-pressed',String(!state.linked));
+  el.linkedMode.setAttribute('aria-pressed',String(state.linked));
+  el.offsetReadout.textContent=calibrated
+   ?(state.offsetSeconds>=0?'+':'−')+Math.abs(state.offsetSeconds).toFixed(3)+'초'
+   :'미설정';
+  el.syncState.textContent=state.linked?'연동 재생 · 임시 보정값 사용'
+   :ready?(calibrated?'독립 재생 · 기준점 기록됨':'독립 재생 · 기준점 필요')
+   :'독립 재생 · YouTube 연결 전';
+  el.syncState.className=state.linked?'tinybadge':'tinybadge caution';
+  if(state.linked&&state.driftSeconds!==null){
+   const error=Math.abs(state.driftSeconds);
+   el.syncObserved.textContent=error>2
+    ?'시점 차이 '+state.driftSeconds.toFixed(2)+'초 · 판본/탐색 차이 확인 필요'
+    :'두 플레이어의 현재 시점 차이 약 '+state.driftSeconds.toFixed(2)+'초 (관찰용)';
+  }
+ }
+ function initializeSync(){
+  if(!window.G2DPlaybackSync)throw Error('재생 연동 모듈을 불러오지 못했습니다.');
+  sync=window.G2DPlaybackSync.create({local:el.video,onChange:syncStatus});
+  syncStatus(sync.status());
+  el.independentMode.addEventListener('click',()=>{
+   sync.setLinked(false);showSyncMessage('독립 모드: 두 영상의 재생과 탐색을 각각 조작합니다.');
+  });
+  el.linkedMode.addEventListener('click',()=>{
+   try{sync.setLinked(true);
+    showSyncMessage('연동 모드 활성화: 로컬↔YouTube 재생·탐색 연동. 일치 여부는 별도 검수하세요.');
+   }catch(e){showSyncMessage(e.message,'err');}
+  });
+  el.captureOffset.addEventListener('click',()=>{
+   try{const state=sync.capture();
+    showSyncMessage('기준점 기록: YouTube = 로컬 '+(state.offsetSeconds>=0?'+ ':'− ')+
+     Math.abs(state.offsetSeconds).toFixed(3)+'초 · 연동 재생 버튼으로 연결하세요.');
+   }catch(e){showSyncMessage(e.message,'err');}
+  });
+  el.alignYoutube.addEventListener('click',()=>{
+   try{const t=sync.alignYoutube();showSyncMessage('YouTube 이동 요청: '+fmt(t*1000)+' · 키프레임 정확도 한계가 있습니다.');}
+   catch(e){showSyncMessage(e.message,'err');}
+  });
+  el.alignLocal.addEventListener('click',()=>{
+   try{const t=sync.alignLocal();showSyncMessage('로컬 이동: '+fmt(t*1000));}
+   catch(e){showSyncMessage(e.message,'err');}
+  });
+  // The YouTube IFrame API has no seek event. Compare large discontinuities only;
+  // do not continuously seek during ordinary playback and do not assert full equivalence.
+  window.setInterval(()=>{if(sync&&sync.status().ready)sync.poll();},650);
+ }
+ function connectYoutube(){
+  if(youtubeApiRequested)return;
+  const url=new URL(review.youtubeUrl);
+  const id=url.searchParams.get('v');
+  if(url.hostname!=='www.youtube.com'||!/^[A-Za-z0-9_-]{11}$/.test(id||'')){
+   showSyncMessage('허용되지 않은 YouTube 참조입니다.','err');return;
+  }
+  youtubeApiRequested=true;
+  el.loadEmbed.disabled=true;
+  const origin=encodeURIComponent(window.location.origin);
+  el.youtubeFrame.src='https://www.youtube-nocookie.com/embed/'+id+
+   '?playsinline=1&rel=0&enablejsapi=1&origin='+origin;
+  el.youtubeFrame.hidden=false;el.embedPrompt.hidden=true;
+  window.onYouTubeIframeAPIReady=()=>{
+   try{
+    youtubePlayer=new window.YT.Player('youtubeFrame',{events:{
+     onReady:event=>{
+      try{sync.attach(event.target);
+       showSyncMessage('YouTube API 연결됨. 두 영상을 같은 장면에서 각각 멈춘 뒤 기준점을 기록하세요.');
+      }catch(e){showSyncMessage(e.message,'err');}
+     },
+     onStateChange:event=>{if(sync)sync.youtubeStateChange(event.data);},
+     onError:event=>{if(sync)sync.failed();
+      showSyncMessage('YouTube 임베드 오류 코드 '+event.data+
+       ' · 독립 모드로 유지됩니다. YouTube 원본 페이지에서 수동 비교하세요.','err');
+     }
+    }});
+   }catch(e){if(sync)sync.failed();showSyncMessage('YouTube API 연결 실패: '+e.message,'err');}
+  };
+  const external=document.createElement('script');external.src='https://www.youtube.com/iframe_api';external.async=true;
+  external.onerror=()=>{if(sync)sync.failed();showSyncMessage('YouTube API 스크립트 연결 실패 · 독립 재생만 사용할 수 있습니다.','err');};
+  document.head.appendChild(external);
+ }
  function fmt(ms){
   ms=Math.max(0,Math.round(Number(ms)||0));
   const h=Math.floor(ms/3600000),m=Math.floor(ms/60000)%60,s=Math.floor(ms/1000)%60,sub=String(ms%1000).padStart(3,'0');
@@ -184,10 +277,13 @@
   const response=await fetch('/api/session');if(!response.ok)throw Error('로컬 세션을 가져오지 못했습니다.');
   data=await response.json();review=data.packet;revision=data.revision;
   el.film.textContent=data.film;el.youtubeLink.href=review.youtubeUrl;el.editionCaveat.textContent=review.youtubeEditionCaveat;
-  syncTopFields();selectItem(0,true);
-  el.video.addEventListener('timeupdate',onTick);el.video.addEventListener('seeked',onTick);
+  syncTopFields();initializeSync();selectItem(0,true);
+  el.video.addEventListener('timeupdate',onTick);
+  el.video.addEventListener('seeked',()=>{onTick();sync?.localSeeked();});
+  el.video.addEventListener('pause',()=>sync?.localPlayback(false));
   el.video.addEventListener('loadedmetadata',onTick);
   el.video.addEventListener('play',()=>{
+   sync?.localPlayback(true);
    const loop=()=>{onTick();if(!el.video.paused&&!el.video.ended)requestAnimationFrame(loop);};
    requestAnimationFrame(loop);
   });
@@ -204,20 +300,14 @@
   el.captureLocal.addEventListener('click',()=>{el.observedTime.value=fmt(el.video.currentTime*1000);onInput();});
   for(const e of [el.verdict,el.note,el.observedTime,el.youtubeDuration,el.uploader])e.addEventListener('input',onInput);
   el.save.addEventListener('click',save);
-  el.loadEmbed.addEventListener('click',()=>{
-   const url=new URL(review.youtubeUrl);
-   const id=url.searchParams.get('v');
-   if(url.hostname!=='www.youtube.com'||!/^[A-Za-z0-9_-]{11}$/.test(id||'')){note('허용되지 않은 YouTube 참조입니다.','err');return;}
-   el.youtubeFrame.src='https://www.youtube-nocookie.com/embed/'+id+'?playsinline=1&rel=0';
-   el.youtubeFrame.hidden=false;el.embedPrompt.hidden=true;
-  });
+  el.loadEmbed.addEventListener('click',connectYoutube);
   document.addEventListener('keydown',e=>{
    const editable=['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName);
    if(editable||e.altKey||e.ctrlKey||e.metaKey)return;
    if(e.key==='['){e.preventDefault();seek(-.1);}
    if(e.key===']'){e.preventDefault();seek(.1);}
   });
-  // expose no report data to third-party scripts; YouTube player is iframe only.
+  // Local review data stays in this origin. Only official YouTube IFrame controls are external.
   note('로컬 영상과 검수 데이터를 읽었습니다. 확인된 사실만 기록하세요.');
  }
  load().catch(e=>{note(e.message||'실행 오류','err');});
