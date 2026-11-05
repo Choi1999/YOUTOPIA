@@ -438,9 +438,10 @@ export function WorkspaceFocusMode({
         </div>
       </header>
       <div className="workspace-focus__message" role="status">
-        {syntheticPreviewEnabled
-          ? "합성 데이터 미리보기 · 실제 영상·채널 제목이나 YouTube 응답이 아닙니다. 분석 데이터 없음."
-          : message}
+        {syntheticPreviewEnabled && (
+          <strong>합성 데이터 미리보기 · 실제 영상·채널 제목이나 YouTube 응답이 아닙니다. 분석 데이터 없음. </strong>
+        )}
+        {message}
       </div>
       <div ref={bodyRef} className="workspace-focus__body" data-layout={layout}
         data-resizing={resizingSide ?? undefined} style={customStyle}>
