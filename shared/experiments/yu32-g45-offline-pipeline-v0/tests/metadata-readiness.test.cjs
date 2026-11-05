@@ -186,7 +186,7 @@ test("R04O-09: wrong IDs, duplicate rows, malformed page, missing title fail clo
 
 test("R04O-10: reject oversized, malformed or invalid UTF-8 provider-shaped body",()=>{
   const plan=planOfflineMetadataRead({videoIds:[V1]});
-  denied(()=>decodeOfflineMetadataShape(plan,0,"{",3000),"INVALID_JSON_OR_UTF8");
+  denied(()=>decodeOfflineMetadataShape(plan,0,"{ ",3000),"INVALID_JSON_OR_UTF8");
   denied(()=>decodeOfflineMetadataShape(plan,0,Buffer.from([0xff,0xfe]),3000),"INVALID_JSON_OR_UTF8");
   denied(()=>decodeOfflineMetadataShape(plan,0,"x".repeat(MAX_BODY_BYTES+1),3000),"BODY_LIMIT");
   denied(()=>decodeOfflineMetadataShape(plan,0,{items:[vitem()]},3000),"INVALID_BODY");
