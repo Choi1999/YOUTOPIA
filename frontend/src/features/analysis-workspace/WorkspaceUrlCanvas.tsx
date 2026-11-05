@@ -464,7 +464,7 @@ export function WorkspaceUrlCanvas({
   return (
     <section className="workspace-url-canvas" aria-label="URL 등록 대상 전체 화면 탐색">
       <div className="workspace-url-canvas__toolbar">
-        <span>EXPLORER / {targets.length} UNVERIFIED TARGETS</span>
+        <span>등록 대상 {targets.length}개 · 정보 확인 전</span>
         <div className="workspace-url-canvas__tools">
           <button type="button" aria-label="이전 탐색"
             disabled={!backward} onClick={() => replayNavigation(-1)}>←</button>
