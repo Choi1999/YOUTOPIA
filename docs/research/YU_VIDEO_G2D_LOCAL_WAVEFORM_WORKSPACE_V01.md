@@ -241,3 +241,49 @@ $script = '.\shared\experiments\yu-video-understanding-poc-v0\g2d-windows-manual
 **다음 검수:** Tears of Steel(2012 First HD 720p)의 `AUDIO_FIRST/MIDDLE/LAST` 3개, `YOUTUBE_OPENING/MIDPOINT/ENDING` 3개, SRT 종료 후 `CAPTION_COVERAGE` 2개를 사용자 Windows의 동일한 QA 도구에서 검토하고 로컬 JSON을 저장한다. YouTube 후보는 4K 리렌더판일 가능성이 있어 장면·편집 차이 여부를 독립적으로 주의 깊게 기록한다. 우선 실제 출력 `-Mode Assess -Film TearsOfSteel`을 받아 분리 판정한다.
 
 최신 상태: `G2D_SINTEL_OPERATOR_SAMPLED_MATCH_PASS_6_OF_6 / TEARS_G2D_CONTENT_REVIEW_PENDING / FULL_EDITION_EQUIVALENCE_NOT_VERIFIED / G3_NOT_APPROVED / NO_MERGE`.
+
+
+## 10. 두 영화 G2-D 운영자 제출 결과 통합 (2026-11-05, 최신)
+
+> 증거 등급: **USER_SUBMITTED_LOCAL_ASSESS_JSON / NOT_INDEPENDENTLY_REPLAYED**. 아래 값은 Windows에서 운영자가 제출한 평가 결과를 기록한 것이다. 어시스턴트가 로컬 영화·SRT 파일이나 YouTube 재생본을 직접 판독하거나 영상을 다운로드한 증거가 아니다.
+
+| 항목 | Sintel | Tears of Steel | 합계 |
+|---|---|---|---|
+| 운영자 검수 완료 체크포인트 | 6/6 | 8/8 | **14/14** |
+| `OBSERVED_MATCH` | 6 | 8 | **14** |
+| `OBSERVED_DIFFERENCE` | 0 | 0 | **0** |
+| `UNCERTAIN` / `NOT_REVIEWED` | 0 / 0 | 0 / 0 | **0 / 0** |
+| 오디오·SRT 발화 시작 표본 일치 보고 | 3/3 | 3/3 | **6/6** |
+| 로컬·YouTube 대응 장면 일치 보고 | 3/3 | 3/3 | **6/6** |
+| SRT 종료 이후 커버리지 표본 일치 보고 | 해당 없음 | 2/2 | **2/2** |
+| YouTube - 로컬 전체 길이 차이 | -32ms | -167ms | 전 구간 등가성 증거 아님 |
+| 세 장면 간 시간 오프셋 최대 편차 | 1,000ms | **5,000ms** | Tears 시간축 추가 검토 |
+| 검증기 시간 오프셋 판정 | `OPERATOR_REPORTED_CONSISTENT` | `NOT_ESTABLISHED` | 분리 유지 |
+| 검증기 상태 | `OPERATOR_REPORTED_SAMPLED_MATCHES_NOT_FULL_PROOF` | `OPERATOR_REPORTED_DIFFERENCES_REQUIRE_REVIEW` | 내용 표본의 차이 0, 시간축 경고 1건 |
+
+### 경고의 의미와 허용 가능한 결론
+
+Tears의 검증기가 `OPERATOR_REPORTED_DIFFERENCES_REQUIRE_REVIEW`를 반환한 것은 **사용자가 직접 차이를 보고한 체크포인트가 있기 때문이 아니라**, 세 장면의 오프셋 최대 차이 5,000ms가 기존 **2,000ms 기준**을 넘었기 때문이다. 따라서 `counts.difference=0`과 경고 상태는 **서로 모순되지 않는다**. 현재 출력만으로는 해당 편차가 구간별 편집·리렌더판 차이·시각 측정 차이 중 무엇 때문인지 단정할 수 없다.
+
+로컬 Tears는 **2012 FIRST HD 720p**이고 기존 YouTube 후보는 **2013 4K 리렌더 자료와 연계되어 확인된 참조**여서 시간축의 차이를 콘텐츠 의미 불일치나 샘플 평가 실패와 동일시하지 않는다. 오프셋을 숫자상 동일하게 만들기 위한 재입력은 하지 않는다.
+
+Sintel의 표본은 6/6 일치 보고 및 오프셋 편차 1,000ms로 현 검증기의 일관성 기준을 통과했다. 그러나 이것도 영화 전체의 동일 편집판을 입증하지 않는다.
+
+**권고 판정 분리:**
+- `G2D_OPERATOR_SAMPLE_OBSERVATIONS_COMPLETE_14_OF_14`
+- `G2D_CONTENT_SAMPLES_MATCH_REPORTED_14_OF_14` — 운영자 표본 보고로 한정
+- `SINTEL_SAMPLE_TIMELINE_CONSISTENT`
+- `TEARS_VARIABLE_OFFSET_REVIEW_REQUIRED`
+- `FULL_AUDIO_SYNC_NOT_VERIFIED` / `FULL_YOUTUBE_EDITION_EQUIVALENCE_NOT_VERIFIED`
+- `INDEPENDENT_REVIEWERS_0` / `RIGHTS_NOT_VERIFIED` / `HUMAN_GOLD_LABELS_NOT_VERIFIED`
+- `G3_API_NOT_APPROVED` / `NO_MERGE`
+
+### 다음 단계 권장
+
+현재 14개 표본의 추가 재검수를 반복하기보다 다음 작업을 **시간/의미 분리**로 진행한다.
+
+1. Tears의 오프셋 차이 5초는 **기록된 제한 사항**으로 보존한다. 실제 YouTube 타임코드를 정답에 사용하려면 변경 지점의 시간 매핑을 별도 추가 검토하되, 콘텐츠 이해 질문의 초안 작성만을 위해 억지로 단일 오프셋을 강제하지 않는다.
+2. G2-E 준비 단계에서 영상에 근거한 **실제 골드 질문·정답·근거 시점**을 작성하되, 근거 시간을 `localPublisherMs`와 `observedYoutubeMs`로 따로 표시하고 표본·판본·답변 정확도를 혼동하지 않는다. 실제 독립 검수 완료 전 `HUMAN_GOLD_APPROVED`로 승격하지 않는다.
+3. 제3자/음악/초상권 및 공급자 API 송신·보존 권리·운영 범위를 따로 검토하고 첫 G3 외부 호출의 계정·요금 상한·입력 범위·삭제 계획에 대한 별도 승인을 받는다.
+
+**최신 상태:** `G2D_OPERATOR_REVIEW_14_OF_14_SUBMITTED / TEARS_TIMELINE_REVIEW_OPEN / G3_NOT_APPROVED / NO_MERGE`.
