@@ -6,6 +6,7 @@ on:
     paths:
       - shared/experiments/yu-video-understanding-poc-v0/g2c-windows-official-media.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-windows-manual-review.ps1
+      - shared/experiments/yu-video-understanding-poc-v0/g2e-windows-gold-pilot.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-open-workspace.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-human-review.cjs
       - .github/workflows/yu-video-g2c-windows-plan.yml
@@ -13,6 +14,7 @@ on:
     paths:
       - shared/experiments/yu-video-understanding-poc-v0/g2c-windows-official-media.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-windows-manual-review.ps1
+      - shared/experiments/yu-video-understanding-poc-v0/g2e-windows-gold-pilot.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-open-workspace.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-human-review.cjs
       - .github/workflows/yu-video-g2c-windows-plan.yml
@@ -79,4 +81,13 @@ jobs:
           node --check .\shared\experiments\yu-video-understanding-poc-v0\g2d-workspace-server.cjs
           node --check .\shared\experiments\yu-video-understanding-poc-v0\g2d-workspace-media.cjs
           node --check .\shared\experiments\yu-video-understanding-poc-v0\g2d-workspace-client.js
+          $g2e = (Resolve-Path '.\shared\experiments\yu-video-understanding-poc-v0\g2e-windows-gold-pilot.ps1').Path
+          $g2eTokens = $null
+          $g2eErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($g2e, [ref]$g2eTokens, [ref]$g2eErrors) | Out-Null
+          if ($null -ne $g2eErrors -and $g2eErrors.Count -gt 0) {
+            throw ("G2E_WINDOWS_GOLD_PILOT_PARSE_FAILED: " + ($g2eErrors | Out-String))
+          }
+          node --check .\shared\experiments\yu-video-understanding-poc-v0\g2e-gold-pilot.cjs
+          Write-Host 'G2E_WINDOWS_GOLD_PILOT_PARSE_PASS_NO_REAL_LABELS_NO_API'
           Write-Host 'G2D_WINDOWS_PARSE_ONLY_PASS_NO_MEDIA_NO_YOUTUBE_NO_LLM'
