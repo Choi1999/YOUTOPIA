@@ -228,12 +228,10 @@ export function AnalysisWorkspacePage({diagnosticsMode = false}: Readonly<{
   function addUrlTargets(raw: string) {
     const result = addWorkspaceUrlTargets(urlTargets, raw);
     if (result.added.length > 0) {
-      if (!focusOpen) {
-        const newest=workspaceUrlTargetKey(result.added[result.added.length-1]);
-        setDockState(previous =>
-          chooseWorkspaceDockTarget(previous,newest,result.targets));
-        setFocusOpen(true);
-      }
+      const newest=workspaceUrlTargetKey(result.added[result.added.length-1]);
+      setDockState(previous =>
+        chooseWorkspaceDockTarget(previous,newest,result.targets));
+      if (!focusOpen) setFocusOpen(true);
       setUrlTargets(result.targets);
       const stored = writeWorkspaceUrlTargets(getTabStorage(), result.targets);
       if (!stored) {
