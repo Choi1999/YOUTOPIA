@@ -171,3 +171,32 @@ code "$env:LOCALAPPDATA\YOUTOPIA\G2D-ManualReviews\TearsOfSteel-manual-review.js
 상세 운영 계약: `docs/research/YU_VIDEO_G2D_HUMAN_SYNC_YOUTUBE_REVIEW_V01.md`.
 
 `Assess`가 모든 샘플을 일치로 표시하더라도 출력은 `OPERATOR_REPORTED_SAMPLED_MATCHES_NOT_FULL_PROOF`일 뿐이며, 실제 전체 영상·음성 동등성, 권리/제3자 송신·보존, 독립 2인 골드 검수 및 G3 호출 승인은 여전히 별개다.
+
+
+## G2-D — 로컬 영상 + 오디오 파형 비교 작업공간
+
+VLC로 밀리초 단위 시간을 찾고 VS Code JSON을 직접 수정하는 번거로움을 줄이는 **로컬 브라우저 QA 도구**를 추가했다. 기존 G2-C 공식 원본·SRT와 G2-D 비공개 `manual-review.json`이 준비되어 있어야 한다. 원본을 다시 다운로드하지 않고 FFmpeg로 **브라우저 재생용 MP4 사본과 50ms 오디오 진폭 파형 캐시**를 AppData에 생성한다.
+
+```powershell
+cd C:\Projects\YOUTOPIA
+git fetch origin --prune
+cd C:\Projects\YOUTOPIA-VIDEO-G2C
+if (git status --porcelain) { throw '검증 Worktree에 변경 사항이 있습니다.' }
+git switch --detach origin/experiment/yu-video-understanding-poc-v01
+
+& .\shared\experiments\yu-video-understanding-poc-v0\g2d-open-workspace.ps1 -Film Sintel
+```
+
+`G2D_LOCAL_WORKSPACE_READY http://127.0.0.1:<port>/` 출력이 나오면 사용자 PC의 브라우저에서 해당 URL을 연다. 좌측 체크포인트, 중앙 로컬 영상+SRT 및 파형(클릭 이동·±0.1초), 우측 공식 YouTube 임베드 후보 영상, 하단 검수 판정+저장으로 구성되어 있다.
+
+YouTube iframe은 **버튼을 클릭할 때만** 브라우저에서 외부 요청을 발생시키며 스트림은 다운로드/저장하지 않는다. 게시자가 임베드를 막으면 브라우저에서 원본 YouTube 페이지를 열어 수동 비교한다. 파형은 전체 소리의 진폭이며 대사 인식·말소리 분리는 아니다. 인코딩된 브라우저용 AAC 음성은 원본과 미세한 시간 오차를 가질 수 있다.
+
+Tears of Steel을 확인하려면 PowerShell에서 `Ctrl+C`로 기존 로컬 서버를 종료한 뒤:
+
+```powershell
+& .\shared\experiments\yu-video-understanding-poc-v0\g2d-open-workspace.ps1 -Film TearsOfSteel
+```
+
+원본 영화는 수정하지 않고, 비공개 G2-D 검수 JSON만 사용자 명시적 **저장** 버튼으로 갱신한다. JSON 판정 불변 필드와 독립 G3 차단 게이트는 유지된다.
+
+전체 매뉴얼: `docs/research/YU_VIDEO_G2D_LOCAL_WAVEFORM_WORKSPACE_V01.md`. 실제 Windows 브라우저/대용량 영상 UI 검수는 아직 운영자가 수행하지 않았으므로 구현 완료와 현장 QA 완료를 혼동하지 않는다.
