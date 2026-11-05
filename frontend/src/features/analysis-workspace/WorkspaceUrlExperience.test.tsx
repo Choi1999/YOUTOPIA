@@ -67,7 +67,7 @@ describe("UI-R04B — integrated fullscreen URL intake",()=>{
     expect(screen.getByRole("region",{name:"URL 등록 대상 전체 화면 탐색"}))
       .toBeInTheDocument();
     const card=screen.getByRole("region",{name:"URL로 추가한 분석 대상"});
-    expect(within(card).getByText("Cb0_-123xyz")).toBeInTheDocument();
+    expect(within(card).getByText("식별자: Cb0_-123xyz")).toBeInTheDocument();
     fireEvent.drop(hero,{dataTransfer:{files:[{name:"secret.txt"}],getData:()=>""}});
     expect(screen.getByText(/파일 업로드는 지원하지 않습니다/)).toBeInTheDocument();
   });
