@@ -5,7 +5,7 @@ import com.sun.jna.platform.win32.WinCrypt;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.AclFileAttributeView;
+import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
