@@ -79,9 +79,25 @@ jobs:
           java-version: '21'
           cache: gradle
 
+      - name: Verify future credential modules remain synthetic or read-only
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $modules = @(
+            './src/main/java/com/youtopia/youtube/metadata/WindowsSyntheticEnrollmentSession.java',
+            './src/main/java/com/youtopia/youtube/metadata/WindowsMetadataCredentialPathPreflight.java'
+          )
+          foreach ($source in $modules) {
+            if (-not (Test-Path -LiteralPath $source)) { throw 'Missing credential safety source.' }
+            $forbidden = '@(Component|Service|RestController|Controller|Bean|Scheduled)|ProcessBuilder|System\.out|System\.err|HttpClient|WebClient|RestClient|Crypt32Util'
+            if (Select-String -Path $source -Pattern $forbidden) {
+              throw 'Credential planning source has an unauthorized execution surface.'
+            }
+          }
+
       - name: Windows Java report boundary (no vault or provider execution)
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          & .\gradlew.bat --no-daemon test --tests 'com.youtopia.youtube.metadata.WindowsDpapiVaultReadinessTest' --tests 'com.youtopia.youtube.metadata.WindowsDpapiSyntheticVaultTest'
+          & .\gradlew.bat --no-daemon test --tests 'com.youtopia.youtube.metadata.WindowsDpapiVaultReadinessTest' --tests 'com.youtopia.youtube.metadata.WindowsDpapiSyntheticVaultTest' --tests 'com.youtopia.youtube.metadata.WindowsMetadataCredentialPathPreflightTest' --tests 'com.youtopia.youtube.metadata.WindowsSyntheticEnrollmentSessionTest'
           if ($LASTEXITCODE -ne 0) { throw 'R04U Windows Java native DPAPI synthetic and report contract tests failed.' }
