@@ -1,24 +1,26 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 
-/**
- * UI-R04-Y: test-only, manual development opt-in. No production proxy.
- * Only the exact synthetic route prefix forwards to the dedicated Spring
- * test-classpath fixture bound on loopback 127.0.0.1:8765.
- */
+/** UI-R04-AA: explicit DEV-only same-origin test fixture proxies. */
 export default defineConfig(({command, mode}) => {
   const enabled = command === "serve" &&
     loadEnv(mode, process.cwd(), "VITE_R04Y_").VITE_R04Y_SYNTHETIC_HTTP === "enabled";
+  const statesEnabled = enabled &&
+    loadEnv(mode, process.cwd(), "VITE_R04AA_").VITE_R04AA_METADATA_STATES === "enabled";
+  const loopback = {
+    target: "http://127.0.0.1:8765",
+    changeOrigin: false, secure: false, ws: false,
+  };
   return {
-    plugins: [react()],
+    plugins:[react()],
     server: enabled ? {
       proxy: {
-        "/api/v1/youtube/metadata/synthetic": {
-          target: "http://127.0.0.1:8765",
-          changeOrigin: false,
-          secure: false,
-          ws: false,
-        },
+        // Use regex route boundaries: the old prefix must NOT implicitly
+        // forward synthetic-state routes without the additional state flag.
+        "^/api/v1/youtube/metadata/synthetic/(videos|channels|handles)/": loopback,
+        ...(statesEnabled ? {
+          "^/api/v1/youtube/metadata/synthetic-state/(videos|channels|handles)/": loopback,
+        } : {}),
       },
     } : undefined,
   };
