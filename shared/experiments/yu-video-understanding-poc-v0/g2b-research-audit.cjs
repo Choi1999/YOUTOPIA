@@ -70,7 +70,7 @@ function audit(m){
      goldReviewed:false,readyForLive:false,blockers});
  }
  check(Object.values(counts).every(n=>n===2),'genre distribution');
- check(originalListed===5&&timedCaptionsListed===3&&transcriptListed===3&&youtubeLinks===3,'evidence inventory changed without review');
+ check(originalListed===5&&timedCaptionsListed===4&&transcriptListed===3&&youtubeLinks===3,'evidence inventory changed without review');
  const fingerprint=createHash('sha256').update(JSON.stringify(m)).digest('hex');
  return {stage:'G2-B',status:'SIX_PUBLIC_RESEARCH_CANDIDATES_NOT_APPROVED_DATASET',
   sourceHashKind:'PUBLIC_REGISTRY_CONTENT_SHA256_NOT_VIDEO_HASH',registryDigestSha256:fingerprint,
