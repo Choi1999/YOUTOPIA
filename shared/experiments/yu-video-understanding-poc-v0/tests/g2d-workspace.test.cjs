@@ -144,3 +144,18 @@ test('workspace HTML and client source do not include model uploads or unguarded
 test('movie proxy creation requires existing local source; no remote sources',async()=>{
  await assert.rejects(()=>media.createProxy('https://youtube.com/watch?v=abc',path.join(os.tmpdir(),'fake.mp4')),/absolute media/);
 });
+
+test('HTTP JSON body parser keeps Korean notes when UTF-8 bytes split mid-character',async()=>{
+ const {EventEmitter}=require('node:events');
+ const request=new EventEmitter();
+ const message=JSON.stringify({note:'발화 시작 시각과 장면을 직접 확인'});
+ const bytes=Buffer.from(message,'utf8');
+ const index=bytes.indexOf(Buffer.from('발','utf8'));
+ assert.ok(index>0);
+ const task=workspace.readJsonLimited(request);
+ request.emit('data',bytes.subarray(0,index+1));
+ request.emit('data',bytes.subarray(index+1));
+ request.emit('end');
+ const parsed=await task;
+ assert.equal(parsed.note,'발화 시작 시각과 장면을 직접 확인');
+});
