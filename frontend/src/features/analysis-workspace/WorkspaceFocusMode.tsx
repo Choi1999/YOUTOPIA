@@ -1,5 +1,5 @@
 import {
-  useEffect, useRef, useState,
+  useEffect, useRef, useState, type Dispatch, type SetStateAction,
   type CSSProperties, type DragEvent, type FormEvent, type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
@@ -27,12 +27,19 @@ import {
   resizeFocusDockLayout, writeFocusDockLayout,
   type FocusDockLayout, type FocusDockSide,
 } from "./workspaceFocusLayout";
+import { chooseWorkspaceDockTarget, closeWorkspaceDockSide,
+  createWorkspaceDockState, reconcileWorkspaceDockState,
+  toggleWorkspaceDockSide, withWorkspaceDockWidths,
+  type WorkspaceDockState } from "./workspaceDockState";
 import "./workspace-focus.css";
 
 type Props = Readonly<{
   targets: readonly WorkspaceUrlTarget[];
   onAddUrls: (raw: string) => WorkspaceUrlIngestResult;
   onRemove: (key: string) => void;
+  onClearTargets?: () => void;
+  dockState?: WorkspaceDockState;
+  onDockStateChange?: Dispatch<SetStateAction<WorkspaceDockState>>;
   onExit: () => void;
   allowVideoImage?: boolean;
   onToggleVideoImage?: () => void;
@@ -79,7 +86,8 @@ function kindLabel(kind: WorkspaceUrlTarget["kind"]) {
  * docks never adds an edge, a metric or a metadata/provider request.
  */
 export function WorkspaceFocusMode({
-  targets, onAddUrls, onRemove, onExit,
+  targets, onAddUrls, onRemove, onClearTargets, onExit,
+  dockState, onDockStateChange,
   allowVideoImage = false, onToggleVideoImage, channelProfiles,
   allowChannelImage = false, onToggleChannelImage,
   diagnosticsMode = false,
@@ -97,9 +105,15 @@ export function WorkspaceFocusMode({
   const inputRef = useRef<HTMLInputElement>(null);
   const listToggleRef = useRef<HTMLButtonElement>(null);
   const detailToggleRef = useRef<HTMLButtonElement>(null);
-  const [listOpen, setListOpen] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [internalDockState, setInternalDockState] = useState(
+    () => createWorkspaceDockState(readFocusDockLayout(focusStorage())),
+  );
+  const currentDock = dockState && onDockStateChange ? dockState : internalDockState;
+  const updateDockState = dockState && onDockStateChange
+    ? onDockStateChange : setInternalDockState;
+  const {listOpen, detailOpen, selectedKey, widths: dockWidths} = currentDock;
+  const setDockWidths = (widths:FocusDockLayout|null) =>
+    updateDockState(prev => withWorkspaceDockWidths(prev, widths));
   const [search, setSearch] = useState("");
   const [input, setInput] = useState("");
   const [labelDraft, setLabelDraft] = useState("");
@@ -119,9 +133,6 @@ export function WorkspaceFocusMode({
   const [viewportWidth, setViewportWidth] = useState(
     () => typeof window === "undefined" ? 1440 : window.innerWidth,
   );
-  const [dockWidths, setDockWidths] = useState<FocusDockLayout | null>(
-    () => readFocusDockLayout(focusStorage()),
-  );
   const [measuredWidths, setMeasuredWidths] = useState<FocusDockLayout>({
     list: 280, detail: 300,
   });
@@ -131,6 +142,9 @@ export function WorkspaceFocusMode({
     return () => window.removeEventListener("resize", syncViewport);
   }, []);
   useEffect(() => { writeFocusDockLayout(focusStorage(), dockWidths); }, [dockWidths]);
+  useEffect(() => {
+    updateDockState(prev => reconcileWorkspaceDockState(prev, targets));
+  }, [targets, updateDockState]);
   useEffect(() => {
     function measure() {
       const list = Math.round(listDockRef.current?.getBoundingClientRect().width ?? 0);
@@ -187,23 +201,16 @@ export function WorkspaceFocusMode({
   }
 
   function focusTarget(key: string | null) {
-    setSelectedKey(key);
-    if (key) {
-      setDetailOpen(true);
-      if (inNarrowViewport()) setListOpen(false);
-    } else {
-      setDetailOpen(false);
-    }
+    updateDockState(prev =>
+      chooseWorkspaceDockTarget(prev, key, targets, inNarrowViewport()));
   }
 
   function toggleList() {
-    setListOpen(value => !value);
-    if (inNarrowViewport()) setDetailOpen(false);
+    updateDockState(prev => toggleWorkspaceDockSide(prev,"list",inNarrowViewport()));
   }
 
   function toggleDetail() {
-    setDetailOpen(value => !value);
-    if (inNarrowViewport()) setListOpen(false);
+    updateDockState(prev => toggleWorkspaceDockSide(prev,"detail",inNarrowViewport()));
   }
 
   function ingest(raw: string) {
@@ -480,7 +487,7 @@ export function WorkspaceFocusMode({
             <div className="workspace-focus__dock-heading">
               <h3>대상 목록</h3>
               <button type="button" onClick={() => {
-                setListOpen(false);
+                updateDockState(prev => closeWorkspaceDockSide(prev,"list"));
                 listToggleRef.current?.focus();
               }} aria-label="대상 목록 닫기">닫기</button>
             </div>
@@ -491,6 +498,13 @@ export function WorkspaceFocusMode({
               onChange={event => setSearch(event.target.value)} maxLength={80}
               placeholder="등록 대상 검색"/>
             <p className="workspace-focus__dock-count">표시 {visible.length}개 / 등록 {targets.length}개</p>
+            {onClearTargets && targets.length>0 && (
+              <button type="button" onClick={() => {
+                focusTarget(null);
+                onClearTargets();
+                setSearch("");
+              }}>등록 목록 비우기</button>
+            )}
             <div className="workspace-focus__items" role="group" aria-label="등록 대상 선택">
               {visible.map(target => {
                 const key=workspaceUrlTargetKey(target);
@@ -566,7 +580,7 @@ export function WorkspaceFocusMode({
             <div className="workspace-focus__dock-heading">
               <h3>선택 상세</h3>
               <button type="button" onClick={() => {
-                setDetailOpen(false);
+                updateDockState(prev => closeWorkspaceDockSide(prev,"detail"));
                 detailToggleRef.current?.focus();
               }} aria-label="선택 상세 닫기">닫기</button>
             </div>
