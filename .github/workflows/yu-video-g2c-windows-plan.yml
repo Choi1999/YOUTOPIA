@@ -6,12 +6,14 @@ on:
     paths:
       - shared/experiments/yu-video-understanding-poc-v0/g2c-windows-official-media.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-windows-manual-review.ps1
+      - shared/experiments/yu-video-understanding-poc-v0/g2d-open-workspace.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-human-review.cjs
       - .github/workflows/yu-video-g2c-windows-plan.yml
   pull_request:
     paths:
       - shared/experiments/yu-video-understanding-poc-v0/g2c-windows-official-media.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-windows-manual-review.ps1
+      - shared/experiments/yu-video-understanding-poc-v0/g2d-open-workspace.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-human-review.cjs
       - .github/workflows/yu-video-g2c-windows-plan.yml
 permissions:
@@ -69,4 +71,12 @@ jobs:
             throw ("G2D_POWERSHELL_PARSE_FAILED: " + ($errors | Out-String))
           }
           node --check .\shared\experiments\yu-video-understanding-poc-v0\g2d-human-review.cjs
+          $workspace = (Resolve-Path '.\shared\experiments\yu-video-understanding-poc-v0\g2d-open-workspace.ps1').Path
+          $wt = $null
+          $we = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($workspace, [ref]$wt, [ref]$we) | Out-Null
+          if ($null -ne $we -and $we.Count -gt 0) { throw ("G2D_WORKSPACE_POWERSHELL_PARSE_FAILED: " + ($we | Out-String)) }
+          node --check .\shared\experiments\yu-video-understanding-poc-v0\g2d-workspace-server.cjs
+          node --check .\shared\experiments\yu-video-understanding-poc-v0\g2d-workspace-media.cjs
+          node --check .\shared\experiments\yu-video-understanding-poc-v0\g2d-workspace-client.js
           Write-Host 'G2D_WINDOWS_PARSE_ONLY_PASS_NO_MEDIA_NO_YOUTUBE_NO_LLM'
