@@ -9,6 +9,7 @@ import { isApprovedChannelThumbnailUrl, type ApprovedChannelProfileCache } from 
 import { WORKSPACE_URL_TARGETS_TTL_MS, workspaceUrlTargetKey, type WorkspaceUrlTarget } from "./workspaceUrlTargets";
 import type { SyntheticWorkspaceMetadata } from "./workspaceSyntheticMetadata";
 import type { MetadataState } from "./workspaceMetadataConsumerState";
+import { readyProviderMetadata, type ProviderMetadataState } from "./workspaceProviderMetadata";
 
 export const WORKSPACE_TARGET_PRESENTATION_KEY = "youtopia-target-presentation-v1";
 export const MAX_USER_LABEL = 120;
@@ -22,6 +23,8 @@ export type WorkspaceTargetPresentation = Readonly<{
   synthetic?: Readonly<Record<string, SyntheticWorkspaceMetadata>>;
   /** Dev-only transient status display. Never serialized or treated as provider proof. */
   metadataStates?: Readonly<Record<string, MetadataState>>;
+  /** Ephemeral authorized-backend lookup state. No reader exists by default. */
+  providerStates?: Readonly<Record<string, ProviderMetadataState>>;
 }>;
 
 export const EMPTY_TARGET_PRESENTATION: WorkspaceTargetPresentation = {
@@ -154,6 +157,9 @@ export function userFacingTargetName(
 ): string {
   const custom = presentation.labels[workspaceUrlTargetKey(target)];
   if (validLabel(custom)) return custom;
+  const provider = readyProviderMetadata(
+    presentation.providerStates?.[workspaceUrlTargetKey(target)],target);
+  if (provider) return provider.title;
   const local = presentation.synthetic?.[workspaceUrlTargetKey(target)];
   if (local?.source === "LOCAL_SYNTHETIC_ONLY" &&
       local.kind === target.kind && local.requestedId === target.id &&
