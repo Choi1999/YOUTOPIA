@@ -4,8 +4,8 @@
  const el={movie:$('movie'),subtitle:$('subtitle'),clock:$('clock'),cueNumber:$('cueNumber'),cueText:$('cueText'),
   wave:$('wave'),zoom:$('zoom'),nav:$('questionNav'),progress:$('progressText'),bar:$('progressBar'),
   badge:$('progressBadge'),film:$('filmBadge'),reviewer:$('reviewerBadge'),question:$('questionText'),meta:$('questionMeta'),
-  anchors:$('anchors'),jump:$('jumpAnchor'),questionStatus:$('questionStatus'),aiVerdict:$('aiProposedVerdict'),
-  aiAnswer:$('aiAnswer'),aiTiming:$('aiTiming'),aiCaveat:$('aiCaveat'),decision:$('decision'),
+  anchors:$('anchors'),jump:$('jumpAnchor'),questionStatus:$('questionStatus'),
+  aiAnswer:$('aiAnswer'),decision:$('decision'),
   positive:$('positiveFields'),negative:$('negativeFields'),supported:$('supportedFields'),unsupported:$('unsupportedFields'),
   verdict:$('verdict'),answer:$('answer'),absence:$('absence'),fullMovie:$('fullMovie'),
   reviewerNote:$('reviewerNote'),negativeNote:$('negativeNote'),watchedLabel:$('watchedLabel'),
@@ -30,7 +30,7 @@
  function notice(s,isErr=false,ok=false){
   el.feedback.textContent=s;el.feedback.className='alert'+(isErr?' error':ok?' success':'');
  }
- function markDirty(){dirty=true;notice('저장하지 않은 변경 사항이 있습니다. 원본과 대조한 후 검토 결과 저장을 누르세요.');}
+ function markDirty(){dirty=true;notice('저장되지 않은 변경 사항이 있습니다.');}
  function question(){return packet.questions[selected];}
  function currentEvidence(){
   return fields.map(row=>({modality:row.modality.value,
@@ -75,7 +75,7 @@
   const notes=document.createElement('textarea');notes.rows=2;notes.value=e.observationNote||'';
   notes.placeholder='AI 답안과 무관하게 실제 원본에서 확인한 장면/발화를 18자 이상 기록';
   notes.addEventListener('input',markDirty);
-  const notesLabel=document.createElement('label');notesLabel.textContent='근거 관찰 기록 · AI 작성 초안 (사람이 영상 확인 후 수정·확정)';notesLabel.append(notes);
+  const notesLabel=document.createElement('label');notesLabel.textContent='관찰 기록';notesLabel.append(notes);
   card.append(head,grid,capture,notesLabel);
   return {card,modality,start,end,notes};
  }
@@ -109,14 +109,9 @@
  function render(){
   const q=question(),r=q.review,a=q.aiDraft;
   el.question.textContent=q.questionText;
-  el.meta.textContent=q.questionId+' · '+q.kind+' · AI 초안과 실제 원본 내용이 맞는지 검증합니다.';
+  el.meta.textContent=q.questionId+' · '+q.kind+' · 답변·근거 편집';
   el.anchors.textContent=q.localAnchorMs.length?q.localAnchorMs.map(fmt).join(' / '):'특정 기준점 없음 · 전체 영화 확인';
-  el.aiVerdict.textContent='AI 예상 분류: '+a.proposedVerdict;
   el.aiAnswer.textContent=a.answerText;
-  el.aiTiming.textContent=a.evidenceHints.length?'AI 제안 구간 (검증 전): '+
-   a.evidenceHints.map(x=>fmt(x.localStartMs)+' ~ '+fmt(x.localEndMs)).join(' / '):
-   'AI는 근거 부재를 추정한 상태이며 전체 영화 검증이 필요합니다.';
-  el.aiCaveat.textContent='주의: '+a.caveat+' 관찰 기록 입력란도 AI가 작성한 미검증 초안입니다. 실제 영상을 확인하고 수정·수용하세요.';
   el.decision.value=r.decision;
   el.verdict.value=r.verdict||a.proposedVerdict;
   el.answer.value=r.answerText||a.answerText;
@@ -152,7 +147,7 @@
   if(dirty&&!window.confirm('현재 문항에 저장하지 않은 변경 사항이 있습니다. 버리고 이동하시겠습니까?'))return;
   selected=index;
   const q=question();if(q.localAnchorMs.length)jump(q.localAnchorMs[0]);
-  render();notice('AI 제안과 실제 원본을 대조한 뒤 수용·수정·반려 또는 불확실을 선택하세요.');
+  render();notice('답변·근거 기록을 수정하거나 판정한 뒤 저장할 수 있습니다.');
  }
  function collect(){
   const proposed=structuredClone(packet),q=proposed.questions[selected],r=q.review;
