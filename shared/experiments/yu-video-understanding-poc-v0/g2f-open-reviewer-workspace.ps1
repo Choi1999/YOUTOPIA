@@ -30,6 +30,9 @@ if ([string]::IsNullOrWhiteSpace($VideoPath)) {
 if ([string]::IsNullOrWhiteSpace($SubtitlePath)) {
  $SubtitlePath=Join-Path $root ('G2C-AuthorizedPublisherMedia\'+$Film+'\'+$(if($Film -eq 'Sintel'){'sintel_en.srt'}else{'TOS-en.srt'}))
 }
+$PacketPath=[IO.Path]::GetFullPath($PacketPath)
+$VideoPath=[IO.Path]::GetFullPath($VideoPath)
+$SubtitlePath=[IO.Path]::GetFullPath($SubtitlePath)
 foreach($entry in @(@{type='Review packet';value=$PacketPath},@{type='Local film';value=$VideoPath},@{type='Local SRT';value=$SubtitlePath})){
  if (-not (Test-Path -LiteralPath $entry.value -PathType Leaf)) {
   throw ('G2F_REVIEWER_WEB_FAIL_CLOSED: '+$entry.type+' missing. Only the individual review packet and authorized local film/SRT must be provided.')
