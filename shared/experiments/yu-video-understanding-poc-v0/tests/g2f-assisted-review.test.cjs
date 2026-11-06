@@ -12,7 +12,11 @@ const web=require('../g2f-assisted-workspace-server.cjs');
 function temp(){return fs.mkdtempSync(path.join(os.tmpdir(),'yu-g2f-assisted-'));}
 function sourcePacket(film='Sintel'){
  const tears=film==='TearsOfSteel',n=tears?76:26,duration=tears?734167:888032,start=tears?23000:107250,last=tears?567000:629800;
- const rows=Array.from({length:n},(_,i)=>{const t=Math.floor(start+(last-start-2000)*i/(n-1));return {startMs:t,endMs:Math.min(last,t+2000)};});
+ const pivot=tears?37:12, middle=tears?318000:207250;
+ const rows=Array.from({length:n},(_,i)=>{const t=Math.floor(i<=pivot?
+  start+(middle-start)*i/pivot:
+  middle+(last-middle-2000)*(i-pivot)/(n-1-pivot));
+  return {startMs:t,endMs:Math.min(last,t+1500)};});
  rows[n-1].endMs=last;
  const packet=g2d.completePacket(film,{status:'LOCAL_MEDIA_FILE_BOUNDS_REVIEW_ONLY',slot:g2d.FILMS[film].slot,
   video:{sha256:'a'.repeat(64),durationMs:duration},caption:{sha256:'b'.repeat(64),
