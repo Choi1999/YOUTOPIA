@@ -176,7 +176,9 @@ function validate(p){
     v.evidence.length>=Math.max(1,q.localAnchorMs.length),'supported requires human-checked evidence ranges');
    for(const e of v.evidence){
     strict(e,E,'human evidence');
-    const allowed=q.kind==='SPEECH'?['AUDIO','TRANSCRIPT']:q.kind==='VISUAL'||q.kind==='TEMPORAL'?['FRAME']:[];
+    const allowed=q.kind==='SPEECH'?['AUDIO','TRANSCRIPT']:
+     q.kind==='VISUAL'||q.kind==='TEMPORAL'?['FRAME']:
+     ['AUDIO','TRANSCRIPT','FRAME']; // A reviewer may refute an AI UNSUPPORTED guess with positive source evidence.
     guard(allowed.includes(e.modality)&&Number.isSafeInteger(e.localStartMs)&&Number.isSafeInteger(e.localEndMs)&&
       e.localEndMs>e.localStartMs&&e.localStartMs>=0&&e.localEndMs<=p.durationMs&&note(e.observationNote,18,500),
       'source evidence invalid modality, timing or observation');
