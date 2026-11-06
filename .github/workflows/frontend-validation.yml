@@ -205,3 +205,112 @@ jobs:
               kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true
             fi
           done
+
+
+  r04ag-pinned-denied-consumer-integration:
+    name: UI-R04-AG pinned AF MockMvc + Vite/Spring deny HTTP (NO real API)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/ui-r04ag-pinned-frontend-spring-offline-integration-v01'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout AG frontend branch
+        uses: actions/checkout@v4
+
+      - name: Checkout exact PR96 AF backend test-only fixture (no merge)
+        uses: actions/checkout@v4
+        with:
+          repository: Choi1999/YOUTOPIA
+          ref: 2a7836472efe154e78e5ac597f8c7a9dd67aaf9e
+          path: _r04ag_backend
+
+      - name: Confirm frozen Spring SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C _r04ag_backend rev-parse HEAD)" = \
+            "2a7836472efe154e78e5ac597f8c7a9dd67aaf9e"
+          test -f _r04ag_backend/src/test/java/com/youtopia/youtube/metadata/MetadataConsumerOfflineSecurityTest.java
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Setup locked pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '12.9.1'
+
+      - name: Verify actual AF Spring 401/403/503 through pinned MockMvc and request contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd _r04ag_backend
+          chmod +x ./gradlew
+          ./gradlew --no-daemon test \
+            --tests 'com.youtopia.youtube.metadata.MetadataConsumerContractTest' \
+            --tests 'com.youtopia.youtube.metadata.MetadataConsumerOfflineSecurityTest'
+
+      - name: Start isolated pinned Spring synthetic test server
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd _r04ag_backend
+            setsid ./gradlew --no-daemon runR04XSyntheticMetadataLoopback \
+              > /tmp/r04ag-spring.log 2>&1 &
+            echo $! > /tmp/r04ag-spring.pid
+          )
+          for i in $(seq 1 120); do
+            if curl -fsS --max-time 2 \
+              'http://127.0.0.1:8765/api/v1/youtube/metadata/synthetic/videos/Ab0_-123xyz' \
+              > /dev/null 2>/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          tail -n 80 /tmp/r04ag-spring.log
+          exit 1
+
+      - name: Start Vite DEV with AF denial probe flags
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir frontend install --frozen-lockfile
+          setsid env VITE_R04Y_SYNTHETIC_HTTP=enabled \
+            VITE_R04AA_METADATA_STATES=enabled \
+            VITE_R04AC_DIAGNOSTICS=enabled \
+            VITE_R04AG_CONSUMER_DENIAL=enabled \
+            pnpm --dir frontend dev --host 127.0.0.1 \
+            > /tmp/r04ag-vite.log 2>&1 &
+          echo $! > /tmp/r04ag-vite.pid
+          for i in $(seq 1 60); do
+            if curl -fsS --max-time 2 \
+              'http://127.0.0.1:5173/analysis/youtube/workspace' \
+              > /dev/null 2>/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          tail -n 80 /tmp/r04ag-vite.log
+          exit 1
+
+      - name: Verify deny-by-default Vite proxy and separate synthetic 503
+        run: node frontend/scripts/checkR04AGOfflineCrossProcess.mjs
+
+      - name: Stop owned loopback processes
+        if: always()
+        shell: bash
+        run: |
+          for service in r04ag-vite r04ag-spring; do
+            if test -f "/tmp/$service.pid"; then
+              pid=$(cat "/tmp/$service.pid")
+              kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true
+            fi
+          done
