@@ -124,3 +124,38 @@ jobs:
           Write-Host 'G2F_REVIEWER_WEB_WINDOWS_PARSE_PASS_NO_EXTERNAL_MEDIA'
           Write-Host 'G2F_WINDOWS_BLIND_REVIEW_PARSE_PASS_NO_MEDIA_NO_INDEPENDENCE_CLAIM'
           Write-Host 'G2D_WINDOWS_PARSE_ONLY_PASS_NO_MEDIA_NO_YOUTUBE_NO_LLM'
+
+      - name: G2-F synthetic reviewer-only ZIP export excludes media and other reviewer answers
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $private = Join-Path $env:LOCALAPPDATA 'YOUTOPIA\G2F-IndependentReviews'
+          New-Item -ItemType Directory -Path $private -Force | Out-Null
+          $packet = Join-Path $private 'Sintel-CI_G2F_TEST-blind-review.json'
+          node .\shared\experiments\yu-video-understanding-poc-v0\tests\g2f-reviewer-zip-fixture.cjs $packet CI_G2F_TEST
+          if ($LASTEXITCODE -ne 0) { throw 'G2F_SYNTHETIC_TEST_PACKET_FAILED' }
+          $out = Join-Path $env:RUNNER_TEMP 'G2F-reviewer-export-smoke'
+          $export = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-export-reviewer-web.ps1'
+          & $export -Film Sintel -ReviewerCode CI_G2F_TEST -OutputDirectory $out
+          $zip = Join-Path $out 'Sintel-CI_G2F_TEST-G2F-Reviewer-Web.zip'
+          if (-not (Test-Path -LiteralPath $zip -PathType Leaf)) { throw 'G2F_EXPORT_ZIP_NOT_CREATED' }
+          Add-Type -AssemblyName System.IO.Compression
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($zip)
+          try {
+            $entries = @($archive.Entries | ForEach-Object { $_.FullName })
+            $packets = @($entries | Where-Object { $_ -match '-blind-review\.json$' })
+            if ($packets.Count -ne 1 -or $packets[0] -notmatch '/private/Sintel-CI_G2F_TEST-blind-review\.json$') {
+              throw 'G2F_ZIP_NOT_EXACTLY_ONE_REVIEWER_PACKET'
+            }
+            if (@($entries | Where-Object { $_ -match '\.(mkv|mov|mp4|srt)$|G2E-PrivateGoldDrafts|REVIEWER_B' }).Count -gt 0) {
+              throw 'G2F_EXPORT_CONTAINS_MEDIA_OR_OTHER_REVIEWER_DATA'
+            }
+            foreach ($file in @('g2f-open-reviewer-workspace.ps1','g2f-reviewer-workspace-server.cjs','g2f-reviewer-workspace-client.js','g2f-reviewer-workspace.html','g2f-reviewer-workspace.css')) {
+              if (@($entries | Where-Object { $_.EndsWith($file) }).Count -ne 1) {
+                throw ('G2F_ZIP_MISSING_WEB_FILE '+$file)
+              }
+            }
+          } finally {
+            $archive.Dispose()
+          }
+          Write-Host 'G2F_REVIEWER_ZIP_SYNTHETIC_EXPORT_PASS'
