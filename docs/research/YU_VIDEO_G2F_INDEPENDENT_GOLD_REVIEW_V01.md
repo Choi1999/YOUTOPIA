@@ -168,3 +168,25 @@ G2-F 도구는 **Node 24** 기반이고, `Plan/Check/Assess`는 FFmpeg·YouTube 
 - **출력의 `verifiedIndependentHumanReviewers=0`, `independentGoldApproved=0`, `g3Authorized=false`는 사람 검토 및 별도 승인 전까지 계속 유지한다.**
 
 **현재 판정: `G2F_OFFLINE_REVIEW_TOOLS_READY / ACTUAL_BLIND_REVIEW_NOT_STARTED / G3_NOT_APPROVED / NO_MERGE`.**
+
+
+## 9. 운영자 승인: G2-F 독립 검수 우선 (2026-11-06 KST)
+
+**결정:** 운영자는 G2-F 질문 패킷 4개 생성 완료 보고에 이어, **추가 기능 개발을 중단하고 실제 독립 검수 결과 확보에 집중하는 방향**을 승인하였다. 이는 G2-F 실험 운영 우선순위에 대한 승인으로 기록하며, PR 생성·병합·원격 브랜치 삭제·G3 유료 호출·골드 정답 승인으로 확대 해석하지 않는다.
+
+### 사용자 제출 근거
+
+- Git Worktree: `C:\Projects\YOUTOPIA-VIDEO-G2C`, 기준 `db8e771b3a547caa9ac218b749600435446a5b88` (사용자가 제출한 checkout 로그).
+- 실제 Windows 실행 결과(운영자 제출): `Sintel` × `REVIEWER_A/B`, `TearsOfSteel` × `REVIEWER_A/B`의 **블라인드 질문 패킷 4/4 생성**, 각각 질문 6개, `containsOperatorAnswers=false`, `storedOutsideGit=true`.
+- 패킷 생성은 **실제 독립 검수자 존재나 본문 검토 시작의 증거가 아니다**. 두 사람의 신원·접근권·검토 독립성 미확인. `ACTUAL_BLIND_REVIEWS_SUBMITTED=0`, `INDEPENDENT_GOLD_APPROVED=0` 유지.
+- 원본 질문·답변·영상 및 SRT 전문은 로컬 비공개 저장. 공개 GitHub에는 민감 원문을 업로드하지 않는다.
+
+### 진행 제한과 다음 작업
+
+1. **기능 동결:** 현재 실험 브랜치에는 추가 기능 개발을 진행하지 않는다. 실제 G2-F 수행 중 확인된 결함에 대해서만 별도 합의 후 최소 수정한다.
+2. **사람 검수:** 작성자 답안을 보지 않은 실제 검수자 두 명을 확보한다. 각자 자신의 질문 전용 JSON과 이용이 허가된 공식 원본을 독립 검토한다. 검수자에게 작성자의 G2-E 답안 패널·ChatGPT 모범답안·다른 검수자 파일을 보여주지 않는다.
+3. **검수 결과:** 각 검수자가 먼저 `-Mode Check`로 본인 파일의 구조를 확인하고, 두 검수자가 끝난 뒤 운영자가 영화별 `-Mode Assess`로 차이·불확실성·근거 시각 불일치를 집계한다. 출력이 통과해도 실제 골드 정답 자동 승격은 금지.
+4. **검수자 미확보 시:** 두 검수자의 결과를 임의 생성하거나 운영자 1인의 이중 검토를 독립 검수라고 표시하지 않는다. `INDEPENDENT_REVIEW_PENDING`으로 유지하고, **오프라인 도구만 병합할지** 별도의 사용자 결정을 받는다.
+5. **종료 Gate:** G2-F 판정과 미해결 사항을 기록하고 코드·출처 범위를 확인한 뒤 오프라인 연구 도구의 PR·대상 브랜치를 정한다. PR 병합과 실험 브랜치 삭제에는 각각 최종 명시 승인이 필요하다. G3는 별도 신규 브랜치에서 따로 승인한다.
+
+**승인된 진행 상태:** `G2F_REVIEW_PRIORITY_APPROVED / BLIND_PACKETS_4_OF_4_CREATED / INDEPENDENT_REVIEW_PENDING / FEATURE_FREEZE / G3_NOT_APPROVED / NO_MERGE / NO_DELETE`.
