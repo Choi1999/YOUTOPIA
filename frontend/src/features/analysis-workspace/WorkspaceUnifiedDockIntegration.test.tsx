@@ -22,11 +22,14 @@ function show() {
 afterEach(()=>{
   sessionStorage.clear();
   document.body.style.overflow="";
+  Object.defineProperty(window,"innerWidth",{configurable:true,value:1024});
   vi.unstubAllGlobals();
 });
 
 describe("UI-R04-AD-1/2 — graph, focus list and fallback cards share dock state",()=>{
   it("uses one selection across list, graph and fallback collection after focus exit",async()=>{
+    // Retain desktop two-dock expectation; tablet/mobile has exclusive overlay.
+    Object.defineProperty(window,"innerWidth",{configurable:true,value:1440});
     const user=userEvent.setup();
     const fetcher=vi.fn();
     vi.stubGlobal("fetch",fetcher);
