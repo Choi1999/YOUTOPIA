@@ -12,8 +12,8 @@ const ROOT=['schemaVersion','kind','protocolVersion','film','publisherEdition','
  'sourceCaptionSha256','durationMs','proposalSetId','proposalDigest','questions','templateDigest',
  'goldApproved','g3Authorized','externalProviderCalls','actualSpendUsd'];
 const Q=['questionId','questionText','kind','localAnchorMs','aiDraft','review'];
-const AI=['proposedVerdict','answerText','evidenceHints','caveat','requiresHumanVerification'];
-const HINT=['modality','localStartMs','localEndMs'];
+const AI=['proposedVerdict','answerText','evidenceHints','absenceRationale','caveat','requiresHumanVerification'];
+const HINT=['modality','localStartMs','localEndMs','observationNote'];
 const R=['decision','verdict','answerText','evidence','absenceRationale','fullMovieReviewed','reviewerNote','watchedSource'];
 const E=['modality','localStartMs','localEndMs','observationNote'];
 const DECISIONS=['PENDING','ACCEPT','EDIT','REJECT','UNCERTAIN'];
@@ -40,21 +40,22 @@ function proposalRegistry(){
  guard(Array.isArray(data.drafts)&&data.drafts.length===12,'12 AI editorial draft questions');
  const seen=new Set();
  for(const q of data.drafts){
-  strict(q,['questionId','film','kind','proposedVerdict','answerText','evidenceHints','caveat','requiresHumanVerification'],'AI draft');
+  strict(q,['questionId','film','kind','proposedVerdict','answerText','evidenceHints','absenceRationale','caveat','requiresHumanVerification'],'AI draft');
   guard(!seen.has(q.questionId)&&/^G2E-(SIN|TOS)-0[1-6]$/.test(q.questionId),'AI draft unique ID');
   seen.add(q.questionId);
   guard((q.film==='Sintel'||q.film==='TearsOfSteel')&&
    q.questionId.startsWith(q.film==='Sintel'?'G2E-SIN-':'G2E-TOS-'),'AI draft film');
   guard(['SPEECH','VISUAL','TEMPORAL','UNSUPPORTED'].includes(q.kind),'AI draft kind');
   guard(q.proposedVerdict===(q.kind==='UNSUPPORTED'?'UNSUPPORTED':'SUPPORTED'),'AI suggestion status');
-  guard(note(q.answerText,12)&&note(q.caveat,20,700)&&q.requiresHumanVerification===true,'unverified AI text');
+  guard(note(q.answerText,12)&&note(q.caveat,20,700)&&q.requiresHumanVerification===true&&
+   (q.absenceRationale===null||note(q.absenceRationale,20,500)),'unverified AI text');
   guard(Array.isArray(q.evidenceHints)&&q.evidenceHints.length===(q.kind==='UNSUPPORTED'?0:q.kind==='TEMPORAL'?2:1),
    'AI evidence hint count');
   for(const e of q.evidenceHints){
    strict(e,HINT,'AI evidence hint');
    guard(['AUDIO','TRANSCRIPT','FRAME'].includes(e.modality)&&
     Number.isSafeInteger(e.localStartMs)&&Number.isSafeInteger(e.localEndMs)&&
-    e.localEndMs>e.localStartMs&&e.localStartMs>=0,'AI timing shape');
+    e.localEndMs>e.localStartMs&&e.localStartMs>=0&&note(e.observationNote,18,500),'AI timing and observation shape');
   }
  }
  return data;
@@ -92,7 +93,7 @@ function plan(authorFile,reviewerCode,dest){
   return {questionId:q.id,questionText:q.finalQuestionText,kind:q.kind,
    localAnchorMs:[...q.anchorLocalMs],
    aiDraft:{proposedVerdict:ai.proposedVerdict,answerText:ai.answerText,evidenceHints:ai.evidenceHints,
-    caveat:ai.caveat,requiresHumanVerification:true},
+    absenceRationale:ai.absenceRationale,caveat:ai.caveat,requiresHumanVerification:true},
    review:{decision:'PENDING',verdict:null,answerText:null,evidence:[],absenceRationale:null,
     fullMovieReviewed:false,reviewerNote:null,watchedSource:false}};
  });
@@ -136,7 +137,7 @@ function validate(p){
   const reference=registry.drafts.find(d=>d.questionId===q.questionId&&d.film===p.film);
   guard(!!reference&&q.kind===reference.kind&&JSON.stringify(q.aiDraft)===JSON.stringify({
    proposedVerdict:reference.proposedVerdict,answerText:reference.answerText,evidenceHints:reference.evidenceHints,
-   caveat:reference.caveat,requiresHumanVerification:true}),
+   absenceRationale:reference.absenceRationale,caveat:reference.caveat,requiresHumanVerification:true}),
    'AI suggestion must match immutable published assistant draft');
   guard(q.aiDraft.requiresHumanVerification===true,'AI evidence cannot be auto verified');
   strict(q.review,R,'review response');
