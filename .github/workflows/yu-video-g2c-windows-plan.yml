@@ -1,4 +1,4 @@
-name: YOUTOPIA G2C G2D Windows plans only
+name: YOUTOPIA G2C-G2F Windows offline scripts
 on:
   push:
     branches:
@@ -7,6 +7,7 @@ on:
       - shared/experiments/yu-video-understanding-poc-v0/g2c-windows-official-media.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-windows-manual-review.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2e-windows-gold-pilot.ps1
+      - shared/experiments/yu-video-understanding-poc-v0/g2f-windows-independent-review.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-open-workspace.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-human-review.cjs
       - .github/workflows/yu-video-g2c-windows-plan.yml
@@ -15,6 +16,7 @@ on:
       - shared/experiments/yu-video-understanding-poc-v0/g2c-windows-official-media.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-windows-manual-review.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2e-windows-gold-pilot.ps1
+      - shared/experiments/yu-video-understanding-poc-v0/g2f-windows-independent-review.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-open-workspace.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-human-review.cjs
       - .github/workflows/yu-video-g2c-windows-plan.yml
@@ -90,4 +92,13 @@ jobs:
           }
           node --check .\shared\experiments\yu-video-understanding-poc-v0\g2e-gold-pilot.cjs
           Write-Host 'G2E_WINDOWS_GOLD_PILOT_PARSE_PASS_NO_REAL_LABELS_NO_API'
+          $g2f = (Resolve-Path '.\shared\experiments\yu-video-understanding-poc-v0\g2f-windows-independent-review.ps1').Path
+          $g2fTokens = $null
+          $g2fErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($g2f, [ref]$g2fTokens, [ref]$g2fErrors) | Out-Null
+          if ($null -ne $g2fErrors -and $g2fErrors.Count -gt 0) {
+            throw ("G2F_WINDOWS_BLIND_REVIEW_PARSE_FAILED: " + ($g2fErrors | Out-String))
+          }
+          node --check .\shared\experiments\yu-video-understanding-poc-v0\g2f-blind-review.cjs
+          Write-Host 'G2F_WINDOWS_BLIND_REVIEW_PARSE_PASS_NO_MEDIA_NO_INDEPENDENCE_CLAIM'
           Write-Host 'G2D_WINDOWS_PARSE_ONLY_PASS_NO_MEDIA_NO_YOUTUBE_NO_LLM'
