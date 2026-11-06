@@ -119,6 +119,10 @@ export function WorkspaceFocusMode({
   const [input, setInput] = useState("");
   const [labelDraft, setLabelDraft] = useState("");
   const [imageDraft, setImageDraft] = useState("");
+  // Disclosure state is ephemeral UI only; forms/destructive controls are
+  // mounted strictly on demand, including in JSDOM/keyboard navigation.
+  const [editOpen, setEditOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
   const [message, setMessage] = useState(
     "추가된 URL은 미확인 대상입니다. 등록만으로 영상·채널 분석은 시작되지 않습니다.",
   );
@@ -175,6 +179,8 @@ export function WorkspaceFocusMode({
   useEffect(() => {
     setLabelDraft(selectedKey ? presentation.labels[selectedKey] ?? "" : "");
     setImageDraft(selectedKey ? presentation.channelImages[selectedKey] ?? "" : "");
+    setEditOpen(false);
+    setManageOpen(false);
   }, [selectedKey]);
   const visible = [...targets].reverse().filter(target => {
     const query = search.trim().toLocaleLowerCase("ko-KR");
@@ -634,9 +640,13 @@ export function WorkspaceFocusMode({
                   </div>
                 </details>
                 {(onSetTargetLabel || selected.kind !== "VIDEO" && onSetChannelArtwork) && (
-                  <details className="workspace-focus__section workspace-focus__section--edit">
-                    <summary>표시 제목·이미지 편집</summary>
-                    <div className="workspace-focus__section-body">
+                  <details className="workspace-focus__section workspace-focus__section--edit"
+                    open={editOpen}>
+                    <summary onClick={event => {
+                      event.preventDefault();
+                      setEditOpen(value => !value);
+                    }}>표시 제목·이미지 편집</summary>
+                    {editOpen && <div className="workspace-focus__section-body">}
                       {onSetTargetLabel && (
                         <form className="workspace-focus__editor" onSubmit={saveDisplayTitle}>
                           <label htmlFor="focus-display-title">표시 제목 (직접 입력)</label>
@@ -661,17 +671,21 @@ export function WorkspaceFocusMode({
                             별도 API 승인 후 지원되며 현재는 직접 입력한 이미지만 표시할 수 있습니다.</small>
                         </form>
                       )}
-                    </div>
+                    </div>}
                   </details>
                 )}
-                <details className="workspace-focus__section workspace-focus__section--manage">
-                  <summary>대상 관리</summary>
-                  <div className="workspace-focus__section-body">
+                <details className="workspace-focus__section workspace-focus__section--manage"
+                  open={manageOpen}>
+                  <summary onClick={event => {
+                    event.preventDefault();
+                    setManageOpen(value => !value);
+                  }}>대상 관리</summary>
+                  {manageOpen && <div className="workspace-focus__section-body">
                     <a href={selected.canonicalUrl} target="_blank" rel="noopener noreferrer">
                       YouTube에서 열기
                     </a>
                     <button type="button" onClick={removeSelected}>이 등록 대상 제거</button>
-                  </div>
+                  </div>}
                 </details>
               </div>
             ) : (
