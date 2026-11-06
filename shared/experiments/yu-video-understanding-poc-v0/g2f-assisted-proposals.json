@@ -22,11 +22,13 @@
         {
           "localStartMs": 107250,
           "localEndMs": 109429,
-          "modality": "AUDIO"
+          "modality": "AUDIO",
+          "observationNote": "해당 영어 SRT 첫 대사에서 검에 어두운 과거가 있다는 취지로 말한다는 기존 사용자 보고가 있으나 실제 음성을 직접 확인해야 한다."
         }
       ],
       "caveat": "앞서 사용자가 보고한 SRT #1 발화 내용에 근거한 초안이다. 검수자는 실제 원본 음성을 다시 확인한다.",
-      "requiresHumanVerification": true
+      "requiresHumanVerification": true,
+      "absenceRationale": null
     },
     {
       "questionId": "G2E-SIN-02",
@@ -38,11 +40,13 @@
         {
           "localStartMs": 207250,
           "localEndMs": 209739,
-          "modality": "AUDIO"
+          "modality": "AUDIO",
+          "observationNote": "중간 SRT 발화에서 치료가 거의 끝난다고 설명한다는 기존 관찰 보고가 있으므로 실제 발화와 SRT의 의미를 확인해야 한다."
         }
       ],
       "caveat": "SRT #13과 관련하여 사용자 검수 화면에서 보고한 발화 의미. 용을 치료한다는 시각적 맥락까지 음성만으로 단정하지 않는다.",
-      "requiresHumanVerification": true
+      "requiresHumanVerification": true,
+      "absenceRationale": null
     },
     {
       "questionId": "G2E-SIN-03",
@@ -54,11 +58,13 @@
         {
           "localStartMs": 88011,
           "localEndMs": 90418,
-          "modality": "FRAME"
+          "modality": "FRAME",
+          "observationNote": "초반 설원에서 인물이 지팡이를 끌며 이동한다는 사용자 관찰 보고가 있으며, 제안된 구간에서 구체적 동작을 검수해야 한다."
         }
       ],
       "caveat": "01:28 부근 사용자 제출 장면 관찰을 문장으로 정리한 초안. 보행 시작 여부는 별도로 확인한다.",
-      "requiresHumanVerification": true
+      "requiresHumanVerification": true,
+      "absenceRationale": null
     },
     {
       "questionId": "G2E-SIN-04",
@@ -70,11 +76,13 @@
         {
           "localStartMs": 444016,
           "localEndMs": 445516,
-          "modality": "FRAME"
+          "modality": "FRAME",
+          "observationNote": "중반에 인물이 파이프를 입에서 떼는 동작을 보고했다. 제안된 프레임 구간이 실제 해당 동작을 포함하는지 확인해야 한다."
         }
       ],
       "caveat": "07:24 부근 사용자 관찰을 바탕으로 한 초안. 근거 종료 07:25.516은 편의상 임시 제시한 시간이며 직접 프레임 확인 후 수정한다.",
-      "requiresHumanVerification": true
+      "requiresHumanVerification": true,
+      "absenceRationale": null
     },
     {
       "questionId": "G2E-SIN-05",
@@ -86,16 +94,19 @@
         {
           "localStartMs": 88011,
           "localEndMs": 90418,
-          "modality": "FRAME"
+          "modality": "FRAME",
+          "observationNote": "초반 기준점에서 지팡이를 끌고 설원을 이동하는 모습이 제안되었다. 먼저 발생하는 사건의 동작·시점을 검수해야 한다."
         },
         {
           "localStartMs": 444016,
           "localEndMs": 445516,
-          "modality": "FRAME"
+          "modality": "FRAME",
+          "observationNote": "중반 기준점에서 파이프를 입에서 떼는 동작이 제안되었다. 뒤에 발생하는 사건의 동작·시점을 검수해야 한다."
         }
       ],
       "caveat": "두 후보 사건의 시간적 선후를 비교한다. 사건들의 직접적인 인과관계는 제시하지 않는다. 두 번째 시간 구간은 임시값이다.",
-      "requiresHumanVerification": true
+      "requiresHumanVerification": true,
+      "absenceRationale": null
     },
     {
       "questionId": "G2E-SIN-06",
@@ -105,7 +116,8 @@
       "answerText": "설원에 등장하기 전에 인물이 정확히 몇 분간 이동했는지는 영상만으로 확정할 수 없을 가능성이 높다.",
       "evidenceHints": [],
       "caveat": "정답이 없다는 주장 역시 원본 전체의 검토가 필요하다. 검수자는 시간 정보가 실제로 등장한다면 판정을 바꾼다.",
-      "requiresHumanVerification": true
+      "requiresHumanVerification": true,
+      "absenceRationale": "인물이 설원 장면에 나타나기 전에 정확히 얼마 동안 이동했는지는 현재 관찰 보고에서 제시되지 않았다. 이는 전체 원본 확인 전의 추정이므로 반드시 재검수해야 한다."
     },
     {
       "questionId": "G2E-TOS-01",
@@ -117,11 +129,13 @@
         {
           "localStartMs": 23000,
           "localEndMs": 24500,
-          "modality": "AUDIO"
+          "modality": "AUDIO",
+          "observationNote": "영어 자막 첫 발화에서는 톰을 비난하는 취지의 말이 있다는 이전 대화 기록이 있다. 실제 음성에서 확인해야 한다."
         }
       ],
       "caveat": "앞선 대화에서 논의한 SRT #1의 짧은 발화를 의역한 초안이며, 정확한 시작/종료는 실제 청취로 수정한다.",
-      "requiresHumanVerification": true
+      "requiresHumanVerification": true,
+      "absenceRationale": null
     },
     {
       "questionId": "G2E-TOS-02",
@@ -133,11 +147,13 @@
         {
           "localStartMs": 318000,
           "localEndMs": 320000,
-          "modality": "AUDIO"
+          "modality": "AUDIO",
+          "observationNote": "자막 38번 부근의 대사는 자신의 열정을 따라야 한다는 의미로 요약되었다. 화자의 실제 발화를 재청취해야 한다."
         }
       ],
       "caveat": "SRT #38에 관해 앞선 대화에서 제시한 발화 요약이며 주변 문맥은 직접 확인한다.",
-      "requiresHumanVerification": true
+      "requiresHumanVerification": true,
+      "absenceRationale": null
     },
     {
       "questionId": "G2E-TOS-03",
@@ -149,11 +165,13 @@
         {
           "localStartMs": 73417,
           "localEndMs": 75417,
-          "modality": "FRAME"
+          "modality": "FRAME",
+          "observationNote": "종탑의 무장한 인물이 소총 조준경으로 바깥을 살핀다는 관찰 보고가 있다. 조준경과 행동이 보이는 프레임을 확인해야 한다."
         }
       ],
       "caveat": "앞서 사용자 보고에 등장한 행동이다. 로컬 2012 HD판의 실제 프레임에서 종탑·조준경·동작을 각각 검수한다.",
-      "requiresHumanVerification": true
+      "requiresHumanVerification": true,
+      "absenceRationale": null
     },
     {
       "questionId": "G2E-TOS-04",
@@ -165,11 +183,13 @@
         {
           "localStartMs": 367084,
           "localEndMs": 369084,
-          "modality": "FRAME"
+          "modality": "FRAME",
+          "observationNote": "통제실에서 인물들이 실험 진행 상황을 살피는 것으로 이전 대화에서 설명되었다. 실제 프레임에 대응하는 행동인지 직접 확인해야 한다."
         }
       ],
       "caveat": "이 장면 설명은 과거 대화의 후보 답안이다. 06:07의 2초 근거 구간은 미검증 임시값이므로 실제 프레임과 맞지 않으면 반드시 수정한다.",
-      "requiresHumanVerification": true
+      "requiresHumanVerification": true,
+      "absenceRationale": null
     },
     {
       "questionId": "G2E-TOS-05",
@@ -181,16 +201,19 @@
         {
           "localStartMs": 73417,
           "localEndMs": 75417,
-          "modality": "FRAME"
+          "modality": "FRAME",
+          "observationNote": "초반의 종탑 감시 행동이 첫 사건으로 제안되었다. 로컬 원본 01:13 부근에서 실제로 보이는지 확인해야 한다."
         },
         {
           "localStartMs": 367084,
           "localEndMs": 369084,
-          "modality": "FRAME"
+          "modality": "FRAME",
+          "observationNote": "중반 통제실에서 실험 진행을 살피는 행동이 두 번째 사건으로 제안되었다. 로컬 원본 06:07 부근과 맞는지 확인해야 한다."
         }
       ],
       "caveat": "두 영상 기준점의 순서를 비교한다. 통제실 장면과 시간은 실제 원본 검수 전의 임시 초안이다.",
-      "requiresHumanVerification": true
+      "requiresHumanVerification": true,
+      "absenceRationale": null
     },
     {
       "questionId": "G2E-TOS-06",
@@ -200,7 +223,8 @@
       "answerText": "종탑의 무장한 인물이 그곳에 도착하기까지 몇 분 이동했는지는 현재 근거만으로 확정하기 어렵다.",
       "evidenceHints": [],
       "caveat": "영화 전체에 이동 시간이 없다는 사실은 아직 검증되지 않았다. 실제 원본을 전체 확인한 뒤 수용 또는 변경한다.",
-      "requiresHumanVerification": true
+      "requiresHumanVerification": true,
+      "absenceRationale": "종탑의 무장한 인물이 도착 이전에 얼마나 이동했는지 기존 대화 기록에는 확정적인 시각 근거가 없다. 전체 원본을 확인한 후에만 부재를 판단해야 한다."
     }
   ]
 }
