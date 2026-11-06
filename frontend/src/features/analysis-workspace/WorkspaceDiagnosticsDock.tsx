@@ -17,6 +17,9 @@ type Props = Readonly<{
   onStateScenarioChange?: (value: StateScenario) => void;
   onToggleStateDemo?: () => void;
   onRefreshStateDemo?: () => void;
+  offlineConsumerAvailable?: boolean;
+  offlineConsumerEnabled?: boolean;
+  onToggleOfflineConsumer?: () => void;
 }>;
 
 /**
@@ -30,6 +33,8 @@ export function WorkspaceDiagnosticsDock({
   syntheticServerStatus, onToggleSyntheticServer,
   stateDemoAvailable, stateDemoEnabled, stateScenario,
   onStateScenarioChange, onToggleStateDemo, onRefreshStateDemo,
+  offlineConsumerAvailable = false, offlineConsumerEnabled = false,
+  onToggleOfflineConsumer,
 }: Props) {
   const [open, setOpen] = useState(false);
   return (
@@ -89,9 +94,16 @@ export function WorkspaceDiagnosticsDock({
                 메타데이터 새로고침
               </button>
             )}
+            {offlineConsumerAvailable && onToggleOfflineConsumer && (
+              <button type="button" aria-pressed={offlineConsumerEnabled}
+                onClick={onToggleOfflineConsumer}>
+                {offlineConsumerEnabled ? "AF 정책 차단 QA 끄기" : "AF 정책 차단 QA"}
+              </button>
+            )}
           </div>
           <p role="status" className="workspace-diagnostics__status">
-            {syntheticServerEnabled ? syntheticServerStatus :
+            {offlineConsumerEnabled ? "AF 테스트 전용 거부 응답 검수 · 실 제공자 조회 없음" :
+              syntheticServerEnabled ? syntheticServerStatus :
               stateDemoEnabled ? "합성 메타데이터 상태 테스트 실행 중" :
               syntheticPreviewEnabled ? "브라우저 내부 합성 모드" :
               "조회하지 않음 · 진단 기능은 기본 비활성"}
