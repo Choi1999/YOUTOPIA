@@ -10,6 +10,7 @@ const g2f=require('./g2f-assisted-review.cjs');
 const g2d=require('./g2d-human-review.cjs');
 const g2c=require('./g2c-offline-verifier.cjs');
 const media=require('./g2d-workspace-media.cjs');
+const observationCandidates=require('./g2f-assisted-observation-drafts.json');
 const ROOT=__dirname;
 const BASE=['Sintel','TearsOfSteel'];
 const CSS=path.join(ROOT,'g2f-assisted-workspace.css');
@@ -38,6 +39,35 @@ function load(state){
  const summary=g2f.validate(packet);
  return {packet,revision:digest(raw),summary};
 }
+function observationDraftsForFilm(film,packet){
+ const src=observationCandidates;
+ deny(src&&src.schemaVersion===1&&src.id==='YU_VIDEO_G2F_AI_OBSERVATION_DRAFTS_V01'&&
+  src.status==='AI_WRITTEN_OBSERVATION_CANDIDATES_NOT_DIRECT_OBSERVATIONS'&&
+  src.videoPersonallyWatchedByAssistant===false&&src.humanReviewed===false&&
+  src.approvedGold===false&&src.providerCalls===0,'observation drafts must remain unverified AI proposals');
+ deny(Array.isArray(src.notes)&&src.notes.length===12,'complete 12-question AI note catalog');
+ const expected=new Map(packet.questions.map(q=>[q.questionId,q]));
+ const notes=src.notes.filter(q=>expected.has(q.questionId));
+ deny(notes.length===6&&new Set(notes.map(x=>x.questionId)).size===6,
+  'six unique AI note drafts required for film');
+ const out={};
+ for(const item of notes){
+  const question=expected.get(item.questionId);
+  deny(Object.keys(item).sort().join('|')==='absenceRationale|evidenceNotes|questionId',
+   'observation draft schema');
+  deny(Array.isArray(item.evidenceNotes)&&
+   item.evidenceNotes.length===question.aiDraft.evidenceHints.length&&
+   item.evidenceNotes.every(n=>typeof n==='string'&&n.length>=20&&n.length<=500),
+   'AI observation notes must match evidence count');
+  deny((question.kind==='UNSUPPORTED')===
+   (typeof item.absenceRationale==='string'&&item.absenceRationale.length>=30),
+   'absence rationale only for unsupported questions');
+  out[item.questionId]={evidenceNotes:[...item.evidenceNotes],
+   absenceRationale:item.absenceRationale};
+ }
+ return out;
+}
+
 function editorPayload(state){
  const value=load(state);
  return {film:state.film,reviewerCode:state.reviewer,publisherEdition:value.packet.publisherEdition,
@@ -45,9 +75,10 @@ function editorPayload(state){
   cueCount:state.cues.length,cues:state.cues,
   waveform:state.waveform,
   packet:value.packet,questions:value.packet.questions,reviewMode:'AI_ASSISTED_NON_BLIND',
+  aiObservationSuggestions:observationDraftsForFilm(state.film,value.packet),
   revision:value.revision,summary:value.summary,
   sourceChecks:{publisherVideoHashMatched:true,subtitleHashMatched:true,otherReviewerLoaded:false,
-   operatorGoldLoaded:false,aiSuggestionsShown:true,blindReviewed:false,independentGoldApproved:0,g3Authorized:false}};
+   operatorGoldLoaded:false,aiSuggestionsShown:true,aiObservationDraftsNotVerified:true,blindReviewed:false,independentGoldApproved:0,g3Authorized:false}};
 }
 function update(state,body){
  deny(body&&typeof body==='object'&&!Array.isArray(body)&&
