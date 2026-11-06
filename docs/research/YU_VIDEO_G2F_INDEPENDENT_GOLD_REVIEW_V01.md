@@ -411,3 +411,45 @@ $assist = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-assisted-works
 **주의:** 같은 Windows 사용자 계정으로 A/B를 전환하면 JSON 파일에 OS 수준 접근통제가 있는 것은 아니다. 화면에 상대편 정답이 제공되지 않는다는 사실은 물리적인 접근권 분리의 대체물이 아니다. 실제 검수자가 동일한 AI 초안을 읽는 만큼 **최종 두 결과의 일치가 골드 정답의 독립 블라인드 합의를 의미하지 않는다**.
 
 **현 상태:** `AI_PROPOSALS_12_OF_12_AUTHORED_UNVERIFIED / AI_ASSISTED_OFFLINE_CI_PASS / USER_WINDOWS_MANUAL_QA_PENDING / NON_BLIND_EDITORIAL_REVIEW / GOLD_APPROVAL_0 / G3_BLOCKED / NO_MERGE / NO_DELETE`.
+
+
+## 14. 운영자 요청: 관찰 기록도 AI가 초안 작성 (2026-11-06)
+
+운영자는 G2-F AI 선작성 모드에서 **정답뿐 아니라 근거마다 사람이 작성하던 '직접 관찰 기록'도 AI가 초안으로 제안**하도록 요청했다.
+
+### 구현 경계
+
+- 공개 파일 `g2f-assisted-observation-drafts.json`에 **Sintel·Tears of Steel 12문항의 장면별 관찰 문장**을 기록했다. SPEECH 4건, VISUAL 4건, TEMPORAL 각 2구간 × 2문항 4건으로 총 **12개 근거 관찰 문장**, UNSUPPORTED 2건에는 *조건부 근거 부재 사유*가 별도로 있다.
+- 모든 관찰 문장은 사용자 대화에서 보고된 이전 장면/발화와 관련 요약을 바탕으로 작성한 **미검증 AI 서술 후보**다. 실제 원본을 AI가 독립 시청·청취하지 않았으며, 사실·시각·대사의 정확도가 입증된 기록으로 간주하지 않는다.
+- 전용 서버는 영화·문항별로 6개의 관찰 후보만 보낸다. 기존 G2-F 리뷰 패킷의 `aiDraft` 원장·해시·불변 질문 메타데이터 **변경 없음**. 기존 검수자가 제출한 답변 파일도 덮어쓰지 않는다.
+- 웹은 **미작성 근거 칸에만** AI 후보 관찰 문장을 미리 보여주며, 저장된 사람의 근거 관찰 기록이 있으면 그 내용을 우선한다. 표시 명칭은 `근거 관찰 기록 · AI 작성 초안 (사람이 영상 확인 후 수정·확정)`이다.
+- 검수자가 실제 원본을 확인하지 않았다면 `watchedSource=false`가 유지되어 `ACCEPT/EDIT`의 정식 제출이 거절된다. 시작·종료 시각 및 근거 모달리티도 별도로 검증한다. 두 명의 검수자가 모두 같은 AI 문장을 수용해도 자동 골드 승인이 되지 않는다.
+- UNSUPPORTED의 사유 초안은 **영화 전체에 그 정보가 없다는 사실을 조건부로 표현**한다. 검수자가 실제로 전체를 보지 않았다면 `fullMovieReviewed=true`를 설정하지 말고 반려/불확실을 선택해야 한다.
+
+### 사용자 Windows 실행
+
+기존 서버를 `Ctrl+C`로 종료하고 코드 최신화를 진행한다.
+
+```powershell
+cd C:\Projects\YOUTOPIA
+git fetch origin --prune
+if ($LASTEXITCODE -ne 0) { throw 'Fetch 실패' }
+
+cd C:\Projects\YOUTOPIA-VIDEO-G2C
+if (git status --porcelain) { throw 'Worktree 변경 사항을 먼저 확인' }
+git switch --detach origin/experiment/yu-video-understanding-poc-v01
+if ($LASTEXITCODE -ne 0) { throw '브랜치 갱신 실패' }
+
+$assist = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-assisted-workspace.ps1'
+& $assist -Mode Serve -Film Sintel -ReviewerCode REVIEWER_A
+```
+
+브라우저에서 출력된 `G2F_ASSISTED_WORKSPACE_READY` 주소를 열면 AI 예상 답변, 제안 근거 시간, **장면별 관찰 기록 초안**이 함께 표시된다. A/B 서로의 결과를 보지 않고 현재 원본을 직접 확인·수정한 뒤 저장한다.
+
+### 자동 검증
+
+- [G2-F 관찰 기록 보조 최신 Node 24 CI #42197417614](https://github.com/Choi1999/YOUTOPIA/actions/runs/42197417614): **236개 테스트, 235 PASS / 0 FAIL / 1 SKIP**. 1건은 FFmpeg가 없는 CI 환경의 기존 합성 미디어 시험이다.
+- 12개 관찰 후보의 범위, 필름별 6개 노출, 근거 2개 TEMPORAL 대응, UNSUPPORTED 근거 없음 처리, 작성자 정답·타 검수자 파일 비노출, 실제 사람 확인 전 저장 차단, 작성된 사람 기록 우선 보존을 시험했다.
+- 사용자 실제 Windows Chrome/Edge에서 입력 화면을 직접 열고 관찰 기록 제안 및 기존 입력값 보존을 확인하는 QA는 아직 시행되지 않았다.
+
+**현재:** `G2F_AI_OBSERVATION_DRAFTS_12_EVIDENCE_NOTES_READY / AI_ABSENCE_RATIONALES_2_READY / USER_BROWSER_QA_PENDING / NON_BLIND_REVIEW / G3_BLOCKED / NO_MERGE / NO_DELETE`.
