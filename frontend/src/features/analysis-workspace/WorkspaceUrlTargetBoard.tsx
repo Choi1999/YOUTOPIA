@@ -2,6 +2,7 @@ import {useState} from "react";
 import "./workspace-url.css";
 import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
 import { metadataStateLabel } from "./workspaceMetadataConsumerState";
+import { readyProviderMetadata, providerMetadataStatusLabel } from "./workspaceProviderMetadata";
 import { WorkspaceChannelIdentity } from "./WorkspaceChannelIdentity";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import type {WorkspaceUrlTarget} from "./workspaceUrlTargets";
@@ -74,6 +75,7 @@ export function WorkspaceUrlTargetBoard({
           const key=workspaceUrlTargetKey(target);
           const expanded=focused===key;
           const unresolved=target.kind==="CHANNEL_HANDLE";
+          const provider=readyProviderMetadata(presentation.providerStates?.[key],target);
           return (
             <article className={"workspace-url-board__card" +
                 (expanded?" workspace-url-board__card--focused":"")}
@@ -83,8 +85,14 @@ export function WorkspaceUrlTargetBoard({
                 <span className="workspace-url-board__unverified">
                   {presentation.synthetic?.[key]?.source === "LOCAL_SYNTHETIC_ONLY"
                     ? "합성 데이터 · 제공자 미조회"
+                    : provider?"백엔드 정보 표시 · 댓글 분석과 별개"
                     : unresolved?"채널 ID 해석 대기":"URL 등록 · 메타데이터 미확인"}
                 </span>
+                {presentation.providerStates?.[key] && (
+                  <span data-provider-status={presentation.providerStates[key].status}>
+                    {providerMetadataStatusLabel(presentation.providerStates[key])}
+                  </span>
+                )}
                 {presentation.metadataStates?.[key] && (
                   <span data-metadata-status={presentation.metadataStates[key].status}>
                     {metadataStateLabel(presentation.metadataStates[key])}
