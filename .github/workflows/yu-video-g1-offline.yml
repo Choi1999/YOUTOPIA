@@ -1,4 +1,4 @@
-name: YOUTOPIA video understanding G1 G2 G2B G2C G2D G2E offline
+name: YOUTOPIA video understanding G1-G2F offline
 on:
   push:
     branches:
@@ -11,6 +11,7 @@ on:
       - docs/research/YU_VIDEO_UNDERSTANDING_POC_G2C_BLENDER_SOURCE_EVIDENCE_V01.md
       - docs/research/YU_VIDEO_G2D_HUMAN_SYNC_YOUTUBE_REVIEW_V01.md
       - docs/research/YU_VIDEO_G2E_GOLD_CANDIDATE_DESIGN_V01.md
+      - docs/research/YU_VIDEO_G2F_INDEPENDENT_GOLD_REVIEW_V01.md
       - .github/workflows/yu-video-g1-offline.yml
   pull_request:
     paths:
@@ -39,6 +40,7 @@ jobs:
           node --check shared/experiments/yu-video-understanding-poc-v0/g2d-workspace-client.js
           node --check shared/experiments/yu-video-understanding-poc-v0/g2d-playback-sync.js
           node --check shared/experiments/yu-video-understanding-poc-v0/g2e-gold-pilot.cjs
+          node --check shared/experiments/yu-video-understanding-poc-v0/g2f-blind-review.cjs
           node --test shared/experiments/yu-video-understanding-poc-v0/tests/*.test.cjs
       - name: Fail-closed gate
         run: |
@@ -110,4 +112,16 @@ jobs:
                  x.externalProviderCalls!==0||x.actualSpendUsd!==0||
                  x.g3Authorized!==false) process.exit(1);
               process.stdout.write("G2E_QUESTION_CANDIDATES_UNVERIFIED_GATE_PASS\n");
+            });'
+
+      - name: G2-F offline blind-review protocol never approves actual gold or G3
+        run: |
+          node shared/experiments/yu-video-understanding-poc-v0/g2f-blind-review.cjs | node -e '
+            let s="";process.stdin.on("data",v=>s+=v);
+            process.stdin.on("end",()=>{const x=JSON.parse(s);
+              if(x.stage!=="G2-F"||
+                 x.status!=="OFFLINE_TWO_BLIND_REVIEWER_PROTOCOL_READY_NO_REVIEWS"||
+                 x.externalProviderCalls!==0||x.verifiedIndependentHumanReviewers!==0||
+                 x.independentGoldApproved!==0||x.g3Authorized!==false)process.exit(1);
+              process.stdout.write("G2F_BLIND_QUESTION_PACK_NO_APPROVAL_PASS\n");
             });'
