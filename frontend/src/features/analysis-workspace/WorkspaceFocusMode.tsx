@@ -10,6 +10,7 @@ import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
 import { WorkspaceChannelIdentity } from "./WorkspaceChannelIdentity";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import { metadataStateLabel, type StateScenario } from "./workspaceMetadataConsumerState";
+import { readyProviderMetadata, providerMetadataStatusLabel } from "./workspaceProviderMetadata";
 import type { WorkspaceNodeGroup } from "./workspaceNodeGroups";
 import type { GraphVisit } from "./workspaceGraphNavigation";
 import { hasGraphBookmark, toggleGraphBookmark } from "./workspaceGraphBookmarks";
@@ -172,6 +173,8 @@ export function WorkspaceFocusMode({
   }, [listOpen, detailOpen]);
 
   const selected = targets.find(item => workspaceUrlTargetKey(item) === selectedKey) ?? null;
+  const providerSelected = selected ? readyProviderMetadata(
+    presentation.providerStates?.[selectedKey ?? ""],selected) : null;
   const selectedVisit: GraphVisit | null = selected
     ? { kind:"target", key:workspaceUrlTargetKey(selected) } : null;
   const selectedIsBookmarked = selectedVisit
@@ -616,13 +619,25 @@ export function WorkspaceFocusMode({
                     <span className="workspace-focus__kind">{kindLabel(selected.kind)}</span>
                     <h4>{userFacingTargetName(selected, presentation, channelProfiles)}</h4>
                     <p className="workspace-focus__secondary-id">등록 식별자: {selected.id}</p>
-                    <p className="workspace-focus__identity-note">링크 등록 · 실제 제공자 정보 미확인</p>
+                    <p className="workspace-focus__identity-note">
+                      {providerSelected
+                        ? "백엔드 메타데이터 수신 · 댓글 분석과 별개"
+                        : "링크 등록 · 실제 제공자 정보 미확인"}
+                    </p>
                   </div>
                 </div>
                 <details className="workspace-focus__section" open>
                   <summary>기본 정보</summary>
                   <div className="workspace-focus__section-body">
                     <WorkspaceChannelIdentity target={selected} profiles={channelProfiles}/>
+                    {presentation.providerStates?.[selectedKey ?? ""] && (
+                      <p data-provider-status={presentation.providerStates[selectedKey ?? ""].status}>
+                        {providerMetadataStatusLabel(presentation.providerStates[selectedKey ?? ""])}
+                      </p>
+                    )}
+                    {providerSelected?.channelTitle && (
+                      <p>백엔드 제공 채널명: {providerSelected.channelTitle} · 소속 관계 미검증</p>
+                    )}
                     {presentation.metadataStates?.[selectedKey ?? ""] && (
                       <p data-metadata-status={presentation.metadataStates[selectedKey ?? ""].status}>
                         {metadataStateLabel(presentation.metadataStates[selectedKey ?? ""])}
