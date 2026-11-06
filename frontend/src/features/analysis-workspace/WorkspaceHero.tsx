@@ -47,6 +47,9 @@ type Props = Readonly<{
   onStateScenarioChange?: (value:StateScenario)=>void;
   onToggleStateDemo?: () => void;
   onRefreshStateDemo?: () => void;
+  offlineConsumerAvailable?: boolean;
+  offlineConsumerEnabled?: boolean;
+  onToggleOfflineConsumer?: () => void;
   presentation?: WorkspaceTargetPresentation;
   onSetTargetLabel?: (key: string, value: string) => boolean;
   onSetChannelArtwork?: (key: string, value: string) => boolean;
@@ -76,6 +79,8 @@ export function WorkspaceHero({
   stateDemoAvailable = false, stateDemoEnabled = false,
   stateScenario = "READY", onStateScenarioChange,
   onToggleStateDemo, onRefreshStateDemo,
+  offlineConsumerAvailable = false, offlineConsumerEnabled = false,
+  onToggleOfflineConsumer,
   channelProfiles, presentation = EMPTY_TARGET_PRESENTATION,
   onSetTargetLabel, onSetChannelArtwork, defaultFocusMode = false,
 }: Props) {
@@ -295,6 +300,9 @@ export function WorkspaceHero({
             onStateScenarioChange={onStateScenarioChange}
             onToggleStateDemo={onToggleStateDemo}
             onRefreshStateDemo={onRefreshStateDemo}
+            offlineConsumerAvailable={offlineConsumerAvailable}
+            offlineConsumerEnabled={offlineConsumerEnabled}
+            onToggleOfflineConsumer={onToggleOfflineConsumer}
             presentation={presentation}
             onSetTargetLabel={onSetTargetLabel}
             onSetChannelArtwork={onSetChannelArtwork}
