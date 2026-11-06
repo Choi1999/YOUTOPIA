@@ -19,6 +19,11 @@ import { EMPTY_METADATA_STATE, InMemoryMetadataStateCache,
   pendingMetadataState, type MetadataState, type StateScenario,
 } from "../../features/analysis-workspace/workspaceMetadataConsumerState";
 import {
+  decodeProviderMetadata, unavailableProviderState,
+  PROVIDER_METADATA_BATCH_LIMIT, type ProviderMetadataReader,
+  type ProviderMetadataState,
+} from "../../features/analysis-workspace/workspaceProviderMetadata";
+import {
   readTargetPresentation, reconcileTargetPresentation, writeTargetPresentation,
   withUserLabel, withChannelArtwork,
   type WorkspaceTargetPresentation,
@@ -83,8 +88,13 @@ function loadInitialSession(): { value: AnalysisWorkspaceSession; status: string
   };
 }
 
-export function AnalysisWorkspacePage({diagnosticsMode = false}: Readonly<{
+export function AnalysisWorkspacePage({
+  diagnosticsMode = false, providerMetadataReader,
+}: Readonly<{
   diagnosticsMode?: boolean;
+  /** No reader is registered by product routes. A future authorized backend
+   *  may be injected only after a separately approved transport review. */
+  providerMetadataReader?: ProviderMetadataReader;
 }> = {}) {
   // The regular product route never exposes or executes test controls, even
   // when the developer has enabled synthetic servers in the same Vite process.
@@ -124,6 +134,34 @@ export function AnalysisWorkspacePage({diagnosticsMode = false}: Readonly<{
   const [stateRefresh, setStateRefresh] = useState(0);
   const [stateRecords, setStateRecords] = useState<Readonly<Record<string, MetadataState>>>({});
   const [stateCache] = useState(() => new InMemoryMetadataStateCache());
+  // UI-R04-AE: this optional integration seam does not create a fetch
+  // endpoint. The normal product route passes no reader, hence zero calls.
+  const [providerRecords, setProviderRecords] = useState<
+    Readonly<Record<string, ProviderMetadataState>>
+  >({});
+  useEffect(() => {
+    if (!providerMetadataReader) return;
+    const controller = new AbortController();
+    const chosen = urlTargets.slice(0,PROVIDER_METADATA_BATCH_LIMIT);
+    setProviderRecords(Object.fromEntries(chosen.map(target => [
+      workspaceUrlTargetKey(target), unavailableProviderState(target),
+    ])));
+    void (async () => {
+      for (const target of chosen) {
+        if (controller.signal.aborted) return;
+        let raw: unknown = null;
+        try { raw = await providerMetadataReader(target,controller.signal); }
+        catch { /* Missing/invalid backend data never becomes a fake READY. */ }
+        if (controller.signal.aborted) return;
+        const decoded = decodeProviderMetadata(raw,target,true);
+        setProviderRecords(previous => ({
+          ...previous, [workspaceUrlTargetKey(target)]:
+            decoded ?? unavailableProviderState(target,"FAILED"),
+        }));
+      }
+    })();
+    return () => controller.abort();
+  }, [providerMetadataReader, urlTargets]);
   const [presentation, setPresentation] = useState<WorkspaceTargetPresentation>(
     () => readTargetPresentation(getTabStorage(), urlTargets),
   );
@@ -207,13 +245,15 @@ export function AnalysisWorkspacePage({diagnosticsMode = false}: Readonly<{
     if (stateDemoEnabled && value.status === "READY" && value.record)
       stateReadyRecords[key] = value.record;
   }
+  const providerPresentation: WorkspaceTargetPresentation = providerMetadataReader
+    ? { ...presentation, providerStates: providerRecords } : presentation;
   const displayedPresentation: WorkspaceTargetPresentation = diagnosticAccess && stateDemoEnabled
-    ? { ...presentation, synthetic: stateReadyRecords, metadataStates: stateRecords }
+    ? { ...providerPresentation, synthetic: stateReadyRecords, metadataStates: stateRecords }
     : diagnosticAccess && syntheticServerEnabled
-      ? { ...presentation, synthetic: syntheticServerRecords }
+      ? { ...providerPresentation, synthetic: syntheticServerRecords }
       : diagnosticAccess && syntheticPreviewEnabled
-        ? { ...presentation, synthetic: createOfflineWorkspacePreview(urlTargets) }
-        : presentation;
+        ? { ...providerPresentation, synthetic: createOfflineWorkspacePreview(urlTargets) }
+        : providerPresentation;
   const paths = buildWorkspacePaths(session);
   const safeQuery = withoutAllowedUtmTracking(new URLSearchParams(location.search));
 
