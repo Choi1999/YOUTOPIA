@@ -319,3 +319,39 @@ Node 24, FFmpeg, Chrome/Edge가 필요하다. `G2F_REVIEWER_WORKSPACE_READY http
 단순한 localhost 페이지로는 다른 PC의 브라우저에서 직접 접속할 수 없다. 공개 인터넷 사이트·원격 계정/권한 관리·서버 DB·TLS는 별도 신규 승인 범위다.
 
 자세한 분리·전달·수동 QA 지침: `docs/research/YU_VIDEO_G2F_INDEPENDENT_GOLD_REVIEW_V01.md` 10절.
+
+
+## G2-F — AI 답변 선작성 후 검수자 확인·편집 (현재 권장 방식)
+
+작성자가 답변을 만드는 데 소요되는 작업을 줄이기 위해 **12문항의 AI 제안 초안·예상 근거 구간**을 먼저 작성한 뒤, **검수자 A/B가 각자 실제 원본을 확인하고 ACCEPT/EDIT/REJECT/UNCERTAIN으로 교정**하는 별도 G2-F 모드를 추가했다.
+
+**기존 블라인드 평가와 다름:** 두 검수자가 AI 초안을 미리 보기 때문에 최종 자료를 `BLIND_INDEPENDENT_GOLD`로 보고해서는 안 된다. A/B는 서로의 검토 내용을 보지 않으며, 작성자의 기존 G2-E 원본 정답은 표시되지 않는다. `independentGoldApproved=0`, G3 승인 false 유지.
+
+Windows 원래 G2-E 작성 PC에서 기존 웹 서버를 Ctrl+C로 종료하고 최신 실험 브랜치로 전환한다.
+
+```powershell
+cd C:\Projects\YOUTOPIA-VIDEO-G2C
+$assist = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-assisted-workspace.ps1'
+
+# 각 검수자의 작업 시 하나씩 실행; 다음 명령 전 Ctrl+C로 서버 종료
+& $assist -Mode Serve -Film Sintel -ReviewerCode REVIEWER_A
+& $assist -Mode Serve -Film TearsOfSteel -ReviewerCode REVIEWER_A
+& $assist -Mode Serve -Film Sintel -ReviewerCode REVIEWER_B
+& $assist -Mode Serve -Film TearsOfSteel -ReviewerCode REVIEWER_B
+```
+
+`G2F_ASSISTED_WORKSPACE_READY http://127.0.0.1:<포트>/`를 **같은 PC 브라우저에서** 열면 질문과 AI 후보 정답이 표시된다. 기존 G2-F 블라인드 패킷은 그대로 남으며 새 `%LOCALAPPDATA%\YOUTOPIA\G2F-AssistedReviews`에 역할별 JSON이 생성된다.
+
+모든 사람이 검토한 뒤에는 다음 명령으로 구조 검증/검수 결과 비교:
+
+```powershell
+& $assist -Mode Check -Film Sintel -ReviewerCode REVIEWER_A
+& $assist -Mode Check -Film Sintel -ReviewerCode REVIEWER_B
+& $assist -Mode Check -Film TearsOfSteel -ReviewerCode REVIEWER_A
+& $assist -Mode Check -Film TearsOfSteel -ReviewerCode REVIEWER_B
+
+& $assist -Mode Assess -Film Sintel
+& $assist -Mode Assess -Film TearsOfSteel
+```
+
+이 단계에서 작성자가 만든 AI 초안의 사실적 타당성은 **직접 영상으로 검증해야 하며**, AI 제안 시각을 그대로 믿고 저장하면 안 된다. 자세한 설명: `docs/research/YU_VIDEO_G2F_INDEPENDENT_GOLD_REVIEW_V01.md`의 12절.
