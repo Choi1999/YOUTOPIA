@@ -87,6 +87,7 @@ describe("UI-R04-AA — end-user graph state controls, synthetic only",()=>{
     await waitFor(()=>expect(fetcher).toHaveBeenCalledTimes(2));
     expect(canvas.querySelector('[data-metadata-status="READY"]')).toBeInTheDocument();
 
+    await user.click(within(focus).getByText("표시 제목·이미지 편집"));
     const editor=within(focus).getByRole("textbox",{name:"표시 제목 (직접 입력)"});
     await user.type(editor,"내가 정한 별칭");
     await user.click(within(focus).getByRole("button",{name:"표시 제목 저장"}));
