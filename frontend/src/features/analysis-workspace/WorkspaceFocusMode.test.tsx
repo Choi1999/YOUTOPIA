@@ -91,6 +91,22 @@ describe("UI-R04-C — opt-in fullscreen graph with adaptive docks",()=>{
     expect(within(dialog).getByText(/신규 1개/)).toBeInTheDocument();
   });
 
+  it("accepts multi-line URLs with Ctrl+Enter inside focus mode",async()=>{
+    const user=userEvent.setup();
+    render(<Harness initial={sample("https://youtu.be/Ab0_-123xyz")}/>);
+    await user.click(screen.getByRole("button",{name:"전체 화면 집중 모드"}));
+    const dialog=screen.getByRole("dialog",{name:"그래프 집중 탐색"});
+    const input=within(dialog).getByRole("textbox",{name:"URL 추가 입력"});
+    const pasted="https://youtu.be/Cb0_-123xyz\nhttps://youtube.com/@AnotherCreator\nhttps://youtu.be/Cb0_-123xyz";
+    fireEvent.change(input,{target:{value:pasted}});
+    expect(input).toHaveValue(pasted);
+    await user.click(input);
+    await user.keyboard("{Control>}{Enter}{/Control}");
+    expect(screen.getByTestId("registered-count")).toHaveTextContent("3");
+    expect(within(dialog).getByText(/신규 2개 · 중복 1개/)).toBeInTheDocument();
+    expect(input).toHaveValue("");
+  });
+
   it("removes an existing target and exits safely when no registration remains",async()=>{
     const user=userEvent.setup();
     render(<Harness initial={sample("https://youtu.be/Ab0_-123xyz")}/>);
