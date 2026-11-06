@@ -40,6 +40,8 @@ afterEach(()=>{
 
 describe("UI-R04-C — opt-in fullscreen graph with adaptive docks",()=>{
   it("opens the viewport dialog, redistributes dock space and restores focus on Escape",async()=>{
+    // Desktop contract: side-by-side list and detail docks.
+    Object.defineProperty(window,"innerWidth",{configurable:true,value:1440});
     const user=userEvent.setup();
     const before=document.body.style.overflow;
     render(<Harness initial={sample(
