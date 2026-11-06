@@ -116,7 +116,7 @@ jobs:
 
   r04y-loopback-http-integration:
     name: UI-R04-AA Vite-to-Spring state HTTP (NO real API)
-    if: github.event_name == 'pull_request' && (github.event.pull_request.head.ref == 'feature/ui-r04aa-metadata-status-cache-react-v01' || github.event.pull_request.head.ref == 'feature/ui-r04ac-workspace-user-diagnostics-separation-v01' || github.event.pull_request.head.ref == 'feature/ui-r04ad1-shared-dock-state-target-list-v01')
+    if: github.event_name == 'pull_request' && (github.event.pull_request.head.ref == 'feature/ui-r04aa-metadata-status-cache-react-v01' || github.event.pull_request.head.ref == 'feature/ui-r04ac-workspace-user-diagnostics-separation-v01' || github.event.pull_request.head.ref == 'feature/ui-r04ad1-shared-dock-state-target-list-v01' || github.event.pull_request.head.ref == 'feature/ui-r04ad34-detail-responsive-docking-v01')
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
