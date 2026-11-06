@@ -247,3 +247,58 @@ test('reviewer may overturn an AI UNSUPPORTED guess with positive local film evi
   const summary=g2f.validate(p);assert.equal(summary.edited,1);assert.equal(summary.goldApproved,false);
  }finally{clean(e);}
 });
+
+
+test('AI-authored observation suggestions appear on each reviewer-only session, never as verified human observation',async()=>{
+ const candidates=JSON.parse(fs.readFileSync(path.join(__dirname,'..','g2f-assisted-observation-drafts.json'),'utf8'));
+ assert.equal(candidates.schemaVersion,1);
+ assert.equal(candidates.videoPersonallyWatchedByAssistant,false);
+ assert.equal(candidates.humanReviewed,false);
+ assert.equal(candidates.approvedGold,false);
+ assert.equal(candidates.notes.length,12);
+ assert.equal(new Set(candidates.notes.map(n=>n.questionId)).size,12);
+ const e=env();try{
+  g2f.plan(e.author,'REVIEWER_A',e.a);
+  const movie=path.join(e.dir,'film-proxy.mp4');fs.writeFileSync(movie,Buffer.alloc(160));
+  const state={film:'Sintel',reviewer:'REVIEWER_A',packet:e.a,proxy:movie,cues:[],
+   waveform:{windowMs:50,peaks:[0.1,0.2]}};
+  const server=http.createServer((req,res)=>{void web.handler(state,server.address().port,req,res);});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const origin='http://127.0.0.1:'+server.address().port;
+  try{
+   const response=await fetch(origin+'/api/session');
+   assert.equal(response.status,200);
+   const payload=await response.json();
+   assert.equal(Object.keys(payload.aiObservationSuggestions).length,6);
+   assert.equal(payload.aiObservationSuggestions['G2E-SIN-05'].evidenceNotes.length,2);
+   assert.equal(payload.aiObservationSuggestions['G2E-SIN-06'].evidenceNotes.length,0);
+   assert.ok(payload.aiObservationSuggestions['G2E-SIN-06'].absenceRationale.length>=30);
+   assert.equal(payload.sourceChecks.aiObservationDraftsNotVerified,true);
+   assert.equal(payload.sourceChecks.operatorGoldLoaded,false);
+   assert.equal(payload.packet.questions[0].review.watchedSource,false);
+   assert.equal(payload.packet.questions[0].review.evidence.length,0);
+  }finally{await new Promise(resolve=>server.close(resolve));}
+ }finally{clean(e);}
+});
+
+test('assisted observation drafts are presentation-only and cannot bypass human evidence or overwrite saved reviewer answers',()=>{
+ const e=env();try{
+  g2f.plan(e.author,'REVIEWER_A',e.a);
+  const initial=load(e.a),q=initial.questions[2],note=JSON.parse(fs.readFileSync(
+   path.join(__dirname,'..','g2f-assisted-observation-drafts.json'),'utf8')).notes.find(n=>n.questionId===q.questionId).evidenceNotes[0];
+  assert.equal(q.review.decision,'PENDING');
+  assert.equal(q.review.watchedSource,false);
+  assert.equal(q.review.evidence.length,0);
+  const copy=structuredClone(initial);
+  copy.questions[2].review.decision='ACCEPT';
+  copy.questions[2].review.verdict=copy.questions[2].aiDraft.proposedVerdict;
+  copy.questions[2].review.answerText=copy.questions[2].aiDraft.answerText;
+  copy.questions[2].review.evidence=copy.questions[2].aiDraft.evidenceHints.map(v=>({...v,observationNote:note}));
+  assert.throws(()=>g2f.validate(copy),/actual local film inspected/);
+  copy.questions[2].review.watchedSource=true;
+  assert.equal(g2f.validate(copy).accepted,1);
+  save(e.a,copy);
+  assert.equal(load(e.a).questions[2].review.evidence[0].observationNote,note);
+  assert.equal(g2f.validate(load(e.a)).goldApproved,false);
+ }finally{clean(e);}
+});
