@@ -38,6 +38,15 @@ describe("UI-R04-AG — DEV-only denied consumer HTTP",()=>{
     expect(offlineConsumerPath({...video,id:"../evil"})).toBeNull();
   });
 
+  it("always denies the diagnostic transport in production builds",async()=>{
+    vi.stubEnv("DEV",false);
+    const fetcher=vi.fn(async()=>problem(503,"METADATA_POLICY_HOLD"));
+    expect(offlineConsumerDevEnabled()).toBe(false);
+    expect(await checkOfflineConsumerDenial(video,new AbortController().signal,
+      fetcher as typeof fetch)).toBe("DISABLED");
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
   it("does not issue any fetch with a missing DEV diagnostic or proxy flag",async()=>{
     vi.stubEnv("VITE_R04AG_CONSUMER_DENIAL","off");
     const fetcher=vi.fn(async()=>problem(503,"METADATA_POLICY_HOLD"));
