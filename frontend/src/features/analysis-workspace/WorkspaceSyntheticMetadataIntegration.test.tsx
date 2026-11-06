@@ -100,6 +100,7 @@ describe("UI-R04-W — URL → synthetic backend envelope → graph/card/details
     await user.type(within(focus).getByRole("textbox", { name: "URL 추가 입력" }),
       "https://youtu.be/Ab0_-123xyz");
     await user.click(within(focus).getByRole("button", { name: "추가하기" }));
+    await user.click(within(focus).getByText("표시 제목·이미지 편집"));
     const editable = within(focus).getByRole("textbox", { name: "표시 제목 (직접 입력)" });
     expect(editable).toHaveValue("");
     await user.type(editable, "내가 지정한 별칭");
