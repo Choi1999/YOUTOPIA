@@ -39,6 +39,10 @@ class MetadataConsumerContractTest {
                 () -> MetadataConsumerContract.request("CHANNEL", VIDEO));
         assertThrows(IllegalArgumentException.class,
                 () -> MetadataConsumerContract.request("OTHER", VIDEO));
+        assertThrows(IllegalArgumentException.class,
+                () -> MetadataConsumerContract.request(null, VIDEO));
+        assertThrows(IllegalArgumentException.class,
+                () -> MetadataConsumerContract.request("VIDEO", null));
     }
 
     @Test
