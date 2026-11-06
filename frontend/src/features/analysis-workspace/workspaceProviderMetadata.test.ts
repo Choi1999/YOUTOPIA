@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { WorkspaceUrlTarget } from "./workspaceUrlTargets";
 import {
   decodeProviderMetadata, providerMetadataRequest, providerMetadataStatusLabel,
   readyProviderMetadata, unavailableProviderState,
@@ -9,7 +10,7 @@ const video = { kind: "VIDEO" as const, id: "Ab0_-123xyz" };
 const channel = { kind: "CHANNEL_HANDLE" as const, id: "@samplecreator" };
 const now = 1_793_946_000_000;
 
-function ready(target = video) {
+function ready(target: Pick<WorkspaceUrlTarget,"kind"|"id"> = video) {
   return {
     schema: PROVIDER_METADATA_RESPONSE_SCHEMA,
     source: "AUTHORIZED_BACKEND",
