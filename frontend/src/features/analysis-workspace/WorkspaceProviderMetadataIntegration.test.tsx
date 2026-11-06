@@ -82,7 +82,7 @@ describe("UI-R04-AE — inert product route and offline-injected reader integrat
     expect(dialog.querySelector('img[src^="https://i.ytimg.com/"]'))
       .not.toBeInTheDocument();
     expect(sessionStorage.getItem(WORKSPACE_TARGET_PRESENTATION_KEY))
-      .not.toContain("오프라인 계약 시험 제목");
+      .toBeNull();
 
     await user.click(within(dialog).getByRole("button",{name:"영상 이미지 켜기"}));
     expect(dialog.querySelector(
