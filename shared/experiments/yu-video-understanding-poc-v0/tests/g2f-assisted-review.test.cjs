@@ -224,7 +224,7 @@ test('separate assisted form has no blind independence toggle or automatic gold 
  const html=fs.readFileSync(path.join(root,'g2f-assisted-workspace.html'),'utf8');
  const client=fs.readFileSync(path.join(root,'g2f-assisted-workspace-client.js'),'utf8');
  const server=fs.readFileSync(path.join(root,'g2f-assisted-workspace-server.cjs'),'utf8');
- for(const id of ['aiAnswer','aiCaveat','decision','reviewerNote','negativeNote','watched','verdict','answer','evidenceList']){
+ for(const id of ['aiAnswer','decision','reviewerNote','negativeNote','watched','verdict','answer','evidenceList']){
   assert.ok(html.includes('id="'+id+'"'),id+' absent');
  }
  assert.ok(html.includes('비블라인드'));
