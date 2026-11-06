@@ -3,6 +3,13 @@ export const FOCUS_DOCK_LAYOUT_KEY = "youtopia-focus-dock-layout-v1";
 export const FOCUS_LIST_MIN = 225;
 export const FOCUS_DETAIL_MIN = 250;
 export const FOCUS_DOCK_MAX = 480;
+/** Viewport threshold shared by TS transitions and @media overlay styles. */
+export const FOCUS_DOCK_OVERLAY_MAX = 1100;
+export type FocusDockPresentationMode = "columns" | "overlay";
+export function focusDockPresentationMode(width: number): FocusDockPresentationMode {
+  return Number.isFinite(width) && width > FOCUS_DOCK_OVERLAY_MAX
+    ? "columns" : "overlay";
+}
 const FOCUS_GRAPH_MIN = 360;
 const FOCUS_GRID_OVERHEAD = 90; // padding, gaps, separators and safety margin
 
