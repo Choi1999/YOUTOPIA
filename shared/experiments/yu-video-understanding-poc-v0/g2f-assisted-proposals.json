@@ -1,0 +1,206 @@
+{
+  "schemaVersion": 1,
+  "proposalSetId": "YU_VIDEO_G2F_ASSISTED_EDITORIAL_DRAFT_V01",
+  "status": "AI_ASSISTED_UNVERIFIED_CANDIDATES_NOT_HUMAN_GOLD",
+  "created": "2026-11-06",
+  "generatedBy": "CHATGPT_HUMAN_VISIBLE_PRIOR_CONVERSATION",
+  "realFilmDirectlyInspected": false,
+  "reliesOn": "USER_REPORTED_SCENES_AND_PREVIOUS_ASSISTANT_SRT_SUMMARIES_NOT_INDEPENDENT_FILM_PROOF",
+  "scope": "G2E_TWELVE_QUESTIONS_ONLY",
+  "filmRightsForServiceVerified": false,
+  "g3Authorized": false,
+  "externalCalls": 0,
+  "actualSpendUsd": 0,
+  "drafts": [
+    {
+      "questionId": "G2E-SIN-01",
+      "film": "Sintel",
+      "kind": "SPEECH",
+      "proposedVerdict": "SUPPORTED",
+      "answerText": "화자는 검에 어두운 과거가 있다고 언급한다.",
+      "evidenceHints": [
+        {
+          "localStartMs": 107250,
+          "localEndMs": 109429,
+          "modality": "AUDIO"
+        }
+      ],
+      "caveat": "앞서 사용자가 보고한 SRT #1 발화 내용에 근거한 초안이다. 검수자는 실제 원본 음성을 다시 확인한다.",
+      "requiresHumanVerification": true
+    },
+    {
+      "questionId": "G2E-SIN-02",
+      "film": "Sintel",
+      "kind": "SPEECH",
+      "proposedVerdict": "SUPPORTED",
+      "answerText": "화자는 치료가 거의 끝나간다고 말한다.",
+      "evidenceHints": [
+        {
+          "localStartMs": 207250,
+          "localEndMs": 209739,
+          "modality": "AUDIO"
+        }
+      ],
+      "caveat": "SRT #13과 관련하여 사용자 검수 화면에서 보고한 발화 의미. 용을 치료한다는 시각적 맥락까지 음성만으로 단정하지 않는다.",
+      "requiresHumanVerification": true
+    },
+    {
+      "questionId": "G2E-SIN-03",
+      "film": "Sintel",
+      "kind": "VISUAL",
+      "proposedVerdict": "SUPPORTED",
+      "answerText": "인물이 지팡이를 끌며 설원을 이동한다.",
+      "evidenceHints": [
+        {
+          "localStartMs": 88011,
+          "localEndMs": 90418,
+          "modality": "FRAME"
+        }
+      ],
+      "caveat": "01:28 부근 사용자 제출 장면 관찰을 문장으로 정리한 초안. 보행 시작 여부는 별도로 확인한다.",
+      "requiresHumanVerification": true
+    },
+    {
+      "questionId": "G2E-SIN-04",
+      "film": "Sintel",
+      "kind": "VISUAL",
+      "proposedVerdict": "SUPPORTED",
+      "answerText": "인물이 입에 물고 있던 파이프를 입에서 뗀다.",
+      "evidenceHints": [
+        {
+          "localStartMs": 444016,
+          "localEndMs": 445516,
+          "modality": "FRAME"
+        }
+      ],
+      "caveat": "07:24 부근 사용자 관찰을 바탕으로 한 초안. 근거 종료 07:25.516은 편의상 임시 제시한 시간이며 직접 프레임 확인 후 수정한다.",
+      "requiresHumanVerification": true
+    },
+    {
+      "questionId": "G2E-SIN-05",
+      "film": "Sintel",
+      "kind": "TEMPORAL",
+      "proposedVerdict": "SUPPORTED",
+      "answerText": "먼저 인물이 지팡이를 끌며 설원을 이동하고, 나중에 다른 장면에서 인물이 파이프를 입에서 뗀다.",
+      "evidenceHints": [
+        {
+          "localStartMs": 88011,
+          "localEndMs": 90418,
+          "modality": "FRAME"
+        },
+        {
+          "localStartMs": 444016,
+          "localEndMs": 445516,
+          "modality": "FRAME"
+        }
+      ],
+      "caveat": "두 후보 사건의 시간적 선후를 비교한다. 사건들의 직접적인 인과관계는 제시하지 않는다. 두 번째 시간 구간은 임시값이다.",
+      "requiresHumanVerification": true
+    },
+    {
+      "questionId": "G2E-SIN-06",
+      "film": "Sintel",
+      "kind": "UNSUPPORTED",
+      "proposedVerdict": "UNSUPPORTED",
+      "answerText": "설원에 등장하기 전에 인물이 정확히 몇 분간 이동했는지는 영상만으로 확정할 수 없을 가능성이 높다.",
+      "evidenceHints": [],
+      "caveat": "정답이 없다는 주장 역시 원본 전체의 검토가 필요하다. 검수자는 시간 정보가 실제로 등장한다면 판정을 바꾼다.",
+      "requiresHumanVerification": true
+    },
+    {
+      "questionId": "G2E-TOS-01",
+      "film": "TearsOfSteel",
+      "kind": "SPEECH",
+      "proposedVerdict": "SUPPORTED",
+      "answerText": "화자는 톰에게 그의 태도를 비난하는 말을 한다.",
+      "evidenceHints": [
+        {
+          "localStartMs": 23000,
+          "localEndMs": 24500,
+          "modality": "AUDIO"
+        }
+      ],
+      "caveat": "앞선 대화에서 논의한 SRT #1의 짧은 발화를 의역한 초안이며, 정확한 시작/종료는 실제 청취로 수정한다.",
+      "requiresHumanVerification": true
+    },
+    {
+      "questionId": "G2E-TOS-02",
+      "film": "TearsOfSteel",
+      "kind": "SPEECH",
+      "proposedVerdict": "SUPPORTED",
+      "answerText": "화자는 각자의 열정을 따라야 한다고 말한다.",
+      "evidenceHints": [
+        {
+          "localStartMs": 318000,
+          "localEndMs": 320000,
+          "modality": "AUDIO"
+        }
+      ],
+      "caveat": "SRT #38에 관해 앞선 대화에서 제시한 발화 요약이며 주변 문맥은 직접 확인한다.",
+      "requiresHumanVerification": true
+    },
+    {
+      "questionId": "G2E-TOS-03",
+      "film": "TearsOfSteel",
+      "kind": "VISUAL",
+      "proposedVerdict": "SUPPORTED",
+      "answerText": "무장한 인물이 종탑에서 소총 조준경을 통해 바깥을 살핀다.",
+      "evidenceHints": [
+        {
+          "localStartMs": 73417,
+          "localEndMs": 75417,
+          "modality": "FRAME"
+        }
+      ],
+      "caveat": "앞서 사용자 보고에 등장한 행동이다. 로컬 2012 HD판의 실제 프레임에서 종탑·조준경·동작을 각각 검수한다.",
+      "requiresHumanVerification": true
+    },
+    {
+      "questionId": "G2E-TOS-04",
+      "film": "TearsOfSteel",
+      "kind": "VISUAL",
+      "proposedVerdict": "SUPPORTED",
+      "answerText": "통제실의 인물들이 기억 재현 실험이 진행되는 상황을 살펴본다.",
+      "evidenceHints": [
+        {
+          "localStartMs": 367084,
+          "localEndMs": 369084,
+          "modality": "FRAME"
+        }
+      ],
+      "caveat": "이 장면 설명은 과거 대화의 후보 답안이다. 06:07의 2초 근거 구간은 미검증 임시값이므로 실제 프레임과 맞지 않으면 반드시 수정한다.",
+      "requiresHumanVerification": true
+    },
+    {
+      "questionId": "G2E-TOS-05",
+      "film": "TearsOfSteel",
+      "kind": "TEMPORAL",
+      "proposedVerdict": "SUPPORTED",
+      "answerText": "먼저 종탑의 무장한 인물이 조준경으로 주변을 살피고, 이후 통제실에서 인물들이 실험 진행을 살펴본다.",
+      "evidenceHints": [
+        {
+          "localStartMs": 73417,
+          "localEndMs": 75417,
+          "modality": "FRAME"
+        },
+        {
+          "localStartMs": 367084,
+          "localEndMs": 369084,
+          "modality": "FRAME"
+        }
+      ],
+      "caveat": "두 영상 기준점의 순서를 비교한다. 통제실 장면과 시간은 실제 원본 검수 전의 임시 초안이다.",
+      "requiresHumanVerification": true
+    },
+    {
+      "questionId": "G2E-TOS-06",
+      "film": "TearsOfSteel",
+      "kind": "UNSUPPORTED",
+      "proposedVerdict": "UNSUPPORTED",
+      "answerText": "종탑의 무장한 인물이 그곳에 도착하기까지 몇 분 이동했는지는 현재 근거만으로 확정하기 어렵다.",
+      "evidenceHints": [],
+      "caveat": "영화 전체에 이동 시간이 없다는 사실은 아직 검증되지 않았다. 실제 원본을 전체 확인한 뒤 수용 또는 변경한다.",
+      "requiresHumanVerification": true
+    }
+  ]
+}
