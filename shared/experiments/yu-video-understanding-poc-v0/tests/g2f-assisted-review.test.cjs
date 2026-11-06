@@ -307,3 +307,23 @@ test('assisted observation drafts are presentation-only and cannot bypass human 
   assert.equal(g2f.validate(load(e.a)).goldApproved,false);
  }finally{clean(e);}
 });
+
+
+test('observation draft text stays in scene-writer voice without AI-process or reviewer instructions',()=>{
+ const root=path.resolve(__dirname,'..');
+ const file=JSON.parse(fs.readFileSync(path.join(root,'g2f-assisted-observation-drafts.json'),'utf8'));
+ const notes=file.notes;
+ const all=notes.flatMap(n=>[...n.evidenceNotes,...(n.absenceRationale?[n.absenceRationale]:[])]);
+ assert.equal(notes.length,12);
+ assert.equal(notes.reduce((n,q)=>n+q.evidenceNotes.length,0),12);
+ assert.equal(notes.filter(n=>n.absenceRationale!==null).length,2);
+ assert.ok(all.every(t=>typeof t==='string'&&t.length>=20));
+ const processPhrases=/검수해야|확인해야|재검수|다시 확인|AI가|제안되었|보고가|현재 관찰 보고|기존 대화|직접 확인/;
+ for(const sentence of all)assert.doesNotMatch(sentence,processPhrases);
+ assert.match(notes.find(n=>n.questionId==='G2E-SIN-05').evidenceNotes[0],/지팡이.*설원.*이동/);
+ assert.match(notes.find(n=>n.questionId==='G2E-SIN-05').evidenceNotes[1],/파이프.*입에서 떼/);
+ // Keep the source provenance explicitly UNVERIFIED even though the prose is in scene-narrator voice.
+ assert.equal(file.videoPersonallyWatchedByAssistant,false);
+ assert.equal(file.humanReviewed,false);
+ assert.equal(file.approvedGold,false);
+});
