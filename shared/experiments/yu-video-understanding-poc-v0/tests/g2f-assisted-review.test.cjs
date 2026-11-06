@@ -234,3 +234,16 @@ test('separate assisted form has no blind independence toggle or automatic gold 
  assert.ok(client.includes("fetch('/api/save'"));
  assert.ok(!client.includes('https://'));
 });
+
+
+test('reviewer may overturn an AI UNSUPPORTED guess with positive local film evidence',()=>{
+ const e=env();try{
+  g2f.plan(e.author,'REVIEWER_A',e.a);const p=load(e.a),q=p.questions[5];
+  q.review.decision='EDIT';q.review.verdict='SUPPORTED';q.review.watchedSource=true;
+  q.review.answerText='Synthetic reviewer found an actual source statement that contradicts the guessed absence.';
+  q.review.reviewerNote='The AI unsupported claim was wrong; original film directly supports this new answer.';
+  q.review.evidence=[{modality:'AUDIO',localStartMs:200000,localEndMs:202000,
+   observationNote:'Synthetic positive source evidence directly refuting the missing-timing hypothesis'}];
+  const summary=g2f.validate(p);assert.equal(summary.edited,1);assert.equal(summary.goldApproved,false);
+ }finally{clean(e);}
+});
