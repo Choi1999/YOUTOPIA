@@ -7,6 +7,9 @@ export default defineConfig(({command, mode}) => {
     loadEnv(mode, process.cwd(), "VITE_R04Y_").VITE_R04Y_SYNTHETIC_HTTP === "enabled";
   const statesEnabled = enabled &&
     loadEnv(mode, process.cwd(), "VITE_R04AA_").VITE_R04AA_METADATA_STATES === "enabled";
+  const agDenied = enabled &&
+    loadEnv(mode, process.cwd(), "VITE_R04AC_").VITE_R04AC_DIAGNOSTICS === "enabled" &&
+    loadEnv(mode, process.cwd(), "VITE_R04AG_").VITE_R04AG_CONSUMER_DENIAL === "enabled";
   const loopback = {
     target: "http://127.0.0.1:8765",
     changeOrigin: false, secure: false, ws: false,
@@ -20,6 +23,11 @@ export default defineConfig(({command, mode}) => {
         "^/api/v1/youtube/metadata/synthetic(?:/|$)": loopback,
         ...(statesEnabled ? {
           "^/api/v1/youtube/metadata/synthetic-state(?:/|$)": loopback,
+        } : {}),
+        // AG probes the deny route only in DEV; the pinned R04X test server
+        // does NOT register AF's separate MockMvc-only consumer controller.
+        ...(agDenied ? {
+          "^/api/v1/youtube/metadata/consumer-offline(?:/|$)": loopback,
         } : {}),
       },
     } : undefined,
