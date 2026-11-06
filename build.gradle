@@ -78,3 +78,16 @@ tasks.register('prepareBrowserFixtures', JavaExec) {
     mainClass = 'com.youtopia.integration.BrowserFixtureCommand'
     doFirst { configureSyntheticServices(delegate) }
 }
+
+
+// UI-R04-X: explicit loopback-only synthetic fixture server for Vite dev proxy.
+// Runs on TEST classpath. Never part of bootJar or runtime provider requests.
+// A user must deliberately invoke this task; it never starts during build/test.
+tasks.register('runR04XSyntheticMetadataLoopback', JavaExec) {
+    description = 'Start isolated Spring Boot test-only synthetic metadata server on 127.0.0.1:8765.'
+    group = 'verification'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.youtopia.youtube.metadata.synthetic.MetadataSyntheticLoopbackApplication'
+    setEnvironment(syntheticProcessEnvironment())
+}
