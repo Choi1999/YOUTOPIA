@@ -646,7 +646,7 @@ export function WorkspaceFocusMode({
                       event.preventDefault();
                       setEditOpen(value => !value);
                     }}>표시 제목·이미지 편집</summary>
-                    {editOpen && <div className="workspace-focus__section-body">}
+                    {editOpen && <div className="workspace-focus__section-body">
                       {onSetTargetLabel && (
                         <form className="workspace-focus__editor" onSubmit={saveDisplayTitle}>
                           <label htmlFor="focus-display-title">표시 제목 (직접 입력)</label>
