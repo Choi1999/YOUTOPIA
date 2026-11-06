@@ -45,7 +45,7 @@ function editorPayload(state){
   durationMs:value.packet.durationMs,
   cueCount:state.cues.length,cues:state.cues,
   waveform:state.waveform,
-  questions:value.packet.questions,blindReviewDeclaration:value.packet.blindReviewDeclaration,
+  packet:value.packet,questions:value.packet.questions,blindReviewDeclaration:value.packet.blindReviewDeclaration,
   sawOperatorAnswersBeforeSubmission:value.packet.sawOperatorAnswersBeforeSubmission,
   watchedLocalPublisherFilm:value.packet.watchedLocalPublisherFilm,
   revision:value.revision,summary:value.summary,
@@ -119,7 +119,7 @@ function requestBody(req,max=210000){
   const stop=e=>{if(!done){done=true;reject(e);}};
   req.on('data',chunk=>{total+=chunk.length;if(total>max){stop(Error('payload too large'));req.destroy();return;}chunks.push(chunk);});
   req.on('error',stop);
-  req.on('end',()=>{if(done)return;try{done=true;resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')));}catch(e){stop(e);}});
+  req.on('end',()=>{if(done)return;try{const value=JSON.parse(Buffer.concat(chunks).toString('utf8'));done=true;resolve(value);}catch(e){stop(e);}});
  });
 }
 function protectRequest(req,port){
