@@ -53,7 +53,8 @@ describe("UI-R04-AG — DEV-only denied consumer HTTP",()=>{
     [503,"METADATA_POLICY_HOLD","POLICY_HOLD"],
   ] as const)("maps %s server denial without credentials or provider data",
   async(status,code,expected)=>{
-    const fetcher=vi.fn(async()=>problem(status,code));
+    const fetcher=vi.fn(async(_input:RequestInfo|URL,_opts?:RequestInit)=>
+      problem(status,code));
     expect(await checkOfflineConsumerDenial(video,new AbortController().signal,
       fetcher as typeof fetch)).toBe(expected);
     expect(fetcher).toHaveBeenCalledTimes(1);
