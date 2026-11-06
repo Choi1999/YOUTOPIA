@@ -8,6 +8,7 @@ import { workspaceUrlTargetKey } from "./workspaceUrlTargets";
 import {
   EMPTY_TARGET_PRESENTATION, type WorkspaceTargetPresentation,
 } from "./workspaceTargetPresentation";
+import { readyProviderMetadata } from "./workspaceProviderMetadata";
 import "./workspace-artwork.css";
 
 export type WorkspaceArtworkVariant = "node" | "card" | "list" | "detail";
@@ -60,6 +61,8 @@ export function WorkspaceTargetArtwork({
     local.kind === target.kind && local.requestedId === target.id &&
     local.sourceAuthenticated === false && local.providerRequestsMade === 0 &&
     local.consumerPublicationAuthorized === false;
+  const provider = readyProviderMetadata(
+    presentation.providerStates?.[workspaceUrlTargetKey(target)],target);
   const channelIdentity = channelProfiles?.get(target) ?? channelProfileForTarget(target);
   // A user-pasted image URL is not approved metadata or proof of identity.
   // Both paths are blocked from image loading until consent is enabled.
@@ -69,18 +72,23 @@ export function WorkspaceTargetArtwork({
     ? manuallySupplied : null;
   const channelSource = allowChannelImage
     ? (channelIdentity?.status === "READY" && channelIdentity.thumbnailUrl)
-      || optionalManual
+      || provider?.thumbnailUrl || optionalManual
     : null;
-  // Synthetic preview uses ONLY local CSS placeholders, never even a CDN
-  // image request. Real external previews remain a separate explicit consent.
-  const candidate = synthetic ? null :
-    optInVideoThumbnailSource(target, allowVideoImage) ?? channelSource;
+  // Provider images also require the same independent opt-in as existing CDNs.
+  // Default product route has no provider reader; no implicit network occurs.
+  const candidate = synthetic ? null : target.kind === "VIDEO"
+    ? allowVideoImage
+      ? provider?.thumbnailUrl ?? optInVideoThumbnailSource(target,true)
+      : null
+    : channelSource;
   const source = candidate && failedSource !== candidate ? candidate : null;
   // Local visual identifiers only; do not mistake the initial for a real avatar.
   const fallback = target.kind === "VIDEO" ? "▶" :
     target.kind === "CHANNEL_HANDLE"
       ? target.id.slice(1,2).toUpperCase() : "C";
   const hint = synthetic ? "합성 썸네일 · 실제 YouTube 이미지 아님" :
+    provider && source === provider.thumbnailUrl
+      ? "백엔드 메타데이터 이미지 · 댓글 분석과 별개" :
     target.kind === "VIDEO"
     ? allowVideoImage
       ? "영상 이미지 미확인"
