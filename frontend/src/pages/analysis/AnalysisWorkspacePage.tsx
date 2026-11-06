@@ -19,6 +19,9 @@ import { EMPTY_METADATA_STATE, InMemoryMetadataStateCache,
   pendingMetadataState, type MetadataState, type StateScenario,
 } from "../../features/analysis-workspace/workspaceMetadataConsumerState";
 import {
+  offlineConsumerDenialReader, offlineConsumerDevEnabled,
+} from "../../features/analysis-workspace/workspaceOfflineConsumerDenial";
+import {
   decodeProviderMetadata, unavailableProviderState,
   PROVIDER_METADATA_BATCH_LIMIT, type ProviderMetadataReader,
   type ProviderMetadataState,
@@ -129,6 +132,11 @@ export function AnalysisWorkspacePage({
   );
   // Status-contract demo is independent of provider data and opt-in only.
   const stateDemoAvailable = diagnosticAccess && metadataStateDevEnabled();
+  const offlineConsumerAvailable = diagnosticAccess && offlineConsumerDevEnabled();
+  const [offlineConsumerEnabled, setOfflineConsumerEnabled] = useState(false);
+  const activeProviderReader = providerMetadataReader ??
+    (offlineConsumerAvailable && offlineConsumerEnabled
+      ? offlineConsumerDenialReader : undefined);
   const [stateDemoEnabled, setStateDemoEnabled] = useState(false);
   const [stateScenario, setStateScenario] = useState<StateScenario>("READY");
   const [stateRefresh, setStateRefresh] = useState(0);
@@ -140,7 +148,10 @@ export function AnalysisWorkspacePage({
     Readonly<Record<string, ProviderMetadataState>>
   >({});
   useEffect(() => {
-    if (!providerMetadataReader) return;
+    if (!activeProviderReader) {
+      setProviderRecords({});
+      return;
+    }
     const controller = new AbortController();
     const chosen = urlTargets.slice(0,PROVIDER_METADATA_BATCH_LIMIT);
     setProviderRecords(Object.fromEntries(chosen.map(target => [
@@ -150,7 +161,7 @@ export function AnalysisWorkspacePage({
       for (const target of chosen) {
         if (controller.signal.aborted) return;
         let raw: unknown = null;
-        try { raw = await providerMetadataReader(target,controller.signal); }
+        try { raw = await activeProviderReader(target,controller.signal); }
         catch { /* Missing/invalid backend data never becomes a fake READY. */ }
         if (controller.signal.aborted) return;
         const decoded = decodeProviderMetadata(raw,target,true);
@@ -161,7 +172,7 @@ export function AnalysisWorkspacePage({
       }
     })();
     return () => controller.abort();
-  }, [providerMetadataReader, urlTargets]);
+  }, [activeProviderReader, urlTargets]);
   const [presentation, setPresentation] = useState<WorkspaceTargetPresentation>(
     () => readTargetPresentation(getTabStorage(), urlTargets),
   );
@@ -245,7 +256,7 @@ export function AnalysisWorkspacePage({
     if (stateDemoEnabled && value.status === "READY" && value.record)
       stateReadyRecords[key] = value.record;
   }
-  const providerPresentation: WorkspaceTargetPresentation = providerMetadataReader
+  const providerPresentation: WorkspaceTargetPresentation = activeProviderReader
     ? { ...presentation, providerStates: providerRecords } : presentation;
   const displayedPresentation: WorkspaceTargetPresentation = diagnosticAccess && stateDemoEnabled
     ? { ...providerPresentation, synthetic: stateReadyRecords, metadataStates: stateRecords }
@@ -381,6 +392,7 @@ export function AnalysisWorkspacePage({
         onToggleSyntheticPreview={diagnosticAccess ? () => {
           setSyntheticServerEnabled(false);
           setStateDemoEnabled(false);
+          setOfflineConsumerEnabled(false);
           setSyntheticPreviewEnabled(v => !v);
         } : undefined}
         syntheticServerAvailable={syntheticServerAvailable}
@@ -389,10 +401,19 @@ export function AnalysisWorkspacePage({
         onToggleSyntheticServer={diagnosticAccess ? () => {
           setSyntheticPreviewEnabled(false);
           setStateDemoEnabled(false);
+          setOfflineConsumerEnabled(false);
           setSyntheticServerEnabled(v => !v);
         } : undefined}
         stateDemoAvailable={stateDemoAvailable}
         stateDemoEnabled={diagnosticAccess && stateDemoEnabled}
+        offlineConsumerAvailable={offlineConsumerAvailable}
+        offlineConsumerEnabled={diagnosticAccess && offlineConsumerEnabled}
+        onToggleOfflineConsumer={offlineConsumerAvailable ? () => {
+          setSyntheticPreviewEnabled(false);
+          setSyntheticServerEnabled(false);
+          setStateDemoEnabled(false);
+          setOfflineConsumerEnabled(value => !value);
+        } : undefined}
         stateScenario={stateScenario}
         onStateScenarioChange={diagnosticAccess ? scenario => {
           stateCache.clear();
@@ -401,6 +422,7 @@ export function AnalysisWorkspacePage({
         onToggleStateDemo={diagnosticAccess ? () => {
           setSyntheticPreviewEnabled(false);
           setSyntheticServerEnabled(false);
+          setOfflineConsumerEnabled(false);
           setStateDemoEnabled(v => !v);
         } : undefined}
         onRefreshStateDemo={diagnosticAccess ? () => {
