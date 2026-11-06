@@ -43,6 +43,9 @@ jobs:
           node --check shared/experiments/yu-video-understanding-poc-v0/g2f-blind-review.cjs
           node --check shared/experiments/yu-video-understanding-poc-v0/g2f-reviewer-workspace-server.cjs
           node --check shared/experiments/yu-video-understanding-poc-v0/g2f-reviewer-workspace-client.js
+          node --check shared/experiments/yu-video-understanding-poc-v0/g2f-assisted-review.cjs
+          node --check shared/experiments/yu-video-understanding-poc-v0/g2f-assisted-workspace-server.cjs
+          node --check shared/experiments/yu-video-understanding-poc-v0/g2f-assisted-workspace-client.js
           node --test shared/experiments/yu-video-understanding-poc-v0/tests/*.test.cjs
       - name: Fail-closed gate
         run: |
