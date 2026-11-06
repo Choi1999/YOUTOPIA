@@ -228,6 +228,11 @@ test('separate assisted form has no blind independence toggle or automatic gold 
   assert.ok(html.includes('id="'+id+'"'),id+' absent');
  }
  assert.ok(html.includes('비블라인드'));
+ assert.ok(html.includes('AI 모범답변 초안'));
+ assert.ok(!html.includes('id="aiCaveat"'));
+ assert.ok(!html.includes('id="aiTiming"'));
+ assert.ok(!client.includes('el.aiCaveat'));
+ assert.ok(!client.includes('el.aiTiming'));
  assert.ok(!html.includes('id="blind"'));
  assert.ok(!server.includes('g2e-gold-pilot.cjs'));
  assert.ok(!server.includes('state.goldFile'));
