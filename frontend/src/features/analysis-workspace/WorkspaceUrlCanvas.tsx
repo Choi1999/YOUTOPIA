@@ -7,6 +7,7 @@ import "./workspace-groups.css";
 import "./workspace-navigation.css";
 import "./workspace-bookmarks.css";
 import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
+import { metadataStateLabel } from "./workspaceMetadataConsumerState";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
 import {
   workspaceUrlTargetKey,
@@ -440,7 +441,8 @@ export function WorkspaceUrlCanvas({
           else if (selected) { setFocusedKey(null); setCenterRequest(null); }
           else navigate({ kind: "target", key });
         }}
-        title={userFacingTargetName(target, presentation, channelProfiles)}>
+        title={userFacingTargetName(target, presentation, channelProfiles)}
+        data-metadata-status={presentation.metadataStates?.[key]?.status ?? undefined}>
         <span className="workspace-url-canvas__node-bubble" aria-hidden="true">
           <WorkspaceTargetArtwork target={target} variant="node"
             allowVideoImage={allowVideoImage} allowChannelImage={allowChannelImage}
@@ -450,6 +452,11 @@ export function WorkspaceUrlCanvas({
           {userFacingTargetName(target, presentation, channelProfiles)}
         </span>
         <span className="workspace-url-canvas__node-id">{target.id}</span>
+        {presentation.metadataStates?.[key] && (
+          <span className="workspace-url-canvas__metadata-state">
+            {metadataStateLabel(presentation.metadataStates[key])}
+          </span>
+        )}
       </button>
     );
   }
@@ -457,7 +464,7 @@ export function WorkspaceUrlCanvas({
   return (
     <section className="workspace-url-canvas" aria-label="URL 등록 대상 전체 화면 탐색">
       <div className="workspace-url-canvas__toolbar">
-        <span>EXPLORER / {targets.length} UNVERIFIED TARGETS</span>
+        <span>등록 대상 {targets.length}개 · 정보 확인 전</span>
         <div className="workspace-url-canvas__tools">
           <button type="button" aria-label="이전 탐색"
             disabled={!backward} onClick={() => replayNavigation(-1)}>←</button>

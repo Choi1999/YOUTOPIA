@@ -44,6 +44,7 @@ describe("UI-R04-N — explicit consumer UX corrections",()=>{
     await user.click(within(dialog).getByRole("button",{name:"집중 모드 북마크 추가"}));
     expect(within(dialog).getByRole("button",{name:"집중 모드 북마크 해제"}))
       .toHaveAttribute("aria-pressed","true");
+    await user.click(within(dialog).getByText("표시 제목·이미지 편집"));
     const title=within(dialog).getByRole("textbox",{name:"표시 제목 (직접 입력)"});
     await user.type(title,"직접 정한 영상 제목");
     await user.click(within(dialog).getByRole("button",{name:"표시 제목 저장"}));
@@ -61,6 +62,7 @@ describe("UI-R04-N — explicit consumer UX corrections",()=>{
       "https://www.youtube.com/@somecreator");
     await user.click(within(dialog).getByRole("button",{name:"추가하기"}));
     const image="https://yt3.googleusercontent.com/sample-avatar-image";
+    await user.click(within(dialog).getByText("표시 제목·이미지 편집"));
     const input=within(dialog).getByRole("textbox",{name:"채널 썸네일 이미지 URL"});
     await user.type(input,image);
     await user.click(within(dialog).getByRole("button",{name:"채널 이미지 적용"}));

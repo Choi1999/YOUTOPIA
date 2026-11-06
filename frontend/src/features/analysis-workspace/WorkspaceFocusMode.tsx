@@ -1,13 +1,16 @@
 import {
-  useEffect, useRef, useState,
+  useEffect, useRef, useState, type Dispatch, type SetStateAction,
   type CSSProperties, type DragEvent, type FormEvent, type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
 import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
+import { WorkspaceDiagnosticsDock } from "./WorkspaceDiagnosticsDock";
 import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
 import { WorkspaceChannelIdentity } from "./WorkspaceChannelIdentity";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
+import { metadataStateLabel, type StateScenario } from "./workspaceMetadataConsumerState";
+import { readyProviderMetadata, providerMetadataStatusLabel } from "./workspaceProviderMetadata";
 import type { WorkspaceNodeGroup } from "./workspaceNodeGroups";
 import type { GraphVisit } from "./workspaceGraphNavigation";
 import { hasGraphBookmark, toggleGraphBookmark } from "./workspaceGraphBookmarks";
@@ -21,21 +24,45 @@ import {
 } from "./workspaceUrlTargets";
 import {
   FOCUS_DETAIL_MIN, FOCUS_LIST_MIN,
-  clampFocusDockLayout, focusDockBounds, readFocusDockLayout,
+  clampFocusDockLayout, focusDockBounds, focusDockPresentationMode,
+  readFocusDockLayout,
   resizeFocusDockLayout, writeFocusDockLayout,
   type FocusDockLayout, type FocusDockSide,
 } from "./workspaceFocusLayout";
+import { chooseWorkspaceDockTarget, closeWorkspaceDockSide,
+  createWorkspaceDockState, reconcileWorkspaceDockState,
+  toggleWorkspaceDockSide, withWorkspaceDockWidths,
+  type WorkspaceDockState } from "./workspaceDockState";
 import "./workspace-focus.css";
 
 type Props = Readonly<{
   targets: readonly WorkspaceUrlTarget[];
   onAddUrls: (raw: string) => WorkspaceUrlIngestResult;
   onRemove: (key: string) => void;
+  onClearTargets?: () => void;
+  dockState?: WorkspaceDockState;
+  onDockStateChange?: Dispatch<SetStateAction<WorkspaceDockState>>;
   onExit: () => void;
   allowVideoImage?: boolean;
   onToggleVideoImage?: () => void;
   allowChannelImage?: boolean;
   onToggleChannelImage?: () => void;
+  diagnosticsMode?: boolean;
+  syntheticPreviewEnabled?: boolean;
+  onToggleSyntheticPreview?: () => void;
+  syntheticServerAvailable?: boolean;
+  syntheticServerEnabled?: boolean;
+  syntheticServerStatus?: string;
+  onToggleSyntheticServer?: () => void;
+  stateDemoAvailable?: boolean;
+  stateDemoEnabled?: boolean;
+  stateScenario?: StateScenario;
+  onStateScenarioChange?: (value:StateScenario)=>void;
+  onToggleStateDemo?: () => void;
+  onRefreshStateDemo?: () => void;
+  offlineConsumerAvailable?: boolean;
+  offlineConsumerEnabled?: boolean;
+  onToggleOfflineConsumer?: () => void;
   presentation?: WorkspaceTargetPresentation;
   onSetTargetLabel?: (key: string, label: string) => boolean;
   onSetChannelArtwork?: (key: string, imageUrl: string) => boolean;
@@ -64,9 +91,19 @@ function kindLabel(kind: WorkspaceUrlTarget["kind"]) {
  * docks never adds an edge, a metric or a metadata/provider request.
  */
 export function WorkspaceFocusMode({
-  targets, onAddUrls, onRemove, onExit,
+  targets, onAddUrls, onRemove, onClearTargets, onExit,
+  dockState, onDockStateChange,
   allowVideoImage = false, onToggleVideoImage, channelProfiles,
   allowChannelImage = false, onToggleChannelImage,
+  diagnosticsMode = false,
+  syntheticPreviewEnabled = false, onToggleSyntheticPreview,
+  syntheticServerAvailable = false, syntheticServerEnabled = false,
+  syntheticServerStatus = "", onToggleSyntheticServer,
+  stateDemoAvailable = false, stateDemoEnabled = false,
+  stateScenario = "READY", onStateScenarioChange, onToggleStateDemo,
+  onRefreshStateDemo,
+  offlineConsumerAvailable = false, offlineConsumerEnabled = false,
+  onToggleOfflineConsumer,
   presentation = EMPTY_TARGET_PRESENTATION, onSetTargetLabel, onSetChannelArtwork,
   groups = [], onGroupsChange, bookmarks = [], onBookmarksChange,
 }: Props) {
@@ -75,13 +112,23 @@ export function WorkspaceFocusMode({
   const inputRef = useRef<HTMLInputElement>(null);
   const listToggleRef = useRef<HTMLButtonElement>(null);
   const detailToggleRef = useRef<HTMLButtonElement>(null);
-  const [listOpen, setListOpen] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [internalDockState, setInternalDockState] = useState(
+    () => createWorkspaceDockState(readFocusDockLayout(focusStorage())),
+  );
+  const currentDock = dockState && onDockStateChange ? dockState : internalDockState;
+  const updateDockState = dockState && onDockStateChange
+    ? onDockStateChange : setInternalDockState;
+  const {listOpen, detailOpen, selectedKey, widths: dockWidths} = currentDock;
+  const setDockWidths = (widths:FocusDockLayout|null) =>
+    updateDockState(prev => withWorkspaceDockWidths(prev, widths));
   const [search, setSearch] = useState("");
   const [input, setInput] = useState("");
   const [labelDraft, setLabelDraft] = useState("");
   const [imageDraft, setImageDraft] = useState("");
+  // Disclosure state is ephemeral UI only; forms/destructive controls are
+  // mounted strictly on demand, including in JSDOM/keyboard navigation.
+  const [editOpen, setEditOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
   const [message, setMessage] = useState(
     "추가된 URL은 미확인 대상입니다. 등록만으로 영상·채널 분석은 시작되지 않습니다.",
   );
@@ -97,9 +144,6 @@ export function WorkspaceFocusMode({
   const [viewportWidth, setViewportWidth] = useState(
     () => typeof window === "undefined" ? 1440 : window.innerWidth,
   );
-  const [dockWidths, setDockWidths] = useState<FocusDockLayout | null>(
-    () => readFocusDockLayout(focusStorage()),
-  );
   const [measuredWidths, setMeasuredWidths] = useState<FocusDockLayout>({
     list: 280, detail: 300,
   });
@@ -109,6 +153,9 @@ export function WorkspaceFocusMode({
     return () => window.removeEventListener("resize", syncViewport);
   }, []);
   useEffect(() => { writeFocusDockLayout(focusStorage(), dockWidths); }, [dockWidths]);
+  useEffect(() => {
+    updateDockState(prev => reconcileWorkspaceDockState(prev, targets));
+  }, [targets, updateDockState]);
   useEffect(() => {
     function measure() {
       const list = Math.round(listDockRef.current?.getBoundingClientRect().width ?? 0);
@@ -131,6 +178,8 @@ export function WorkspaceFocusMode({
   }, [listOpen, detailOpen]);
 
   const selected = targets.find(item => workspaceUrlTargetKey(item) === selectedKey) ?? null;
+  const providerSelected = selected ? readyProviderMetadata(
+    presentation.providerStates?.[selectedKey ?? ""],selected) : null;
   const selectedVisit: GraphVisit | null = selected
     ? { kind:"target", key:workspaceUrlTargetKey(selected) } : null;
   const selectedIsBookmarked = selectedVisit
@@ -138,6 +187,8 @@ export function WorkspaceFocusMode({
   useEffect(() => {
     setLabelDraft(selectedKey ? presentation.labels[selectedKey] ?? "" : "");
     setImageDraft(selectedKey ? presentation.channelImages[selectedKey] ?? "" : "");
+    setEditOpen(false);
+    setManageOpen(false);
   }, [selectedKey]);
   const visible = [...targets].reverse().filter(target => {
     const query = search.trim().toLocaleLowerCase("ko-KR");
@@ -159,29 +210,31 @@ export function WorkspaceFocusMode({
     };
   }, []);
 
+  // CSS and React must agree on the same overlay cutoff. At tablet widths
+  // two side overlays cannot cover the central graph simultaneously.
+  const dockPresentationMode = focusDockPresentationMode(viewportWidth);
   function inNarrowViewport() {
-    return typeof window.matchMedia === "function" &&
-      window.matchMedia("(max-width: 720px)").matches;
+    return dockPresentationMode === "overlay";
   }
+  useEffect(() => {
+    if (dockPresentationMode !== "overlay" || !listOpen || !detailOpen) return;
+    updateDockState(previous =>
+      previous.listOpen && previous.detailOpen
+        ? closeWorkspaceDockSide(previous,"list") : previous);
+  }, [dockPresentationMode,listOpen,detailOpen,updateDockState]);
 
-  function focusTarget(key: string | null) {
-    setSelectedKey(key);
-    if (key) {
-      setDetailOpen(true);
-      if (inNarrowViewport()) setListOpen(false);
-    } else {
-      setDetailOpen(false);
-    }
+  function focusTarget(key: string | null,
+      registered: readonly WorkspaceUrlTarget[] = targets) {
+    updateDockState(prev =>
+      chooseWorkspaceDockTarget(prev, key, registered, inNarrowViewport()));
   }
 
   function toggleList() {
-    setListOpen(value => !value);
-    if (inNarrowViewport()) setDetailOpen(false);
+    updateDockState(prev => toggleWorkspaceDockSide(prev,"list",inNarrowViewport()));
   }
 
   function toggleDetail() {
-    setDetailOpen(value => !value);
-    if (inNarrowViewport()) setListOpen(false);
+    updateDockState(prev => toggleWorkspaceDockSide(prev,"detail",inNarrowViewport()));
   }
 
   function ingest(raw: string) {
@@ -194,7 +247,10 @@ export function WorkspaceFocusMode({
     );
     if (result.added.length) {
       setInput("");
-      focusTarget(workspaceUrlTargetKey(result.added[result.added.length - 1]));
+      // React props still contain the previous URL set until the next
+      // render; the just-returned canonical target list is authoritative.
+      focusTarget(workspaceUrlTargetKey(result.added[result.added.length - 1]),
+        result.targets);
     }
   }
 
@@ -399,6 +455,25 @@ export function WorkspaceFocusMode({
               {allowVideoImage ? "영상 이미지 끄기" : "영상 이미지 켜기"}
             </button>
           )}
+          {diagnosticsMode && (
+            <WorkspaceDiagnosticsDock
+              syntheticPreviewEnabled={syntheticPreviewEnabled}
+              onToggleSyntheticPreview={onToggleSyntheticPreview}
+              syntheticServerAvailable={syntheticServerAvailable}
+              syntheticServerEnabled={syntheticServerEnabled}
+              syntheticServerStatus={syntheticServerStatus}
+              onToggleSyntheticServer={onToggleSyntheticServer}
+              stateDemoAvailable={stateDemoAvailable}
+              stateDemoEnabled={stateDemoEnabled}
+              stateScenario={stateScenario}
+              onStateScenarioChange={onStateScenarioChange}
+              onToggleStateDemo={onToggleStateDemo}
+              onRefreshStateDemo={onRefreshStateDemo}
+              offlineConsumerAvailable={offlineConsumerAvailable}
+              offlineConsumerEnabled={offlineConsumerEnabled}
+              onToggleOfflineConsumer={onToggleOfflineConsumer}
+            />
+          )}
           {onToggleChannelImage && (
             <button type="button" aria-pressed={allowChannelImage}
               onClick={onToggleChannelImage}
@@ -427,8 +502,14 @@ export function WorkspaceFocusMode({
             onClick={onExit}>집중 모드 종료</button>
         </div>
       </header>
-      <div className="workspace-focus__message" role="status">{message}</div>
+      <div className="workspace-focus__message" role="status">
+        {(syntheticPreviewEnabled || syntheticServerEnabled || stateDemoEnabled) && (
+          <strong>합성 데이터 미리보기 · 실제 영상·채널 제목이나 YouTube 응답이 아닙니다. 분석 데이터 없음. </strong>
+        )}
+        {message}
+      </div>
       <div ref={bodyRef} className="workspace-focus__body" data-layout={layout}
+        data-dock-mode={dockPresentationMode}
         data-resizing={resizingSide ?? undefined} style={customStyle}>
         {listOpen && (
           <aside ref={listDockRef} id="workspace-focus-target-dock"
@@ -437,7 +518,7 @@ export function WorkspaceFocusMode({
             <div className="workspace-focus__dock-heading">
               <h3>대상 목록</h3>
               <button type="button" onClick={() => {
-                setListOpen(false);
+                updateDockState(prev => closeWorkspaceDockSide(prev,"list"));
                 listToggleRef.current?.focus();
               }} aria-label="대상 목록 닫기">닫기</button>
             </div>
@@ -448,6 +529,13 @@ export function WorkspaceFocusMode({
               onChange={event => setSearch(event.target.value)} maxLength={80}
               placeholder="등록 대상 검색"/>
             <p className="workspace-focus__dock-count">표시 {visible.length}개 / 등록 {targets.length}개</p>
+            {onClearTargets && targets.length>0 && (
+              <button type="button" onClick={() => {
+                focusTarget(null);
+                onClearTargets();
+                setSearch("");
+              }}>등록 목록 비우기</button>
+            )}
             <div className="workspace-focus__items" role="group" aria-label="등록 대상 선택">
               {visible.map(target => {
                 const key=workspaceUrlTargetKey(target);
@@ -523,53 +611,105 @@ export function WorkspaceFocusMode({
             <div className="workspace-focus__dock-heading">
               <h3>선택 상세</h3>
               <button type="button" onClick={() => {
-                setDetailOpen(false);
+                updateDockState(prev => closeWorkspaceDockSide(prev,"detail"));
                 detailToggleRef.current?.focus();
               }} aria-label="선택 상세 닫기">닫기</button>
             </div>
             {selected ? (
               <div key={selectedKey ?? "none"} className="workspace-focus__details">
-                <span className="workspace-focus__kind">{kindLabel(selected.kind)}</span>
-                <WorkspaceTargetArtwork target={selected} variant="detail"
-                  allowVideoImage={allowVideoImage}
-                  allowChannelImage={allowChannelImage}
-                  presentation={presentation} channelProfiles={channelProfiles}/>
-                <h4>{userFacingTargetName(selected, presentation, channelProfiles)}</h4>
-                <p className="workspace-focus__secondary-id">등록 식별자: {selected.id}</p>
-                {onSetTargetLabel && (
-                  <form className="workspace-focus__editor" onSubmit={saveDisplayTitle}>
-                    <label htmlFor="focus-display-title">표시 제목 (직접 입력)</label>
-                    <input id="focus-display-title" value={labelDraft}
-                      maxLength={120}
-                      placeholder={selected.kind === "VIDEO"
-                        ? "영상 제목 입력" : "채널 표시 이름 입력"}
-                      onChange={event => setLabelDraft(event.target.value)}/>
-                    <button type="submit">표시 제목 저장</button>
-                    <small>이름은 직접 입력한 표시용 텍스트입니다. 공식 제목 검증은 별도입니다.</small>
-                  </form>
+                <div className="workspace-focus__identity" role="group"
+                  aria-label="선택 대상 요약">
+                  <WorkspaceTargetArtwork target={selected} variant="detail"
+                    allowVideoImage={allowVideoImage}
+                    allowChannelImage={allowChannelImage}
+                    presentation={presentation} channelProfiles={channelProfiles}/>
+                  <div className="workspace-focus__identity-copy">
+                    <span className="workspace-focus__kind">{kindLabel(selected.kind)}</span>
+                    <h4>{userFacingTargetName(selected, presentation, channelProfiles)}</h4>
+                    <p className="workspace-focus__secondary-id">등록 식별자: {selected.id}</p>
+                    <p className="workspace-focus__identity-note">
+                      {providerSelected
+                        ? "백엔드 메타데이터 수신 · 댓글 분석과 별개"
+                        : "링크 등록 · 실제 제공자 정보 미확인"}
+                    </p>
+                  </div>
+                </div>
+                <details className="workspace-focus__section" open>
+                  <summary>기본 정보</summary>
+                  <div className="workspace-focus__section-body">
+                    <WorkspaceChannelIdentity target={selected} profiles={channelProfiles}/>
+                    {presentation.providerStates?.[selectedKey ?? ""] && (
+                      <p data-provider-status={presentation.providerStates[selectedKey ?? ""].status}>
+                        {providerMetadataStatusLabel(presentation.providerStates[selectedKey ?? ""])}
+                      </p>
+                    )}
+                    {providerSelected?.channelTitle && (
+                      <p>백엔드 제공 채널명: {providerSelected.channelTitle} · 소속 관계 미검증</p>
+                    )}
+                    {presentation.metadataStates?.[selectedKey ?? ""] && (
+                      <p data-metadata-status={presentation.metadataStates[selectedKey ?? ""].status}>
+                        {metadataStateLabel(presentation.metadataStates[selectedKey ?? ""])}
+                        {" · 영상·채널 소속 미검증"}
+                      </p>
+                    )}
+                    {presentation.synthetic?.[selectedKey ?? ""]?.channelName && (
+                      <p>합성 채널 정보: {presentation.synthetic[selectedKey ?? ""].channelName}</p>
+                    )}
+                    <p>이 대상의 댓글·분석 정보는 아직 제공되지 않습니다.</p>
+                    {selected.kind === "CHANNEL_HANDLE" && (
+                      <p>채널 이름과 프로필은 아직 확인되지 않았습니다.</p>
+                    )}
+                    <code>{selected.canonicalUrl}</code>
+                  </div>
+                </details>
+                {(onSetTargetLabel || selected.kind !== "VIDEO" && onSetChannelArtwork) && (
+                  <details className="workspace-focus__section workspace-focus__section--edit"
+                    open={editOpen}>
+                    <summary onClick={event => {
+                      event.preventDefault();
+                      setEditOpen(value => !value);
+                    }}>표시 제목·이미지 편집</summary>
+                    {editOpen && <div className="workspace-focus__section-body">
+                      {onSetTargetLabel && (
+                        <form className="workspace-focus__editor" onSubmit={saveDisplayTitle}>
+                          <label htmlFor="focus-display-title">표시 제목 (직접 입력)</label>
+                          <input id="focus-display-title" value={labelDraft}
+                            maxLength={120}
+                            placeholder={selected.kind === "VIDEO"
+                              ? "영상 제목 입력" : "채널 표시 이름 입력"}
+                            onChange={event => setLabelDraft(event.target.value)}/>
+                          <button type="submit">표시 제목 저장</button>
+                          <small>이름은 직접 입력한 표시용 텍스트입니다. 공식 제목 검증은 별도입니다.</small>
+                        </form>
+                      )}
+                      {selected.kind !== "VIDEO" && onSetChannelArtwork && (
+                        <form className="workspace-focus__editor" onSubmit={saveChannelImage}>
+                          <label htmlFor="focus-channel-image-url">채널 썸네일 이미지 URL</label>
+                          <input id="focus-channel-image-url" type="url"
+                            maxLength={2048} value={imageDraft}
+                            placeholder="https://yt3.googleusercontent.com/..."
+                            onChange={event => setImageDraft(event.target.value)}/>
+                          <button type="submit">채널 이미지 적용</button>
+                          <small>허용된 YouTube 이미지 주소만 적용합니다. 자동 프로필 조회는
+                            별도 API 승인 후 지원되며 현재는 직접 입력한 이미지만 표시할 수 있습니다.</small>
+                        </form>
+                      )}
+                    </div>}
+                  </details>
                 )}
-                {selected.kind !== "VIDEO" && onSetChannelArtwork && (
-                  <form className="workspace-focus__editor" onSubmit={saveChannelImage}>
-                    <label htmlFor="focus-channel-image-url">채널 썸네일 이미지 URL</label>
-                    <input id="focus-channel-image-url" type="url"
-                      maxLength={2048} value={imageDraft}
-                      placeholder="https://yt3.googleusercontent.com/..."
-                      onChange={event => setImageDraft(event.target.value)}/>
-                    <button type="submit">채널 이미지 적용</button>
-                    <small>허용된 YouTube 이미지 주소만 적용합니다. 자동 프로필 조회는
-                      별도 API 승인 후 지원되며 현재는 직접 입력한 이미지만 표시할 수 있습니다.</small>
-                  </form>
-                )}
-                <WorkspaceChannelIdentity target={selected} profiles={channelProfiles}/>
-                <p>URL이 추가됐습니다. 이 대상의 분석 정보는 아직 제공되지 않습니다.</p>
-                {selected.kind === "CHANNEL_HANDLE" && (
-                  <p>채널 이름과 프로필은 아직 확인되지 않았습니다.</p>
-                )}
-                <code>{selected.canonicalUrl}</code>
-                <a href={selected.canonicalUrl} target="_blank" rel="noopener noreferrer">
-                  YouTube에서 열기
-                </a>
-                <button type="button" onClick={removeSelected}>이 등록 대상 제거</button>
+                <details className="workspace-focus__section workspace-focus__section--manage"
+                  open={manageOpen}>
+                  <summary onClick={event => {
+                    event.preventDefault();
+                    setManageOpen(value => !value);
+                  }}>대상 관리</summary>
+                  {manageOpen && <div className="workspace-focus__section-body">
+                    <a href={selected.canonicalUrl} target="_blank" rel="noopener noreferrer">
+                      YouTube에서 열기
+                    </a>
+                    <button type="button" onClick={removeSelected}>이 등록 대상 제거</button>
+                  </div>}
+                </details>
               </div>
             ) : (
               <p>그래프 노드나 대상 목록에서 원하는 영상을 선택하세요.</p>

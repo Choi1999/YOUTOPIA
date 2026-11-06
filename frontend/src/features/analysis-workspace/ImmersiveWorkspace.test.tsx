@@ -33,7 +33,10 @@ describe("UI-R01–R04: immersive responsive workspace visual contract", () => {
       .toHaveAttribute("href", "#workspace-catalog");
     expect(document.querySelector(".workspace-hero__visual"))
       .toHaveAttribute("aria-hidden", "true");
-    expect(screen.getByText(/OFFLINE/)).toHaveTextContent("OFFLINE");
+    expect(screen.getByText(/현재 분석 결과는 예시 데이터입니다/))
+      .toBeInTheDocument();
+    expect(screen.queryByText(/OFFLINE DEMO ONLY/))
+      .not.toBeInTheDocument();
     expect(screen.getByRole("button",{name:"3D 모션 재생"}))
       .toHaveAttribute("aria-pressed","false");
   });

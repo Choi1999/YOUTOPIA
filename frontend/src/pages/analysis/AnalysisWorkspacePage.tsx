@@ -5,7 +5,27 @@ import { demoChannelSelections } from "../../features/analysis/data/demoChannelS
 import { WorkspaceDiscoveryPanels } from "../../features/analysis-workspace/WorkspaceDiscoveryPanels";
 import { WorkspaceHero } from "../../features/analysis-workspace/WorkspaceHero";
 import { WorkspaceUrlTargetBoard } from "../../features/analysis-workspace/WorkspaceUrlTargetBoard";
+import { readFocusDockLayout } from "../../features/analysis-workspace/workspaceFocusLayout";
+import {
+  chooseWorkspaceDockTarget, createWorkspaceDockState,
+  reconcileWorkspaceDockState,
+} from "../../features/analysis-workspace/workspaceDockState";
+import { workspaceDiagnosticsEnabled } from "../../features/analysis-workspace/workspaceDiagnosticsGate";
 import { ApprovedChannelProfileCache } from "../../features/analysis-workspace/workspaceChannelProfile";
+import { createOfflineWorkspacePreview, type SyntheticWorkspaceMetadata } from "../../features/analysis-workspace/workspaceSyntheticMetadata";
+import { fetchSyntheticHttpMetadata, syntheticHttpDevEnabled } from "../../features/analysis-workspace/workspaceSyntheticHttpClient";
+import { fetchMetadataStateHttp, metadataStateDevEnabled } from "../../features/analysis-workspace/workspaceMetadataStateHttpClient";
+import { EMPTY_METADATA_STATE, InMemoryMetadataStateCache,
+  pendingMetadataState, type MetadataState, type StateScenario,
+} from "../../features/analysis-workspace/workspaceMetadataConsumerState";
+import {
+  offlineConsumerDenialReader, offlineConsumerDevEnabled,
+} from "../../features/analysis-workspace/workspaceOfflineConsumerDenial";
+import {
+  decodeProviderMetadata, unavailableProviderState,
+  PROVIDER_METADATA_BATCH_LIMIT, type ProviderMetadataReader,
+  type ProviderMetadataState,
+} from "../../features/analysis-workspace/workspaceProviderMetadata";
 import {
   readTargetPresentation, reconcileTargetPresentation, writeTargetPresentation,
   withUserLabel, withChannelArtwork,
@@ -71,7 +91,17 @@ function loadInitialSession(): { value: AnalysisWorkspaceSession; status: string
   };
 }
 
-export function AnalysisWorkspacePage() {
+export function AnalysisWorkspacePage({
+  diagnosticsMode = false, providerMetadataReader,
+}: Readonly<{
+  diagnosticsMode?: boolean;
+  /** No reader is registered by product routes. A future authorized backend
+   *  may be injected only after a separately approved transport review. */
+  providerMetadataReader?: ProviderMetadataReader;
+}> = {}) {
+  // The regular product route never exposes or executes test controls, even
+  // when the developer has enabled synthetic servers in the same Vite process.
+  const diagnosticAccess = diagnosticsMode && workspaceDiagnosticsEnabled();
   const location = useLocation();
   const [initial] = useState(loadInitialSession);
   const [session, setSession] = useState<AnalysisWorkspaceSession>(initial.value);
@@ -79,9 +109,70 @@ export function AnalysisWorkspacePage() {
   const [urlTargets, setUrlTargets] = useState<readonly WorkspaceUrlTarget[]>(
     () => readWorkspaceUrlTargets(getTabStorage()),
   );
+  // One selection/open-docks/widths model for graph, focus list and fallback
+  // registered-target board. The former board is hidden while focus is open.
+  const [focusOpen, setFocusOpen] = useState(true);
+  const [dockState, setDockState] = useState(() =>
+    createWorkspaceDockState(readFocusDockLayout(getTabStorage())));
+  useEffect(() => {
+    setDockState(previous => reconcileWorkspaceDockState(previous,urlTargets));
+  }, [urlTargets]);
   // Explicit per-page opt-in; never persisted or inferred from URL registration.
   const [allowVideoImage, setAllowVideoImage] = useState(false);
   const [allowChannelImage, setAllowChannelImage] = useState(false);
+  // Explicit local-only synthetic preview, never persisted or fetched.
+  const [syntheticPreviewEnabled, setSyntheticPreviewEnabled] = useState(false);
+  const syntheticServerAvailable = diagnosticAccess && syntheticHttpDevEnabled();
+  const [syntheticServerEnabled, setSyntheticServerEnabled] = useState(false);
+  const [syntheticServerRecords, setSyntheticServerRecords] = useState<
+    Readonly<Record<string, SyntheticWorkspaceMetadata>>
+  >({});
+  const [syntheticServerStatus, setSyntheticServerStatus] = useState(
+    "테스트 전용 Spring 서버 합성 조회 대기",
+  );
+  // Status-contract demo is independent of provider data and opt-in only.
+  const stateDemoAvailable = diagnosticAccess && metadataStateDevEnabled();
+  const offlineConsumerAvailable = diagnosticAccess && offlineConsumerDevEnabled();
+  const [offlineConsumerEnabled, setOfflineConsumerEnabled] = useState(false);
+  const activeProviderReader = providerMetadataReader ??
+    (offlineConsumerAvailable && offlineConsumerEnabled
+      ? offlineConsumerDenialReader : undefined);
+  const [stateDemoEnabled, setStateDemoEnabled] = useState(false);
+  const [stateScenario, setStateScenario] = useState<StateScenario>("READY");
+  const [stateRefresh, setStateRefresh] = useState(0);
+  const [stateRecords, setStateRecords] = useState<Readonly<Record<string, MetadataState>>>({});
+  const [stateCache] = useState(() => new InMemoryMetadataStateCache());
+  // UI-R04-AE: this optional integration seam does not create a fetch
+  // endpoint. The normal product route passes no reader, hence zero calls.
+  const [providerRecords, setProviderRecords] = useState<
+    Readonly<Record<string, ProviderMetadataState>>
+  >({});
+  useEffect(() => {
+    if (!activeProviderReader) {
+      setProviderRecords({});
+      return;
+    }
+    const controller = new AbortController();
+    const chosen = urlTargets.slice(0,PROVIDER_METADATA_BATCH_LIMIT);
+    setProviderRecords(Object.fromEntries(chosen.map(target => [
+      workspaceUrlTargetKey(target), unavailableProviderState(target),
+    ])));
+    void (async () => {
+      for (const target of chosen) {
+        if (controller.signal.aborted) return;
+        let raw: unknown = null;
+        try { raw = await activeProviderReader(target,controller.signal); }
+        catch { /* Missing/invalid backend data never becomes a fake READY. */ }
+        if (controller.signal.aborted) return;
+        const decoded = decodeProviderMetadata(raw,target,true);
+        setProviderRecords(previous => ({
+          ...previous, [workspaceUrlTargetKey(target)]:
+            decoded ?? unavailableProviderState(target,"FAILED"),
+        }));
+      }
+    })();
+    return () => controller.abort();
+  }, [activeProviderReader, urlTargets]);
   const [presentation, setPresentation] = useState<WorkspaceTargetPresentation>(
     () => readTargetPresentation(getTabStorage(), urlTargets),
   );
@@ -94,6 +185,86 @@ export function AnalysisWorkspacePage() {
   // Empty until a separately authorized, reviewed channel metadata reader exists.
   // The cache is in-memory only and never triggers network calls.
   const [channelProfiles] = useState(() => new ApprovedChannelProfileCache());
+  // A server failure NEVER falls back to a guessed title or locally mocked
+  // provider result. The two synthetic modes are independent and opt-in only.
+  useEffect(() => {
+    if (!syntheticServerAvailable || !syntheticServerEnabled) {
+      setSyntheticServerRecords({});
+      return;
+    }
+    const controller = new AbortController();
+    const selected = urlTargets.slice(0, 3); // Synthetic test budget: <=3 GETs.
+    setSyntheticServerRecords({});
+    if (selected.length === 0) {
+      setSyntheticServerStatus("URL을 추가하면 로컬 Spring 테스트 서버에 합성 조회합니다.");
+      return () => controller.abort();
+    }
+    setSyntheticServerStatus("Spring 루프백 합성 서버 응답 확인 중");
+    void (async () => {
+      const verified: Record<string, SyntheticWorkspaceMetadata> = {};
+      let failed = 0;
+      for (const target of selected) {
+        if (controller.signal.aborted) return;
+        const response = await fetchSyntheticHttpMetadata(target, controller.signal);
+        if (response) verified[workspaceUrlTargetKey(target)] = response;
+        else failed++;
+      }
+      if (controller.signal.aborted) return;
+      setSyntheticServerRecords(verified);
+      setSyntheticServerStatus(
+        "Spring 테스트 서버 합성 응답 " + Object.keys(verified).length + "개 확인" +
+        (failed ? " · " + failed + "개 실패(미확인 유지)" : "") +
+        (urlTargets.length > 3 ? " · 상한 3개까지만 시험" : "") +
+        " · 실제 YouTube 조회 0건",
+      );
+    })();
+    return () => controller.abort();
+  }, [syntheticServerAvailable, syntheticServerEnabled, urlTargets]);
+
+  useEffect(() => {
+    if (!stateDemoAvailable || !stateDemoEnabled) {
+      setStateRecords({});
+      return;
+    }
+    const abort = new AbortController();
+    const chosen = urlTargets.slice(0, 3);
+    const initial: Record<string, MetadataState> = {};
+    for (const target of chosen) {
+      initial[workspaceUrlTargetKey(target)] =
+        stateScenario === "READY" ? stateCache.get(target) ?? pendingMetadataState()
+          : pendingMetadataState();
+    }
+    setStateRecords(initial);
+    void (async () => {
+      for (const target of chosen) {
+        if (abort.signal.aborted) return;
+        const key = workspaceUrlTargetKey(target);
+        if (initial[key].status === "READY" || initial[key].status === "STALE") continue;
+        const fetched = await fetchMetadataStateHttp(target,stateScenario,abort.signal);
+        if (abort.signal.aborted) return;
+        const result: MetadataState = fetched ??
+          {...EMPTY_METADATA_STATE,status:"FAILED",reason:"CONTRACT_OR_NETWORK_FAILURE"};
+        if (result.status === "READY") stateCache.put(target,result);
+        setStateRecords(current => ({...current,[key]:result}));
+      }
+    })();
+    return () => abort.abort();
+  }, [stateDemoAvailable,stateDemoEnabled,stateScenario,stateRefresh,urlTargets,stateCache]);
+
+  const stateReadyRecords: Record<string, SyntheticWorkspaceMetadata> = {};
+  for (const [key,value] of Object.entries(stateRecords)) {
+    if (stateDemoEnabled && value.status === "READY" && value.record)
+      stateReadyRecords[key] = value.record;
+  }
+  const providerPresentation: WorkspaceTargetPresentation = activeProviderReader
+    ? { ...presentation, providerStates: providerRecords } : presentation;
+  const displayedPresentation: WorkspaceTargetPresentation = diagnosticAccess && stateDemoEnabled
+    ? { ...providerPresentation, synthetic: stateReadyRecords, metadataStates: stateRecords }
+    : diagnosticAccess && syntheticServerEnabled
+      ? { ...providerPresentation, synthetic: syntheticServerRecords }
+      : diagnosticAccess && syntheticPreviewEnabled
+        ? { ...providerPresentation, synthetic: createOfflineWorkspacePreview(urlTargets) }
+        : providerPresentation;
   const paths = buildWorkspacePaths(session);
   const safeQuery = withoutAllowedUtmTracking(new URLSearchParams(location.search));
 
@@ -108,6 +279,10 @@ export function AnalysisWorkspacePage() {
   function addUrlTargets(raw: string) {
     const result = addWorkspaceUrlTargets(urlTargets, raw);
     if (result.added.length > 0) {
+      const newest=workspaceUrlTargetKey(result.added[result.added.length-1]);
+      setDockState(previous =>
+        chooseWorkspaceDockTarget(previous,newest,result.targets));
+      if (!focusOpen) setFocusOpen(true);
       setUrlTargets(result.targets);
       const stored = writeWorkspaceUrlTargets(getTabStorage(), result.targets);
       if (!stored) {
@@ -118,7 +293,12 @@ export function AnalysisWorkspacePage() {
   }
 
   function removeUrlTarget(key: string) {
-    const next = urlTargets.filter(target => workspaceUrlTargetKey(target) !== key);
+    const remaining=urlTargets.filter(target => workspaceUrlTargetKey(target) !== key);
+    setDockState(previous => reconcileWorkspaceDockState(previous,remaining));
+    for (const target of urlTargets) {
+      if (workspaceUrlTargetKey(target) === key) stateCache.invalidate(target);
+    }
+    const next = remaining;
     setUrlTargets(next);
     if (!writeWorkspaceUrlTargets(getTabStorage(), next)) {
       setFeedback("등록 목록 변경을 임시 저장소에 기록하지 못했습니다.");
@@ -126,6 +306,8 @@ export function AnalysisWorkspacePage() {
   }
 
   function clearUrlTargetList() {
+    setDockState(previous => reconcileWorkspaceDockState(previous,[]));
+    stateCache.clear();
     setUrlTargets([]);
     if (!clearWorkspaceUrlTargets(getTabStorage())) {
       setFeedback("URL 등록 목록을 화면에서 비웠지만 저장소 삭제는 확인되지 않았습니다.");
@@ -196,13 +378,58 @@ export function AnalysisWorkspacePage() {
 
   return (
     <div className="product-screen analysis-workspace">
-      <WorkspaceHero targets={urlTargets} onAddUrls={addUrlTargets}
+      <WorkspaceHero diagnosticsMode={diagnosticAccess}
+        focusOpen={focusOpen} onFocusOpenChange={setFocusOpen}
+        dockState={dockState} onDockStateChange={setDockState}
+        onClearTargetList={clearUrlTargetList}
+        targets={urlTargets} onAddUrls={addUrlTargets}
         onRemoveTarget={removeUrlTarget} allowVideoImage={allowVideoImage}
         onToggleVideoImage={() => setAllowVideoImage(enabled => !enabled)}
         allowChannelImage={allowChannelImage}
         onToggleChannelImage={() => setAllowChannelImage(enabled => !enabled)}
         channelProfiles={channelProfiles} defaultFocusMode
-        presentation={presentation}
+        syntheticPreviewEnabled={diagnosticAccess && syntheticPreviewEnabled}
+        onToggleSyntheticPreview={diagnosticAccess ? () => {
+          setSyntheticServerEnabled(false);
+          setStateDemoEnabled(false);
+          setOfflineConsumerEnabled(false);
+          setSyntheticPreviewEnabled(v => !v);
+        } : undefined}
+        syntheticServerAvailable={syntheticServerAvailable}
+        syntheticServerEnabled={syntheticServerEnabled}
+        syntheticServerStatus={syntheticServerStatus}
+        onToggleSyntheticServer={diagnosticAccess ? () => {
+          setSyntheticPreviewEnabled(false);
+          setStateDemoEnabled(false);
+          setOfflineConsumerEnabled(false);
+          setSyntheticServerEnabled(v => !v);
+        } : undefined}
+        stateDemoAvailable={stateDemoAvailable}
+        stateDemoEnabled={diagnosticAccess && stateDemoEnabled}
+        offlineConsumerAvailable={offlineConsumerAvailable}
+        offlineConsumerEnabled={diagnosticAccess && offlineConsumerEnabled}
+        onToggleOfflineConsumer={offlineConsumerAvailable ? () => {
+          setSyntheticPreviewEnabled(false);
+          setSyntheticServerEnabled(false);
+          setStateDemoEnabled(false);
+          setOfflineConsumerEnabled(value => !value);
+        } : undefined}
+        stateScenario={stateScenario}
+        onStateScenarioChange={diagnosticAccess ? scenario => {
+          stateCache.clear();
+          setStateScenario(scenario);
+        } : undefined}
+        onToggleStateDemo={diagnosticAccess ? () => {
+          setSyntheticPreviewEnabled(false);
+          setSyntheticServerEnabled(false);
+          setOfflineConsumerEnabled(false);
+          setStateDemoEnabled(v => !v);
+        } : undefined}
+        onRefreshStateDemo={diagnosticAccess ? () => {
+          stateCache.clear();
+          setStateRefresh(v => v + 1);
+        } : undefined}
+        presentation={displayedPresentation}
         onSetTargetLabel={(key, value) => {
           const next = withUserLabel(presentation, urlTargets, key, value);
           setPresentation(next);
@@ -213,10 +440,18 @@ export function AnalysisWorkspacePage() {
           setPresentation(next);
           return next !== presentation;
         }}/>
-      <WorkspaceUrlTargetBoard targets={urlTargets} onRemove={removeUrlTarget}
-        onClear={clearUrlTargetList} allowVideoImage={allowVideoImage}
-        allowChannelImage={allowChannelImage} presentation={presentation}
-        channelProfiles={channelProfiles} />
+      {!focusOpen && (
+        <WorkspaceUrlTargetBoard targets={urlTargets} onRemove={removeUrlTarget}
+          onClear={clearUrlTargetList} allowVideoImage={allowVideoImage}
+          allowChannelImage={allowChannelImage} presentation={displayedPresentation}
+          selectedKey={dockState.selectedKey}
+          onSelectTarget={key => {
+            setDockState(previous => chooseWorkspaceDockTarget(
+              previous,key,urlTargets));
+            setFocusOpen(true);
+          }}
+          channelProfiles={channelProfiles} />
+      )}
 
       <div className="analysis-workspace__layout">
         <div className="analysis-workspace__main">

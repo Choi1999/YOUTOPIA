@@ -40,6 +40,8 @@ afterEach(()=>{
 
 describe("UI-R04-C — opt-in fullscreen graph with adaptive docks",()=>{
   it("opens the viewport dialog, redistributes dock space and restores focus on Escape",async()=>{
+    // Desktop contract: side-by-side list and detail docks.
+    Object.defineProperty(window,"innerWidth",{configurable:true,value:1440});
     const user=userEvent.setup();
     const before=document.body.style.overflow;
     render(<Harness initial={sample(
@@ -95,6 +97,7 @@ describe("UI-R04-C — opt-in fullscreen graph with adaptive docks",()=>{
     await user.click(screen.getByRole("button",{name:"전체 화면 집중 모드"}));
     const dialog=screen.getByRole("dialog",{name:"그래프 집중 탐색"});
     await user.click(within(dialog).getByRole("button",{name:"등록된 영상 Ab0_-123xyz 선택"}));
+    await user.click(within(dialog).getByText("대상 관리"));
     await user.click(within(dialog).getByRole("button",{name:"이 등록 대상 제거"}));
     expect(screen.getByTestId("registered-count")).toHaveTextContent("0");
     // Empty focus workspace stays open so another URL can be added immediately.

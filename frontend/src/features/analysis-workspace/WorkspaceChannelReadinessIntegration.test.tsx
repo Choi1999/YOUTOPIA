@@ -41,8 +41,9 @@ describe("UI-R04-I — repository audit retained without consumer panel exposure
     show();
     await user.type(screen.getByRole("textbox",{name:/URL을 붙여넣으면/}),url);
     await user.click(screen.getByRole("button",{name:"URL 추가"}));
-    expect(screen.getByRole("region",{name:"URL로 추가한 분석 대상"}))
-      .toBeInTheDocument();
+    // AD-2: avoid a second registered-target collection during fullscreen.
+    expect(screen.queryByRole("region",{name:"URL로 추가한 분석 대상"}))
+      .not.toBeInTheDocument();
 
     expect(screen.queryByRole("region",{name:"채널 실조회 준비 상태"}))
       .not.toBeInTheDocument();

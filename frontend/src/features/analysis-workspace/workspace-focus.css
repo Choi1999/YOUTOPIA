@@ -627,3 +627,137 @@
     font-size:10px;
   }
 }
+
+
+/* UI-R04-AD-3: compact identity first, progressively disclosed edit/manage. */
+.workspace-focus__identity {
+  display:flex;
+  align-items:flex-start;
+  gap:11px;
+  padding:12px;
+  border:1px solid var(--focus-border);
+  border-radius:12px;
+  background:var(--focus-elevated);
+  min-width:0;
+}
+.workspace-focus__identity > .workspace-target-artwork {
+  flex:0 0 auto;
+}
+.workspace-focus__identity-copy {
+  display:grid;
+  align-content:start;
+  justify-items:start;
+  gap:7px;
+  flex:1;
+  min-width:0;
+}
+.workspace-focus__identity-copy h4 {
+  font-size:clamp(13px,1.15vw,17px);
+  line-height:1.35;
+}
+.workspace-focus__identity-copy .workspace-focus__secondary-id {
+  margin:0!important;
+}
+.workspace-focus__identity-note {
+  margin:0!important;
+  font-size:10px!important;
+}
+.workspace-focus__section {
+  display:block;
+  min-width:0;
+  border:1px solid var(--focus-border);
+  border-radius:11px;
+  background:var(--focus-surface);
+  overflow:hidden;
+}
+.workspace-focus__section > summary {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  cursor:pointer;
+  list-style:none;
+  min-height:44px;
+  padding:11px 13px;
+  color:var(--focus-text);
+  font-size:12px;
+  font-weight:700;
+}
+.workspace-focus__section > summary::-webkit-details-marker {display:none;}
+.workspace-focus__section > summary::after {
+  content:"+";
+  color:var(--focus-muted);
+  font-weight:800;
+  font-size:17px;
+  line-height:1;
+}
+.workspace-focus__section[open] > summary::after {content:"−";}
+.workspace-focus__section[open] > summary {
+  border-bottom:1px solid var(--focus-border);
+}
+.workspace-focus__section > summary:focus-visible {
+  outline:2px solid var(--focus-accent);
+  outline-offset:-3px;
+}
+.workspace-focus__section-body {
+  display:grid;
+  gap:10px;
+  min-width:0;
+  padding:12px;
+}
+.workspace-focus__section-body > p {margin:0;}
+.workspace-focus__section-body code {overflow-wrap:anywhere;}
+.workspace-focus__section-body > :is(a,button) {
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:42px;
+  border:1px solid var(--focus-border);
+  border-radius:9px;
+  padding:8px 12px;
+  color:var(--focus-text);
+  background:var(--focus-elevated);
+  font-size:12px;
+  text-decoration:none;
+}
+.workspace-focus__section--manage button {
+  color:#f3b9c2;
+  border-color:#ad6976;
+}
+.workspace-focus__section-body :is(a,button):focus-visible {
+  outline:2px solid var(--focus-accent);
+  outline-offset:2px;
+}
+
+/* UI-R04-AD-4: clamp overlay panel geometry; never shrink central canvas. */
+.workspace-focus__dock {
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+@media (min-width:721px) and (max-width:1100px) {
+  .workspace-focus__dock {
+    width:min(380px,48vw);
+    max-width:calc(100% - 12px);
+  }
+}
+@media (max-width:720px) {
+  .workspace-focus__dock {
+    height:min(55dvh,440px,72%);
+    max-height:min(72%,calc(100dvh - 125px));
+    padding:12px 13px calc(14px + env(safe-area-inset-bottom,0px));
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .workspace-focus__identity {
+    padding:10px;
+    gap:9px;
+  }
+  .workspace-focus__section-body {padding:10px;}
+  .workspace-focus__section > summary {min-height:42px;}
+}
+@media (max-height:600px) and (max-width:720px) {
+  .workspace-focus__dock {
+    height:min(52dvh,320px,68%);
+    max-height:68%;
+  }
+}

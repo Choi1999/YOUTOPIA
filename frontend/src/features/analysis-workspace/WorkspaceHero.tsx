@@ -1,9 +1,13 @@
-import { useEffect, useState, type DragEvent, type FormEvent } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction,
+  type DragEvent, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import "./workspace-url.css";
 import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
 import { WorkspaceFocusMode } from "./WorkspaceFocusMode";
+import { chooseWorkspaceDockTarget,
+  type WorkspaceDockState } from "./workspaceDockState";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
+import type { StateScenario } from "./workspaceMetadataConsumerState";
 import type { WorkspaceUrlIngestResult, WorkspaceUrlTarget } from "./workspaceUrlTargets";
 import {
   readWorkspaceNodeGroups, reconcileWorkspaceNodeGroups, writeWorkspaceNodeGroups,
@@ -21,10 +25,31 @@ type Props = Readonly<{
   targets?: readonly WorkspaceUrlTarget[];
   onAddUrls?: (input: string) => WorkspaceUrlIngestResult;
   onRemoveTarget?: (key: string) => void;
+  onClearTargetList?: () => void;
+  dockState?: WorkspaceDockState;
+  onDockStateChange?: Dispatch<SetStateAction<WorkspaceDockState>>;
+  focusOpen?: boolean;
+  onFocusOpenChange?: (open: boolean) => void;
   allowVideoImage?: boolean;
   onToggleVideoImage?: () => void;
   allowChannelImage?: boolean;
   onToggleChannelImage?: () => void;
+  diagnosticsMode?: boolean;
+  syntheticPreviewEnabled?: boolean;
+  onToggleSyntheticPreview?: () => void;
+  syntheticServerAvailable?: boolean;
+  syntheticServerEnabled?: boolean;
+  syntheticServerStatus?: string;
+  onToggleSyntheticServer?: () => void;
+  stateDemoAvailable?: boolean;
+  stateDemoEnabled?: boolean;
+  stateScenario?: StateScenario;
+  onStateScenarioChange?: (value:StateScenario)=>void;
+  onToggleStateDemo?: () => void;
+  onRefreshStateDemo?: () => void;
+  offlineConsumerAvailable?: boolean;
+  offlineConsumerEnabled?: boolean;
+  onToggleOfflineConsumer?: () => void;
   presentation?: WorkspaceTargetPresentation;
   onSetTargetLabel?: (key: string, value: string) => boolean;
   onSetChannelArtwork?: (key: string, value: string) => boolean;
@@ -43,15 +68,31 @@ function groupStorage(): Storage | null {
  * Browser link drop is text-only. File drops are deliberately unsupported.
  */
 export function WorkspaceHero({
-  targets = [], onAddUrls, onRemoveTarget, allowVideoImage = false,
+  targets = [], onAddUrls, onRemoveTarget, onClearTargetList,
+  dockState, onDockStateChange, focusOpen: controlledFocusOpen, onFocusOpenChange,
+  allowVideoImage = false,
   onToggleVideoImage, allowChannelImage = false, onToggleChannelImage,
+  diagnosticsMode = false,
+  syntheticPreviewEnabled = false, onToggleSyntheticPreview,
+  syntheticServerAvailable = false, syntheticServerEnabled = false,
+  syntheticServerStatus = "", onToggleSyntheticServer,
+  stateDemoAvailable = false, stateDemoEnabled = false,
+  stateScenario = "READY", onStateScenarioChange,
+  onToggleStateDemo, onRefreshStateDemo,
+  offlineConsumerAvailable = false, offlineConsumerEnabled = false,
+  onToggleOfflineConsumer,
   channelProfiles, presentation = EMPTY_TARGET_PRESENTATION,
   onSetTargetLabel, onSetChannelArtwork, defaultFocusMode = false,
 }: Props) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [input, setInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
-  const [focusOpen, setFocusOpen] = useState(defaultFocusMode);
+  const [localFocusOpen, setLocalFocusOpen] = useState(defaultFocusMode);
+  const focusOpen = controlledFocusOpen ?? localFocusOpen;
+  function setFocusOpen(open: boolean) {
+    if (onFocusOpenChange) onFocusOpenChange(open);
+    else setLocalFocusOpen(open);
+  }
   // Purely user-authored grouping, separate from canonical URL targets.
   const [nodeGroups, setNodeGroups] = useState<readonly WorkspaceNodeGroup[]>(() =>
     readWorkspaceNodeGroups(groupStorage(), targets),
@@ -183,12 +224,14 @@ export function WorkspaceHero({
             </a>
           )}
         </nav>
-        <div className="workspace-hero__meta" aria-label="시연 데이터 범위">
-          <span><b>04</b> REGISTERED VIDEOS (FIXTURE)</span>
-          <span><b>02</b> SYNTHETIC CHANNELS</span>
-          <span><b>{String(targets.length).padStart(2,"0")}</b> PASTED URLS</span>
-          <span><b>OFFLINE</b> DEMO ONLY</span>
-        </div>
+        {diagnosticsMode && (
+          <div className="workspace-hero__meta" aria-label="시연 데이터 범위">
+            <span><b>04</b> REGISTERED VIDEOS (FIXTURE)</span>
+            <span><b>02</b> SYNTHETIC CHANNELS</span>
+            <span><b>{String(targets.length).padStart(2,"0")}</b> PASTED URLS</span>
+            <span><b>OFFLINE</b> DEMO ONLY</span>
+          </div>
+        )}
         {!populated && (
           <button type="button" className="workspace-hero__motion-control"
             aria-pressed={isPlaying} onClick={()=>setIsPlaying(value=>!value)}>
@@ -217,6 +260,12 @@ export function WorkspaceHero({
         </div>
       ) : focusOpen && onAddUrls && onRemoveTarget ? null :
         <WorkspaceUrlCanvas targets={targets} allowVideoImage={allowVideoImage}
+        focusedKey={dockState && onDockStateChange ? dockState.selectedKey : undefined}
+        onFocusChange={dockState && onDockStateChange ? key => {
+          onDockStateChange(previous => chooseWorkspaceDockTarget(
+            previous,key,targets));
+          if (key) setFocusOpen(true);
+        } : undefined}
         allowChannelImage={allowChannelImage} presentation={presentation}
         channelProfiles={channelProfiles} groups={nodeGroups}
         onGroupsChange={setNodeGroups} bookmarks={bookmarks}
@@ -230,12 +279,30 @@ export function WorkspaceHero({
       )}
       {focusOpen && onAddUrls && onRemoveTarget &&
         typeof document !== "undefined" && createPortal(
-          <WorkspaceFocusMode targets={targets} onAddUrls={onAddUrls}
-            onRemove={onRemoveTarget} onExit={() => setFocusOpen(false)}
+          <WorkspaceFocusMode diagnosticsMode={diagnosticsMode}
+            targets={targets} onAddUrls={onAddUrls}
+            onRemove={onRemoveTarget} onClearTargets={onClearTargetList}
+            dockState={dockState} onDockStateChange={onDockStateChange}
+            onExit={() => setFocusOpen(false)}
             allowVideoImage={allowVideoImage}
             onToggleVideoImage={onToggleVideoImage}
             allowChannelImage={allowChannelImage}
             onToggleChannelImage={onToggleChannelImage}
+            syntheticPreviewEnabled={syntheticPreviewEnabled}
+            onToggleSyntheticPreview={onToggleSyntheticPreview}
+            syntheticServerAvailable={syntheticServerAvailable}
+            syntheticServerEnabled={syntheticServerEnabled}
+            syntheticServerStatus={syntheticServerStatus}
+            onToggleSyntheticServer={onToggleSyntheticServer}
+            stateDemoAvailable={stateDemoAvailable}
+            stateDemoEnabled={stateDemoEnabled}
+            stateScenario={stateScenario}
+            onStateScenarioChange={onStateScenarioChange}
+            onToggleStateDemo={onToggleStateDemo}
+            onRefreshStateDemo={onRefreshStateDemo}
+            offlineConsumerAvailable={offlineConsumerAvailable}
+            offlineConsumerEnabled={offlineConsumerEnabled}
+            onToggleOfflineConsumer={onToggleOfflineConsumer}
             presentation={presentation}
             onSetTargetLabel={onSetTargetLabel}
             onSetChannelArtwork={onSetChannelArtwork}

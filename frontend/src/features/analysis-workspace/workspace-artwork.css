@@ -238,3 +238,65 @@
   border-radius:10px;background:var(--focus-elevated,#1a2c4d);
 }
 .workspace-url-board__card-body .workspace-channel-identity {margin-top:6px;}
+
+
+/* UI-R04-W: local synthetic artwork, zero image/network requests. */
+.workspace-target-artwork[data-preview="synthetic"] {
+  background: linear-gradient(130deg,#334b8a 0%,#233063 46%,#1a2858 100%);
+  outline:2px dashed rgba(230,203,115,.74);
+  outline-offset:-3px;
+}
+.workspace-target-artwork--channel[data-preview="synthetic"] {
+  background:linear-gradient(150deg,#26796d,#164b57);
+}
+.workspace-target-artwork__synthetic {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  width:100%;
+  height:100%;
+  line-height:1;
+  pointer-events:none;
+}
+.workspace-target-artwork__synthetic-icon {
+  color:#fff7d4;
+  font-size:clamp(12px,2vw,26px);
+  font-weight:900;
+  text-shadow:0 2px 9px rgba(0,0,0,.45);
+}
+.workspace-target-artwork__synthetic-mark {
+  padding:1px 3px;
+  border-radius:3px;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.04em;
+  color:#fff2b4;
+  background:rgba(0,0,0,.46);
+}
+.workspace-target-artwork--list .workspace-target-artwork__synthetic-mark,
+.workspace-target-artwork--node .workspace-target-artwork__synthetic-mark {
+  font-size:7px;
+}
+
+
+/* UI-R04-AA — status is fixture-only and never a verified provider badge. */
+.workspace-url-canvas__metadata-state {
+  display:block;
+  font-size:9px;
+  line-height:1.25;
+  max-width:160px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--text-secondary,#aec4e1);
+}
+.workspace-url-canvas__node[data-metadata-status="READY"] .workspace-url-canvas__metadata-state {
+  color:#b6d7d0;
+}
+.workspace-url-canvas__node[data-metadata-status="FAILED"] .workspace-url-canvas__metadata-state,
+.workspace-url-canvas__node[data-metadata-status="NOT_FOUND"] .workspace-url-canvas__metadata-state,
+.workspace-url-canvas__node[data-metadata-status="STALE"] .workspace-url-canvas__metadata-state {
+  color:#f0c88e;
+}
