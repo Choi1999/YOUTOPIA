@@ -65,12 +65,17 @@ export async function checkOfflineConsumerDenial(
     const item=raw as Record<string,unknown>;
     const expected=response.status===401?"AUTHENTICATION_REQUIRED":
       response.status===403?"ACCESS_DENIED":"METADATA_POLICY_HOLD";
+    // RFC 9457 ProblemDetail legitimately has a "title" field, which is
+    // an HTTP error summary, NOT a YouTube video or channel title. The
+    // decoder never returns that title and still refuses data-publishing keys.
     if (item.code!==expected || item.status!==response.status ||
-        "sourceAuthenticated" in item || "title" in item ||
-        "thumbnailUrl" in item || "apiKey" in item)
+        "sourceAuthenticated" in item || "record" in item ||
+        "thumbnailUrl" in item || "channelTitle" in item ||
+        "apiKey" in item)
       return "REJECTED";
-    if (response.status===503 && item.instance!==OFFLINE_CONSUMER_ROUTE)
-      return "REJECTED";
+    if (response.status===503 &&
+        (item.instance!==OFFLINE_CONSUMER_ROUTE ||
+         item.title!=="Metadata unavailable")) return "REJECTED";
     return response.status===401?"UNAUTHORIZED":
       response.status===403?"FORBIDDEN":"POLICY_HOLD";
   } catch {
