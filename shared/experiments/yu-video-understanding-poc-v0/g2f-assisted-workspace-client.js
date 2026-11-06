@@ -11,6 +11,7 @@
   reviewerNote:$('reviewerNote'),negativeNote:$('negativeNote'),watchedLabel:$('watchedLabel'),
   watched:$('watched'),evidence:$('evidenceList'),add:$('addEvidence'),save:$('save'),feedback:$('feedback')};
  let packet=null,revision=null,cues=[],waveform=null,selected=0,dirty=false,fields=[],busy=false;
+ let aiObservationDrafts={};
  let lastWaveTick=0;
  function fmt(ms){
   const n=Math.max(0,Math.round(ms||0)),h=Math.floor(n/3600000),m=Math.floor(n/60000)%60,s=Math.floor(n/1000)%60,
@@ -74,14 +75,16 @@
   const notes=document.createElement('textarea');notes.rows=2;notes.value=e.observationNote||'';
   notes.placeholder='AI 답안과 무관하게 실제 원본에서 확인한 장면/발화를 18자 이상 기록';
   notes.addEventListener('input',markDirty);
-  const notesLabel=document.createElement('label');notesLabel.textContent='사람의 직접 관찰 기록';notesLabel.append(notes);
+  const notesLabel=document.createElement('label');notesLabel.textContent='근거 관찰 기록 · AI 작성 초안 (사람이 영상 확인 후 수정·확정)';notesLabel.append(notes);
   card.append(head,grid,capture,notesLabel);
   return {card,modality,start,end,notes};
  }
  function buildEvidence(q,initial=[]){
   el.evidence.replaceChildren();fields=[];
   const minimum=Math.max(1,q.localAnchorMs.length);
-  const hints=q.aiDraft.evidenceHints.map(e=>({...e}));
+  const suggestion=aiObservationDrafts[q.questionId];
+  const hints=q.aiDraft.evidenceHints.map((e,i)=>({...e,
+   observationNote:suggestion?.evidenceNotes?.[i]??e.observationNote??''}));
   const rows=initial.length?initial:hints.length?hints:
    Array.from({length:minimum},(_,i)=>({modality:q.kind==='SPEECH'?'AUDIO':'FRAME',
     localStartMs:q.localAnchorMs[i]??null,localEndMs:null,observationNote:''}));
@@ -113,11 +116,12 @@
   el.aiTiming.textContent=a.evidenceHints.length?'AI 제안 구간 (검증 전): '+
    a.evidenceHints.map(x=>fmt(x.localStartMs)+' ~ '+fmt(x.localEndMs)).join(' / '):
    'AI는 근거 부재를 추정한 상태이며 전체 영화 검증이 필요합니다.';
-  el.aiCaveat.textContent='주의: '+a.caveat;
+  el.aiCaveat.textContent='주의: '+a.caveat+' 관찰 기록 입력란도 AI가 작성한 미검증 초안입니다. 실제 영상을 확인하고 수정·수용하세요.';
   el.decision.value=r.decision;
   el.verdict.value=r.verdict||a.proposedVerdict;
   el.answer.value=r.answerText||a.answerText;
-  el.absence.value=r.absenceRationale||a.absenceRationale||'';el.fullMovie.checked=r.fullMovieReviewed;
+  el.absence.value=r.absenceRationale??aiObservationDrafts[q.questionId]?.absenceRationale??a.absenceRationale??'';
+  el.fullMovie.checked=r.fullMovieReviewed;
   el.reviewerNote.value=r.reviewerNote&&r.decision!=='REJECT'&&r.decision!=='UNCERTAIN'?r.reviewerNote:'';
   el.negativeNote.value=r.reviewerNote&&(r.decision==='REJECT'||r.decision==='UNCERTAIN')?r.reviewerNote:'';
   el.watched.checked=r.watchedSource;
@@ -247,6 +251,7 @@
    const res=await fetch('/api/session');const session=await res.json();
    if(!res.ok)throw Error(session.error||'서버 응답 오류');
    packet=session.packet;revision=session.revision;cues=session.cues;waveform=session.waveform;
+   aiObservationDrafts=session.aiObservationSuggestions||{};
    if(packet.kind!=='G2F_LOCAL_AI_ASSISTED_REVIEW_PACKET'||packet.questions.length!==6)throw Error('AI 보조 검토 전용 패킷이 아닙니다.');
    el.film.textContent=session.film;el.reviewer.textContent=session.reviewerCode;
    select(0);tick();requestAnimationFrame(frame);
