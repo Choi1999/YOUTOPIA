@@ -249,3 +249,38 @@ $script = '.\shared\experiments\yu-video-understanding-poc-v0\g2e-windows-gold-p
 **중요:** 질문 후보는 `gold.answerability=null`, `gold.answerText=null`로 시작한다. 사람의 실제 Q/A·근거가 없는 상태에서 영상 사실을 정답이라고 주장할 수 없다. 최종 골드 정답은 독립 2인 검수·불일치 조정·권리 검토가 끝나기 전까지 **0개**이고 `g3Authorized=false`, 외부 API 호출 0, 실제 지출 $0, 운영 병합 없음 상태를 유지한다.
 
 운영/증거 매뉴얼: `docs/research/YU_VIDEO_G2E_GOLD_CANDIDATE_DESIGN_V01.md`.
+
+
+## G2-F — 독립 2인 블라인드 검수 및 실험 브랜치 종료 준비
+
+G2-E에서 사용자가 작성한 Sintel 6문항과 Tears of Steel 6문항 **총 12개 정답 초안**을 실제 영화에 근거해 독립 검증하는 단계다. 현재 사용자 제출 `G2-E Assess`는 두 영화 모두 **6/6 작성·0 미작성·0 재작성**이지만, 실제 독립 골드 정답 승인은 **0/12**이다.
+
+**운영자 Windows 로컬에서 두 명의 서로 다른 사람에게 각각 전달할 질문만 포함된 블라인드 패킷을 생성한다.** 기존 G2-E 비공개 정답·증거는 패킷에 복제하지 않고, 영화/질문/출처 SHA만 연결한다.
+
+```powershell
+cd C:\Projects\YOUTOPIA-VIDEO-G2C
+$g2f = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-windows-independent-review.ps1'
+
+# 동일 파일이 이미 생성된 경우 덮어쓰지 않고 중단
+& $g2f -Mode Plan -Film Sintel -ReviewerCode REVIEWER_A
+& $g2f -Mode Plan -Film Sintel -ReviewerCode REVIEWER_B
+& $g2f -Mode Plan -Film TearsOfSteel -ReviewerCode REVIEWER_A
+& $g2f -Mode Plan -Film TearsOfSteel -ReviewerCode REVIEWER_B
+```
+
+검수자는 운영자 답을 보지 않고 **허가된 로컬 원본 영상**을 확인하면서, 각자의 `%LOCALAPPDATA%\YOUTOPIA\G2F-IndependentReviews\*-blind-review.json`에 질문별 답변/근거/확인 불가능 사유를 독립 입력한다. 기존 G2-D/G2-E 브라우저는 작성자의 정답이 노출될 수 있으므로 블라인드 검수자에게 그대로 제공하지 않는다.
+
+```powershell
+& $g2f -Mode Check -Film Sintel -ReviewerCode REVIEWER_A
+& $g2f -Mode Check -Film Sintel -ReviewerCode REVIEWER_B
+
+# 두 리뷰어가 실제로 제출한 후에만 실행
+& $g2f -Mode Assess -Film Sintel
+& $g2f -Mode Assess -Film TearsOfSteel
+```
+
+`Assess`의 답변 가능 여부·근거 시각 비교 결과도 **인간의 정답 검수 승인을 의미하지 않는다**. 리뷰어 코드, 체크박스, 같은 답변, 통과 테스트만으로 인간 2명의 독립성이나 사실적 정확도를 증명할 수 없다.
+
+두 영화 G2-F가 실제 검토·기록된 이후 오프라인 연구 도구의 PR 병합 후보를 정한다. **현재 G2-F 승인 범위에는 PR 병합/브랜치 삭제/G3 API 실행 없음.**
+
+자세한 평가·독립 검수·종료 Gate: `docs/research/YU_VIDEO_G2F_INDEPENDENT_GOLD_REVIEW_V01.md`.
