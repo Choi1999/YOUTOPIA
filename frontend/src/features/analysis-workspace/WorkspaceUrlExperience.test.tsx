@@ -93,6 +93,20 @@ describe("UI-R04B/AD-2 — single visible registered-target collection",()=>{
     expect(screen.getByText(/파일 업로드는 지원하지 않습니다/)).toBeInTheDocument();
   });
 
+  it("accepts newlines and detects duplicate links in the main intake",async()=>{
+    const user=userEvent.setup();
+    show();
+    const url=screen.getByRole("textbox",{name:/URL을 붙여넣으면/});
+    const pasted="https://youtu.be/Ab0_-123xyz\nhttps://youtube.com/@SomeCreator\nhttps://youtu.be/Ab0_-123xyz";
+    fireEvent.change(url,{target:{value:pasted}});
+    expect(url).toHaveValue(pasted);
+    await user.click(screen.getByRole("button",{name:"URL 추가"}));
+    const dialog=screen.getByRole("dialog",{name:"그래프 집중 탐색"});
+    expect(within(dialog).getByText(/2개 등록/)).toBeInTheDocument();
+    expect(screen.getByText(/신규 2개 등록 · 중복 1개/)).toBeInTheDocument();
+    expect(url).toHaveValue("");
+  });
+
   it("keeps URL registrations independent of synthetic A/B and clears in the unified dock",async()=>{
     const user=userEvent.setup();
     const view=show();

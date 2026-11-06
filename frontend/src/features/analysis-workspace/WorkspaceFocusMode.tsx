@@ -109,7 +109,7 @@ export function WorkspaceFocusMode({
 }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const exitRef = useRef<HTMLButtonElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const listToggleRef = useRef<HTMLButtonElement>(null);
   const detailToggleRef = useRef<HTMLButtonElement>(null);
   const [internalDockState, setInternalDockState] = useState(
@@ -441,10 +441,17 @@ export function WorkspaceFocusMode({
         <form className="workspace-focus__intake" aria-label="집중 모드 URL 추가"
           onSubmit={submit}>
           <label htmlFor="focus-url-input" className="sr-only">URL 추가 입력</label>
-          <input ref={inputRef} id="focus-url-input" type="text" value={input}
+          <textarea ref={inputRef} id="focus-url-input" value={input}
             onChange={event => setInput(event.target.value)}
-            maxLength={8192} spellCheck={false} autoComplete="off"
-            placeholder="YouTube URL 붙여넣기 / 링크 드롭"/>
+            onKeyDown={event => {
+              if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+                event.preventDefault();
+                if (input.trim()) ingest(input);
+              }
+            }}
+            rows={2} maxLength={8192} spellCheck={false} autoComplete="off"
+            aria-description="여러 URL을 줄바꿈으로 구분하세요. Ctrl+Enter로 추가합니다."
+            placeholder="YouTube URL 여러 줄 붙여넣기 / 링크 드롭"/>
           <button type="submit">추가하기</button>
         </form>
         <div className="workspace-focus__controls">

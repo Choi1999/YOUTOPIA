@@ -184,15 +184,21 @@ export function WorkspaceHero({
             URL을 붙여넣으면 탐색 캔버스에 즉시 나타납니다
           </label>
           <div className="workspace-hero__intake-row">
-            <input id="workspace-url-paste" type="text" value={input}
+            <textarea id="workspace-url-paste" value={input}
               onChange={event=>setInput(event.target.value)}
-              placeholder="https://www.youtube.com/watch?v=... 또는 @채널 URL"
+              onKeyDown={event=>{
+                if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+                  event.preventDefault();
+                  if (input.trim()) add(input);
+                }
+              }}
+              placeholder={"한 줄에 YouTube URL 하나씩\nhttps://youtu.be/..."}
               autoComplete="off" autoCapitalize="off" spellCheck={false}
-              maxLength={8192}/>
+              rows={3} maxLength={8192}/>
             <button type="submit">URL 추가</button>
           </div>
           <p className="workspace-hero__intake-hint">
-            여러 URL을 줄바꿈으로 구분해 등록할 수 있습니다. URL 식별자만 저장하며
+            한 줄에 URL 하나씩 입력하세요(최대 32개). Ctrl+Enter로 일괄 등록할 수 있습니다. URL 식별자만 저장하며
             영상 제목·소속·댓글·분석 결과는 확인하지 않습니다.
           </p>
           <p role="status" className="workspace-hero__intake-status">{feedback}</p>

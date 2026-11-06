@@ -26,11 +26,14 @@
   gap:8px;
   min-width:0;
 }
-.app-shell--immersive-workspace .workspace-hero__intake-row input {
+.app-shell--immersive-workspace .workspace-hero__intake-row textarea {
   flex:1;
   min-width:0;
-  height:48px;
-  padding:0 15px;
+  min-height:72px;
+  max-height:200px;
+  padding:10px 15px;
+  resize:vertical;
+  line-height:1.45;
   border-radius:10px;
   border:1px solid rgba(143,168,232,.48);
   outline:none;
@@ -38,11 +41,11 @@
   color:#f4f8ff;
   font-size:13px;
 }
-.app-shell--immersive-workspace .workspace-hero__intake-row input:focus {
+.app-shell--immersive-workspace .workspace-hero__intake-row textarea:focus {
   border-color:#9ebcff;
   box-shadow:0 0 0 3px rgba(133,179,251,.18);
 }
-.app-shell--immersive-workspace .workspace-hero__intake-row input::placeholder {color:#95a5c7;}
+.app-shell--immersive-workspace .workspace-hero__intake-row textarea::placeholder {color:#95a5c7;}
 .app-shell--immersive-workspace .workspace-hero__intake-row button {
   min-height:48px;
   min-width:94px;
@@ -55,7 +58,7 @@
   font-weight:820;
 }
 .app-shell--immersive-workspace .workspace-hero__intake-row button:hover {background:#b0c4ff;}
-.app-shell--immersive-workspace .workspace-hero__intake-row :is(button,input):focus-visible {
+.app-shell--immersive-workspace .workspace-hero__intake-row :is(button,textarea):focus-visible {
   outline:2px solid #9df6e7;outline-offset:2px;
 }
 .app-shell--immersive-workspace .workspace-hero .workspace-hero__intake-hint {

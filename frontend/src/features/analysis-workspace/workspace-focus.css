@@ -108,11 +108,14 @@
   margin-left:auto;
 }
 .workspace-focus__intake {display:flex;gap:8px;min-width:0;}
-.workspace-focus__intake input {
+.workspace-focus__intake textarea {
   flex:1;
   min-width:0;
-  min-height:43px;
-  padding:0 13px;
+  min-height:50px;
+  max-height:110px;
+  padding:9px 13px;
+  resize:vertical;
+  line-height:1.4;
   border:1px solid var(--focus-border);
   border-radius:10px;
   background:var(--focus-elevated);
@@ -120,7 +123,7 @@
   font-size:12px;
   outline:none;
 }
-.workspace-focus__intake input::placeholder {color:var(--focus-muted);}
+.workspace-focus__intake textarea::placeholder {color:var(--focus-muted);}
 .workspace-focus__intake button {
   flex:0 0 auto;
   min-height:43px;
@@ -396,7 +399,7 @@
   text-align:center;
 }
 .workspace-focus__drop-shade small {font-size:12px;color:#a5c8db;}
-.workspace-focus :is(button,input,a):focus-visible {
+.workspace-focus :is(button,input,textarea,a):focus-visible {
   outline:2px solid var(--focus-accent);
   outline-offset:3px;
 }
@@ -494,7 +497,7 @@
 @media(max-width:400px) {
   .workspace-focus__header {padding:8px;}
   .workspace-focus__intake {flex-wrap:wrap;}
-  .workspace-focus__intake input {flex:1 1 100%;min-height:38px;}
+  .workspace-focus__intake textarea {flex:1 1 100%;min-height:38px;}
   .workspace-focus__intake button {flex:1 1 100%;min-height:38px;}
   .workspace-focus__message {font-size:9px;min-height:20px;}
   .workspace-focus__footer span:last-child {display:none;}
