@@ -453,3 +453,17 @@ $assist = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-assisted-works
 - 사용자 실제 Windows Chrome/Edge에서 입력 화면을 직접 열고 관찰 기록 제안 및 기존 입력값 보존을 확인하는 QA는 아직 시행되지 않았다.
 
 **현재:** `G2F_AI_OBSERVATION_DRAFTS_12_EVIDENCE_NOTES_READY / AI_ABSENCE_RATIONALES_2_READY / USER_BROWSER_QA_PENDING / NON_BLIND_REVIEW / G3_BLOCKED / NO_MERGE / NO_DELETE`.
+
+
+## 15. 운영자 지침: AI 모범답변 단독 표시 (2026-11-06)
+
+운영자는 **AI 초안에는 모범답변만 표시하고, 검수해야 한다는 지시는 운영자가 직접 내리겠다**고 명시했다. 이에 따라 G2-F AI 보조 검토 웹의 `ai-draft` 패널에는 **`aiAnswer` 한 개의 내용 영역만** 유지한다. AI 예상 판정, 후보 시간, 검수 지시문, 출처 주의 문구는 해당 초안 패널에서 제거했다.
+
+- 별도 **관찰 기록 / 시간 근거 편집란**은 유지한다. AI가 미리 작성한 관찰 문장은 검수자가 수정할 수 있으며, 기존에 저장된 사람의 관찰 결과를 우선 표시한다.
+- 검수자에게 수행할 검증 절차와 업무 지시를 전달하는 역할은 **운영자**에게 있다. 모델 답변 본문에는 검수 절차를 섞지 않는다.
+- 기존 `g2f-assisted-proposals.json`의 `caveat`, `requiresHumanVerification` 등 **검증 출처·상태 메타데이터는 내부 파일 계약 및 기존 생성 패킷의 해시 호환성을 위해 변경하지 않는다.** 이는 AI 초안 패널에 표시하지 않으며 이미 생성된 개인별 JSON도 덮어쓰지 않는다.
+- 로컬 검수 저장 시 기존의 실제 원본 관찰 여부, 사람 근거 시각 및 G3 미승인 검증은 그대로 작동한다. UI 표시를 단순화한 것이 **답변 정확성 또는 독립 골드 승인**을 의미하지는 않는다.
+
+최신 자동 테스트: [G2-F AI 초안 단독 표시 검증 #42198959411](https://github.com/Choi1999/YOUTOPIA/actions/runs/42198959411), **236개 중 235 PASS / 0 FAIL / 1 SKIP**.
+
+**상태:** `AI_DRAFT_ANSWER_ONLY_UI / OBSERVATION_FIELDS_SEPARATE / REVIEWER_EVIDENCE_PRESERVED / G3_NOT_APPROVED / NO_MERGE / NO_DELETE`.
