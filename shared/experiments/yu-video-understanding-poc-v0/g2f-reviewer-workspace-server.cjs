@@ -7,7 +7,6 @@ const path=require('node:path');
 const http=require('node:http');
 const crypto=require('node:crypto');
 const g2f=require('./g2f-blind-review.cjs');
-const g2e=require('./g2e-gold-pilot.cjs');
 const g2d=require('./g2d-human-review.cjs');
 const g2c=require('./g2c-offline-verifier.cjs');
 const media=require('./g2d-workspace-media.cjs');
