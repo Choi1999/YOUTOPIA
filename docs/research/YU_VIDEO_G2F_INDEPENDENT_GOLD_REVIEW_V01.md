@@ -387,3 +387,27 @@ $assist = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-assisted-works
 이번 변경은 사용자가 승인한 **실제 검수 작업을 하기 위한 사용성 개선**으로 한정된다. 원격 PR 병합, 실험 브랜치 삭제, G3 실호출은 여전히 별도 승인 대상이다. 기존 G2-F 블라인드 도구/검수자가 기록한 결과가 남아 있다면 이를 **새 AI 보조 검수의 독립 증거라고 재해석하지 않는다.**
 
 **현재 상태:** `G2F_ASSISTED_12_AI_DRAFTS_READY / REVIEWER_PC_UI_QA_PENDING / HUMAN_CORRECTION_PENDING / NON_BLIND / NO_GOLD_APPROVAL / G3_NOT_APPROVED / NO_MERGE / NO_DELETE`.
+
+
+## 13. AI 초안 보조 검토 도구 CI 및 현장 QA 수락 기준 (2026-11-06)
+
+### 현재 자동 검증 기록
+
+- [Node 24 오프라인 CI #42195500559](https://github.com/Choi1999/YOUTOPIA/actions/runs/42195500559): **234개 테스트 / 233 PASS / 0 FAIL / 1 SKIP**. 1건 SKIP은 기존 CI 환경의 FFmpeg 실파일 변환 테스트 제한이다.
+- [Windows PowerShell 구문/오프라인 CI #42194809232](https://github.com/Choi1999/YOUTOPIA/actions/runs/42194809232): 신규 AI 보조 모드 PowerShell `g2f-assisted-workspace.ps1` 파서 PASS, 전용 서버/클라이언트 Node 구문 PASS. 테스트는 실제 사용자 영화 다운로드/실제 브라우저 클릭을 하지 않는다.
+- 이번 모드의 자동 테스트에서는 AI 초안 12개 제안·출처 미확인 플래그, 정답 자동 채움과 사람 검토 구분, `ACCEPT` 이전 사람 근거 필수, `EDIT`/부재 주장 정정, 반려·불확실 기록, 질문/AI 제안 변조 차단, A/B 비교의 `blindReviewCount=0`, 기작성 G2-E 정답과 타 검수자 답변 노출 차단, 로컬 JSON 저장을 확인했다.
+- 추가 사용성 개선: 답변뿐 아니라 **AI가 제안하는 관찰 기록·UNSUPPORTED 사유도 처음부터 입력란에 표시**한다. 검수자가 사실 확인 후 수정할 수 있지만, `watchedSource=true` 자기 신고 및 근거 시간/모달리티 구조 검증 없이 저장되는 것은 금지한다.
+
+### 실제 Windows Chrome/Edge QA — 검수자 A부터
+
+1. 이전 G2-F 블라인드 웹을 Ctrl+C로 닫고 새 `g2f-assisted-workspace.ps1 -Film Sintel -ReviewerCode REVIEWER_A` 실행. `G2F_ASSISTED_WORKSPACE_READY` 출력 확인.
+2. 브라우저 상단에 **AI 초안·비블라인드** 경고, 질문별 예상 답변, 후보 근거 시각, 관찰 기록·근거 부재 사유가 보이는지 확인.
+3. `ACCEPT`를 누른 뒤 실제 영상·음성을 확인하고 `실제 원본을 확인` 체크, 필요 시 근거 시간 및 설명 수정, 저장. 재조회 시 별도 로컬 JSON에 기록되는지 확인.
+4. 영상과 AI 초안이 다르면 `EDIT`로 답변·시각·근거를 변경하거나, `REJECT`/`UNCERTAIN`으로 이유를 남길 수 있는지 확인.
+5. 기존 `%LOCALAPPDATA%\YOUTOPIA\G2F-IndependentReviews`의 **블라인드 파일**, 기존 `G2E-PrivateGoldDrafts` 파일 및 `G2D-ManualReviews` 파일이 수정되지 않았는지 확인.
+6. A 세션을 종료하고 B 세션을 열었을 때, A의 답변 상태가 B의 UI에 표시되지 않아야 한다.
+7. 이 1~6 현장 QA에 이상이 없을 때 **실제 사람 검수 12문항×2인**을 개시한다.
+
+**주의:** 같은 Windows 사용자 계정으로 A/B를 전환하면 JSON 파일에 OS 수준 접근통제가 있는 것은 아니다. 화면에 상대편 정답이 제공되지 않는다는 사실은 물리적인 접근권 분리의 대체물이 아니다. 실제 검수자가 동일한 AI 초안을 읽는 만큼 **최종 두 결과의 일치가 골드 정답의 독립 블라인드 합의를 의미하지 않는다**.
+
+**현 상태:** `AI_PROPOSALS_12_OF_12_AUTHORED_UNVERIFIED / AI_ASSISTED_OFFLINE_CI_PASS / USER_WINDOWS_MANUAL_QA_PENDING / NON_BLIND_EDITORIAL_REVIEW / GOLD_APPROVAL_0 / G3_BLOCKED / NO_MERGE / NO_DELETE`.
