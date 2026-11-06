@@ -1,0 +1,79 @@
+name: UI-R04-Q Spring offline metadata contract
+
+on:
+  pull_request:
+    branches:
+      - feat/backend-bootstrap
+  push:
+    branches:
+      - feat/backend-bootstrap
+
+permissions:
+  contents: read
+
+jobs:
+  metadata-contract-only:
+    name: Java 21 metadata contract — no provider calls
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Verify no metadata transport, controller or configuration was introduced
+        shell: bash
+        run: |
+          set -euo pipefail
+          source=src/main/java/com/youtopia/youtube/metadata/OfflineMetadataBridge.java
+          test -f "$source"
+          test -f gradlew
+          test -f gradle/wrapper/gradle-wrapper.jar
+          if grep -E -n '@(RestController|Controller|Service|Component|Configuration|Bean|Scheduled|Profile)|HttpClient|RestClient|WebClient|https?\.request|System\.getenv|ProcessBuilder|java\.net\.http' "$source"; then
+            echo 'Forbidden runtime path in offline metadata bridge.'
+            exit 1
+          fi
+
+      - name: Verify synthetic route cannot open provider transport or read secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          source=src/main/java/com/youtopia/youtube/metadata/MetadataOfflineBoundaryController.java
+          test -f "$source"
+          if grep -E -n 'HttpClient|RestClient|WebClient|https?\.request|System\.getenv|ProcessBuilder|java\.net\.http|@Scheduled' "$source"; then
+            echo 'Forbidden I/O source in synthetic metadata boundary.'
+            exit 1
+          fi
+          grep -F -q '@Profile("metadata-offline-test")' "$source"
+          grep -F -q 'matchIfMissing = false' "$source"
+
+      - name: Compile and test offline metadata contract and denied HTTP boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew --no-daemon test --tests 'com.youtopia.youtube.metadata.OfflineMetadataBridgeContractTest' --tests 'com.youtopia.youtube.metadata.MetadataOfflineBoundarySecurityTest' --tests 'com.youtopia.youtube.metadata.MetadataApprovalPreflightTest' --tests 'com.youtopia.youtube.metadata.WindowsDpapiVaultReadinessTest' --tests 'com.youtopia.youtube.metadata.WindowsDpapiSyntheticVaultTest' --tests 'com.youtopia.youtube.metadata.WindowsMetadataCredentialPathPreflightTest' --tests 'com.youtopia.youtube.metadata.WindowsSyntheticEnrollmentSessionTest'
+
+
+      - name: Offline Cloud observer check only (NO Cloud CLI or API requests)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $report = & ./tools/ui-r04s-metadata-cloud-evidence.ps1 -Check | ConvertFrom-Json
+          if ($report.schema -ne 'YOUTOPIA_R04S_METADATA_CLOUD_OBSERVATION_V01' -or
+              $report.status -ne 'CHECK_ONLY_NO_CLOUD_ACCESS' -or
+              $report.gcloudInvoked -ne $false -or
+              $report.projectAccessibleToLocalIdentity -ne $false -or
+              $report.youtubeDataApiEnabledLocallyObserved -ne $false -or
+              $report.currentQuotaAvailableIndependentlyVerified -ne $false -or
+              $report.metadataReadAuthorized -ne $false -or
+              $report.commentOrSentimentReadAuthorized -ne $false -or
+              $report.actualYouTubeApiRequestsMade -ne 0) {
+            throw 'R04S Cloud observer offline gate failed.'
+          }
