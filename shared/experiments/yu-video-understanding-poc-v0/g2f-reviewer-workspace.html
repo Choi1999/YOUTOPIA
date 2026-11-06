@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>YOUTOPIA · G2-F 독립 검수 전용</title>
+<link rel="stylesheet" href="/style.css">
+<script defer src="/client.js"></script>
+</head>
+<body>
+<header class="topbar">
+ <div class="logo"><span class="mark">Y</span><div><strong>YOUTOPIA <span class="muted">/ QA LAB</span></strong><small>G2-F · 독립 인간 검수 전용 작업공간</small></div></div>
+ <div class="header-status"><span class="tag" id="filmBadge">영화 확인 중</span><span class="tag reviewer" id="reviewerBadge">검수자 확인 중</span><span class="tag outline" id="progressBadge">0/6 작성</span></div>
+</header>
+<div class="security-note" role="note">검수자 전용 · 기존 G2-E 작성자 정답과 다른 검수자의 답변은 제공되지 않습니다. 본인 PC에서만 접속하세요. 검수자 독립성·정답 승인은 별도로 확인합니다.</div>
+<div class="app">
+ <aside class="sidebar" aria-label="평가 문항 탐색">
+  <div class="sidebar-head"><strong>평가 질문 <span id="questionCounter">6개</span></strong><small>질문을 클릭하면 로컬 기준 시각으로 이동합니다.</small></div>
+  <div id="questionNav" class="question-nav"></div>
+  <div class="sidebar-progress">
+   <div class="progress-title"><span>작성 진행률</span><strong id="progressText">0 / 6</strong></div>
+   <div class="track"><div id="progressBar" class="fill"></div></div>
+   <p>질문은 작성자 정답을 보지 않고 직접 판단하세요. 다른 검수자와 답을 공유하지 않습니다.</p>
+  </div>
+ </aside>
+ <main class="workspace">
+  <section class="movie-panel panel" aria-label="로컬 공식 영화 재생">
+   <div class="panel-header"><div><h2>로컬 원본 영상</h2><p>해당 검수자 PC에 제공된 원본의 재생용 MP4 사본 · 외부 업로드 없음</p></div><span class="tag green">로컬 재생</span></div>
+   <div class="movie-box">
+    <video id="movie" src="/movie" preload="metadata" controls playsinline></video>
+    <div class="subtitle" id="subtitle"></div>
+   </div>
+   <div class="transport">
+    <button type="button" id="back5">−5초</button>
+    <button type="button" id="back01">−0.1초</button>
+    <button type="button" id="play">재생 / 일시정지</button>
+    <button type="button" id="forward01">+0.1초</button>
+    <button type="button" id="forward5">+5초</button>
+    <output id="clock" class="clock">00:00.000</output>
+   </div>
+   <div class="wave-group">
+    <div class="wave-header"><strong>오디오 파형 <span class="dim">50ms 간격</span></strong><label>범위 <select id="zoom"><option value="20">20초</option><option value="60" selected>60초</option><option value="120">120초</option><option value="full">전체</option></select></label></div>
+    <canvas id="wave" width="1200" height="140" role="img" aria-label="영상 파형과 자막 구간. 클릭하면 해당 시점으로 이동합니다."></canvas>
+    <div class="legend">파형: 음량 크기 · 색상 띠: SRT 타임라인 · 세로선: 재생 위치</div>
+   </div>
+   <div class="caption-row"><span id="cueNumber">SRT 자막 없음</span><strong id="cueText">재생 시 현재 자막이 표시됩니다.</strong></div>
+  </section>
+  <section class="answer-panel panel" aria-label="독립 평가 답변 입력">
+   <div class="panel-header"><div><h2>독립 검수 답변</h2><p id="questionMeta">질문을 불러오는 중입니다.</p></div><span class="tag" id="questionStatus">미작성</span></div>
+   <div class="body">
+    <p class="question" id="questionText"></p>
+    <div class="anchors"><strong>로컬 기준점</strong><span id="anchors">—</span><button type="button" id="jumpAnchor">첫 기준점으로 이동</button></div>
+    <label>평가 판정
+      <select id="verdict">
+       <option value="NOT_REVIEWED">아직 검토하지 않음</option>
+       <option value="SUPPORTED">SUPPORTED · 영상에 확인 가능한 근거 있음</option>
+       <option value="UNSUPPORTED">UNSUPPORTED · 전체 확인해도 근거 없음</option>
+       <option value="AMBIGUOUS">AMBIGUOUS · 불확실 또는 질문 부적절</option>
+      </select>
+    </label>
+    <div id="supportedFields" hidden>
+     <label>독립적으로 확인한 답변
+      <textarea id="answer" rows="3" placeholder="기존 작성자 답을 보지 않고, 영상에서 직접 확인한 내용만 작성하세요."></textarea>
+     </label>
+     <div class="evidence-heading"><strong>근거 구간</strong><span id="evidenceHelp">로컬 영상 시간만 입력하세요.</span></div>
+     <div id="evidenceList"></div>
+     <button type="button" id="addEvidence" class="subtle">+ 추가 근거</button>
+    </div>
+    <div id="unsupportedFields" hidden>
+     <label>직접 확인한 결과
+      <textarea id="unsupportedAnswer" rows="2" placeholder="전체 영상에서 특정 사실을 확인할 수 없다는 결론을 작성하세요."></textarea>
+     </label>
+     <label>해당 정보가 없다고 판단한 이유
+      <textarea id="absence" rows="3" placeholder="원본 전체를 확인한 뒤 근거 부재 사유를 20자 이상 구체적으로 작성하세요."></textarea>
+     </label>
+     <label class="check-line"><input type="checkbox" id="fullMovie"> 실제로 로컬 원본 영화 전체를 확인했습니다.</label>
+    </div>
+    <div id="ambiguousFields" hidden>
+     <label>불확실하거나 답변이 불가능한 이유
+      <textarea id="ambiguousNote" rows="3" placeholder="왜 현재 질문을 확정할 수 없는지 20자 이상 기록하세요."></textarea>
+     </label>
+    </div>
+    <div class="review-actions"><button id="save" type="button" class="primary">현재 질문 저장</button><span class="tip">저장 버튼을 눌러야 로컬 JSON에 기록됩니다.</span></div>
+    <div class="alert" id="feedback" role="status">질문과 영상이 준비되면 검수를 시작할 수 있습니다.</div>
+   </div>
+  </section>
+  <section class="declaration-panel panel" aria-label="검수자 독립성 선언">
+   <div class="panel-header"><div><h2>검수 독립성 확인</h2><p>실제 사실에 맞게 선택하세요. 체크 자체가 독립 검수를 증명하지 않습니다.</p></div><span class="tag caution">최종 승인 아님</span></div>
+   <div class="declaration-body">
+    <label>작성자 정답 및 다른 검수자 답안을 보지 않고 독립적으로 검토했습니까?
+      <select id="blind"><option value="">아직 확인하지 않음</option><option value="true">예</option><option value="false">아니오</option></select>
+    </label>
+    <label>이 검수 파일을 제출하기 전에 기존 작성자 답변을 본 적이 있습니까?
+      <select id="exposed"><option value="">아직 확인하지 않음</option><option value="false">아니오</option><option value="true">예</option></select>
+    </label>
+    <label>권한이 허용된 로컬 원본 영화를 직접 검토했습니까?
+      <select id="watched"><option value="">아직 확인하지 않음</option><option value="true">예</option><option value="false">아니오</option></select>
+    </label>
+    <button type="button" id="saveDeclaration" class="primary">독립 검수 선언 저장</button>
+    <span class="alert" id="declarationMessage" role="status">세 항목은 실제 검수 후에 기록하세요.</span>
+   </div>
+  </section>
+ </main>
+</div>
+<footer>G2-F 블라인드 검수 전용 · 원본·정답은 다른 검수자와 공유되지 않음 · 외부 API/유료 호출 0 · 골드 정답 승인 0</footer>
+</body>
+</html>
