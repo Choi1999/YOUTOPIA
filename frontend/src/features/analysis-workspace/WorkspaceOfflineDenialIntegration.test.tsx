@@ -49,13 +49,14 @@ describe("UI-R04-AG — denied Spring consumer in DEV diagnostics only",()=>{
     const {modal}=await add();
     expect(within(modal).queryByRole("button",{name:"AF 정책 차단 QA"}))
       .not.toBeInTheDocument();
-    expect(within(modal).getByRole("heading",{name:"영상 제목 미확인"}))
+    const detail=within(modal).getByRole("complementary",{name:"도킹 선택 상세"});
+    expect(within(detail).getByRole("heading",{name:"영상 제목 미확인"}))
       .toBeInTheDocument();
     expect(fetcher).not.toHaveBeenCalled();
   });
 
   it("explicit DEV-only opt-in shows FAILED on denied HTTP; no metadata is published",async()=>{
-    const fetcher=vi.fn(async()=>new Response(JSON.stringify({
+    const fetcher=vi.fn(async(_input:RequestInfo|URL)=>new Response(JSON.stringify({
       type:"urn:youtopia:problem:metadata-policy-hold",
       title:"Metadata unavailable",status:503,
       code:"METADATA_POLICY_HOLD",detail:"Metadata is unavailable.",
@@ -76,9 +77,10 @@ describe("UI-R04-AG — denied Spring consumer in DEV diagnostics only",()=>{
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(String(fetcher.mock.calls[0][0])).toBe(
       OFFLINE_CONSUMER_ROUTE+"/videos/"+video);
-    expect(within(modal).getByRole("heading",{name:"영상 제목 미확인"}))
+    const detail=within(modal).getByRole("complementary",{name:"도킹 선택 상세"});
+    expect(within(detail).getByRole("heading",{name:"영상 제목 미확인"}))
       .toBeInTheDocument();
-    expect(within(modal).getByText("메타데이터 조회 실패 · 기존 정보를 추정하지 않음"))
+    expect(within(detail).getByText("메타데이터 조회 실패 · 기존 정보를 추정하지 않음"))
       .toBeInTheDocument();
     expect(modal.querySelector('[data-provider-status="READY"]'))
       .not.toBeInTheDocument();
