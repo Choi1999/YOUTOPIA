@@ -295,3 +295,95 @@ $g2f = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-windows-independe
 - 실제 검수자 A·B의 **각자 Windows PC에서 브라우저 재생/문항 선택/근거 시점 캡처/질문 저장/새로고침 후 유지**를 확인하는 현장 QA는 아직 미완료이며, 두 사람의 독립 검수 정답도 미접수다.
 
 **결론:** `G2F_REVIEWER_WEB_CODE_AND_ZIP_CI_PASS / REVIEWER_PC_MANUAL_QA_PENDING / HUMAN_GOLD_APPROVAL_0 / G3_NOT_APPROVED / NO_MERGE / NO_DELETE`.
+
+
+## 12. 운영자 승인: AI 초안 제공 후 각 검수자의 사실 확인·편집 (2026-11-06)
+
+**신규 운영 결정:** 검수자가 처음부터 12문항의 답변·근거를 새로 작성하는 업무 부담이 확인되어, 운영자는 **AI가 내용을 선작성하고 검수자 A·B가 각자 그 초안을 영상과 대조해 수용·수정·반려·보류하는 방식**으로 변경하도록 요청했다.
+
+**정직한 판정 라벨:** 이 작업은 **AI_ASSISTED_EDITORIAL_REVIEW / NON_BLIND**다. 두 검수자가 서로의 검수 결과를 보지 않는 운영 독립성은 유지하지만, 두 사람 모두 AI 초안을 보기 때문에 G0 계약의 **AI 답안에 노출되지 않은 블라인드 독립 라벨링**과 같다고 주장하지 않는다. G2-E의 원래 정답 자료를 검수 웹에 노출하지 않는다. 단지 이번 AI 선작성 내용을 검수한다. 기존 G2-F 블라인드 질문 패킷 4개와 이미 검수자가 기록한 답변 파일은 **보존하며 자동 덮어쓰기/승격/이관하지 않는다**.
+
+### 12.1 AI가 선작성한 내용과 출처 한계
+
+신규 공개 초안 파일: `shared/experiments/yu-video-understanding-poc-v0/g2f-assisted-proposals.json`.
+
+- Sintel 6문항 + Tears of Steel 6문항에 대한 **AI가 작성한 미검증 예시 답변 12개**, 예상 분류, 예상 근거 시각, 검수 주의 사항을 포함한다.
+- 초안의 근거는 이 대화에서 **사용자가 앞서 관찰했다고 보고한 행동·발화와 과거 답변의 공개 자막 요약**이다. AI는 실제 로컬 원본을 직접 시청하거나 파일 전체를 판독하지 않았다.
+- 특히 **시간 구간이 일부 임시값**이고, 영상의 사건·음성·자막이 정확히 일치하는지 독립적으로 검증되지 않았다. 검수자의 재확인 없이는 정답/근거로 인정하지 않는다.
+- UNSUPPORTED 두 건은 **전체 영화 정보 부재를 추정한 후보**일 뿐이다. 검수자가 원본 전체에서 반대 사실을 찾았다면 `EDIT + SUPPORTED`로 판정을 뒤집을 수 있다. 불확실하다면 `UNCERTAIN` 또는 `REJECT`.
+- AI 초안이 공개 Git에 있다고 해서 영상·자막·골드 정답을 공개한 것은 아니다. 기존 실제 사용자 G2-E 답변 원문과 검수자 A/B 개인 응답은 여전히 로컬 JSON으로 분리한다.
+
+### 12.2 신규 도구와 원본 보존 범위
+
+- `g2f-assisted-review.cjs` — AI 초안별 **PENDING/ACCEPT/EDIT/REJECT/UNCERTAIN** 판정, 사람 관찰 시간 검증, 질문·AI 초안 변조 방지, 두 사람 결과 비교. 자동 골드/G3 승인 금지.
+- `g2f-assisted-workspace-server.cjs`, `g2f-assisted-workspace.html`, `g2f-assisted-workspace.css`, `g2f-assisted-workspace-client.js` — **검수자 자신의 질문/AI 제안/실제 원본 영상·SRT·파형/편집 폼**만 제공하는 별도 127.0.0.1 로컬 웹. 기존 작성자의 G2-E 정답·타 검수자 응답 API 없음.
+- `g2f-assisted-workspace.ps1` — 같은 Windows PC에서 검수자 코드를 지정해 새로운 **AI 보조 검수 전용 파일**을 최초 1회 생성하고 기존 파일은 재사용. 기존 G2-F 블라인드 파일 자동 변경 금지.
+- 사용자 비공개 저장 위치: `%LOCALAPPDATA%\YOUTOPIA\G2F-AssistedReviews\{Film}-{ReviewerCode}-assisted-review.json`. G2-E 비공개 소스 파일과 생성 시의 SHA-256를 연결해, 사후 G2-E 답안 변경에 따른 근거 혼동을 차단한다.
+
+### 12.3 사용자 Windows PC에서 순차 실행
+
+현재 기존 G2-F 구형 블라인드 웹 서버가 실행 중이라면 **Ctrl+C로 먼저 중단**한다. Git Worktree가 깨끗한 경우에만 최신 실험 브랜치로 전환한다.
+
+```powershell
+cd C:\Projects\YOUTOPIA
+git fetch origin --prune
+if ($LASTEXITCODE -ne 0) { throw "Git fetch 실패" }
+
+cd C:\Projects\YOUTOPIA-VIDEO-G2C
+if (git status --porcelain) { throw "Worktree에 변경 사항이 있습니다" }
+git switch --detach origin/experiment/yu-video-understanding-poc-v01
+if ($LASTEXITCODE -ne 0) { throw "실험 코드 갱신 실패" }
+
+$assist = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-assisted-workspace.ps1'
+
+# 검수자 A: Sintel 6문항
+& $assist -Mode Serve -Film Sintel -ReviewerCode REVIEWER_A
+
+# A가 저장 완료 후 Ctrl+C -> Tears 6문항
+& $assist -Mode Serve -Film TearsOfSteel -ReviewerCode REVIEWER_A
+
+# A의 브라우저/서버 완전 종료 뒤 B 투입
+& $assist -Mode Serve -Film Sintel -ReviewerCode REVIEWER_B
+& $assist -Mode Serve -Film TearsOfSteel -ReviewerCode REVIEWER_B
+```
+
+위 명령들은 **동시에 실행하는 것이 아니다.** 각각의 `G2F_ASSISTED_WORKSPACE_READY http://127.0.0.1:<port>/`를 운영자 PC의 브라우저에서 연다. 검수자 교대 시 서버를 `Ctrl+C`로 종료한 뒤 브라우저 탭을 닫는다. **동일한 Windows 로그인 계정으로는 OS 수준의 접근권 차단이 되지 않는다.** 가능하면 A/B에 각각 다른 Windows 사용자 계정 또는 실제 통제 감독을 제공한다.
+
+### 12.4 검수자 화면 작업 계약
+
+각 문항에는 AI가 미리 작성한 질문·후보 정답·예상 근거 구간이 표시되지만 **제안 내용은 전부 미검증**으로 표시된다.
+
+1. 검수자는 실제 원본 영상을 직접 확인하고, AI가 제안한 정답과 시간구간을 대조한다.
+2. **ACCEPT**: 초안 내용이 맞다고 확인한 경우. 근거 시작·종료·관찰 설명을 사람이 직접 확정해야 저장할 수 있다.
+3. **EDIT**: 답변이 일부 틀리거나 불충분하면 정답·분류·근거를 고치고 사유를 작성한다. AI의 UNSUPPORTED 추정을 실제 증거로 SUPPORTED로 뒤집을 수도 있다.
+4. **REJECT**: 초안이 사실과 다르거나 평가 질문이 잘못됐다면 반려 사유를 기록한다.
+5. **UNCERTAIN**: 검수자가 실제 원본을 보고도 판단이 불가능하면 보류한다. 오류를 감추기 위한 임의 수용 금지.
+6. 모든 비-PENDING 검수는 `실제 원본을 직접 확인했다` 체크가 필요하고, 해당 체크는 자기 신고이므로 독립적 검증 완료를 증명하지 않는다.
+7. 두 사람의 검토 결과는 **서로 보지 않고 개별 로컬 JSON**으로 저장한다.
+
+### 12.5 두 검수자 결과 비교
+
+각 사람/영화 파일의 구조 검사:
+
+```powershell
+$assist = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-assisted-workspace.ps1'
+& $assist -Mode Check -Film Sintel -ReviewerCode REVIEWER_A
+& $assist -Mode Check -Film Sintel -ReviewerCode REVIEWER_B
+& $assist -Mode Check -Film TearsOfSteel -ReviewerCode REVIEWER_A
+& $assist -Mode Check -Film TearsOfSteel -ReviewerCode REVIEWER_B
+```
+
+모두 제출한 뒤 **운영자만** 비교:
+
+```powershell
+& $assist -Mode Assess -Film Sintel
+& $assist -Mode Assess -Film TearsOfSteel
+```
+
+차이·수정·반려·불확실 항목을 사람이 최종 대조해 평가셋을 정제한다. 이 출력은 `blindReviewCount=0`, `independentGoldApproved=0`, `g3Authorized=false`를 유지한다. **두 검수자가 AI 초안을 수용했다고 자동으로 실제 골드 정답이 승인되거나 G3 모델 성능 검증이 성립하는 것은 아니다.**
+
+### 12.6 합의와 통합 준비 경계
+
+이번 변경은 사용자가 승인한 **실제 검수 작업을 하기 위한 사용성 개선**으로 한정된다. 원격 PR 병합, 실험 브랜치 삭제, G3 실호출은 여전히 별도 승인 대상이다. 기존 G2-F 블라인드 도구/검수자가 기록한 결과가 남아 있다면 이를 **새 AI 보조 검수의 독립 증거라고 재해석하지 않는다.**
+
+**현재 상태:** `G2F_ASSISTED_12_AI_DRAFTS_READY / REVIEWER_PC_UI_QA_PENDING / HUMAN_CORRECTION_PENDING / NON_BLIND / NO_GOLD_APPROVAL / G3_NOT_APPROVED / NO_MERGE / NO_DELETE`.
