@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "id": "YU_VIDEO_G2F_AI_OBSERVATION_DRAFTS_V01",
+  "status": "AI_WRITTEN_OBSERVATION_CANDIDATES_NOT_DIRECT_OBSERVATIONS",
+  "evidenceBasis": "PRIOR_USER_REPORTED_SCENES_AND_DIALOGUE_NOT_DIRECT_FILM_INSPECTION",
+  "videoPersonallyWatchedByAssistant": false,
+  "humanReviewed": false,
+  "providerCalls": 0,
+  "approvedGold": false,
+  "notes": [
+    {
+      "questionId": "G2E-SIN-01",
+      "evidenceNotes": [
+        "01:47.250~01:49.429 구간에서 화자가 검의 과거가 어둡다는 취지로 말하는 대사가 나온다."
+      ],
+      "absenceRationale": null
+    },
+    {
+      "questionId": "G2E-SIN-02",
+      "evidenceNotes": [
+        "03:27.250~03:29.739 구간에서 화자가 치료가 거의 끝나간다는 취지로 설명하는 대사가 나온다."
+      ],
+      "absenceRationale": null
+    },
+    {
+      "questionId": "G2E-SIN-03",
+      "evidenceNotes": [
+        "01:28.011~01:30.418 구간에서 인물이 지팡이를 끌면서 눈 덮인 설원을 이동하는 동작이 나타난다."
+      ],
+      "absenceRationale": null
+    },
+    {
+      "questionId": "G2E-SIN-04",
+      "evidenceNotes": [
+        "07:24.016 부근에서 인물이 입에 물고 있던 파이프를 입에서 떼는 움직임이 나타난다."
+      ],
+      "absenceRationale": null
+    },
+    {
+      "questionId": "G2E-SIN-05",
+      "evidenceNotes": [
+        "01:28 부근에서 인물이 지팡이를 끌며 설원을 이동하는 첫 번째 시각 사건이 나타난다.",
+        "07:24 부근에서 인물이 파이프를 입에서 떼는 두 번째 시각 사건이 나타난다."
+      ],
+      "absenceRationale": null
+    },
+    {
+      "questionId": "G2E-SIN-06",
+      "evidenceNotes": [],
+      "absenceRationale": "원본 영화를 처음부터 끝까지 확인했을 때 인물이 설원에 등장하기 전에 이동을 시작한 시각이나 총 이동 시간을 명시하는 화면·대사가 없다면 정확한 이동 시간을 확정할 수 없다."
+    },
+    {
+      "questionId": "G2E-TOS-01",
+      "evidenceNotes": [
+        "00:23.000~00:24.500 구간에서 화자가 톰을 직접 지칭하며 그의 태도를 비난하는 발화를 한다."
+      ],
+      "absenceRationale": null
+    },
+    {
+      "questionId": "G2E-TOS-02",
+      "evidenceNotes": [
+        "05:18.000~05:20.000 구간에서 화자가 각자의 열정을 따라야 한다는 취지의 대사를 말한다."
+      ],
+      "absenceRationale": null
+    },
+    {
+      "questionId": "G2E-TOS-03",
+      "evidenceNotes": [
+        "01:13.417~01:15.417 부근에서 종탑에 있는 무장한 인물이 소총의 조준경을 통해 바깥을 살피는 동작이 나온다."
+      ],
+      "absenceRationale": null
+    },
+    {
+      "questionId": "G2E-TOS-04",
+      "evidenceNotes": [
+        "06:07 부근에서 통제실에 있는 인물들이 기억 재현 실험의 진행 상황을 지켜보는 장면이 나타난다."
+      ],
+      "absenceRationale": null
+    },
+    {
+      "questionId": "G2E-TOS-05",
+      "evidenceNotes": [
+        "01:13 부근에서 종탑의 무장한 인물이 소총 조준경을 통해 주변을 관찰하는 첫 사건이 나타난다.",
+        "06:07 부근에서 통제실의 인물들이 실험 진행을 살펴보는 두 번째 사건이 나타난다."
+      ],
+      "absenceRationale": null
+    },
+    {
+      "questionId": "G2E-TOS-06",
+      "evidenceNotes": [],
+      "absenceRationale": "원본 영화 전체에서 종탑에 있는 무장한 인물이 그곳으로 이동하기 시작한 시점이나 이동에 소요된 시간이 명시되지 않는다면 그 이동 시간을 정확한 분 단위로 확정할 수 없다."
+    }
+  ]
+}
