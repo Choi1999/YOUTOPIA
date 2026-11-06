@@ -284,3 +284,38 @@ $g2f = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-windows-independe
 두 영화 G2-F가 실제 검토·기록된 이후 오프라인 연구 도구의 PR 병합 후보를 정한다. **현재 G2-F 승인 범위에는 PR 병합/브랜치 삭제/G3 API 실행 없음.**
 
 자세한 평가·독립 검수·종료 Gate: `docs/research/YU_VIDEO_G2F_INDEPENDENT_GOLD_REVIEW_V01.md`.
+
+
+## G2-F — 검수자별 전용 오프라인 웹 (검수자 A/B 별도)
+
+기존 G2-D/G2-E 작업공간은 **작성자 정답이 노출되는 화면**이므로 독립 검수자에게 제공하지 않는다. 검수자 각자의 Windows PC에서만 실행되는 **G2-F 전용 사이트**를 새로 마련했다. 외부 네트워크로 로그인하는 중앙 웹 서비스는 아니다.
+
+**운영자 PC에서 질문 패킷 4개가 만들어진 뒤** 다음과 같이 검수자별 웹 코드 + 질문 하나만 들어 있는 ZIP 4개를 생성한다.
+
+```powershell
+cd C:\Projects\YOUTOPIA-VIDEO-G2C
+$export = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-export-reviewer-web.ps1'
+foreach ($reviewer in @('REVIEWER_A','REVIEWER_B')) {
+  foreach ($film in @('Sintel','TearsOfSteel')) {
+    & $export -Film $film -ReviewerCode $reviewer
+  }
+}
+```
+
+ZIP 기본 위치는 `%LOCALAPPDATA%\YOUTOPIA\G2F-ReviewerExports`다. **이 ZIP에는 영화·자막 원본·기존 작성자 정답·다른 검수자 패킷이 포함되지 않는다.** A에게 A용 ZIP 2개만, B에게 B용 ZIP 2개만 전달한다. Blender 공식 원본과 SRT는 **해당 검수자에게 전달/이용할 권한이 확인된 경우에만** 별도 제공하거나 정당한 공식 취득을 안내한다.
+
+검수자 PC에서 자신에게 전달된 ZIP을 해제하고, 동일 SHA-256인 원본 영화와 SRT를 해제 폴더의 `media`에 배치한다. `README.txt`에 실행 명령이 있으며, 아래는 Sintel 검수자 A의 예시다.
+
+```powershell
+# 현재 위치는 ZIP 해제 폴더 ('Sintel-REVIEWER_A-G2F-Reviewer-Web')
+$launcher = '.\app\shared\experiments\yu-video-understanding-poc-v0\g2f-open-reviewer-workspace.ps1'
+& $launcher -Film Sintel -ReviewerCode REVIEWER_A -PacketPath '.\private\Sintel-REVIEWER_A-blind-review.json' -VideoPath '.\media\Sintel.2010.720p.mkv' -SubtitlePath '.\media\sintel_en.srt'
+```
+
+Node 24, FFmpeg, Chrome/Edge가 필요하다. `G2F_REVIEWER_WORKSPACE_READY http://127.0.0.1:<포트>/` 주소를 **동일 검수자 PC에서** 연다. 6개 질문마다 원본 영상·SRT·파형·근거 구간을 확인해 답변하고 **현재 질문 저장**을 누른다. 마지막으로 실제 독립성 선언을 저장한다. 별도 입력 JSON을 직접 편집할 필요가 없다.
+
+작성 완료 후에는 개인의 `private` 폴더에 있는 본인 `*-blind-review.json`만 운영자에게 안전하게 반납한다. 운영자는 기존 `g2f-windows-independent-review.ps1 -Mode Check/-Mode Assess`로 두 검수자의 결과를 대조한다. **이 과정은 자동 골드 정답 승인이나 G3 API 승인으로 이어지지 않는다.**
+
+단순한 localhost 페이지로는 다른 PC의 브라우저에서 직접 접속할 수 없다. 공개 인터넷 사이트·원격 계정/권한 관리·서버 DB·TLS는 별도 신규 승인 범위다.
+
+자세한 분리·전달·수동 QA 지침: `docs/research/YU_VIDEO_G2F_INDEPENDENT_GOLD_REVIEW_V01.md` 10절.
