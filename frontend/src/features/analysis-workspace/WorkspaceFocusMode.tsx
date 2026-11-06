@@ -590,56 +590,79 @@ export function WorkspaceFocusMode({
             </div>
             {selected ? (
               <div key={selectedKey ?? "none"} className="workspace-focus__details">
-                <span className="workspace-focus__kind">{kindLabel(selected.kind)}</span>
-                <WorkspaceTargetArtwork target={selected} variant="detail"
-                  allowVideoImage={allowVideoImage}
-                  allowChannelImage={allowChannelImage}
-                  presentation={presentation} channelProfiles={channelProfiles}/>
-                <h4>{userFacingTargetName(selected, presentation, channelProfiles)}</h4>
-                <p className="workspace-focus__secondary-id">등록 식별자: {selected.id}</p>
-                {presentation.metadataStates?.[selectedKey ?? ""] && (
-                  <p data-metadata-status={presentation.metadataStates[selectedKey ?? ""].status}>
-                    {metadataStateLabel(presentation.metadataStates[selectedKey ?? ""])}
-                    {" · 영상·채널 소속 미검증"}
-                  </p>
+                <div className="workspace-focus__identity" role="group"
+                  aria-label="선택 대상 요약">
+                  <WorkspaceTargetArtwork target={selected} variant="detail"
+                    allowVideoImage={allowVideoImage}
+                    allowChannelImage={allowChannelImage}
+                    presentation={presentation} channelProfiles={channelProfiles}/>
+                  <div className="workspace-focus__identity-copy">
+                    <span className="workspace-focus__kind">{kindLabel(selected.kind)}</span>
+                    <h4>{userFacingTargetName(selected, presentation, channelProfiles)}</h4>
+                    <p className="workspace-focus__secondary-id">등록 식별자: {selected.id}</p>
+                    <p className="workspace-focus__identity-note">링크 등록 · 실제 제공자 정보 미확인</p>
+                  </div>
+                </div>
+                <details className="workspace-focus__section" open>
+                  <summary>기본 정보</summary>
+                  <div className="workspace-focus__section-body">
+                    <WorkspaceChannelIdentity target={selected} profiles={channelProfiles}/>
+                    {presentation.metadataStates?.[selectedKey ?? ""] && (
+                      <p data-metadata-status={presentation.metadataStates[selectedKey ?? ""].status}>
+                        {metadataStateLabel(presentation.metadataStates[selectedKey ?? ""])}
+                        {" · 영상·채널 소속 미검증"}
+                      </p>
+                    )}
+                    {presentation.synthetic?.[selectedKey ?? ""]?.channelName && (
+                      <p>합성 채널 정보: {presentation.synthetic[selectedKey ?? ""].channelName}</p>
+                    )}
+                    <p>이 대상의 댓글·분석 정보는 아직 제공되지 않습니다.</p>
+                    {selected.kind === "CHANNEL_HANDLE" && (
+                      <p>채널 이름과 프로필은 아직 확인되지 않았습니다.</p>
+                    )}
+                    <code>{selected.canonicalUrl}</code>
+                  </div>
+                </details>
+                {(onSetTargetLabel || selected.kind !== "VIDEO" && onSetChannelArtwork) && (
+                  <details className="workspace-focus__section workspace-focus__section--edit">
+                    <summary>표시 제목·이미지 편집</summary>
+                    <div className="workspace-focus__section-body">
+                      {onSetTargetLabel && (
+                        <form className="workspace-focus__editor" onSubmit={saveDisplayTitle}>
+                          <label htmlFor="focus-display-title">표시 제목 (직접 입력)</label>
+                          <input id="focus-display-title" value={labelDraft}
+                            maxLength={120}
+                            placeholder={selected.kind === "VIDEO"
+                              ? "영상 제목 입력" : "채널 표시 이름 입력"}
+                            onChange={event => setLabelDraft(event.target.value)}/>
+                          <button type="submit">표시 제목 저장</button>
+                          <small>이름은 직접 입력한 표시용 텍스트입니다. 공식 제목 검증은 별도입니다.</small>
+                        </form>
+                      )}
+                      {selected.kind !== "VIDEO" && onSetChannelArtwork && (
+                        <form className="workspace-focus__editor" onSubmit={saveChannelImage}>
+                          <label htmlFor="focus-channel-image-url">채널 썸네일 이미지 URL</label>
+                          <input id="focus-channel-image-url" type="url"
+                            maxLength={2048} value={imageDraft}
+                            placeholder="https://yt3.googleusercontent.com/..."
+                            onChange={event => setImageDraft(event.target.value)}/>
+                          <button type="submit">채널 이미지 적용</button>
+                          <small>허용된 YouTube 이미지 주소만 적용합니다. 자동 프로필 조회는
+                            별도 API 승인 후 지원되며 현재는 직접 입력한 이미지만 표시할 수 있습니다.</small>
+                        </form>
+                      )}
+                    </div>
+                  </details>
                 )}
-                {presentation.synthetic?.[selectedKey ?? ""]?.channelName && (
-                  <p>합성 채널 정보: {presentation.synthetic[selectedKey ?? ""].channelName}</p>
-                )}
-                {onSetTargetLabel && (
-                  <form className="workspace-focus__editor" onSubmit={saveDisplayTitle}>
-                    <label htmlFor="focus-display-title">표시 제목 (직접 입력)</label>
-                    <input id="focus-display-title" value={labelDraft}
-                      maxLength={120}
-                      placeholder={selected.kind === "VIDEO"
-                        ? "영상 제목 입력" : "채널 표시 이름 입력"}
-                      onChange={event => setLabelDraft(event.target.value)}/>
-                    <button type="submit">표시 제목 저장</button>
-                    <small>이름은 직접 입력한 표시용 텍스트입니다. 공식 제목 검증은 별도입니다.</small>
-                  </form>
-                )}
-                {selected.kind !== "VIDEO" && onSetChannelArtwork && (
-                  <form className="workspace-focus__editor" onSubmit={saveChannelImage}>
-                    <label htmlFor="focus-channel-image-url">채널 썸네일 이미지 URL</label>
-                    <input id="focus-channel-image-url" type="url"
-                      maxLength={2048} value={imageDraft}
-                      placeholder="https://yt3.googleusercontent.com/..."
-                      onChange={event => setImageDraft(event.target.value)}/>
-                    <button type="submit">채널 이미지 적용</button>
-                    <small>허용된 YouTube 이미지 주소만 적용합니다. 자동 프로필 조회는
-                      별도 API 승인 후 지원되며 현재는 직접 입력한 이미지만 표시할 수 있습니다.</small>
-                  </form>
-                )}
-                <WorkspaceChannelIdentity target={selected} profiles={channelProfiles}/>
-                <p>URL이 추가됐습니다. 이 대상의 분석 정보는 아직 제공되지 않습니다.</p>
-                {selected.kind === "CHANNEL_HANDLE" && (
-                  <p>채널 이름과 프로필은 아직 확인되지 않았습니다.</p>
-                )}
-                <code>{selected.canonicalUrl}</code>
-                <a href={selected.canonicalUrl} target="_blank" rel="noopener noreferrer">
-                  YouTube에서 열기
-                </a>
-                <button type="button" onClick={removeSelected}>이 등록 대상 제거</button>
+                <details className="workspace-focus__section workspace-focus__section--manage">
+                  <summary>대상 관리</summary>
+                  <div className="workspace-focus__section-body">
+                    <a href={selected.canonicalUrl} target="_blank" rel="noopener noreferrer">
+                      YouTube에서 열기
+                    </a>
+                    <button type="button" onClick={removeSelected}>이 등록 대상 제거</button>
+                  </div>
+                </details>
               </div>
             ) : (
               <p>그래프 노드나 대상 목록에서 원하는 영상을 선택하세요.</p>
