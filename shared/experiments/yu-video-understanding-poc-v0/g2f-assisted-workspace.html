@@ -10,10 +10,10 @@
 </head>
 <body>
 <header class="topbar">
- <div class="logo"><span class="mark">Y</span><div><strong>YOUTOPIA <span class="muted">/ QA LAB</span></strong><small>G2-F · AI 초안 검증·편집</small></div></div>
+ <div class="logo"><span class="mark">Y</span><div><strong>YOUTOPIA <span class="muted">/ QA LAB</span></strong><small>G2-F · AI 모범답변 검토</small></div></div>
  <div class="header-status"><span class="tag" id="filmBadge">영화 확인 중</span><span class="tag reviewer" id="reviewerBadge">검수자 확인 중</span><span class="tag caution">비블라인드 · AI 초안 열람</span><span class="tag outline" id="progressBadge">0/6 검토</span></div>
 </header>
-<div class="security-note" role="note">AI가 작성한 초안은 <strong>미검증 제안</strong>입니다. 검수자는 영상과 자막을 직접 보고 승인·수정·반려·불확실을 선택합니다. A와 B는 서로의 검수 결과를 보지 않습니다. 블라인드 검수라고 주장하지 않습니다.</div>
+<div class="security-note" role="note">AI 모범답변 초안이 제공됩니다. 검수자 A·B의 수정·판정 기록은 각각 별도 파일로 저장됩니다. 이 방식은 비블라인드 검토입니다.</div>
 <div class="app">
  <aside class="sidebar" aria-label="평가 문항">
   <div class="sidebar-head"><strong>AI 초안 검토 <span id="questionCounter">6개</span></strong><small>검수할 문항을 선택하면 원본 기준점으로 이동합니다.</small></div>
@@ -21,7 +21,7 @@
   <div class="sidebar-progress">
    <div class="progress-title"><span>사람 검수 진행률</span><strong id="progressText">0/6</strong></div>
    <div class="track"><div class="fill" id="progressBar"></div></div>
-   <p>AI 초안을 보았으므로 블라인드 검수는 아닙니다. 영상 확인 후 사람의 검토 결과를 남기세요.</p>
+   <p>AI 모범답변을 참고해 검수자별로 수정·판정한 내역을 기록합니다.</p>
   </div>
  </aside>
  <main class="workspace">
@@ -46,17 +46,14 @@
    <div class="body">
     <p class="question" id="questionText"></p>
     <div class="anchors"><strong>원본 기준점</strong><span id="anchors">—</span><button type="button" id="jumpAnchor">첫 기준점으로 이동</button></div>
-    <div class="ai-draft" aria-label="검증되지 않은 AI 답안 제안">
-     <strong>AI 제안 초안 · 반드시 사실 확인 필요</strong>
-     <span class="proposal-label" id="aiProposedVerdict">예상 분류</span>
+    <div class="ai-draft" aria-label="AI 모범답변 초안">
+     <strong>AI 모범답변 초안</strong>
      <p class="candidate" id="aiAnswer"></p>
-     <span class="proposed-timing" id="aiTiming"></span>
-     <p class="risk" id="aiCaveat"></p>
     </div>
     <label>검수 결정
      <select id="decision">
       <option value="PENDING">검토 전 (저장하지 않음)</option>
-      <option value="ACCEPT">AI 초안 수용 — 원본 확인 후</option>
+      <option value="ACCEPT">AI 초안 수용</option>
       <option value="EDIT">AI 초안 수정 — 영상에 맞게 정정</option>
       <option value="REJECT">AI 초안 반려 — 부정확함</option>
       <option value="UNCERTAIN">판단 보류 — 영상 근거 불충분</option>
@@ -66,11 +63,11 @@
      <label>최종 정답 가능 여부
       <select id="verdict"><option value="SUPPORTED">SUPPORTED · 근거 있음</option><option value="UNSUPPORTED">UNSUPPORTED · 전체 영화에서 확인 불가</option></select>
      </label>
-     <label>검수 후 답변 (수용 시에도 원본 재확인)
+     <label>최종 답변
       <textarea id="answer" rows="3"></textarea>
      </label>
      <div id="supportedFields" hidden>
-      <div class="evidence-heading"><strong>원본 근거 · 시작·끝 기록</strong><span>AI 제안 시각은 임시값 · 반드시 직접 확인</span></div>
+      <div class="evidence-heading"><strong>근거 시간 및 관찰 기록</strong><span>시각·서술 수정 가능</span></div>
       <div id="evidenceList"></div>
       <button type="button" id="addEvidence" class="subtle">+ 근거 추가</button>
      </div>
@@ -98,6 +95,6 @@
   </section>
  </main>
 </div>
-<footer>G2-F AI 보조 검토 · AI 제안은 정답 아님 · 비블라인드 사람 검토 · 자동 골드 승인 0 · 유료 모델 API 호출 0</footer>
+<footer>G2-F AI 모범답변 초안 · 검수자별 독립 편집 기록 · 자동 골드 승인 없음 · 유료 모델 API 호출 없음</footer>
 </body>
 </html>
