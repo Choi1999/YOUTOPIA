@@ -133,6 +133,11 @@ function validate(p){
   guard(Array.isArray(q.localAnchorMs)&&q.localAnchorMs.length===(q.kind==='UNSUPPORTED'?0:q.kind==='TEMPORAL'?2:1)&&
    q.localAnchorMs.every(x=>Number.isSafeInteger(x)&&x>=0&&x<=p.durationMs),'source local anchors');
   strict(q.aiDraft,AI,'AI draft');
+  const reference=registry.drafts.find(d=>d.questionId===q.questionId&&d.film===p.film);
+  guard(!!reference&&q.kind===reference.kind&&JSON.stringify(q.aiDraft)===JSON.stringify({
+   proposedVerdict:reference.proposedVerdict,answerText:reference.answerText,evidenceHints:reference.evidenceHints,
+   caveat:reference.caveat,requiresHumanVerification:true}),
+   'AI suggestion must match immutable published assistant draft');
   guard(q.aiDraft.requiresHumanVerification===true,'AI evidence cannot be auto verified');
   strict(q.review,R,'review response');
   const v=q.review;
