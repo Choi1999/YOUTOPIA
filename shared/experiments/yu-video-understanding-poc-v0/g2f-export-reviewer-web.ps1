@@ -73,7 +73,7 @@ try{
   '   이 ZIP에는 영화·SRT가 포함되지 않습니다.',
   '3. PowerShell에서 ZIP 해제 폴더로 이동하여 아래 명령을 실행합니다.',
   '   $launcher = ''.\app\shared\experiments\yu-video-understanding-poc-v0\g2f-open-reviewer-workspace.ps1''',
-  ('   & $launcher -Film '+$Film+' -ReviewerCode '+$ReviewerCode+ ' -PacketPath ''.\private\'+$Film+'-'+$ReviewerCode+'-blind-review.json'' -VideoPath ''.\media\'+$nameMovie+''' -SubtitlePath ''.\media\'+$nameSrt+''''),
+  ('   & $launcher -Film '+$Film+' -ReviewerCode '+$ReviewerCode+' -PacketPath .\private\'+$Film+'-'+$ReviewerCode+'-blind-review.json -VideoPath .\media\'+$nameMovie+' -SubtitlePath .\media\'+$nameSrt),
   '',
   '4. 표시된 G2F_REVIEWER_WORKSPACE_READY http://127.0.0.1:<port>/ 주소를 같은 PC 브라우저에서 엽니다.',
   '5. 실제 영상으로 6문항을 검토하여 저장합니다. 다른 검수자나 작성자 정답을 보지 않습니다.',
