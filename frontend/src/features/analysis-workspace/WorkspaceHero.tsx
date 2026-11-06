@@ -3,6 +3,7 @@ import { useEffect, useState, type Dispatch, type SetStateAction,
 import { createPortal } from "react-dom";
 import "./workspace-url.css";
 import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
+import { WorkspaceBrowserSaveControls } from "./WorkspaceBrowserSaveControls";
 import { WorkspaceFocusMode } from "./WorkspaceFocusMode";
 import { chooseWorkspaceDockTarget,
   type WorkspaceDockState } from "./workspaceDockState";
@@ -203,6 +204,7 @@ export function WorkspaceHero({
           </p>
           <p role="status" className="workspace-hero__intake-status">{feedback}</p>
         </form>
+        {onAddUrls && onRemoveTarget && <WorkspaceBrowserSaveControls />}
         {onToggleVideoImage && (
           <div className="workspace-hero__image-consent">
             <button type="button" aria-pressed={allowVideoImage}
