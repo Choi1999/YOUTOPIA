@@ -12,7 +12,7 @@ const g2c=require('./g2c-offline-verifier.cjs');
 const media=require('./g2d-workspace-media.cjs');
 const ROOT=__dirname;
 const BASE=['Sintel','TearsOfSteel'];
-const CSS=path.join(ROOT,'g2f-reviewer-workspace.css');
+const CSS=path.join(ROOT,'g2f-assisted-workspace.css');
 const HTML=path.join(ROOT,'g2f-assisted-workspace.html');
 const CLIENT=path.join(ROOT,'g2f-assisted-workspace-client.js');
 function deny(cond,label){if(!cond)throw Error('G2F_ASSISTED_WEB_FAIL_CLOSED: '+label);}
