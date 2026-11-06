@@ -81,7 +81,7 @@
  function buildEvidence(q,initial=[]){
   el.evidence.replaceChildren();fields=[];
   const minimum=Math.max(1,q.localAnchorMs.length);
-  const hints=q.aiDraft.evidenceHints.map(e=>({...e,observationNote:''}));
+  const hints=q.aiDraft.evidenceHints.map(e=>({...e}));
   const rows=initial.length?initial:hints.length?hints:
    Array.from({length:minimum},(_,i)=>({modality:q.kind==='SPEECH'?'AUDIO':'FRAME',
     localStartMs:q.localAnchorMs[i]??null,localEndMs:null,observationNote:''}));
@@ -117,7 +117,7 @@
   el.decision.value=r.decision;
   el.verdict.value=r.verdict||a.proposedVerdict;
   el.answer.value=r.answerText||a.answerText;
-  el.absence.value=r.absenceRationale||'';el.fullMovie.checked=r.fullMovieReviewed;
+  el.absence.value=r.absenceRationale||a.absenceRationale||'';el.fullMovie.checked=r.fullMovieReviewed;
   el.reviewerNote.value=r.reviewerNote&&r.decision!=='REJECT'&&r.decision!=='UNCERTAIN'?r.reviewerNote:'';
   el.negativeNote.value=r.reviewerNote&&(r.decision==='REJECT'||r.decision==='UNCERTAIN')?r.reviewerNote:'';
   el.watched.checked=r.watchedSource;
