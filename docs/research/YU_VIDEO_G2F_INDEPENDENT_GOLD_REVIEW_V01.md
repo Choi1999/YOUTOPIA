@@ -283,3 +283,15 @@ $g2f = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-windows-independe
 - 공개 Git에는 영화·SRT·골드 정답·실제 독립 검수 답변이 없다. 이번 기능은 G2-F 독립 검수 **작성 편의 개선**에 한정하며 G3 API/제품 런타임/중앙 인증 서비스를 열지 않는다.
 
 **상태: `G2F_REVIEWER_ONLY_LOCAL_WEB_CODE_READY / REAL_REVIEWER_PC_QA_PENDING / REVIEWER_PACKETS_4_PREPARED_BY_OPERATOR / G3_NOT_APPROVED / NO_MERGE`.**
+
+
+## 11. G2-F 웹 및 분리형 ZIP의 자동 검증 증거 (2026-11-06)
+
+**증거 등급: SYNTHETIC_OFFLINE_CI / NO_REAL_REVIEWER_WINDOWS_BROWSER_QA.**
+
+- [Node 24 G1~G2-F CI #42169528351](https://github.com/Choi1999/YOUTOPIA/actions/runs/42169528351): **220개 테스트 / 219 PASS / 0 FAIL / 1 SKIP**. G2-F 전용 브라우저/API 단위 테스트는 검수자 스코프, 로컬 해시 불일치 차단, 웹 Origin 정책, 기존 작성자/타 검수자 파일 탐색 차단, 비공개 JSON 개별 저장 및 낙관적 동시 수정 감지를 포함한다.
+- [Windows CLI·ZIP 시험 #42170254342](https://github.com/Choi1999/YOUTOPIA/actions/runs/42170254342): **PASS**. PowerShell 웹 런처와 ZIP 내보내기 스크립트의 구문 검사, 합성 G2-F 질문 패킷으로 실제 ZIP 생성 후 ZIP에는 **정확히 1개 검수자 질문 패킷**, 필수 앱 파일, 미디어/SRT/타 검수자 답안 파일 0개임을 확인했다. 실영화 다운로드/검수, 서버 배포 없음.
+- 오프라인 테스트에서 건너뛴 1개는 기존 환경의 FFmpeg 합성 미디어 실전 통합 조건 부재 때문이며 **G2-F 기능 전체 QA 통과를 뜻하지 않는다**.
+- 실제 검수자 A·B의 **각자 Windows PC에서 브라우저 재생/문항 선택/근거 시점 캡처/질문 저장/새로고침 후 유지**를 확인하는 현장 QA는 아직 미완료이며, 두 사람의 독립 검수 정답도 미접수다.
+
+**결론:** `G2F_REVIEWER_WEB_CODE_AND_ZIP_CI_PASS / REVIEWER_PC_MANUAL_QA_PENDING / HUMAN_GOLD_APPROVAL_0 / G3_NOT_APPROVED / NO_MERGE / NO_DELETE`.
