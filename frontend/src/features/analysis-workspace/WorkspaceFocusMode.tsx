@@ -60,6 +60,9 @@ type Props = Readonly<{
   onStateScenarioChange?: (value:StateScenario)=>void;
   onToggleStateDemo?: () => void;
   onRefreshStateDemo?: () => void;
+  offlineConsumerAvailable?: boolean;
+  offlineConsumerEnabled?: boolean;
+  onToggleOfflineConsumer?: () => void;
   presentation?: WorkspaceTargetPresentation;
   onSetTargetLabel?: (key: string, label: string) => boolean;
   onSetChannelArtwork?: (key: string, imageUrl: string) => boolean;
@@ -99,6 +102,8 @@ export function WorkspaceFocusMode({
   stateDemoAvailable = false, stateDemoEnabled = false,
   stateScenario = "READY", onStateScenarioChange, onToggleStateDemo,
   onRefreshStateDemo,
+  offlineConsumerAvailable = false, offlineConsumerEnabled = false,
+  onToggleOfflineConsumer,
   presentation = EMPTY_TARGET_PRESENTATION, onSetTargetLabel, onSetChannelArtwork,
   groups = [], onGroupsChange, bookmarks = [], onBookmarksChange,
 }: Props) {
@@ -464,6 +469,9 @@ export function WorkspaceFocusMode({
               onStateScenarioChange={onStateScenarioChange}
               onToggleStateDemo={onToggleStateDemo}
               onRefreshStateDemo={onRefreshStateDemo}
+              offlineConsumerAvailable={offlineConsumerAvailable}
+              offlineConsumerEnabled={offlineConsumerEnabled}
+              onToggleOfflineConsumer={onToggleOfflineConsumer}
             />
           )}
           {onToggleChannelImage && (
