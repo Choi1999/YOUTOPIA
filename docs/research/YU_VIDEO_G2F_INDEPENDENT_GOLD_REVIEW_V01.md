@@ -190,3 +190,96 @@ G2-F 도구는 **Node 24** 기반이고, `Plan/Check/Assess`는 FFmpeg·YouTube 
 5. **종료 Gate:** G2-F 판정과 미해결 사항을 기록하고 코드·출처 범위를 확인한 뒤 오프라인 연구 도구의 PR·대상 브랜치를 정한다. PR 병합과 실험 브랜치 삭제에는 각각 최종 명시 승인이 필요하다. G3는 별도 신규 브랜치에서 따로 승인한다.
 
 **승인된 진행 상태:** `G2F_REVIEW_PRIORITY_APPROVED / BLIND_PACKETS_4_OF_4_CREATED / INDEPENDENT_REVIEW_PENDING / FEATURE_FREEZE / G3_NOT_APPROVED / NO_MERGE / NO_DELETE`.
+
+
+## 10. 검수자별 전용 G2-F 웹 작업공간 (2026-11-06)
+
+### 10.1 개발 경위·범위
+
+사용자는 실제 독립 검수자 두 명을 확보한 후 **각자 검수 업무를 수행할 웹이 필요하다**고 요청했다. 이에 따라 G2-F 기능 동결의 예외를 **작성자 정답에 노출되지 않는 검수자 전용 로컬 웹**으로 한정한다. G2-D/G2-E의 기존 화면은 G2-E 정답 및 다른 데이터가 노출되므로, 이를 재사용하거나 검수자 접근권으로 공개하지 않는다.
+
+새로 구현한 파일:
+
+- `g2f-reviewer-workspace-server.cjs`: 검수자 한 명의 블라인드 질문 패킷과 검증된 로컬 공식 영화/SRT만 사용한다. 해당 패킷 외 파일 탐색 API 없음. `127.0.0.1` 바인딩, Host/Origin 검증, CSP `frame-ancestors 'none'`, CORS 미개방, 비공개 JSON 원자적 저장/동시 수정 감지.
+- `g2f-reviewer-workspace.html` / `g2f-reviewer-workspace.css` / `g2f-reviewer-workspace-client.js`: 질문 6개 선택, 영화와 SRT의 해당 구간 재생, 50ms 파형, 시작/종료 시각 캡처, 답변·불확실성·부재 근거 작성, 질문별 저장, 자기 신고 독립성 기록.
+- `g2f-open-reviewer-workspace.ps1`: 검수자 PC의 **한 명·한 영화** 스코프로 서버 시작.
+- `g2f-export-reviewer-web.ps1`: 운영자 PC에서 한 명의 질문 패킷과 최소한의 웹 코드만 ZIP으로 제공한다. 원본 영상·SRT·G2-E 정답·다른 사람의 검수 JSON은 묶지 않는다.
+
+**중요한 제공 형태:** 이번 웹은 *공유 도메인에 호스팅된 로그인 서비스가 아니다*. 검수자 본인 Windows PC에서 웹을 실행한 후 그 PC의 브라우저에서 `http://127.0.0.1:<출력포트>/`로 접속한다. 서로 다른 PC의 `127.0.0.1`은 서로 다른 서버이므로, 운영자 PC 주소를 다른 검수자에게 공유하는 방식은 동작하지 않는다. 인터넷 공개 사이트·원격 사용자 로그인은 별도 HTTPS/인증/권리/저장·삭제 검토 및 사용자 승인이 필요한 신규 범위다.
+
+### 10.2 운영자: 개인별 전용 웹 패키지 생성
+
+기존 질문 패킷 4개가 생성된 원본 Windows PC의 PowerShell에서 다음을 실행한다. 먼저 실험 브랜치를 fetch하여 최신 커밋을 checkout하되 Git Worktree의 변경 사항이 없는지 확인한다.
+
+```powershell
+cd C:\Projects\YOUTOPIA
+git fetch origin --prune
+if ($LASTEXITCODE -ne 0) { throw 'Git fetch 실패' }
+cd C:\Projects\YOUTOPIA-VIDEO-G2C
+if (git status --porcelain) { throw 'Worktree에 변경 사항이 있습니다.' }
+git switch --detach origin/experiment/yu-video-understanding-poc-v01
+if ($LASTEXITCODE -ne 0) { throw '업데이트 실패' }
+
+$export = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-export-reviewer-web.ps1'
+& $export -Film Sintel -ReviewerCode REVIEWER_A
+& $export -Film TearsOfSteel -ReviewerCode REVIEWER_A
+& $export -Film Sintel -ReviewerCode REVIEWER_B
+& $export -Film TearsOfSteel -ReviewerCode REVIEWER_B
+```
+
+각 ZIP의 출력 위치는 `%LOCALAPPDATA%\YOUTOPIA\G2F-ReviewerExports`. ZIP은 개인별로 **오직 해당 영화의 질문 패킷 하나**만 포함한다.
+
+- 검수자 A에게: `Sintel-REVIEWER_A-G2F-Reviewer-Web.zip`, `TearsOfSteel-REVIEWER_A-G2F-Reviewer-Web.zip`.
+- 검수자 B에게: `Sintel-REVIEWER_B-G2F-Reviewer-Web.zip`, `TearsOfSteel-REVIEWER_B-G2F-Reviewer-Web.zip`.
+
+*이미 같은 ZIP이 있으면 자동으로 덮어쓰지 않는다.* 이전 패키지와 충돌한 경우 먼저 원본 보존/회수 여부를 확인한다.
+
+검수자 각자가 접근할 수 있는 **허가된 공식 원본 영상 + 원본 영어 SRT 파일**은 별도로 제공한다. 영화의 저작물·영상과 자막을 제3자에게 전달할 수 있는 권리가 확인되지 않았다면 이를 임의 배포하지 말고, 허가된 공식 배포 경로에서 검수자가 직접 취득하도록 안내한다. 편집판/원본 파일이 달라지면 **SHA-256 검증 실패로 서버가 시작되지 않으며**, 우회하거나 다른 영상으로 바꿔 실행하지 않는다.
+
+### 10.3 검수자: 전용 웹에서 자기 영화 6문항 작성
+
+검수자 개인 PC에서 해당 ZIP을 해제한 폴더(예: `C:\YOUTOPIA-G2F-A\Sintel-REVIEWER_A-G2F-Reviewer-Web`)로 이동한다. 웹 실행에 Node 24 및 FFmpeg가 필요하며 브라우저는 Chrome/Edge 권장.
+
+ZIP 내 `media` 폴더에 **동일 SHA-256 원본 영상과 SRT**를 별도로 배치한다. 기존 `README.txt`에 실행할 명령이 담겨 있다. 예:
+
+```powershell
+# 현재 위치: ZIP을 해제한 실제 'Sintel-REVIEWER_A-G2F-Reviewer-Web' 폴더
+$launcher = '.\app\shared\experiments\yu-video-understanding-poc-v0\g2f-open-reviewer-workspace.ps1'
+& $launcher -Film Sintel -ReviewerCode REVIEWER_A -PacketPath '.\private\Sintel-REVIEWER_A-blind-review.json' -VideoPath '.\media\Sintel.2010.720p.mkv' -SubtitlePath '.\media\sintel_en.srt'
+```
+
+`G2F_REVIEWER_WORKSPACE_READY http://127.0.0.1:<port>/`이 나오면 **해당 검수자 PC에서** 그 주소를 연다. `Ctrl+C`는 해당 웹 서버 종료이며, 그 전에 저장한 JSON은 유지된다.
+
+**웹 작업 순서:** 질문 선택 → 로컬 영상/자막 확인 → `SUPPORTED` / `UNSUPPORTED` / `AMBIGUOUS` 판정 → 답변 및 필요 근거 구간 작성 → **현재 질문 저장** → 다음 질문으로 이동. 실제 원본에서 근거를 확인하지 못했다면 임의로 정답을 작성하지 않고 `AMBIGUOUS`로 남긴다. `UNSUPPORTED`는 원본 영화 전체 검토 후에만 확정한다.
+
+6문항을 검수한 뒤 세 가지 독립성 신고를 사실대로 입력하고 **독립 검수 선언 저장**을 누른다. 검수자는 원본 `private` 폴더에 있는 자기 JSON만 안전하게 운영자에게 회송한다. 다른 사람의 파일이나 기존 G2-E 정답 패널은 열람하지 않는다.
+
+Tears의 파일도 별도 ZIP과 로컬 영화/SRT로 같은 방법으로 검수한다. **Tears YouTube-로컬 오프셋 불일치는 여전히 미검증**이므로 근거 시간은 오직 검증된 로컬 원본 기준으로 작성한다.
+
+### 10.4 운영자 결과 회수 및 비교
+
+운영자는 네 검수자 패킷을 회수해 자신의 `%LOCALAPPDATA%\YOUTOPIA\G2F-IndependentReviews`에 원래 파일명대로 보존한다. **기존 빈 패킷이 있다면 백업 후 원본과 같은 sourceTemplateDigest·영화·reviewerCode·sourceDraftSha256가 일치하는지 먼저 확인**하고 교체한다. 동명이인 검수 또는 수정 전후 파일을 섞지 않는다.
+
+기존의 아래 도구로 영화별로 Check/Assess를 실행한다.
+
+```powershell
+$g2f = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-windows-independent-review.ps1'
+& $g2f -Mode Check -Film Sintel -ReviewerCode REVIEWER_A
+& $g2f -Mode Check -Film Sintel -ReviewerCode REVIEWER_B
+& $g2f -Mode Check -Film TearsOfSteel -ReviewerCode REVIEWER_A
+& $g2f -Mode Check -Film TearsOfSteel -ReviewerCode REVIEWER_B
+
+& $g2f -Mode Assess -Film Sintel
+& $g2f -Mode Assess -Film TearsOfSteel
+```
+
+**문항 제출·구조 검증·검수자의 블라인드 자기신고는 독립성이 증명되거나 정답이 검증됐다는 뜻이 아니다.** 실제 인적 검토 및 정답 불일치 조정, 검수 결과 기록, 병합·브랜치 삭제 승인은 여전히 별도다.
+
+### 10.5 실제 QA 및 보안 범위
+
+- Node 24 오프라인 서버 격리/파일 접근/Origin 검사/정답 파일 누출/비공개 패킷 원자 저장/소스 SHA 위조 차단 테스트를 실행했다.
+- Windows PowerShell 구문 및 브라우저 클라이언트 JS 구문 검사를 수행했다.
+- **실제 검수자 A·B의 Windows 브라우저 수동 QA와 독립 검수 결과는 아직 0**. 공유 ZIP의 실제 운영자 생성/타 PC 이동/실제 영화와 SRT 준비가 필요하다.
+- 공개 Git에는 영화·SRT·골드 정답·실제 독립 검수 답변이 없다. 이번 기능은 G2-F 독립 검수 **작성 편의 개선**에 한정하며 G3 API/제품 런타임/중앙 인증 서비스를 열지 않는다.
+
+**상태: `G2F_REVIEWER_ONLY_LOCAL_WEB_CODE_READY / REAL_REVIEWER_PC_QA_PENDING / REVIEWER_PACKETS_4_PREPARED_BY_OPERATOR / G3_NOT_APPROVED / NO_MERGE`.**
