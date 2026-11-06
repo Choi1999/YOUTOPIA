@@ -99,6 +99,7 @@ describe("UI-R04-AD-1/2 — graph, focus list and fallback cards share dock stat
 
     expect(within(dialog).getByText("등록 식별자: @samplecreator"))
       .toBeInTheDocument();
+    await user.click(within(dialog).getByText("대상 관리"));
     await user.click(within(dialog).getByRole("button",{name:"이 등록 대상 제거"}));
     expect(within(dialog).queryByText("등록 식별자: @samplecreator"))
       .not.toBeInTheDocument();
