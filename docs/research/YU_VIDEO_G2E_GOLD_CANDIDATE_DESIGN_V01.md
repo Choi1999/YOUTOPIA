@@ -244,3 +244,45 @@ G2-E 패널의 모든 저장은 사용자 명시 클릭이 필요하고, 저장�
 - [Windows CI #42022707609](https://github.com/Choi1999/YOUTOPIA/actions/runs/42022707609): G2-E PowerShell 구문 검사 PASS. 실제 사용자 로컬 비공개 정답 JSON 작성, 브라우저 화면 수동 QA 및 독립 인적 검수는 **아직 수행하지 않음**.
 
 **최종 개발 상태:** `G2E_QUESTION_CANDIDATES_AND_BROWSER_AUTHORING_READY / ACTUAL_PRIVATE_GOLD_DATA_NOT_CREATED_BY_ASSISTANT / HUMAN_GOLD_0_OF_12_VERIFIED / G3_NOT_APPROVED / NO_MERGE`.
+
+
+## 10. 운영자 보고 G2-E 실영화 정답 초안 12/12 작성 완료 (2026-11-06 KST)
+
+**증거 등급: USER_SUBMITTED_LOCAL_ASSESS_JSON + USER_PROVIDED_BROWSER_SCREENSHOTS.** 이 집계는 사용자가 Windows 로컬 `g2e-windows-gold-pilot.ps1 -Mode Assess`로 평가하고 대화에서 제출한 Sintel·Tears of Steel **요약 출력**에 기반한다. GitHub에는 개인정보가 있을 수 있는 실제 정답·SRT 원문·영상·비공개 골드 초안 JSON을 업로드하지 않았다. 로컬 파일의 실제 내용을 연결 도구에서 독립적으로 열람하거나 재판독하지 않았다.
+
+| 필드 | Sintel | Tears of Steel | 합계 |
+|---|---:|---:|---:|
+| 검수기 `questionCount` | 6 | 6 | 12 |
+| 운영자 작성 `operatorAuthored` | 6 | 6 | **12** |
+| 미작성 `notAuthored` | 0 | 0 | **0** |
+| 검수기 `needsRewrite` | 0 | 0 | **0** |
+| `SPEECH` 작성 | 2 | 2 | 4 |
+| `VISUAL` 작성 | 2 | 2 | 4 |
+| `TEMPORAL` 작성 | 1 | 1 | 2 |
+| `UNSUPPORTED` 작성 | 1 | 1 | 2 |
+| `OCR` 작성 | 0 | 0 | 0 |
+| `fullFilmAbsenceClaimsReported` | 1 | 1 | 2건 **운영자 자기 보고** |
+| 검증기 `status` | `OPERATOR_DRAFT_QUESTIONS_ALL_AUTHORED_NOT_VERIFIED` | `OPERATOR_DRAFT_QUESTIONS_ALL_AUTHORED_NOT_VERIFIED` | 두 편 동일 |
+| 독립 검증 `independentGoldReviewVerified` | false | false | **0/12 검증** |
+| 실제 골드 승인 `realGoldApproved` | false | false | 없음 |
+| G3 승인 `g3Authorized` | false | false | 없음 |
+| 공급자 호출/실험비용 | 0 / $0 | 0 / $0 | 0 / $0 |
+
+### 구분해야 할 판정과 품질 위험
+
+1. **입력 완결성 통과 ≠ 실제 영상 정답의 사실적 정확성 확인.** `needsRewrite=0`은 검증기가 포착한 구조·시간·모달리티의 오류가 없다는 뜻이며, 답변의 의미적 타당성과 독립된 인적 검토를 증명하지 않는다.
+2. **두 건의 전체 영화 부재 주장**은 작업자가 체크한 `fullMovieReviewed` 플래그와 서술 내용에 근거한다. 영상 전문을 별도 검토자가 직접 확인한 증거로 승격하지 않는다.
+3. **정답 작성 독립성 위험:** 이번 작성 과정에서 AI가 예시 답안을 제안했으며 사용자가 이를 참고해 로컬 초안을 작성했다. 따라서 이 자료는 현재 **AI-assisted operator draft**이고, 이를 다시 AI에 평가시키는 경우 정답 유출·평가 편향이 생길 수 있다. 독립된 사람의 블라인드 검수 또는 별도 답변/근거 대조가 필요하다.
+4. **UNSUPPORTED 두 문항의 판별력:** 질문에 답이 없다는 사실이 질문 문구에 드러나면 영상을 보지 않은 모델도 정답을 유추할 수 있다. 현재 두 작품의 질문은 구체화된 장면 사실로 바꾸려 했지만, 독립 검수에서는 실제 영화 전체의 부재 여부와 질문 자체가 추측으로 풀리지 않는지 별도 확인한다.
+5. **Tears YouTube 시간축:** 앞선 G2-D의 장면 오프셋 편차 5초 `NOT_ESTABLISHED`는 그대로 유지한다. 정답 초안은 `localTimelineEvidenceOnly=true`이며 미검증 YouTube 시간을 골드 근거로 승격하지 않았다.
+
+### 다음 권장 업무: G2-F 독립 정답 검수 준비
+
+문항을 더 많이 작성하거나 G3로 승격하는 대신, 두 작품 **12문항에 대한 한 번의 블라인드 독립 검수**를 우선 진행한다.
+
+- 영상 접근권이 있고 작업자 초안을 보지 않은 다른 검수자에게 **질문만 먼저** 제시해 각자의 답·가능 여부·로컬 원본 근거 구간을 작성하도록 한다.
+- 그 뒤 작업자 초안과 일치/불일치·시각 근거·SRT 의존·영상 근거 부재를 비교하고, 불일치만 집중 재검수한다.
+- 합의된 질문만 `humanGoldApproved` 후보로 분리한다. 검토 완료 전 12문항의 골드 승인을 자동으로 기록하거나, JSON에서 `g3Authorized` 플래그를 변경하지 않는다.
+- 리뷰어의 독립성과 실제 검토 근거가 확보되지 않으면 작업 완료는 **작성 단계**에 한정하고 후속 테스트의 실제 모델 정확도·요금이나 외부 API 호출을 주장하지 않는다.
+
+**최종 상태:** `G2E_OPERATOR_DRAFTS_12_OF_12_COMPLETE / G2F_INDEPENDENT_REVIEW_PENDING / HUMAN_GOLD_0_OF_12_VERIFIED / TEARS_TIMELINE_REVIEW_OPEN / G3_NOT_APPROVED / NO_MERGE`.
