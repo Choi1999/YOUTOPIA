@@ -467,3 +467,16 @@ $assist = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-assisted-works
 최신 자동 테스트: [G2-F AI 초안 단독 표시 검증 #42198959411](https://github.com/Choi1999/YOUTOPIA/actions/runs/42198959411), **236개 중 235 PASS / 0 FAIL / 1 SKIP**.
 
 **상태:** `AI_DRAFT_ANSWER_ONLY_UI / OBSERVATION_FIELDS_SEPARATE / REVIEWER_EVIDENCE_PRESERVED / G3_NOT_APPROVED / NO_MERGE / NO_DELETE`.
+
+
+## 16. 운영자 피드백: 작성자 시점의 관찰 기록 문장 (2026-11-06)
+
+운영자는 G2-F 관찰 기록 초안에 등장한 “초반 기준점에서 … 모습이 제안되었다. … 검수해야 한다.”와 같은 **AI 작업 진행·검수 지시 문체를 부적합**으로 지적했다.
+
+이에 `g2f-assisted-observation-drafts.json`의 **12개 근거 관찰 기록과 UNSUPPORTED 2개 사유 문장**을 실제 장면·발화를 바로 기술하는 **작성자 시점의 서술형 문체**로 전면 수정했다. 예: `G2E-SIN-05` 근거 #1 “01:28 부근에서 인물이 지팡이를 끌며 눈 덮인 설원을 이동한다.”, 근거 #2 “07:24 부근에서 인물이 입에 물고 있던 파이프를 입에서 떼는 모습이 나타난다.”
+
+**근거 계약 보존:** 영상 전체를 AI가 직접 확인하지 않았다는 `videoPersonallyWatchedByAssistant=false`, `humanReviewed=false` 등 출처 메타데이터는 유지한다. 문체를 바꾸어도 실제 관찰 사실을 증명하지 않는다. 생성 시점에 만들어진 검수자별 불변 패킷과 이미 저장된 **사람의 관찰 기록은 자동 교체하지 않는다**. 화면에 최초 표시되는 미저장 AI 서술 후보에만 새로운 문장을 적용한다. 검수자에게 수행을 지시할 문구는 사용자가 별도로 제공한다.
+
+[오프라인 CI #42201046508](https://github.com/Choi1999/YOUTOPIA/actions/runs/42201046508): **237 테스트 중 236 PASS / 0 FAIL / 1 SKIP**, 관찰 기록에 검수 지시문·AI 진행 문구가 다시 들어가지 않도록 회귀 테스트를 추가했다.
+
+**현재 상태:** `AI_OBSERVATION_WRITER_VOICE_12_EVIDENCE_NOTES_2_ABSENCE_NOTES / EXISTING_HUMAN_EVIDENCE_PRESERVED / GOLD_NOT_APPROVED / G3_NOT_APPROVED / NO_MERGE`.
