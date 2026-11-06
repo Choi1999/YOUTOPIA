@@ -25,14 +25,15 @@ describe("P0-1 라우터·테마·AppShell 기반", () => {
   });
 
   it("YU-01부터 YU-12까지 고유한 라우트 정의를 유지한다", () => {
-    expect(yutopiaRoutes).toHaveLength(16);
-    expect(new Set(yutopiaRoutes.map(({ code }) => code)).size).toBe(16);
-    expect(new Set(yutopiaRoutes.map(({ path }) => path)).size).toBe(16);
+    expect(yutopiaRoutes).toHaveLength(17);
+    expect(new Set(yutopiaRoutes.map(({ code }) => code)).size).toBe(17);
+    expect(new Set(yutopiaRoutes.map(({ path }) => path)).size).toBe(17);
     expect(yutopiaRoutes.find(({ code }) => code === "YU-12")?.summary).toMatch(/로컬 시뮬레이션/);
     expect(yutopiaRoutes.find(({ code }) => code === "YU-35")?.href).toBe("/analysis/youtube/compare");
     expect(yutopiaRoutes.find(({ code }) => code === "YU-44")?.href).toBe("/analysis/youtube/channel/" + "UC" + "A".repeat(22));
     expect(yutopiaRoutes.find(({ code }) => code === "YU-47")?.href).toBe("/analysis/youtube/channels/compare");
     expect(yutopiaRoutes.find(({ code }) => code === "YU-48")?.href).toBe("/analysis/youtube/topics");
+    expect(yutopiaRoutes.find(({ code }) => code === "YU-50")?.href).toBe("/analysis/youtube/workspace");
   });
 
   it("명시적으로 선택한 테마를 적용하고 기존 저장 키와 분리해 유지한다", async () => {
@@ -70,6 +71,12 @@ describe("P0-1 라우터·테마·AppShell 기반", () => {
 
     await user.click(screen.getByRole("button", { name: "← 이전 단계" }));
     expect(screen.getByRole("heading", { name: "환영합니다." })).toBeInTheDocument();
+  });
+
+  it("YU-55: 유효하지 않은 영상 상세에서도 작업 공간 복귀 링크를 제공한다", () => {
+    renderAt(["/analysis/youtube/video/bad"]);
+    expect(screen.getByRole("link", {name:"통합 분석 워크스페이스로 돌아가기"}))
+      .toHaveAttribute("href", "/analysis/youtube/workspace");
   });
 
   it("알 수 없는 경로에서 안전한 404 화면을 표시한다", () => {

@@ -86,3 +86,35 @@ Before any *future* actual YouTube retrieval/analysis: prove project+credentials
 The future source adapter must be **separately developed and reviewed** after authorization. Do not rename `STATIC_FIXTURE` to `APPROVED_PROVIDER` or remove the provenance guard as a workaround. No provider calls, payments, infrastructure deployment or branch merges are included here.
 
 Official shape: https://developers.google.com/youtube/data/reference/rest/v3/commentThreads/list and https://developers.google.com/youtube/data/reference/rest/v3/commentThreads . Provider derived-data restrictions: https://developers.google.com/youtube/terms/derived-metrics-policy .
+
+
+## UI-R04-O — metadata read-only offline readiness (NO external requests)
+
+Video/channel title and profile thumbnail auto-population requires a separate approved backend metadata reader. A new **transportless** candidate lives at src/metadata-readiness.cjs, with coverage in tests/metadata-readiness.test.cjs.
+
+- Produces limited GET **descriptors** for videos.list(id), channels.list(id), and channels.list(forHandle) — max 3 canonical targets, 1 quota unit per planned request, 0 actual requests.
+- Decodes only a bounded, caller-provided YouTube-shaped JSON response. Decoded fields are marked sourceAuthenticated=false and consumerPublicationAuthorized=false, even for valid shape.
+- Filters to safe title/thumbnail fields; only Google/YouTube image CDN hostnames on an exact HTTPS allowlist. Cache is **in memory** for 15 minutes, never approved as a live source.
+- Existing POLICY_HOLD, first-live-call hardlock, comment/derived sentiment rules, frontend image-consent behavior and protected server files are unchanged.
+- For the user-facing auto title/channel image goal, a future separately approved server transport + provenance/credential/quota/retention contract must be completed before integrating this data into frontend. See docs/integration/UI_R04O_OFFLINE_YOUTUBE_METADATA_READINESS_V01.md.
+
+~~~powershell
+node --test shared/experiments/yu32-g45-offline-pipeline-v0/tests/metadata-readiness.test.cjs
+~~~
+
+
+## UI-R04-P — guarded metadata lifecycle (still OFFLINE, no API calls)
+
+The backend-candidate module src/metadata-guarded-lifecycle.cjs wraps the UI-R04-O pure metadata plan/decoder with a strict **non-executing** lifecycle:
+
+- canonical POLICY_HOLD checked at every operation; no credentials, HTTP route, HTTPS transport, or provider execution;
+- simulated 6 planned quota units / 60 seconds and at most 3 pending single-use tickets, zero automatic retries, zero actual provider requests;
+- atomic shape validation of all supplied synthetic response bodies, safe simulated HTTP failure taxonomy (no raw provider error body), 15-minute cache;
+- false provenance and false consumer publication flags on every result.
+
+~~~powershell
+node --check shared/experiments/yu32-g45-offline-pipeline-v0/src/metadata-guarded-lifecycle.cjs
+node --test shared/experiments/yu32-g45-offline-pipeline-v0/tests/metadata-guarded-lifecycle.test.cjs
+~~~
+
+This **does not** make video titles or channel profile pictures appear automatically in YOUTOPIA. Real server credentials, quota journal, authenticated YouTube API transport, policy authorization and frontend integration require later independent approval. See docs/integration/UI_R04P_METADATA_SERVER_GUARDED_LIFECYCLE_V01.md.
