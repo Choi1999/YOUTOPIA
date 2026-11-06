@@ -205,7 +205,8 @@ function run(argv){
  if(argv.length===0)return {stage:'G2-F',status:'OFFLINE_TWO_BLIND_REVIEWER_PROTOCOL_READY_NO_REVIEWS',externalProviderCalls:0,
   verifiedIndependentHumanReviewers:0,independentGoldApproved:0,g3Authorized:false};
  if(argv.length===9&&argv[0]==='plan'&&argv[1]==='--author'&&argv[3]==='--reviewer'&&argv[5]==='--out'&&argv[7]==='--film'){
-  const r=createPacket(argv[2],argv[4],argv[6]);gate(r.film===argv[8],'film mismatch');return r;
+  gate(officialAuthor(argv[2]).author.film===argv[8],'film mismatch before private file creation');
+  return createPacket(argv[2],argv[4],argv[6]);
  }
  if(argv.length===3&&argv[0]==='check'&&argv[1]==='--file')return validatePacket(readReview(argv[2]).packet);
  if(argv.length===7&&argv[0]==='assess'&&argv[1]==='--author'&&argv[3]==='--review-a'&&argv[5]==='--review-b'){
