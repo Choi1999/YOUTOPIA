@@ -145,6 +145,7 @@ describe("UI-R04-M — shared local graph bookmarks and non-destructive filters"
     await user.click(within(canvas).getByRole("button",
       { name: "북마크 A0000000000 이동" }));
     expect(within(canvas).getByText("2 / 2")).toBeInTheDocument();
+    await user.click(within(dialog).getByText("대상 관리"));
     await user.click(within(dialog).getByRole("button", { name: "이 등록 대상 제거" }));
     expect(screen.getByTestId("registered")).toHaveTextContent("26");
     await waitFor(() =>
