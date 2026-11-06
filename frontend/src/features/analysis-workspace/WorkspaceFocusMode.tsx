@@ -6,6 +6,7 @@ import {
 
 import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
 import { WorkspaceDiagnosticsDock } from "./WorkspaceDiagnosticsDock";
+import { WorkspaceBrowserSaveControls } from "./WorkspaceBrowserSaveControls";
 import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
 import { WorkspaceChannelIdentity } from "./WorkspaceChannelIdentity";
 import type { ApprovedChannelProfileCache } from "./workspaceChannelProfile";
@@ -286,7 +287,7 @@ export function WorkspaceFocusMode({
     const focusable = Array.from(
       dialogRef.current?.querySelectorAll<HTMLElement>(
         "button:not([disabled]), input:not([disabled]), " +
-        "select:not([disabled]), textarea:not([disabled]), a[href], " +
+        "select:not([disabled]), textarea:not([disabled]), a[href], summary, " +
         '[tabindex="0"]',
       ) ?? [],
     );
@@ -455,6 +456,7 @@ export function WorkspaceFocusMode({
           <button type="submit">추가하기</button>
         </form>
         <div className="workspace-focus__controls">
+          <WorkspaceBrowserSaveControls />
           {onToggleVideoImage && (
             <button type="button" aria-pressed={allowVideoImage}
               onClick={onToggleVideoImage}
