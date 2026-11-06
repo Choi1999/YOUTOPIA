@@ -23,7 +23,8 @@ import {
 } from "./workspaceUrlTargets";
 import {
   FOCUS_DETAIL_MIN, FOCUS_LIST_MIN,
-  clampFocusDockLayout, focusDockBounds, readFocusDockLayout,
+  clampFocusDockLayout, focusDockBounds, focusDockPresentationMode,
+  readFocusDockLayout,
   resizeFocusDockLayout, writeFocusDockLayout,
   type FocusDockLayout, type FocusDockSide,
 } from "./workspaceFocusLayout";
@@ -195,10 +196,18 @@ export function WorkspaceFocusMode({
     };
   }, []);
 
+  // CSS and React must agree on the same overlay cutoff. At tablet widths
+  // two side overlays cannot cover the central graph simultaneously.
+  const dockPresentationMode = focusDockPresentationMode(viewportWidth);
   function inNarrowViewport() {
-    return typeof window.matchMedia === "function" &&
-      window.matchMedia("(max-width: 720px)").matches;
+    return dockPresentationMode === "overlay";
   }
+  useEffect(() => {
+    if (dockPresentationMode !== "overlay" || !listOpen || !detailOpen) return;
+    updateDockState(previous =>
+      previous.listOpen && previous.detailOpen
+        ? closeWorkspaceDockSide(previous,"list") : previous);
+  }, [dockPresentationMode,listOpen,detailOpen,updateDockState]);
 
   function focusTarget(key: string | null,
       registered: readonly WorkspaceUrlTarget[] = targets) {
@@ -483,6 +492,7 @@ export function WorkspaceFocusMode({
         {message}
       </div>
       <div ref={bodyRef} className="workspace-focus__body" data-layout={layout}
+        data-dock-mode={dockPresentationMode}
         data-resizing={resizingSide ?? undefined} style={customStyle}>
         {listOpen && (
           <aside ref={listDockRef} id="workspace-focus-target-dock"
