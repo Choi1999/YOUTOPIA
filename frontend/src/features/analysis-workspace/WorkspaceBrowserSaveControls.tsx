@@ -4,6 +4,7 @@ import {
   restoreWorkspaceFromBrowser, saveWorkspaceToBrowser,
   type WorkspaceBrowserBackupInfo,
 } from "./workspaceBrowserSnapshot";
+import { WorkspaceNamedSaveControls } from "./WorkspaceNamedSaveControls";
 import "./workspace-browser-snapshot.css";
 
 function tabStorage(): Storage | null {
@@ -80,6 +81,7 @@ export function WorkspaceBrowserSaveControls() {
         {message && <p role="status" className="workspace-browser-snapshot__feedback">
           {message}
         </p>}
+        <WorkspaceNamedSaveControls />
       </div>
     </details>
   );
