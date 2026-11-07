@@ -10,8 +10,10 @@
   approved:$('approvedFields'),basis:$('basis'),verdict:$('verdict'),answer:$('finalAnswer'),
   supported:$('supportedFields'),unsupported:$('unsupportedFields'),
   evidence:$('finalEvidence'),add:$('addEvidence'),absence:$('absenceRationale'),fullMovie:$('fullMovie'),
-  viewed:$('viewed'),rationale:$('rationale'),save:$('save'),feedback:$('feedback')};
+  viewed:$('viewed'),rationale:$('rationale'),save:$('save'),feedback:$('feedback'),
+  candidateAnswer:$('candidateAnswer'),draftStatus:$('draftStatus'),useDraft:$('useDraft')};
  let packet=null,revision=null,sources=null,cues=[],waveform=null,selected=0,dirty=false,busy=false,fields=[];
+ let aiDraftSuggestions={};
  let waveTick=0;
  function fmt(ms){
   const x=Math.max(0,Math.round(ms||0)),h=Math.floor(x/3600000),m=Math.floor(x/60000)%60,s=Math.floor(x/1000)%60,ms3=String(x%1000).padStart(3,'0');
@@ -100,6 +102,30 @@
   setEvidence(question(),response.evidence||[]);
   setVerdictVisibility();
  }
+ function candidate(){return aiDraftSuggestions[question().questionId]||null;}
+ function fillFromAiCandidate(chooseStatus=false){
+  const draft=candidate();
+  if(!draft)return false;
+  ui.basis.value='CUSTOM';
+  ui.verdict.value=draft.finalVerdict;
+  ui.answer.value=draft.finalAnswerText;
+  ui.absence.value=draft.absenceRationale||'';
+  ui.rationale.value=draft.rationale;
+  setEvidence(question(),draft.finalEvidence);
+  // AI proposals and A/B declarations never pre-check the OPERATOR's actual review.
+  ui.viewed.checked=false;ui.fullMovie.checked=false;
+  if(chooseStatus)ui.status.value=draft.proposedStatus;
+  setVerdictVisibility();
+  return true;
+ }
+ function useAiDraft(){
+  if(!packet)return;
+  if(question().result.status!=='PENDING'&&
+   !window.confirm('기존 운영자 판정이 있습니다. 미저장 입력만 AI 초안으로 다시 채우시겠습니까?'))return;
+  if(dirty&&!window.confirm('현재 편집 중인 미저장 내용을 AI 초안으로 바꾸시겠습니까?'))return;
+  if(!fillFromAiCandidate(true)){announce('이 문항의 AI 초안이 없습니다.',true);return;}
+  dirtyNotice();announce('AI 초안을 입력란에 적용했습니다. 운영자 판정은 아직 저장되지 않았습니다.');
+ }
  function setVerdictVisibility(){
   const show=ui.status.value==='APPROVE';
   ui.approved.hidden=!show;
@@ -153,6 +179,10 @@
  function render(){
   const q=question(),r=q.result;
   ui.question.textContent=q.questionText;ui.meta.textContent=q.questionId+' · '+q.kind;
+  const draft=candidate();
+  ui.candidateAnswer.textContent=draft?.finalAnswerText||'(AI 답변 초안 없음)';
+  ui.draftStatus.textContent=draft?'AI 제안 판정: '+draft.proposedStatus:'AI 제안 판정 없음';
+  ui.useDraft.disabled=!draft;
   ui.questionStatus.textContent=r.status;ui.questionStatus.className=r.status==='APPROVE'?'tag green':'tag caution';
   renderCompare();renderNav();
   ui.anchors.replaceChildren();
@@ -170,10 +200,12 @@
    ui.absence.value=r.absenceRationale||'';ui.fullMovie.checked=r.fullMovieReviewed;
    ui.viewed.checked=r.operatorViewedSource;
    setEvidence(q,r.finalEvidence);
+  }else if(r.status==='PENDING'&&draft){
+   fillFromAiCandidate(false);
   }else{
    loadFromReviewer('A');
   }
-  ui.rationale.value=r.rationale||'';
+  ui.rationale.value=r.status==='PENDING'?(draft?.rationale||''):(r.rationale||'');
   setVerdictVisibility();
   dirty=false;
  }
@@ -285,6 +317,7 @@
     localStartMs:null,localEndMs:null,observationNote:''});
    setEvidence(question(),list);dirtyNotice();
   });
+  ui.useDraft.addEventListener('click',useAiDraft);
   ui.save.addEventListener('click',save);
   window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
   try{
@@ -292,6 +325,7 @@
    if(!r.ok)throw Error(v.error||'세션 로드 실패');
    if(v.record.kind!=='G2G_LOCAL_OPERATOR_ADJUDICATION_V01')throw Error('운영자 전용 판정 파일 아님');
    packet=v.record;revision=v.revision;sources=v.sources;cues=v.cues;waveform=v.waveform;
+   aiDraftSuggestions=v.aiDraftSuggestions||{};
    ui.film.textContent=v.film;ui.operator.textContent=v.operatorCode;
    select(0);tick();requestAnimationFrame(animate);
   }catch(e){announce('최종 판정 웹 로드 실패: '+e.message,true);ui.save.disabled=true;}
