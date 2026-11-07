@@ -26,6 +26,21 @@ foreach ($file in @($author,$reviewA,$reviewB)) {
  }
 }
 if ($Mode -eq 'Serve' -and -not (Test-Path -LiteralPath $record)) {
+ # First-run immutable source snapshot. The existing 2026-11-06 backup can predate the latest SIN-05 edits.
+ $stamp = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + ([guid]::NewGuid().ToString('N').Substring(0,8))
+ $snapshot = Join-Path $root ("G2G-SourceSnapshots\$Film\$stamp")
+ New-Item -ItemType Directory -Path $snapshot -ErrorAction Stop | Out-Null
+ $manifest = @()
+ foreach ($file in @($author,$reviewA,$reviewB)) {
+  $dest = Join-Path $snapshot (Split-Path -Leaf $file)
+  Copy-Item -LiteralPath $file -Destination $dest -ErrorAction Stop
+  $before = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash
+  $after = (Get-FileHash -LiteralPath $dest -Algorithm SHA256).Hash
+  if ($before -cne $after) { throw 'G2G_FAIL_CLOSED: snapshot SHA256 mismatch' }
+  $manifest += [PSCustomObject]@{ Name = (Split-Path -Leaf $file); Sha256 = $before.ToLowerInvariant() }
+ }
+ $manifest | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $snapshot 'SHA256-manifest.json') -Encoding UTF8
+ Write-Host ('G2G_PRIVATE_SOURCE_SNAPSHOT_COMPLETE: '+$snapshot)
  New-Item -ItemType Directory -Path $private -Force | Out-Null
  & $node.Source $cli plan --author $author --review-a $reviewA --review-b $reviewB --operator $OperatorCode --out $record
  if ($LASTEXITCODE -ne 0) { throw 'G2G_FAIL_CLOSED: cannot create operator adjudication record' }
