@@ -9,6 +9,7 @@ const g2d=require('../g2d-human-review.cjs');
 const g2e=require('../g2e-gold-pilot.cjs');
 const g2f=require('../g2f-assisted-review.cjs');
 const g2g=require('../g2g-final-adjudication.cjs');
+const proposal=require('../g2g-adjudication-proposals.cjs');
 const web=require('../g2g-final-adjudication-server.cjs');
 function tmp(){return fs.mkdtempSync(path.join(os.tmpdir(),'yu-g2g-op-'));}
 function sourcePacket(film){
@@ -208,6 +209,14 @@ test('G2-G loopback API shows reviewer A/B + G2-E source but writes only operato
    assert.equal(raw.status,200);assert.equal(body.record.kind,g2g.TYPE);
    assert.equal(body.sources.reviewerA.length,6);assert.equal(body.sources.reviewerB.length,6);
    assert.equal(body.sources.g2eAuthor.length,6);
+   assert.equal(Object.keys(body.aiDraftSuggestions).length,6);
+   assert.equal(body.aiDraftSuggestions['G2E-SIN-01'].proposedStatus,'APPROVE');
+   assert.equal(body.aiDraftSuggestions['G2E-SIN-06'].proposedStatus,'HOLD');
+   assert.equal(body.aiDraftSuggestions['G2E-SIN-05'].finalEvidence.length,2);
+   assert.equal(body.summary.operatorApproved,0);
+   assert.equal(body.record.questions.every(q=>q.result.status==='PENDING'),true);
+   assert.equal(body.limits.aiDraftSuggestionsUnverified,true);
+   assert.equal(body.limits.operatorDecisionRemainsPendingUntilSaved,true);
    assert.equal(body.limits.blindGoldApproved,0);assert.equal(body.limits.g3Authorized,false);
    const forged=structuredClone(body.record);forged.g3Authorized=true;
    const rejected=await fetch(url+'api/save',{method:'POST',headers:{Origin:url.slice(0,-1),'Content-Type':'application/json'},
@@ -235,4 +244,71 @@ test('G2-G static operator web has all referenced fields and no network external
  assert.ok(!client.includes('https://'));
  assert.ok(html.includes('G2-G'));
  assert.ok(html.includes('Gold 승인'));
+ assert.ok(html.includes('id="candidateAnswer"'));
+ assert.ok(html.includes('id="draftStatus"'));
+ assert.ok(html.includes('id="useDraft"'));
+ assert.ok(client.includes('fillFromAiCandidate(false)'));
+ assert.ok(client.includes("r.status==='PENDING'&&draft"));
+ assert.ok(client.includes('ui.viewed.checked=false;ui.fullMovie.checked=false;'));
+ assert.ok(client.includes('ui.useDraft.addEventListener'));
+ assert.ok(!html.includes('id="aiCaveat"'));
+});
+
+
+test('G2-G AI draft candidates exist for all 12 items with author-like observations and no pre-approved operator decisions',()=>{
+ for(const film of ['Sintel','TearsOfSteel']){
+  const e=fixture(film);
+  try{
+   g2g.plan(files(e),'FINAL_OPERATOR',e.recordFile);
+   const before=fs.readFileSync(e.recordFile,'utf8');
+   const record=get(e.recordFile);
+   const suggestions=proposal.suggestions(film,record.questions);
+   assert.equal(Object.keys(suggestions).length,6);
+   for(const q of record.questions){
+    const x=suggestions[q.questionId];
+    assert.ok(x,'missing AI candidate for '+q.questionId);
+    assert.equal(x.fromAiDraft,true);
+    assert.equal(x.operatorConfirmed,false);
+    assert.equal(x.selectedBasis,'CUSTOM');
+    assert.ok(['APPROVE','HOLD','REVISE'].includes(x.proposedStatus));
+    assert.ok(x.rationale.length>=20);
+    assert.ok(x.finalAnswerText.length>=8);
+    assert.equal(x.finalVerdict,q.kind==='UNSUPPORTED'?'UNSUPPORTED':'SUPPORTED');
+    assert.equal(x.finalEvidence.length,q.kind==='TEMPORAL'?2:q.kind==='UNSUPPORTED'?0:1);
+    for(const ev of x.finalEvidence){
+     assert.ok(ev.observationNote.length>=18);
+     assert.doesNotMatch(ev.observationNote,/검수해야|제안되었다|AI 시점/);
+    }
+    assert.equal(q.result.status,'PENDING','AI draft cannot silently approve '+q.questionId);
+    assert.equal(q.result.operatorViewedSource,false);
+   }
+   const unverified=film==='Sintel'?'G2E-SIN-06':'G2E-TOS-06';
+   assert.equal(suggestions[unverified].proposedStatus,'HOLD');
+   assert.ok(suggestions[unverified].absenceRationale.length>=20);
+   assert.equal(fs.readFileSync(e.recordFile,'utf8'),before,'suggestions must not write operator record');
+   assert.equal(g2g.load(e.recordFile,files(e)).summary.operatorApproved,0);
+  }finally{cleanup(e);}
+ }
+});
+test('AI draft candidate may populate form but cannot pass APPROVE gate without explicit operator source confirmation',()=>{
+ const e=fixture();try{
+  g2g.plan(files(e),'FINAL_OPERATOR',e.recordFile);
+  const before=fs.readFileSync(e.recordFile,'utf8'),p=get(e.recordFile);
+  const suggestion=proposal.suggestions('Sintel',p.questions)['G2E-SIN-01'];
+  const q=p.questions[0],r=q.result;
+  r.status=suggestion.proposedStatus;
+  r.finalVerdict=suggestion.finalVerdict;
+  r.finalAnswerText=suggestion.finalAnswerText;
+  r.finalEvidence=suggestion.finalEvidence;
+  r.absenceRationale=suggestion.absenceRationale;
+  r.rationale=suggestion.rationale;
+  r.selectedBasis=suggestion.selectedBasis;
+  // AI answers alone cannot claim the operator has watched the film.
+  assert.equal(r.operatorViewedSource,false);
+  assert.throws(()=>g2g.validate(p),/human original source review/);
+  assert.equal(fs.readFileSync(e.recordFile,'utf8'),before,'failed validation must not write file');
+  r.operatorViewedSource=true;assert.equal(g2g.validate(p).operatorApproved,1);
+  assert.equal(g2g.validate(p).independentBlindGoldApproved,0);
+  assert.equal(g2g.validate(p).g3Authorized,false);
+ }finally{cleanup(e);}
 });
