@@ -461,6 +461,9 @@ export function LoginPage() {
           </p>
           </>
           )}
+          <p className="demo-notice">
+            <Link to="/account/server">Spring 서버 회원 로그인 (데모와 별도)</Link>
+          </p>
         </div>
       </section>
       {dialog && (
