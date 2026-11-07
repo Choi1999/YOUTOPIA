@@ -5,6 +5,7 @@ import { AppShell } from "../layouts/AppShell";
 import { DemoPlaceholderPage } from "../pages/DemoPlaceholderPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { LoginPage } from "../pages/auth/LoginPage";
+import { ServerAccountPage } from "../pages/auth/ServerAccountPage";
 import { YoutubeConnectionCompletePage } from "../pages/youtube/YoutubeConnectionCompletePage";
 import { YoutubeConnectionPage } from "../pages/youtube/YoutubeConnectionPage";
 import { CollectionStatusPage } from "../pages/projects/CollectionStatusPage";
@@ -70,6 +71,7 @@ export function AppRoutes() {
             <Route element={<LoginPage />} path="/login" />
             {/* 내부 페이지는 AppShell을 공유하며 Outlet에 표시된다. */}
             <Route element={<AppShell />}>
+              <Route element={<ServerAccountPage />} path="/account/server" />
               <Route element={<YoutubeConnectionPage />} path="/connect/youtube" />
               <Route element={<YoutubeConnectionCompletePage />} path="/connect/youtube/complete" />
               <Route element={<ProjectCreationPage />} path="/projects/new" />
