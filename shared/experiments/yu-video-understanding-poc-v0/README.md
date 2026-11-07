@@ -355,3 +355,23 @@ $assist = '.\shared\experiments\yu-video-understanding-poc-v0\g2f-assisted-works
 ```
 
 이 단계에서 작성자가 만든 AI 초안의 사실적 타당성은 **직접 영상으로 검증해야 하며**, AI 제안 시각을 그대로 믿고 저장하면 안 된다. 자세한 설명: `docs/research/YU_VIDEO_G2F_INDEPENDENT_GOLD_REVIEW_V01.md`의 12절.
+
+## G2-G — 운영자 최종 판정 (12문항)
+
+G2-F의 리뷰어 A·B가 비블라인드 AI 보조 검수 12문항씩을 완료한 후, 운영자가 원본 영상을 보면서 질문별 APPROVE / REVISE / HOLD를 결정하는 별도 localhost 웹이다. **리뷰어 원본 JSON은 읽기 전용**, 처음 시작할 때 세 입력 파일의 SHA256 보존 스냅샷을 만들며 G2-G 판정만 별도 로컬 JSON에 저장한다.
+
+```powershell
+cd C:\Projects\YOUTOPIA-VIDEO-G2C
+$adjudicate = '.\shared\experiments\yu-video-understanding-poc-v0\g2g-windows-final-adjudication.ps1'
+& $adjudicate -Mode Serve -Film Sintel
+# 작업 완료 후 Ctrl+C로 종료한 뒤
+& $adjudicate -Mode Serve -Film TearsOfSteel
+
+# 운영자 판정 파일 검사·요약
+& $adjudicate -Mode Check -Film Sintel
+& $adjudicate -Mode Report -Film Sintel
+& $adjudicate -Mode Check -Film TearsOfSteel
+& $adjudicate -Mode Report -Film TearsOfSteel
+```
+
+처음에는 6문항 모두 PENDING이고 자동 승인하지 않는다. 운영자가 직접 근거를 확인하고 승인 사유를 남겨야만 개별 APPROVE가 가능하다. G2-G의 APPROVE는 **비블라인드 검수에 대한 운영자 채택**이며 독립 블라인드 Gold 승인이나 G3 승인으로 전이하지 않는다. 상세 절차는 `docs/research/YU_VIDEO_G2G_OPERATOR_FINAL_ADJUDICATION_V01.md` 참조.
