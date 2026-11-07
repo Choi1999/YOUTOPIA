@@ -11,6 +11,7 @@ on:
       - shared/experiments/yu-video-understanding-poc-v0/g2f-open-reviewer-workspace.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2f-export-reviewer-web.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2f-assisted-workspace.ps1
+      - shared/experiments/yu-video-understanding-poc-v0/g2g-windows-final-adjudication.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-open-workspace.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-human-review.cjs
       - .github/workflows/yu-video-g2c-windows-plan.yml
@@ -23,6 +24,7 @@ on:
       - shared/experiments/yu-video-understanding-poc-v0/g2f-open-reviewer-workspace.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2f-export-reviewer-web.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2f-assisted-workspace.ps1
+      - shared/experiments/yu-video-understanding-poc-v0/g2g-windows-final-adjudication.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-open-workspace.ps1
       - shared/experiments/yu-video-understanding-poc-v0/g2d-human-review.cjs
       - .github/workflows/yu-video-g2c-windows-plan.yml
@@ -132,6 +134,17 @@ jobs:
           node --check .\shared\experiments\yu-video-understanding-poc-v0\g2f-assisted-review.cjs
           node --check .\shared\experiments\yu-video-understanding-poc-v0\g2f-assisted-workspace-server.cjs
           node --check .\shared\experiments\yu-video-understanding-poc-v0\g2f-assisted-workspace-client.js
+          $g2gLauncher = (Resolve-Path '.\shared\experiments\yu-video-understanding-poc-v0\g2g-windows-final-adjudication.ps1').Path
+          $g2gTokens = $null
+          $g2gErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile($g2gLauncher, [ref]$g2gTokens, [ref]$g2gErrors) | Out-Null
+          if ($null -ne $g2gErrors -and $g2gErrors.Count -gt 0) {
+            throw ('G2G_OPERATOR_POWERSHELL_PARSE_FAILED: '+($g2gErrors|Out-String))
+          }
+          node --check .\shared\experiments\yu-video-understanding-poc-v0\g2g-final-adjudication.cjs
+          node --check .\shared\experiments\yu-video-understanding-poc-v0\g2g-final-adjudication-server.cjs
+          node --check .\shared\experiments\yu-video-understanding-poc-v0\g2g-final-adjudication-client.js
+          Write-Host 'G2G_OPERATOR_WINDOWS_PARSE_PASS_NO_MEDIA_NO_GOLD_APPROVAL'
           Write-Host 'G2F_AI_ASSISTED_WINDOWS_PARSE_PASS'
           Write-Host 'G2F_REVIEWER_EXPORT_WINDOWS_PARSE_PASS_NO_MOVIE_UPLOAD'
           Write-Host 'G2F_REVIEWER_WEB_WINDOWS_PARSE_PASS_NO_EXTERNAL_MEDIA'
