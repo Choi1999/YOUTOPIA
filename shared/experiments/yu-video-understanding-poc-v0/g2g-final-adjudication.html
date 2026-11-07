@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>YOUTOPIA · G2-G 운영자 최종 판정</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/operator.css">
+<script defer src="/client.js"></script>
+</head>
+<body>
+<header class="topbar">
+ <div class="logo"><span class="mark">Y</span><div><strong>YOUTOPIA <span class="muted">/ QA LAB</span></strong><small>G2-G · 운영자 최종 판정</small></div></div>
+ <div class="header-status">
+  <span class="tag" id="filmBadge">원본 확인 중</span>
+  <span class="tag reviewer" id="operatorBadge">운영자</span>
+  <span class="tag caution">AI 보조 비블라인드 검수 결과</span>
+  <span class="tag outline" id="progressBadge">0/6 결정</span>
+ </div>
+</header>
+<div class="security-note" role="note">A/B 제출 자료는 읽기 전용으로 비교합니다. <strong>APPROVE, REVISE, HOLD는 운영자가 문항별로 결정</strong>하며 AI 수용이나 판정 일치만으로 자동 승인하지 않습니다. 이 단계는 독립 블라인드 Gold 승인이나 G3 허가를 생성하지 않습니다.</div>
+<div class="app">
+ <aside class="sidebar" aria-label="최종 판정 대상">
+  <div class="sidebar-head"><strong>최종 판정 · 6문항</strong><small>문항 선택 후 원본 및 A/B 증거를 대조하세요.</small></div>
+  <nav class="question-nav" id="questionNav"></nav>
+  <div class="sidebar-progress">
+   <div class="progress-title"><span>운영자 결정</span><strong id="progressText">0/6</strong></div>
+   <div class="track"><div class="fill" id="progressBar"></div></div>
+   <p>APPROVE: 확인 후 정답 채택 · REVISE: 보완 요구 · HOLD: 근거 부족 또는 판단 보류</p>
+  </div>
+ </aside>
+ <main class="workspace adjudication-workspace">
+  <section class="movie-panel panel" aria-label="원본 영상과 영어 자막">
+   <div class="panel-header"><div><h2>공식 로컬 원본</h2><p>원본 파일 SHA-256 확인 · 외부 업로드 없음</p></div><span class="tag green">동일 원본</span></div>
+   <div class="movie-box"><video id="movie" src="/movie" controls playsinline preload="metadata"></video><div class="subtitle" id="subtitle"></div></div>
+   <div class="transport">
+    <button type="button" id="back5">−5초</button>
+    <button type="button" id="back01">−0.1초</button>
+    <button type="button" id="play">재생 / 일시정지</button>
+    <button type="button" id="forward01">+0.1초</button>
+    <button type="button" id="forward5">+5초</button>
+    <output class="clock" id="clock">00:00.000</output>
+   </div>
+   <div class="operator-anchors" id="anchors"></div>
+   <div class="wave-group">
+    <div class="wave-header"><strong>오디오 파형 · 자막 구간</strong><label>표시 범위<select id="zoom"><option value="20">20초</option><option value="60" selected>60초</option><option value="120">120초</option><option value="full">전체</option></select></label></div>
+    <canvas id="wave" width="1200" height="140" role="img" aria-label="오디오 파형, 자막과 재생 위치"></canvas>
+   </div>
+   <div class="caption-row"><span id="cueNumber">자막 대기</span><strong id="cueText">재생 시 현재 대사가 표시됩니다.</strong></div>
+   <div class="comparison">
+    <h3>검수자 A·B 기록 비교</h3>
+    <div id="reviewerComparisons" class="reviewer-cards"></div>
+    <details class="operator-author"><summary>G2-E 작성자 초안 확인 (참고용)</summary><p id="authorAnswer">초안을 불러오는 중입니다.</p></details>
+   </div>
+  </section>
+  <section class="answer-panel panel" aria-label="운영자 문항별 판정">
+   <div class="panel-header"><div><h2>운영자 최종 판정</h2><p id="questionMeta"></p></div><span class="tag" id="questionStatus">PENDING</span></div>
+   <div class="body">
+    <p id="questionText" class="question"></p>
+    <label>판정
+     <select id="status">
+      <option value="PENDING">PENDING — 아직 판정하지 않음</option>
+      <option value="APPROVE">APPROVE — 영상 근거 확인 후 채택</option>
+      <option value="REVISE">REVISE — 답변 또는 근거 보완 요구</option>
+      <option value="HOLD">HOLD — 판단 보류</option>
+     </select>
+    </label>
+    <div id="approvedFields" hidden>
+     <label>근거로 채택할 초안
+      <select id="basis"><option value="A">리뷰어 A 기록</option><option value="B">리뷰어 B 기록</option><option value="CUSTOM">운영자 직접 편집</option></select>
+     </label>
+     <label>최종 답변 유형
+      <select id="verdict"><option value="SUPPORTED">SUPPORTED</option><option value="UNSUPPORTED">UNSUPPORTED</option></select>
+     </label>
+     <label>최종 답변
+      <textarea id="finalAnswer" rows="3"></textarea>
+     </label>
+     <div id="supportedFields">
+      <div class="evidence-heading"><strong>최종 근거 구간</strong><span>운영자가 실제 확인한 시각·관찰 내용</span></div>
+      <div id="finalEvidence"></div>
+      <button type="button" id="addEvidence" class="subtle">+ 근거 추가</button>
+     </div>
+     <div id="unsupportedFields" hidden>
+      <label>영상에서 근거가 없다고 판단한 이유
+       <textarea id="absenceRationale" rows="3"></textarea>
+      </label>
+      <label class="check-line"><input type="checkbox" id="fullMovie"> 원본 영화 전체에서 근거 부재를 직접 확인했습니다.</label>
+     </div>
+     <label class="check-line"><input type="checkbox" id="viewed"> 최종 판정자로서 원본 영상·자막의 해당 근거를 직접 확인했습니다.</label>
+    </div>
+    <label>판정 근거 / 보완·보류 사유 (필수)
+     <textarea id="rationale" rows="3" placeholder="어떤 사실을 확인했는지 또는 추가로 무엇을 확인해야 하는지 작성하세요."></textarea>
+    </label>
+    <div class="review-actions"><button type="button" id="save" class="primary">운영자 판정 저장</button><span class="tip">G2-G의 별도 로컬 JSON만 수정됩니다. A/B 기록은 보존됩니다.</span></div>
+    <div id="feedback" class="alert" role="status">문항별 판정과 사유를 입력하세요.</div>
+   </div>
+  </section>
+ </main>
+</div>
+<footer>G2-G 운영자 최종 판정 · 원본 검수 패킷 읽기 전용 · 비블라인드 평가 · Gold 독립 승인 0 · G3 미승인</footer>
+</body>
+</html>
