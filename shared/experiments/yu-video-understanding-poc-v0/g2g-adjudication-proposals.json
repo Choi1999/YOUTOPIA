@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "id": "YU_VIDEO_G2G_AI_OPERATOR_DRAFTS_V01",
+  "status": "AI_CANDIDATE_ONLY_NOT_OPERATOR_DECISIONS",
+  "videoPersonallyWatchedByAssistant": false,
+  "priorReviewerExposure": "TWO_NON_BLIND_AI_ASSISTED_REPORTS",
+  "operatorDecisionsAlreadyGranted": 0,
+  "independentBlindGoldApproved": 0,
+  "g3Authorized": false,
+  "externalProviderCalls": 0,
+  "actualSpendUsd": 0,
+  "items": [
+    {
+      "questionId": "G2E-SIN-01",
+      "film": "Sintel",
+      "proposedStatus": "APPROVE",
+      "rationale": "01:47.250~01:49.429 구간의 음성 발화가 검의 어두운 과거를 설명하는 내용으로 구성되어 있어 질문의 핵심 발화 요지에 대응한다."
+    },
+    {
+      "questionId": "G2E-SIN-02",
+      "film": "Sintel",
+      "proposedStatus": "APPROVE",
+      "rationale": "03:27.250~03:29.739 구간의 발화에서 치료가 거의 끝나간다는 내용을 전달하며, 답변이 해당 발화의 핵심 정보를 요약한다."
+    },
+    {
+      "questionId": "G2E-SIN-03",
+      "film": "Sintel",
+      "proposedStatus": "APPROVE",
+      "rationale": "01:28.011~01:30.418 구간의 프레임에는 인물이 지팡이를 끌며 눈 덮인 설원을 이동하는 동작이 나타나며, 제시된 답변과 행동이 대응한다."
+    },
+    {
+      "questionId": "G2E-SIN-04",
+      "film": "Sintel",
+      "proposedStatus": "APPROVE",
+      "rationale": "07:24.016~07:25.516 구간의 프레임에서는 인물이 입에 물고 있던 파이프를 입에서 떼는 동작이 나타나며, 질문의 주요 행동을 설명한다."
+    },
+    {
+      "questionId": "G2E-SIN-05",
+      "film": "Sintel",
+      "proposedStatus": "APPROVE",
+      "rationale": "01:28 부근의 설원 이동 장면이 먼저 나오고 07:24 부근의 파이프를 입에서 떼는 동작이 뒤따른다. 두 근거 구간의 시간적 선후가 답변과 일치한다."
+    },
+    {
+      "questionId": "G2E-SIN-06",
+      "film": "Sintel",
+      "proposedStatus": "HOLD",
+      "rationale": "화면 밖 이동의 시작 시각과 총 소요 시간이 명시되지 않았다는 결론은 영화 전체에 대한 부재 판단을 전제로 한다. 부분 장면만으로는 확정적인 부재 판정을 성립시키기 어렵다."
+    },
+    {
+      "questionId": "G2E-TOS-01",
+      "film": "TearsOfSteel",
+      "proposedStatus": "APPROVE",
+      "rationale": "00:23.000~00:24.500 구간에서는 톰을 향해 그의 태도를 비난하는 발화가 제시되며, 답변이 화자의 핵심 메시지를 반영한다."
+    },
+    {
+      "questionId": "G2E-TOS-02",
+      "film": "TearsOfSteel",
+      "proposedStatus": "APPROVE",
+      "rationale": "05:18.000~05:20.000 구간의 발화에는 각자의 열정을 따라야 한다는 취지가 담겨 있으며, 답변이 해당 구간의 의미를 요약한다."
+    },
+    {
+      "questionId": "G2E-TOS-03",
+      "film": "TearsOfSteel",
+      "proposedStatus": "APPROVE",
+      "rationale": "01:13.417~01:15.417 부근에서는 종탑의 무장한 인물이 소총 조준경으로 바깥을 살피는 동작이 나타나며, 질문에서 요구한 시각적 행동에 대응한다."
+    },
+    {
+      "questionId": "G2E-TOS-04",
+      "film": "TearsOfSteel",
+      "proposedStatus": "APPROVE",
+      "rationale": "06:07.084~06:09.084 부근의 프레임에서 통제실 인물들이 기억 재현 실험 진행 상황을 지켜보는 장면이 나타나며, 답변이 그 움직임을 기술한다."
+    },
+    {
+      "questionId": "G2E-TOS-05",
+      "film": "TearsOfSteel",
+      "proposedStatus": "APPROVE",
+      "rationale": "01:13 부근의 종탑 조준 장면이 먼저 나타나고 06:07 부근의 통제실 실험 관찰 장면이 나중에 나온다. 두 사건의 순서가 답변의 시간 순서와 대응한다."
+    },
+    {
+      "questionId": "G2E-TOS-06",
+      "film": "TearsOfSteel",
+      "proposedStatus": "HOLD",
+      "rationale": "종탑 도착 전 이동을 시작한 시각이나 이동 소요시간이 영화 전체에 제시되지 않는다는 정보 부재는 장면별 추정만으로 확정되지 않는다. 부재 판정의 범위가 넓다."
+    }
+  ]
+}
