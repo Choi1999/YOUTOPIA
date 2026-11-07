@@ -6,6 +6,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
 const g2f=require('./g2f-assisted-review.cjs');
+const g2e=require('./g2e-gold-pilot.cjs');
 const TYPE='G2G_LOCAL_OPERATOR_ADJUDICATION_V01';
 const STATUSES=['PENDING','APPROVE','REVISE','HOLD'];
 const FIELDS=['schemaVersion','kind','film','publisherEdition','operatorCode','durationMs',
@@ -24,7 +25,7 @@ function isHash(s){return typeof s==='string'&&/^[a-f0-9]{64}$/.test(s);}
 function words(x,min=20,max=1200){return typeof x==='string'&&x.trim().length>=min&&x.length<=max;}
 function readJSON(file){
  gate(typeof file==='string'&&path.isAbsolute(file)&&path.extname(file).toLowerCase()==='.json','absolute local JSON filename');
- const p=g2f.sourceDraft; // preserve exact required G2-F source validation by calling from loadInputs.
+ g2e.safeJsonFile(file,{mustExist:true}); // reject repo paths, symlinks and missing files
  const stat=fs.lstatSync(file);
  gate(stat.isFile()&&!stat.isSymbolicLink()&&stat.size>100&&stat.size<200000,'regular local JSON <=200K');
  return {path:file,raw:fs.readFileSync(file,'utf8')};
@@ -71,6 +72,7 @@ function plan(files,operatorCode,output){
  gate(![files.authorFile,files.reviewAFile,files.reviewBFile].includes(output),'cannot replace source');
  gate(!fs.existsSync(output),'no overwriting previous decisions');
  const dir=path.dirname(output);gate(fs.existsSync(dir)&&fs.statSync(dir).isDirectory(),'destination folder missing');
+ g2e.safeJsonFile(output); // private result must stay OUTSIDE Git and must not overwrite
  const p={schemaVersion:1,kind:TYPE,film:src.author.film,publisherEdition:src.author.publisherEdition,
   operatorCode,durationMs:src.author.localSource.durationMs,
   sourceVideoSha256:src.author.localSource.videoSha256,sourceCaptionSha256:src.author.localSource.captionSha256,
