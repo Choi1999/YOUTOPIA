@@ -22,3 +22,8 @@
 #finalEvidence .evidence-card label{font-size:11px}
 @media(max-width:1300px){.adjudication-workspace{grid-template-columns:1fr}.adjudication-workspace .movie-panel{grid-row:auto}}
 @media(min-width:1850px){.adjudication-workspace{grid-template-columns:minmax(550px,1.15fr) minmax(480px,.85fr)}}
+
+/* Operator AI candidate controls; answer-only draft content remains separate from adjudication instructions. */
+.g2g-draft-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:9px}
+.g2g-draft-row span{font-size:11px;color:#a8cbde}
+.g2g-draft-row button{font-size:11px}
