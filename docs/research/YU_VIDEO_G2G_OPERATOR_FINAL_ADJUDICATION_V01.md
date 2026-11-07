@@ -64,3 +64,27 @@ Tears of Steel 로컬 2012 HD판과 YouTube 버전 간 과거 시점 차이 보�
 ## 5. QA 범위
 
 Node 24 합성 CI는 원본 JSON의 변경 차단, 운영자 승인명시성, 근거의 최소 범위, 자기 확인 체크, 실영상 해시 일치 준비, 로컬 API 기록, Gold/G3 차단을 검증한다. Windows의 PowerShell 구문검사는 실제 사용자 로컬 영화가 없는 환경에서 수행한다. 실제 Chrome/Edge 화면 QA와 영상 사실 확인은 운영자 PC에서 진행해야 한다.
+
+
+## 6. G2-G AI 모범답변 및 판정 사유 초안 자동 입력
+
+운영자 요청: G2-F에서처럼 운영자 G2-G 최종 판정 웹에서도 AI가 답변·근거·관찰 기록·판정 이유의 초안을 제공하도록 변경했다. 운영자는 AI 초안을 채택·수정·보류할 수 있고, 판정만 직접 확정한다.
+
+- 초안 원장: `shared/experiments/yu-video-understanding-poc-v0/g2g-adjudication-proposals.json` (12문항 제안 판정·판정 이유).
+- 초안 합성: `g2g-adjudication-proposals.cjs`. 기존 `g2f-assisted-proposals.json`과 `g2f-assisted-observation-drafts.json`에서 AI 모범답변·후보 증거 시간·장면 서술·UNSUPPORTED 사유를 참조한다.
+- 추천 상태: SPEECH/VISUAL/TEMPORAL 총 10개는 `APPROVE` **후보**; SIN-06과 TOS-06의 UNSUPPORTED 두 문항은 `HOLD` **후보**. 실제 영상 검수 전에는 모두 미확정이다.
+- AI 초안 패널에는 사용자 요구에 따라 **모범답변 문장만** 표시한다. 판정 제안과 사유는 별도의 조작 가능한 입력란에 표시한다. AI 시점의 업무 지시·검수 메타 설명을 모범답변 문장에 섞지 않는다.
+- 화면에서 판정이 `PENDING`인 문항은 답변·근거·관찰 기록·사유가 미저장 입력 상태로 미리 채워지지만, 결정 상태 자체는 **PENDING으로 유지**된다.
+- 사용자가 `AI 초안 입력란에 적용`을 누르면 추천 결정까지 입력란에 반영된다. 그래도 **영상을 봤다는 체크는 자동으로 켜지지 않고 저장도 자동으로 수행되지 않는다**. 저장하려면 실제로 운영자가 원본을 확인해 유효 근거를 남겨야 한다.
+- 이미 저장된 `APPROVE/REVISE/HOLD` 문항은 그 내용을 우선 표시한다. 다시 초안을 불러올 때 확인을 요구하고, **저장된 G2-G JSON을 자동 덮어쓰지 않는다**.
+- 원래 G2-E/G2-F 원본 및 과거 스냅샷은 절대로 변경하지 않는다. 기존 G2-G 로컬 파일의 불변 출처 해시·승인 스키마도 변경하지 않는다.
+- 제안은 모두 **실제 영상을 AI가 직접 확인한 것이 아닌 미검증 후보**이다. 운영자 판정 완료가 독립 블라인드 Gold 승인이나 G3 실행 권한이 되지는 않는다.
+
+### Windows 실행
+
+기존 서버 Ctrl+C 종료 → Git Worktree 최신화 → `g2g-windows-final-adjudication.ps1 -Mode Serve -Film Sintel` 로 재실행한다. 기존 G2-G 판정 파일이 있다면 재사용하며, 없는 경우에만 최초 원본 스냅샷과 PENDING 6문항 파일을 만든다.
+
+### 자동 검증
+
+- GitHub Actions Node 24 오프라인 테스트: 12문항 후보의 상태·답변·근거·사유 완전성, 화면 AI 초안 제공, 운영자 미확정 기본값, 이미 저장된 운영자 결정 보호, 원본 확인 없는 APPROVE 저장 차단, Gold/G3 기본 거부 확인.
+- Windows Chrome/Edge 현장 UI QA는 별도로 수행한다. 실제 원본 사실 판정은 자동화하지 않는다.
