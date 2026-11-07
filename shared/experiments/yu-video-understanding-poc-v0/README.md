@@ -374,4 +374,4 @@ $adjudicate = '.\shared\experiments\yu-video-understanding-poc-v0\g2g-windows-fi
 & $adjudicate -Mode Report -Film TearsOfSteel
 ```
 
-처음에는 6문항 모두 PENDING이고 자동 승인하지 않는다. 운영자가 직접 근거를 확인하고 승인 사유를 남겨야만 개별 APPROVE가 가능하다. G2-G의 APPROVE는 **비블라인드 검수에 대한 운영자 채택**이며 독립 블라인드 Gold 승인이나 G3 승인으로 전이하지 않는다. 상세 절차는 `docs/research/YU_VIDEO_G2G_OPERATOR_FINAL_ADJUDICATION_V01.md` 참조.
+처음에는 6문항 모두 PENDING이고 자동 승인하지 않는다. AI 모범답변·근거·관찰 기록·판정 사유의 초안이 자동 채워지며, `AI 초안 입력란에 적용` 버튼으로 추천 판정을 명시적으로 불러올 수 있다. 기본 추천은 SUPPORTED 10문항 APPROVE 후보, UNSUPPORTED 2문항 HOLD 후보이지만, 둘 다 실제 운영자의 판정이 아니다. 운영자가 직접 근거를 확인하고 승인 사유를 남겨야만 개별 APPROVE가 가능하다. G2-G의 APPROVE는 **비블라인드 검수에 대한 운영자 채택**이며 독립 블라인드 Gold 승인이나 G3 승인으로 전이하지 않는다. 상세 절차는 `docs/research/YU_VIDEO_G2G_OPERATOR_FINAL_ADJUDICATION_V01.md` 참조.
