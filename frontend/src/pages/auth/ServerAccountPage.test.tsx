@@ -71,6 +71,20 @@ describe("UI-R04-AO — Spring account UI independent of demo login", () => {
     expect(logout).toHaveBeenCalledOnce();
   });
 
+  it("treats rejected credentials as guest, not as backend success or outage", async () => {
+    vi.spyOn(serverMemberClient,"login")
+      .mockRejectedValue(new ServerSessionError("LOGIN_REJECTED"));
+    const user=userEvent.setup();
+    mount();
+    await user.type(screen.getByLabelText("서버 계정 이메일"),"member@example.invalid");
+    await user.type(screen.getByLabelText("비밀번호"),"incorrect");
+    await user.click(screen.getByRole("button",{name:"Spring 회원 로그인"}));
+    await waitFor(() => expect(screen.getByText("서버 회원 로그인 안 됨"))
+      .toBeInTheDocument());
+    expect(screen.getByRole("alert")).toHaveTextContent("서버가 로그인을 승인하지 않았습니다");
+    expect(screen.queryByText("서버에서 인증된 USER 회원")).not.toBeInTheDocument();
+  });
+
   it("rejects unconfirmed sessions without a demo-account fallback", async () => {
     vi.spyOn(serverMemberClient,"login")
       .mockRejectedValue(new ServerSessionError("SESSION_NOT_CONFIRMED"));
