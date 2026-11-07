@@ -16,6 +16,10 @@
 *.p12
 *.pfx
 
+# Windows DPAPI credential blob exports are never committed.
+*.dpapi
+*.dpapi.*
+
 
 # ------------------------------------------------------------
 # Python
