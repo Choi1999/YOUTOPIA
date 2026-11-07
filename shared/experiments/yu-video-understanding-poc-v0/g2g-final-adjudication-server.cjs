@@ -6,6 +6,7 @@ const path=require('node:path');
 const http=require('node:http');
 const crypto=require('node:crypto');
 const adjudication=require('./g2g-final-adjudication.cjs');
+const aiDrafts=require('./g2g-adjudication-proposals.cjs');
 const media=require('./g2d-workspace-media.cjs');
 const g2c=require('./g2c-offline-verifier.cjs');
 const assistWeb=require('./g2f-assisted-workspace-server.cjs');
@@ -49,11 +50,13 @@ function session(state){
  gate(current.record.operatorCode===state.operator&&current.record.film===state.film,'operator or film mismatch');
  return {film:state.film,operatorCode:state.operator,record:current.record,
   revision:current.revision,summary:current.summary,cues:state.cues,waveform:state.waveform,
+  aiDraftSuggestions:aiDrafts.suggestions(state.film,current.record.questions),
   sources:{reviewerA:current.sources.a.questions.map(x=>({questionId:x.questionId,review:x.review})),
    reviewerB:current.sources.b.questions.map(x=>({questionId:x.questionId,review:x.review})),
    g2eAuthor:current.sources.author.questions.map(x=>({questionId:x.id,answerability:x.gold.answerability,
     answerText:x.gold.answerText}))},
-  limits:{assistedNonBlind:true,blindGoldApproved:0,g3Authorized:false,
+  limits:{assistedNonBlind:true,aiDraftSuggestionsUnverified:true,
+   operatorDecisionRemainsPendingUntilSaved:true,blindGoldApproved:0,g3Authorized:false,
    operatorCanOnlyWriteOwnAdjudicationRecord:true,publisherVideoSha256Verified:true,
    publisherSubtitleSha256Verified:true,sourceReportsFrozenByHash:true}};
 }
