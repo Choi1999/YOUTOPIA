@@ -89,6 +89,14 @@ export class ServerMemberClient {
     path: (typeof URLS)[keyof typeof URLS],
     init: { method?: "GET" | "POST"; csrf?: string; body?: string } = {},
   ): Promise<Response> {
+    // Never transmit a member password over remote plain HTTP. Localhost
+    // development is the only HTTP exception, with backend validation intact.
+    if (typeof window !== "undefined" &&
+        window.location.protocol !== "https:" &&
+        !(window.location.protocol === "http:" &&
+          ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname))) {
+      throw new ServerSessionError("NETWORK_UNAVAILABLE");
+    }
     try {
       const headers: Record<string, string> = { Accept: "application/json" };
       if (init.csrf) headers["X-CSRF-TOKEN"] = init.csrf;
