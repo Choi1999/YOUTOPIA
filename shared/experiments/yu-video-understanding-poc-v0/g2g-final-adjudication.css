@@ -1,0 +1,24 @@
+
+.adjudication-workspace{grid-template-columns:minmax(360px,1.1fr) minmax(350px,.9fr);gap:15px}
+.adjudication-workspace .movie-panel{grid-row:1/3}
+.operator-anchors{display:flex;gap:6px;flex-wrap:wrap;padding:10px 15px;border-bottom:1px solid var(--line)}
+.operator-anchors button{font-size:11px;background:#142e42;border:1px solid #417791}
+.comparison{padding:14px 16px 20px;border-top:1px solid var(--line)}
+.comparison h3{margin:0 0 12px;font-size:13px;color:#dceaf7}
+.reviewer-cards{display:grid;gap:12px}
+.reviewer-card{border:1px solid #445a72;border-radius:9px;background:#101c2c;padding:12px;display:flex;flex-direction:column;gap:9px}
+.reviewer-card h4{margin:0;font-size:12px;display:flex;justify-content:space-between;gap:5px}
+.reviewer-card p{margin:0;white-space:pre-wrap;font-size:12px}
+.reviewer-card .detail{font-size:11px;line-height:1.6;color:#b9cee0;white-space:pre-wrap;background:#0b1827;padding:9px;border-radius:7px}
+.reviewer-card .detail strong{color:#edc689}
+.reviewer-card .detail button{display:block;font-size:10px;padding:4px 8px;margin:4px 0}
+.operator-author{margin-top:12px;border:1px solid #364d64;background:#101b27;padding:10px 12px;border-radius:8px}
+.operator-author summary{cursor:pointer;color:#9fc9df;font-size:12px}
+.operator-author p{font-size:12px;white-space:pre-wrap}
+.check-line{flex-direction:row;align-items:center;gap:9px;line-height:1.55;padding:10px;background:#101b2a;border:1px solid #34485d;border-radius:8px}
+.review-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.review-actions .tip{font-size:11px;color:var(--muted);line-height:1.5}
+#finalEvidence{display:grid;gap:9px}
+#finalEvidence .evidence-card label{font-size:11px}
+@media(max-width:1300px){.adjudication-workspace{grid-template-columns:1fr}.adjudication-workspace .movie-panel{grid-row:auto}}
+@media(min-width:1850px){.adjudication-workspace{grid-template-columns:minmax(550px,1.15fr) minmax(480px,.85fr)}}
