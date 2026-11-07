@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
-  serverMemberClient, serverSessionErrorMessage,
+  serverMemberClient, serverSessionErrorMessage, ServerSessionError,
   type ServerMemberIdentity,
 } from "../../features/server-session/serverMemberSession";
 import "./server-account.css";
@@ -37,7 +37,9 @@ export function ServerAccountPage() {
       await operation();
     } catch (cause) {
       if (mounted.current) {
-        setView({ status: "unavailable" });
+        // Bad credentials are not a server outage; neither outcome grants a role.
+        setView({ status: cause instanceof ServerSessionError &&
+          cause.code === "LOGIN_REJECTED" ? "guest" : "unavailable" });
         setError(serverSessionErrorMessage(cause));
       }
     } finally {
