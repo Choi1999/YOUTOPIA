@@ -58,6 +58,14 @@
    <div class="panel-header"><div><h2>운영자 최종 판정</h2><p id="questionMeta"></p></div><span class="tag" id="questionStatus">PENDING</span></div>
    <div class="body">
     <p id="questionText" class="question"></p>
+    <div class="ai-draft" aria-label="AI 모범답변 초안">
+     <strong>AI 모범답변 초안</strong>
+     <p class="candidate" id="candidateAnswer"></p>
+    </div>
+    <div class="g2g-draft-row">
+     <span id="draftStatus">AI 제안 판정 없음</span>
+     <button type="button" id="useDraft" class="subtle">AI 초안 입력란에 적용</button>
+    </div>
     <label>판정
      <select id="status">
       <option value="PENDING">PENDING — 아직 판정하지 않음</option>
