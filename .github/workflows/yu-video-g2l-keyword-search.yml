@@ -1,0 +1,48 @@
+name: YOUTOPIA G2-L YouTube keyword search boundary
+
+on:
+  push:
+    branches:
+      - feature/yu-video-g2l-youtube-search-boundary-v01
+    paths:
+      - 'frontend/**'
+      - 'shared/experiments/yu-video-understanding-poc-v0/g2l-youtube-search-proxy.cjs'
+      - 'shared/experiments/yu-video-understanding-poc-v0/tests/g2l-youtube-search-proxy.test.cjs'
+      - '.github/workflows/yu-video-g2l-keyword-search.yml'
+  pull_request:
+    branches:
+      - feature/yu-video-g2k-user-keyword-trend-v01
+    paths:
+      - 'frontend/**'
+      - 'shared/experiments/yu-video-understanding-poc-v0/g2l-youtube-search-proxy.cjs'
+      - 'shared/experiments/yu-video-understanding-poc-v0/tests/g2l-youtube-search-proxy.test.cjs'
+      - '.github/workflows/yu-video-g2l-keyword-search.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  local-boundary-and-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '12.9.1'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Offline loopback server tests (fake upstream; no credentials)
+        run: node --test shared/experiments/yu-video-understanding-poc-v0/tests/g2l-youtube-search-proxy.test.cjs
+      - name: Frozen frontend dependencies
+        run: pnpm --dir frontend install --frozen-lockfile
+      - name: Vitest unit and component tests
+        run: pnpm --dir frontend test
+      - name: TypeScript and Vite build
+        run: pnpm --dir frontend build

@@ -1,6 +1,6 @@
 import {render,screen,waitFor,within} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import {describe,expect,it} from "vitest";
+import {describe,expect,it,vi} from "vitest";
 import {KeywordTrendExplorerPage} from "./KeywordTrendExplorerPage";
 
 const csv=[
@@ -50,4 +50,49 @@ describe("G2-K user-driven keyword entry",()=>{
     await waitFor(()=>expect(screen.getByText(/필수 열.*기존 자료는 유지됩니다/)).toBeInTheDocument());
     expect(screen.getByRole("button",{name:"자료 비우기"})).toBeInTheDocument();
   });
+  it("only searches public YouTube video metadata on explicit click",async()=>{
+    const user=userEvent.setup();
+    const fetchMock=vi.fn(async()=>({
+      ok:true,
+      json:async()=>({
+        kind:"YOUTUBE_PUBLIC_VIDEO_SEARCH_V1",
+        source:"YOUTUBE_DATA_API_SEARCH",
+        query:"독일 와인",
+        fetchedAt:"2026-11-09T06:00:00Z",
+        videos:[{
+          videoId:"AbCdefghI12",title:"와인 인터뷰",channelId:"channel1",
+          channelTitle:"공개 채널",publishedAt:"2026-11-09T00:00:00Z",
+          thumbnailUrl:null,videoUrl:"https://www.youtube.com/watch?v=AbCdefghI12",
+        }],
+      }),
+    }));
+    vi.stubGlobal("fetch",fetchMock);
+    try {
+      render(<KeywordTrendExplorerPage/>);
+      await user.type(screen.getByLabelText("어떤 키워드가 궁금한가요?"),"독일 와인");
+      await user.click(screen.getByRole("button",{name:"키워드 적용"}));
+      expect(fetchMock).not.toHaveBeenCalled();
+      await user.click(screen.getByRole("button",{name:"YouTube 영상 검색"}));
+      const live=screen.getByLabelText("실제 YouTube 영상 검색");
+      expect(await within(live).findByText("와인 인터뷰")).toBeInTheDocument();
+      expect(within(live).getByRole("link",{name:/와인 인터뷰/}))
+        .toHaveAttribute("href","https://www.youtube.com/watch?v=AbCdefghI12");
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {vi.unstubAllGlobals();}
+  });
+  it("reports local search server configuration failures clearly",async()=>{
+    const user=userEvent.setup();
+    const fetchMock=vi.fn(async()=>({
+      ok:false,json:async()=>({kind:"ERROR",code:"NOT_CONFIGURED"}),
+    }));
+    vi.stubGlobal("fetch",fetchMock);
+    try {
+      render(<KeywordTrendExplorerPage/>);
+      await user.type(screen.getByLabelText("어떤 키워드가 궁금한가요?"),"서울 축제");
+      await user.click(screen.getByRole("button",{name:"키워드 적용"}));
+      await user.click(screen.getByRole("button",{name:"YouTube 영상 검색"}));
+      expect(await screen.findByRole("alert")).toHaveTextContent("API 키");
+    } finally {vi.unstubAllGlobals();}
+  });
+
 });

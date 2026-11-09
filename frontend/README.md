@@ -160,3 +160,29 @@ pnpm dev
 Open the Vite-printed origin followed by `/analysis/youtube/evidence-explorer`. Movie containers such as MKV/MOV depend on browser codecs; selecting a user-authorized, browser-compatible MP4 from an existing local conversion may be necessary. No video media or private reviewer/Gold files should be committed to Git.
 
 Research and usage contract: `docs/research/YU_VIDEO_G2I_LOCAL_EVIDENCE_EXPLORER_V01.md`. G2-H1 additional source research is paused at the user's direction; G3 real provider calls, operational merges and production integration remain outside scope.
+
+
+## G2-L — explicit YouTube public video search (local experiment only)
+
+YU-51 now has an optional **YouTube 영상 검색** button. It fetches the first page of public video metadata via a separate loopback Node server, using the user's own keyword. It does not discover global trends, collect comments or video files, store data, or call AI models.
+
+From the repository root, in a dedicated Windows PowerShell run:
+
+~~~powershell
+$secret = Read-Host 'YouTube Data API key' -AsSecureString
+$pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secret)
+try {
+  $env:YOUTOPIA_YOUTUBE_API_KEY = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
+} finally {
+  [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer)
+}
+node .\shared\experiments\yu-video-understanding-poc-v0\g2l-youtube-search-proxy.cjs
+# On Ctrl+C exit:
+Remove-Item Env:\YOUTOPIA_YOUTUBE_API_KEY -ErrorAction SilentlyContinue
+~~~
+
+Then run pnpm dev in the frontend directory and open /analysis/youtube/trend-keywords. The Vite dev server proxies /api/youtube/discover to the loopback service at 127.0.0.1:8787. NEVER put API keys in Vite env variables, browser fields, GitHub, screenshots or chat. The secure prompt avoids command-history exposure but process environment is not a production secret vault.
+
+No requests occur at server startup or during CI. Each user click issues at most one bounded search; default local cap 20/day. Successful real YouTube search depends on a configured key and Google Cloud project quotas. G2-K/G2-L Windows browser manual QA remains pending, as does any production integration.
+
+Detailed contract: docs/research/YU_VIDEO_G2L_USER_KEYWORD_YOUTUBE_SEARCH_V01.md.

@@ -1,4 +1,5 @@
-import {useMemo,useRef,useState,type FormEvent,type ChangeEvent} from "react";
+import {useEffect,useMemo,useRef,useState,type FormEvent,type ChangeEvent} from "react";
+import {searchPublicYoutubeVideos,type PublicSearchResult} from "../../features/trend/youtubeSearchClient";
 import {
   importKeywordCsv,inspectKeyword,userKeyword,MAX_CSV_BYTES,
   type Observation,type TrendWindow,
@@ -24,6 +25,12 @@ export function KeywordTrendExplorerPage(){
   const [fileName,setFileName]=useState("");
   const [notice,setNotice]=useState("");
   const reading=useRef(0);
+  const searchVersion=useRef(0);
+  const searchAbort=useRef<AbortController|null>(null);
+  const [liveOrder,setLiveOrder]=useState<"relevance"|"date">("relevance");
+  const [liveBusy,setLiveBusy]=useState(false);
+  const [liveResult,setLiveResult]=useState<PublicSearchResult|null>(null);
+  useEffect(()=>()=>{searchAbort.current?.abort();},[]);
   const result=useMemo(()=>keyword?inspectKeyword(keyword,records,period):null,
     [keyword,records,period]);
   const max=result?.kind==="READY"
@@ -33,6 +40,10 @@ export function KeywordTrendExplorerPage(){
     event.preventDefault();
     const term=userKeyword(draft);
     if(!term){setNotice("1~100자 이내의 키워드나 문구를 입력하세요.");return;}
+    searchVersion.current++;
+    searchAbort.current?.abort();
+    setLiveBusy(false);
+    setLiveResult(null);
     setKeyword(term);
     setNotice("사용자가 입력한 문구 그대로 탐색합니다. 추천 키워드나 자동 확장은 적용하지 않습니다.");
   }
@@ -54,6 +65,19 @@ export function KeywordTrendExplorerPage(){
     }catch{
       if(seq===reading.current)setNotice("CSV를 읽지 못했습니다. 기존 자료는 유지됩니다.");
     }
+  }
+  async function discoverPublicVideos(){
+    if(!keyword||liveBusy)return;
+    const id=++searchVersion.current;
+    searchAbort.current?.abort();
+    const controller=new AbortController();
+    searchAbort.current=controller;
+    setLiveBusy(true);
+    setLiveResult(null);
+    const next=await searchPublicYoutubeVideos(keyword,liveOrder,controller.signal);
+    if(id!==searchVersion.current)return;
+    setLiveBusy(false);
+    setLiveResult(next);
   }
   function clearRecords(){
     ++reading.current;setRecords([]);setFileName("");
@@ -81,7 +105,7 @@ export function KeywordTrendExplorerPage(){
     <section className="keyword-trend__sources" aria-label="자료 및 관측 기간">
       <div>
         <h2>관측 범위</h2>
-        <p>현재는 직접 선택한 CSV 표본만 분석합니다. 실시간 YouTube 검색과 전체 트렌드 추정은 실행하지 않습니다.</p>
+        <p>댓글 반응 분석은 직접 선택한 CSV 표본에 한정됩니다. 실제 YouTube 영상 후보 검색은 아래의 별도 버튼으로 실행합니다.</p>
       </div>
       <label className="keyword-trend__upload">로컬 CSV 불러오기
         <input type="file" accept=".csv,text/csv" aria-label="키워드 관측 CSV"
@@ -97,6 +121,49 @@ export function KeywordTrendExplorerPage(){
       </label>
       {fileName&&<button type="button" className="keyword-trend__clear"
         onClick={clearRecords}>자료 비우기</button>}
+    </section>
+    <section className="keyword-trend__live" aria-label="실제 YouTube 영상 검색">
+      <div className="keyword-trend__live-header">
+        <div>
+          <h2>실제 YouTube 영상 후보</h2>
+          <p>선택한 키워드로 YouTube의 공개 영상 제목·채널·게시일을 찾습니다. 사용자 버튼을 누를 때만 별도 로컬 서버에서 요청합니다.</p>
+        </div>
+        <div className="keyword-trend__live-actions">
+          <label>정렬
+            <select aria-label="YouTube 검색 정렬" value={liveOrder}
+              onChange={e=>setLiveOrder(e.currentTarget.value as "relevance"|"date")}>
+              <option value="relevance">관련도순</option>
+              <option value="date">게시일순</option>
+            </select>
+          </label>
+          <button type="button" disabled={!keyword||liveBusy}
+            onClick={()=>{void discoverPublicVideos();}}>
+            {liveBusy?"검색 중":"YouTube 영상 검색"}
+          </button>
+        </div>
+      </div>
+      {!keyword?<p className="keyword-trend__live-note">먼저 검색어를 직접 입력하고 적용하세요.</p>
+      :liveBusy?<p className="keyword-trend__live-note" role="status">공개 영상 후보를 요청하고 있습니다.</p>
+      :liveResult?.kind==="ERROR"?
+        <p className="keyword-trend__live-error" role="alert">{liveResult.message}</p>
+      :liveResult?.kind==="READY"?
+        <div className="keyword-trend__live-results">
+          <p>{liveResult.videos.length}개 공개 영상 후보 · 조회 시각 {liveResult.fetchedAt} ·
+          첫 페이지 최대 10개. 이 목록은 인기 순위나 댓글 반응 분석 결과가 아닙니다.</p>
+          {liveResult.videos.length?
+            <ol>{liveResult.videos.map(video=>
+              <li key={video.videoId}>
+                <a href={video.videoUrl} target="_blank" rel="noopener noreferrer">
+                  {video.thumbnailUrl&&<img src={video.thumbnailUrl}
+                    alt="" loading="lazy" referrerPolicy="no-referrer"/>}
+                  <span><strong>{video.title||"제목 없음"}</strong>
+                    <small>{video.channelTitle||"채널 정보 없음"} · {video.publishedAt||"게시일 미확인"}</small>
+                  </span>
+                </a>
+              </li>
+            )}</ol>:<p>해당 검색에서 반환된 공개 영상이 없습니다.</p>}
+        </div>
+      :<p className="keyword-trend__live-note">아직 YouTube API 요청을 실행하지 않았습니다. 로컬 검색 서버와 키가 설정된 경우에만 동작합니다.</p>}
     </section>
     {notice&&<p className="keyword-trend__notice" role="status">{notice}</p>}
     {!keyword?(
@@ -165,9 +232,11 @@ export function KeywordTrendExplorerPage(){
       </div>
     ):null}
     <footer className="keyword-trend__disclosure">
-      이 화면은 사용자 CSV 표본의 언급만 계산합니다. 외부 YouTube 검색·API·모델 호출·업로드·영구 저장은 없습니다.
-      댓글의 진위와 표본 대표성, 실제 관심도, 상승·확산·인과관계는 검증되지 않았으며
-      검색어와 자료는 새로고침 시 사라집니다.
+      CSV 댓글 통계는 사용자 파일 표본에만 적용됩니다. 별도의 YouTube 검색 버튼은 로컬 검색 서버가
+      설정된 경우에만 YouTube Data API에서 공개 영상 메타데이터를 조회합니다.
+      API 키는 브라우저로 전송하지 않으며 댓글·영상 원본 다운로드·외부 AI 전송·서버 영구 저장은 수행하지 않습니다.
+      영상 검색 결과는 인기 순위, 실제 관심도, 댓글 분석이나 트렌드 상승의 증거가 아닙니다.
+      검색어와 CSV는 새로고침 시 초기화됩니다.
     </footer>
   </div>;
 }
