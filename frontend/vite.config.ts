@@ -14,9 +14,10 @@ export default defineConfig(({command, mode}) => {
     target: "http://127.0.0.1:8765",
     changeOrigin: false, secure: false, ws: false,
   };
-  // UI-R04-AO: opt-in, local-loopback-only Spring session proxy. Never enabled
-  // in production builds or by default. No broad /api passthrough and no
-  // YouTube/provider endpoints can be reached through this route.
+  // UI-R04-AO/AP: opt-in, local-loopback-only Spring USER session proxy.
+  // Never enabled in production builds or by default. Only four auth routes
+  // and one exact read-only metadata *capability* route; no broad /api
+  // passthrough, metadata content, comments or provider transport.
   const authProxyEnabled = command === "serve" &&
     loadEnv(mode, process.cwd(), "VITE_R04AO_")
       .VITE_R04AO_LOCAL_AUTH_PROXY === "enabled";
