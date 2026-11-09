@@ -9,6 +9,11 @@ export default defineConfig({
         target: "http://127.0.0.1:8787",
         changeOrigin: true,
       },
+      // G2-M top-level comment samples use the same local-only Node proxy.
+      "/api/youtube/comments": {
+        target: "http://127.0.0.1:8787",
+        changeOrigin: true,
+      },
     },
   },
 });
