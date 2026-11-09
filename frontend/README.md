@@ -136,3 +136,27 @@ checks WCAG 2.0/2.1 A/AA axe rules, captures 24 1600×900 QA screenshots, and
 checks responsive layouts at 1024, 1280, 1440, and 1600 pixels. This remains
 frontend simulation and local-browser evidence; no production integration has
 been executed.
+
+
+## YU-49 local video evidence explorer — experiment branch
+
+Route: `/analysis/youtube/evidence-explorer`; reachable from the AppShell analysis sidebar. This is a browser-side product experience, not the G2-F reviewer or G2-G operator adjudication UI.
+
+Only user-selected local files can enter the page: a browser-playable video, optionally an SRT subtitle file, and optionally the local operator's G2-G adjudication JSON. The page converts explicit `APPROVE` + `SUPPORTED` time evidence into clickable chronological cards and markers. `HOLD`/`REVISE` are not displayed as accepted evidence and `UNSUPPORTED` claims never receive invented seek timestamps.
+
+The evidence is marked **operator-reviewed, non-blind**; it is not independently verified Gold. The selected media and imported G2-G JSON are **not SHA-256 compared** within this frontend slice; if the user selects a different edition, evidence timestamps may not align. The source remains the user's responsibility. Do not reuse the front-end labels to authorize external model uploads.
+
+Users can search, filter modalities, navigate to source timestamps, and create temporary, local-only notes. No upload/fetch/AI inference, no persistent comment data, no server storage. Notes disappear on refresh. Import rejects invalid JSON and Gold/G3 approval escalation. React displays SRT/observation text as plain text without interpreting markup.
+
+Run from `frontend/` on the experiment branch:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm test
+pnpm build
+pnpm dev
+```
+
+Open the Vite-printed origin followed by `/analysis/youtube/evidence-explorer`. Movie containers such as MKV/MOV depend on browser codecs; selecting a user-authorized, browser-compatible MP4 from an existing local conversion may be necessary. No video media or private reviewer/Gold files should be committed to Git.
+
+Research and usage contract: `docs/research/YU_VIDEO_G2I_LOCAL_EVIDENCE_EXPLORER_V01.md`. G2-H1 additional source research is paused at the user's direction; G3 real provider calls, operational merges and production integration remain outside scope.
