@@ -119,7 +119,7 @@ describe("YU-49 product-facing local video evidence explorer", () => {
     render(<VideoEvidenceExplorerPage />);
     await user.upload(screen.getByLabelText("로컬 영상 파일"),
       new File(["fake video bytes"], "local-movie-title.mp4", { type: "video/mp4" }));
-    const video = await screen.findByLabelText("선택한 로컬 영상");
+    const video = await screen.findByLabelText("선택한 로컬 영상") as HTMLVideoElement;
     Object.defineProperty(video, "currentTime", { configurable: true, writable: true, value: 0 });
     expect(screen.getByRole("heading", { name: "local-movie-title" })).toBeInTheDocument();
     await user.upload(screen.getByLabelText("G2-G 운영자 판정 JSON"),
