@@ -86,6 +86,7 @@ Implemented API groups (account modules require their configuration):
 - `GET /api/v1/charts/steam/ccu?appIds=570,730&days=7`: latest two observations and exact 24-hour comparisons for explicit native IDs.
 - `GET /api/v1/charts/steam/app-types`: distinct active CCU targets, separating unknown types.
 - `GET /api/v1/youtube/videos/{videoId}/observations?days=7`: native-video cumulative observations without inferred game relevance.
+- `GET /api/v1/youtube/metadata/capabilities`: authenticated USER-only, no-store capability document. It always reports `POLICY_HOLD` / metadata and comment reads unavailable; this is not a YouTube metadata read, does not authenticate provider provenance, and makes zero external requests.
 - `GET /api/v1/charts/youtube/query-associations?appIds=570&days=7`: optional query provenance and comparable-video counts; relevance is unassessed and acceleration remains unavailable.
 
 Approved game list/search/detail, Steam charts and native video observation reads
