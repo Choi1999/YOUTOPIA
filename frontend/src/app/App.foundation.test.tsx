@@ -26,8 +26,8 @@ describe("P0-1 라우터·테마·AppShell 기반", () => {
 
   it("YU-01부터 YU-12까지 고유한 라우트 정의를 유지한다", () => {
     expect(yutopiaRoutes).toHaveLength(17);
-    expect(new Set(yutopiaRoutes.map(({ code }) => code)).size).toBe(16);
-    expect(new Set(yutopiaRoutes.map(({ path }) => path)).size).toBe(16);
+    expect(new Set(yutopiaRoutes.map(({ code }) => code)).size).toBe(17);
+    expect(new Set(yutopiaRoutes.map(({ path }) => path)).size).toBe(17);
     expect(yutopiaRoutes.find(({ code }) => code === "YU-12")?.summary).toMatch(/로컬 시뮬레이션/);
     expect(yutopiaRoutes.find(({ code }) => code === "YU-35")?.href).toBe("/analysis/youtube/compare");
     expect(yutopiaRoutes.find(({ code }) => code === "YU-44")?.href).toBe("/analysis/youtube/channel/" + "UC" + "A".repeat(22));
