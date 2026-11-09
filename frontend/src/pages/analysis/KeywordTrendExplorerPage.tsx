@@ -3,6 +3,7 @@ import {searchPublicYoutubeVideos,type PublicSearchResult} from "../../features/
 import {collectPublicVideoComments,type CollectedCommentSample} from "../../features/trend/youtubeCommentClient";
 import {compareVideoCommentSamples} from "../../features/trend/videoCommentComparison";
 import {addRelatedExpression,analyzeExpandedKeyword,expressionExamples} from "../../features/trend/relatedKeywordAnalysis";
+import {discoverObservedExpressions} from "../../features/trend/observedExpressionCandidates";
 import {
   importKeywordCsv,inspectKeyword,userKeyword,MAX_CSV_BYTES,
   type Observation,type TrendWindow,
@@ -47,6 +48,11 @@ export function KeywordTrendExplorerPage(){
   const activeRecords=useMemo(()=>source==="YOUTUBE"
     ?samples.flatMap(sample=>sample.comments):records,[source,samples,records]);
   const result=useMemo(()=>keyword?inspectKeyword(keyword,activeRecords,period):null,
+    [keyword,activeRecords,period]);
+  // G2-O derives candidates locally from the currently selected source only.
+  // This never changes the primary query or triggers an API request.
+  const observedCandidates=useMemo(()=>keyword
+    ?discoverObservedExpressions(keyword,activeRecords,period):null,
     [keyword,activeRecords,period]);
   const videoComparisons=result?.kind==="READY"&&source==="YOUTUBE"
     ?compareVideoCommentSamples(keyword,samples,result.startDay,result.endDay):[];
@@ -212,10 +218,50 @@ export function KeywordTrendExplorerPage(){
     </section>
     {keyword&&<section className="keyword-trend__expressions" aria-label="사용자 선택형 관련 표현">
       <h2>관련 표현 탐색 <small>선택 사항</small></h2>
-      <p>입력 키워드 “{keyword}”는 그대로 유지합니다. 관련 표현은 사용자가 선택하거나 직접 추가한 문구만
-        별도 집계합니다. 아래 참고 후보는 사전 예시이며 의미상 동일하다고 검증한 결과가 아닙니다.</p>
+      <p>입력 키워드 “{keyword}”는 그대로 유지합니다. 관측 댓글에서 함께 등장한 표현을
+        근거와 함께 확인하거나, 원하는 문구를 직접 추가할 수 있습니다.
+        함께 등장한 단어가 같은 의미라는 뜻은 아니며 사용자가 선택한 표현만 별도로 집계됩니다.</p>
+      <div className="keyword-trend__observed" aria-label="관측 댓글 기반 표현 후보">
+        <h3>관측 댓글에서 함께 등장한 표현</h3>
+        {observedCandidates?.kind==="READY"?<>
+          <p>현재 선택한 {source==="CSV"?"로컬 CSV":"YouTube 최신 댓글"} 표본
+            {observedCandidates.sampleTotal}개 중 입력 키워드 포함 댓글
+            {observedCandidates.primaryComments}개에서 추출한 단어 후보입니다.
+            기간 {observedCandidates.startDay}~{observedCandidates.endDay}(UTC).
+            단어 추출은 단순 문자 분리이며 동의어나 주제의 의미적 관련성은 검증하지 않습니다.</p>
+          {observedCandidates.candidates.length>0?
+            <ol className="keyword-trend__observed-list">
+              {observedCandidates.candidates.map(candidate=><li key={candidate.term}>
+                <div className="keyword-trend__observed-meta">
+                  <strong>{candidate.term}</strong>
+                  <small>같은 댓글에 등장 {candidate.cooccurringComments}건 ·
+                    현재 표본에서 해당 문구 포함 {candidate.sampleMentions}건</small>
+                </div>
+                <button type="button" aria-label={candidate.term+" 관측 후보 추가"}
+                  disabled={selectedRelated.some(term=>
+                    term.normalize("NFKC").toLocaleLowerCase()===candidate.term)}
+                  onClick={()=>chooseRelatedExpression(candidate.term)}>선택해 추가</button>
+                <details className="keyword-trend__observed-evidence">
+                  <summary>{candidate.term} 근거 댓글 보기</summary>
+                  <ul>{candidate.evidence.map(evidence=><li
+                    key={evidence.videoId+":"+evidence.commentId}>
+                    <strong>{evidence.videoTitle}</strong>
+                    <time>{evidence.publishedAt}</time>
+                    <p>{evidence.excerpt}</p>
+                  </li>)}</ul>
+                </details>
+              </li>)}
+            </ol>:
+            <p className="keyword-trend__observed-empty">입력 키워드가 포함된 댓글에서
+              별도의 반복·동반 단어 후보가 발견되지 않았습니다.
+              아래에서 관련 표현을 직접 추가할 수 있습니다.</p>}
+        </>:<p className="keyword-trend__observed-empty">
+          아직 선택한 출처에 관측 댓글 자료가 없습니다. 로컬 CSV를 선택하거나
+          검색된 영상의 댓글 표본을 가져오세요. 임의의 관련 단어를 만들어 보여주지 않습니다.
+        </p>}
+      </div>
       {expressionExamples(keyword).length>0&&<div className="keyword-trend__expression-examples">
-        <strong>참고 표현 후보 (자동 적용 안 함)</strong>
+        <strong>기존 사전 참고 예시 (관측 빈도와 무관 · 자동 적용 안 함)</strong>
         <div>{expressionExamples(keyword).map(term=><button
           key={term} type="button" aria-label={term+" 후보 선택"}
           disabled={selectedRelated.includes(term)}
@@ -453,7 +499,8 @@ export function KeywordTrendExplorerPage(){
       댓글 표본은 최대 3개 영상의 최근 100개 이내 공개 최상위 댓글만 포함하며 답글·전체 댓글 수집을 하지 않습니다.
       YouTube 검색과 댓글 조회는 사용자 버튼 클릭 시에만 수행합니다. API 키는 브라우저로 보내지 않습니다.
       영상 다운로드·외부 AI 분석·서버 영구 저장은 없으며, 관측 언급량은 실제 상승·확산·감성이나 여론을 증명하지 않습니다.
-      관련 표현 후보는 선택 가능한 참고 예시일 뿐 AI 의미 분석이나 동의어 검증 결과가 아닙니다.
+      관측 표현 후보는 선택된 댓글 표본의 단순 동반 단어이며 AI 의미 분석이나 동의어 검증 결과가 아닙니다.
+      기존 사전 예시는 관측 빈도와 구분하며, 모두 사용자가 직접 선택하기 전에는 적용되지 않습니다.
       원래 키워드와 사용자가 추가한 표현의 일치 수는 분리하고, 중복 댓글은 합계에서 제외합니다.
       검색어·관련 표현 선택·CSV·API 댓글 표본은 새로고침 시 초기화됩니다.
     </footer>

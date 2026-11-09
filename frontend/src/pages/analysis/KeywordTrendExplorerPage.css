@@ -181,3 +181,51 @@
   .keyword-trend__expanded-summary .keyword-trend__expanded-stats{grid-template-columns:1fr;}
   .keyword-trend__expression-form>div{flex-direction:column;align-items:stretch;}
 }
+
+
+/* G2-O: evidence-backed lexical co-occurrence candidates; not semantic synonyms. */
+.keyword-trend__observed {
+  display:grid;gap:11px;padding:15px;border:1px solid var(--border-default);
+  border-radius:11px;background:var(--bg-subtle);min-width:0;
+}
+.keyword-trend__observed h3 { margin:0;color:var(--text-primary);font-size:15px; }
+.keyword-trend__observed>p { margin:0;color:var(--text-secondary);font-size:12px;line-height:1.7; }
+.keyword-trend__observed-list { margin:0;padding:0;list-style:none;display:grid;gap:9px; }
+.keyword-trend__observed-list>li {
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;
+  min-width:0;padding:12px;border:1px solid var(--border-default);
+  border-radius:9px;background:var(--bg-surface);
+}
+.keyword-trend__observed-meta { display:grid;gap:5px;min-width:0; }
+.keyword-trend__observed-meta strong {
+  color:var(--text-primary);font-size:13px;overflow-wrap:anywhere;
+}
+.keyword-trend__observed-meta small {
+  color:var(--text-secondary);font-size:11px;line-height:1.6;
+}
+.keyword-trend__observed-list>li>button {
+  border:1px solid var(--border-default);
+  background:var(--bg-subtle);color:var(--text-primary);
+}
+.keyword-trend__observed-list>li>button:disabled { cursor:default;opacity:.5; }
+.keyword-trend__observed-evidence { grid-column:1/-1;min-width:0; }
+.keyword-trend__observed-evidence summary {
+  cursor:pointer;font-size:11px;font-weight:650;color:var(--text-secondary);
+}
+.keyword-trend__observed-evidence ul {
+  list-style:none;margin:10px 0 0;padding:0;display:grid;gap:9px;
+}
+.keyword-trend__observed-evidence li {
+  display:grid;gap:4px;border-left:2px solid var(--border-default);
+  padding:7px 10px;background:var(--bg-subtle);border-radius:6px;
+}
+.keyword-trend__observed-evidence li strong { font-size:11px;color:var(--text-primary); }
+.keyword-trend__observed-evidence li time { font-size:10px;color:var(--text-secondary); }
+.keyword-trend__observed-evidence li p {
+  font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;
+  color:var(--text-primary);margin:0;
+}
+@media(max-width:720px) {
+  .keyword-trend__observed-list>li { grid-template-columns:minmax(0,1fr); }
+  .keyword-trend__observed-evidence { grid-column:1; }
+}
