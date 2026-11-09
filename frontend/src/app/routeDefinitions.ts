@@ -26,6 +26,7 @@ export const yutopiaRoutes: YutopiaRouteDefinition[] = [
   { code: "YU-47", path: "/analysis/youtube/channels/compare", href: "/analysis/youtube/channels/compare", title: "채널 A/B 비교 · 합성 데모", summary: "두 개의 선정 합성 채널별 관측 표본을 명시하여 비교" },
   { code: "YU-48", path: "/analysis/youtube/topics", href: "/analysis/youtube/topics", title: "주제 심층 탐색 · 합성 데모", summary: "선정 영상별 검증된 합성 주제 언급량만 표시" },
   { code: "YU-49", path: "/analysis/youtube/evidence-explorer", href: "/analysis/youtube/evidence-explorer", title: "영상 근거 탐색 · 로컬", summary: "사용자가 선택한 로컬 영상·SRT·운영자 근거 기록을 화면에서만 탐색하는 기능" },
+  { code: "YU-51", path: "/analysis/youtube/trend-keywords", href: "/analysis/youtube/trend-keywords", title: "키워드 트렌드 탐색 · 로컬", summary: "사용자 검색어 및 직접 선택한 CSV 표본에서의 시간별 댓글 근거" },
 ];
 
 export function getRoute(code: YutopiaRouteDefinition["code"]) {

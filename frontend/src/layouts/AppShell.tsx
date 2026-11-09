@@ -60,6 +60,7 @@ const groups = [
   {
     label: "분석",
     items: [
+      { label: "키워드 트렌드 탐색 · 로컬", route: getRoute("YU-51"), dark: searchDark, light: searchLight },
       { label: "트렌드 관측", route: getRoute("YU-08"), dark: reactionsDark, light: reactionsLight },
       { label: "근거 검증", route: getRoute("YU-09"), dark: keywordsDark, light: keywordsLight },
       { label: "이슈 관리", route: getRoute("YU-11"), dark: eventsDark, light: eventsLight },
