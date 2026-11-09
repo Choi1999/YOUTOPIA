@@ -25,7 +25,7 @@ describe("P0-1 라우터·테마·AppShell 기반", () => {
   });
 
   it("YU-01부터 YU-12까지 고유한 라우트 정의를 유지한다", () => {
-    expect(yutopiaRoutes).toHaveLength(16);
+    expect(yutopiaRoutes).toHaveLength(17);
     expect(new Set(yutopiaRoutes.map(({ code }) => code)).size).toBe(16);
     expect(new Set(yutopiaRoutes.map(({ path }) => path)).size).toBe(16);
     expect(yutopiaRoutes.find(({ code }) => code === "YU-12")?.summary).toMatch(/로컬 시뮬레이션/);
@@ -33,6 +33,7 @@ describe("P0-1 라우터·테마·AppShell 기반", () => {
     expect(yutopiaRoutes.find(({ code }) => code === "YU-44")?.href).toBe("/analysis/youtube/channel/" + "UC" + "A".repeat(22));
     expect(yutopiaRoutes.find(({ code }) => code === "YU-47")?.href).toBe("/analysis/youtube/channels/compare");
     expect(yutopiaRoutes.find(({ code }) => code === "YU-48")?.href).toBe("/analysis/youtube/topics");
+    expect(yutopiaRoutes.find(({ code }) => code === "YU-49")?.href).toBe("/analysis/youtube/evidence-explorer");
   });
 
   it("명시적으로 선택한 테마를 적용하고 기존 저장 키와 분리해 유지한다", async () => {
