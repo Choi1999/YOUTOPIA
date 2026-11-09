@@ -171,7 +171,7 @@ export function ServerAccountPage() {
             </button>
           </div>
         )}
-        {error && <p role="alert" className="server-session-error">{error}</p>
+        {error && <p role="alert" className="server-session-error">{error}</p>}
         {message && <p className="server-session-message">{message}</p>}
       </section>
 
