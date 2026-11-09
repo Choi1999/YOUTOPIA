@@ -444,7 +444,7 @@ export function KeywordTrendExplorerPage(){
               </strong>}
               <small>{item.record.channelName} ·
                 {source==="CSV"?"CSV 기록 ID":"YouTube 댓글 ID"} {item.record.id}</small>
-            </li>)}</ol>:<p>표본에서 일치하는 댓글 근거가 없습니다.</p>
+            </li>)}</ol>:<p>표본에서 일치하는 댓글 근거가 없습니다.</p>}
         </section>
       </div>
     ):null}
