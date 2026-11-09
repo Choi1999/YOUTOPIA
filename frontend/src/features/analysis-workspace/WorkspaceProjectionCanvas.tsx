@@ -223,7 +223,8 @@ export function WorkspaceProjectionNodeDetail({data,node}:Readonly<{
     <dl>
       <div><dt>노드 유형</dt><dd>{kindLabel[node.kind]}</dd></div>
       <div><dt>상태</dt><dd>{node.status}</dd></div>
-      <div><dt>출처</dt><dd>{node.provenance.kind}</dd></div>
+      <div><dt>노드 생성 근거</dt><dd>{node.provenance.kind}</dd></div>
+      <div><dt>현재 관측 자료 출처</dt><dd>{data.sourceKind}</dd></div>
       <div><dt>관측 수</dt><dd>{node.observedCount===null?"미확인":node.observedCount+"건"}</dd></div>
       <div><dt>기준 기간</dt><dd>{data.startDay} ~ {data.endDay} UTC</dd></div>
     </dl>
