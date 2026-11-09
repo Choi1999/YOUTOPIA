@@ -105,4 +105,41 @@ describe("YU-49 product-facing local video evidence explorer", () => {
     expect(screen.getByText("<script>not executed</script>")).toBeInTheDocument();
     expect(view.container.querySelector("script")).toBeNull();
   });
+  it("shows a local video title, collapses provenance, and navigates only filtered evidence", async () => {
+    const user = userEvent.setup();
+    const fixture = g2gFixture();
+    fixture.questions[1].result = {
+      status: "APPROVE", finalVerdict: "SUPPORTED", operatorViewedSource: true,
+      finalAnswerText: "두번째 합성 근거",
+      finalEvidence: [{
+        modality: "AUDIO", localStartMs: 178000, localEndMs: 179000,
+        observationNote: "두번째 장면에서 합성 발화가 들린다.",
+      }],
+    };
+    render(<VideoEvidenceExplorerPage />);
+    await user.upload(screen.getByLabelText("로컬 영상 파일"),
+      new File(["fake video bytes"], "local-movie-title.mp4", { type: "video/mp4" }));
+    const video = await screen.findByLabelText("선택한 로컬 영상");
+    Object.defineProperty(video, "currentTime", { configurable: true, writable: true, value: 0 });
+    expect(screen.getByRole("heading", { name: "local-movie-title" })).toBeInTheDocument();
+    await user.upload(screen.getByLabelText("G2-G 운영자 판정 JSON"),
+      new File([JSON.stringify(fixture)], "operator.json", { type: "application/json" }));
+    await waitFor(() => expect(screen.getByText(/운영자 판정 기록 2문항을 불러왔습니다/)).toBeInTheDocument());
+    const details = screen.getByText("근거 출처 및 확인 범위").closest("details");
+    expect(details).not.toHaveAttribute("open");
+    expect(screen.getByRole("button", { name: "이전 근거" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "다음 근거" }));
+    expect(video.currentTime).toBe(88.011);
+    await user.click(screen.getByRole("button", { name: "다음 근거" }));
+    expect(video.currentTime).toBe(178);
+    expect(screen.getByRole("button", { name: "다음 근거" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "이전 근거" }));
+    expect(video.currentTime).toBe(88.011);
+    await user.selectOptions(screen.getByLabelText("근거 유형"), "AUDIO");
+    await user.click(screen.getByRole("button", { name: "다음 근거" }));
+    expect(video.currentTime).toBe(178);
+    expect(screen.getByRole("button", { name: "이전 근거" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "다음 근거" })).toBeDisabled();
+  });
+
 });

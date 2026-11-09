@@ -182,6 +182,36 @@
   font-size: 11px;
   line-height: 1.75;
 }
+.video-evidence-explorer__provenance summary { cursor: pointer; font-weight: 650; }
+.video-evidence-explorer__provenance p { margin: 8px 0 0; }
+.video-evidence-explorer__navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.video-evidence-explorer__navigation span {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.video-evidence-explorer__navigation button {
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  padding: 8px 11px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.video-evidence-explorer__navigation button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+.video-evidence-explorer__panel-heading h2 {
+  overflow-wrap: anywhere;
+}
 .video-evidence-explorer__filters {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(112px, .7fr);

@@ -79,6 +79,15 @@ export function VideoEvidenceExplorerPage() {
     () => filterEvidence(allMarkers, query, modality),
     [allMarkers, query, modality],
   );
+  // Navigation always follows the visible, filtered evidence list.
+  // If the selection is filtered out, resume relative to the playback time.
+  const selectedIndex = filtered.findIndex((marker) => marker.id === selectedId);
+  const nextMarker = selectedIndex >= 0
+    ? (filtered[selectedIndex + 1] ?? null)
+    : (filtered.find((marker) => marker.startMs >= currentMs) ?? null);
+  const previousMarker = selectedIndex >= 0
+    ? (filtered[selectedIndex - 1] ?? null)
+    : ([...filtered].reverse().find((marker) => marker.startMs < currentMs) ?? null);
   const activeCaption = useMemo(
     () => captions.find((cue) => currentMs >= cue.startMs && currentMs <= cue.endMs),
     [captions, currentMs],
@@ -265,8 +274,8 @@ export function VideoEvidenceExplorerPage() {
       <section className="video-evidence-explorer__workspace" aria-label="영상 탐색 작업공간">
         <div className="video-evidence-explorer__viewer">
           <div className="video-evidence-explorer__panel-heading">
-            <h2>영상 플레이어</h2>
-            <small>{movieFile ? "로컬 선택 파일" : "영상 없음"}</small>
+            <h2 title={movieFile?.name}>{movieFile ? movieFile.name.replace(/\.[^.]+$/, "") : "영상 플레이어"}</h2>
+            <small>{movieFile ? "로컬 선택 영상" : "영상 없음"}</small>
           </div>
           {movieUrl ? (
             <video aria-label="선택한 로컬 영상" ref={videoRef} controls playsInline preload="metadata" src={movieUrl}
@@ -313,10 +322,13 @@ export function VideoEvidenceExplorerPage() {
             </label>
           </div>
           {operatorReport && (
-            <p className="video-evidence-explorer__provenance">
-              {operatorReport.film} · 운영자 채택 {operatorReport.operatorApproved}문항 · 보류 {operatorReport.held}문항.
-              비블라인드 판정 기록이며 현재 선택한 영상과 파일 해시는 대조하지 않았습니다.
-            </p>
+            <details className="video-evidence-explorer__provenance">
+              <summary>근거 출처 및 확인 범위</summary>
+              <p>
+                {operatorReport.film} · 운영자 채택 {operatorReport.operatorApproved}문항 · 보류 {operatorReport.held}문항.
+                비블라인드 판정 기록이며 현재 선택한 영상과 파일 해시는 대조하지 않았습니다.
+              </p>
+            </details>
           )}
         </div>
 
@@ -324,6 +336,15 @@ export function VideoEvidenceExplorerPage() {
           <div className="video-evidence-explorer__panel-heading">
             <h2>근거 목록</h2>
             <small>{filtered.length} / {allMarkers.length}개 표시</small>
+          </div>
+          <div className="video-evidence-explorer__navigation" role="group" aria-label="근거 순차 탐색">
+            <button type="button" disabled={!previousMarker}
+              onClick={() => { if (previousMarker) jumpTo(previousMarker); }}>이전 근거</button>
+            <span aria-live="polite">{selectedIndex >= 0
+              ? (selectedIndex + 1) + " / " + filtered.length
+              : "조건 일치 " + filtered.length + "개"}</span>
+            <button type="button" disabled={!nextMarker}
+              onClick={() => { if (nextMarker) jumpTo(nextMarker); }}>다음 근거</button>
           </div>
           <div className="video-evidence-explorer__filters">
             <label>근거 검색

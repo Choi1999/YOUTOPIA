@@ -1,7 +1,7 @@
 # YOUTOPIA — G2-I 영상 근거 탐색 UI 첫 기능 슬라이스 v0.1
 
 > 작업 목적: G2-H1 소스 추가 조사보다 YOUTOPIA 사용자 기능 확장을 우선한다는 사용자 승인에 근거한 오프라인 프런트엔드 구현.
-> 상태: **LOCAL_FRONTEND_FEATURE_IMPLEMENTED / USER_WINDOWS_QA_PENDING / NO_REAL_VIDEO_INFERENCE / NO_G3_CALL / NO_MERGE**.
+> 상태: **LOCAL_FRONTEND_FEATURE_IMPLEMENTED / USER_WINDOWS_QA_PASS_10_OF_10 (2026-11-09 사용자 보고) / NO_REAL_VIDEO_INFERENCE / NO_G3_CALL / NO_MERGE**.
 
 ## 1. 승인과 작업 경계
 
@@ -61,3 +61,9 @@ Vite 개발 서버가 출력한 주소에 `/analysis/youtube/evidence-explorer`�
 첫 UI 슬라이스에 대한 실제 QA가 완료된 뒤, **출처 해시 확인 및 등록된 근거 데이터 연결**과 **노드 기반 다중 영상 탐색**을 분리된 단계로 확대할 수 있다. 이를 바로 기존 YOUTOPIA 운영 데이터 수집, YouTube 다운로드, AI 모델 추론 또는 G3 실호출 권한으로 승격하지 않는다.
 
 **현재 게이트:** `G2_H1_RESEARCH_PAUSED / G2_I_LOCAL_EVIDENCE_UI_IMPLEMENTED / G2G_SOURCE_RECORDS_PRESERVED / G3_NO_GO / NO_MERGE`.
+
+## 6. Windows 브라우저 QA 완료 기록 (2026-11-09)
+
+사용자가 직접 Windows Chrome/Edge에서 다음 **10/10 PASS**를 보고했다: 화면 및 사이드바, 로컬 MP4 재생/시크, SRT 동기화, G2-G JSON 로드, APPROVE만 근거 표시·HOLD 제외, 카드·마커 시크, 검색·FRAME 필터, 메모 추가·삭제, 전체 비우기, 반응형 레이아웃. 재현 오류 보고 0건.
+
+이는 **사용자 보고 기반 수동 QA**다. GitHub CI와 별개이고, 원본 해시 일치·독립 Gold·실제 모델 추론·권리·운영 서비스 통합을 검증한 것은 아니다. 다음 G2-J는 [근거 순차 탐색 확장](YU_VIDEO_G2J_EVIDENCE_NAVIGATION_V01.md)으로 분리한다.
