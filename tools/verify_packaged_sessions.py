@@ -14,6 +14,7 @@ import urllib.request
 import uuid
 import argparse
 import socket
+import sys
 from test_services import load_state
 
 arguments = argparse.ArgumentParser(description=__doc__)
