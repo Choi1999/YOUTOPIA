@@ -90,7 +90,7 @@ try {
 
   await page.getByRole("button", { name: "서버 세션 확인" }).click();
   await expect(status).toHaveText("서버 회원 로그인 안 됨");
-  assert.equal(paths.some(path => path.startsWith("/api/v1/youtube/")), false);
+  assert.equal(apiPaths.some(path => path.startsWith("/api/v1/youtube/")), false);
 
   process.stdout.write(JSON.stringify({
     schema: "YOUTOPIA_R04AO_CURRENT_REACT_SPRING_CHROMIUM_V01",
