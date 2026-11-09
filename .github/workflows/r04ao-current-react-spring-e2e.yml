@@ -1,0 +1,107 @@
+name: R04-AO current React vs isolated Spring Chromium session
+
+on:
+  pull_request:
+    branches:
+      - feat/backend-bootstrap
+    paths:
+      - 'tools/test_services.py'
+      - 'tools/verify_packaged_sessions.py'
+      - 'tools/verify_current_react_browser.py'
+      - 'tools/e2e/current_react_spring_account.mjs'
+      - '.github/workflows/r04ao-current-react-spring-e2e.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  current-react-real-spring:
+    name: React /account/server + packaged Spring + Chromium (SYNTHETIC ONLY)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout candidate backend commit
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned current React frontend (independent branch)
+        uses: actions/checkout@v4
+        with:
+          ref: 1ff56eab78091692a08c47888590aca036a2a6a4
+          path: current-react
+          persist-credentials: false
+
+      - name: Ensure exact frontend SHA and guarded auth route
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C current-react rev-parse HEAD)" = "1ff56eab78091692a08c47888590aca036a2a6a4"
+          test -f current-react/frontend/src/pages/auth/ServerAccountPage.tsx
+          test -f current-react/frontend/src/features/server-session/serverMemberSession.ts
+          test -f current-react/frontend/vite.config.ts
+          if grep -E -n '(youtube\.com|googleapis\.com)' tools/e2e/current_react_spring_account.mjs; then
+            echo "External provider host forbidden in this browser test"
+            exit 1
+          fi
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.9.1
+
+      - name: Install frontend dependencies and Chromium
+        working-directory: current-react/frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Validate Linux Docker and Gradle inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -S /var/run/docker.sock
+          docker info --format '{{.ServerVersion}}'
+          chmod +x ./gradlew
+          test -f tools/test_services.py
+          test -f tools/verify_packaged_sessions.py
+          test -f tools/verify_current_react_browser.py
+          test -f tools/e2e/current_react_spring_account.mjs
+
+      - name: Isolated full backend gate then latest React against real Spring and Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/test_services.py verify --current-frontend "$GITHUB_WORKSPACE/current-react/frontend"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report=Path('build/reports/packaged-sessions/result-current-react-browser.json')
+          value=json.loads(report.read_text())
+          assert value['status']=='PASS'
+          assert value['transport']=='REAL_SPRING_SYNTHETIC_LOOPBACK'
+          assert value['providerRequestsMade']==0
+          assert not Path('build/test-services.json').exists()
+          print('R04AO_CURRENT_REACT_SPRING_E2E_PASS')
+          PY
+
+      - name: Archive non-sensitive summary only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r04ao-current-react-spring-synthetic-summary
+          path: build/reports/packaged-sessions/result-current-react-browser.json
+          if-no-files-found: ignore
+          retention-days: 7
