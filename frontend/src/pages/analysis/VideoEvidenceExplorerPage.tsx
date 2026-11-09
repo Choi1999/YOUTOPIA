@@ -191,7 +191,7 @@ export function VideoEvidenceExplorerPage() {
       setFeedback("한 세션에서 사용자 메모는 최대 60개까지 작성할 수 있습니다.");
       return;
     }
-    const startMs = Math.max(0, Math.round(videoRef.current?.currentTime ?? 0) * 1000);
+    const startMs = Math.max(0, Math.round((videoRef.current?.currentTime ?? 0) * 1000));
     if (durationMs !== null && startMs >= durationMs) {
       setFeedback("영상 마지막 프레임에서는 새 근거를 만들 수 없습니다.");
       return;
