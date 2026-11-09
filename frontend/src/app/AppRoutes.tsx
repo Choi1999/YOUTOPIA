@@ -21,6 +21,7 @@ import { VideoComparisonPage } from "../pages/analysis/VideoComparisonPage";
 import { ChannelAnalysisPage } from "../pages/analysis/ChannelAnalysisPage";
 import { ChannelComparisonPage } from "../pages/analysis/ChannelComparisonPage";
 import { TopicExplorerPage } from "../pages/analysis/TopicExplorerPage";
+import { VideoEvidenceExplorerPage } from "../pages/analysis/VideoEvidenceExplorerPage";
 import { ProjectDemoProvider } from "../features/project-demo/ProjectDemoProvider";
 import { ReviewWorkflowProvider } from "../features/project-demo/ReviewWorkflowProvider";
 import { YoutubeConsentProvider } from "../features/youtube-consent/YoutubeConsentProvider";
@@ -52,7 +53,7 @@ function RouteScrollReset() {
  */
 export function AppRoutes() {
   const placeholderRoutes = yutopiaRoutes.filter(
-    (route) => !["YU-01", "YU-02", "YU-03", "YU-04", "YU-05", "YU-06", "YU-07", "YU-08", "YU-09", "YU-10", "YU-11", "YU-12", "YU-35", "YU-44", "YU-47", "YU-48"].includes(route.code),
+    (route) => !["YU-01", "YU-02", "YU-03", "YU-04", "YU-05", "YU-06", "YU-07", "YU-08", "YU-09", "YU-10", "YU-11", "YU-12", "YU-35", "YU-44", "YU-47", "YU-48", "YU-49"].includes(route.code),
   );
 
   return (
@@ -92,6 +93,8 @@ export function AppRoutes() {
                 element={<VideoComparisonPage />}
                 path="/analysis/youtube/compare"
               />
+              {/* YU-49: 권한 있는 로컬 영상·SRT·사람 기록만 사용하는 근거 탐색 */}
+              <Route element={<VideoEvidenceExplorerPage />} path="/analysis/youtube/evidence-explorer" />
               {/* 프로젝트 생성 없이 진입할 수 있는 단일 YouTube 영상 분석 화면 */}
               <Route
                   element={<SingleVideoAnalysisPage />}
