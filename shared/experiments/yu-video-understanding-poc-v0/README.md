@@ -383,3 +383,27 @@ $adjudicate = '.\shared\experiments\yu-video-understanding-poc-v0\g2g-windows-fi
 이는 **AI 보조 비블라인드 검수에 대한 운영자 채택 결과**로, 원래 G0 목표인 6편/36문항·독립 Gold·영상 이용권·YouTube/공식 원본 동등성·제공자 비용/보안 게이트를 충족시키지 않는다. 따라서 **G3_NO_GO / NO_LIVE_API / NO_MERGE**를 유지한다.
 
 최종 보고: [G2 파일럿 종료 및 G3 진입 심사](../../../docs/research/YU_VIDEO_G2_PILOT_CLOSEOUT_G3_READINESS_20261109.md).
+
+
+## G2-H — 데이터셋 확장 설계 4편·24문항
+
+기존 G0의 **인터뷰 2편·화면 시연 2편·액션 2편 = 6편 / 36문항**을 유지한다. G2-G 파일럿 2편·12문항(운영자 APPROVE 10/HOLD 2)에 더해 남은 인터뷰 2·화면 시연 2편의 **24개 질문 작성 템플릿**만 생성했다. 현재 모든 4개 영상은 G2-B 공개 연구 후보이며 사용권·원본·캡션·정답·독립 Gold 미승인이다.
+
+| 새 연구 후보 | SPEECH | VISUAL | OCR | TEMPORAL | UNSUPPORTED | 합계 |
+|---|---:|---:|---:|---:|---:|---:|
+| VID-01 NASA 인터뷰 | 3 | 1 | 0 | 1 | 1 | 6 |
+| VID-02 NASA 인터뷰 | 3 | 1 | 0 | 1 | 1 | 6 |
+| VID-03 NASA 화면 시연 | 1 | 1 | 3 | 1 | 0 | 6 |
+| VID-04 NASA 화면 시연 | 1 | 1 | 3 | 0 | 1 | 6 |
+| **합계** | **8** | **4** | **6** | **3** | **3** | **24** |
+
+오프라인 설계 검증 명령:
+
+```powershell
+cd C:\Projects\YOUTOPIA-VIDEO-G2C
+node .\shared\experiments\yu-video-understanding-poc-v0\g2h-expansion-plan.cjs
+```
+
+예상 결과는 `DESIGN_ONLY_4_FILMS_24_QUESTION_BLUEPRINTS_NO_G3`, 권리 승인 0, 미디어 인입 승인 false, 독립 블라인드 Gold 0, G3 승인 false다. 동종 후보 교체·질문 재배분이 필요하면 G0 전체 유형 분포를 보존하고 설계 개정을 먼저 기록한다.
+
+상세 설계와 후보별 위험·역할·게이트: [G2-H 데이터셋 확장 설계](../../../docs/research/YU_VIDEO_G2H_DATASET_EXPANSION_PLAN_V01.md). 실영상 다운로드, YouTube API, 제공자 실호출, 사업화용 권리 승인 또는 PR 병합은 **이 설계 작업의 범위에 포함되지 않는다**.
