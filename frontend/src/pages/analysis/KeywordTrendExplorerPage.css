@@ -80,3 +80,33 @@
 .keyword-trend__live-results li a small { font-size:11px; color:var(--text-secondary); }
 @media(max-width:720px){ .keyword-trend__live-results li a { align-items:start; }
   .keyword-trend__live-results li a img { width:84px; height:48px; } }
+
+
+/* G2-M: User-clicked, bounded comment samples and per-video denominators. */
+.keyword-trend__comment-action {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:10px; flex-wrap:wrap; padding:0 12px 12px;
+}
+.keyword-trend__comment-action button {
+  background:var(--bg-surface); color:var(--text-primary);
+  border:1px solid var(--border-default); flex:0 0 auto;
+}
+.keyword-trend__comment-action button:disabled { opacity:.55; cursor:default; }
+.keyword-trend__comment-action small {
+  color:var(--text-secondary); font-size:11px; line-height:1.5;
+}
+.keyword-trend__panel[aria-label="영상별 키워드 표본 비교"] li {
+  display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px;
+}
+.keyword-trend__panel[aria-label="영상별 키워드 표본 비교"] li small {
+  grid-column:1/-1; color:var(--text-secondary);
+  line-height:1.6; font-size:11px;
+}
+.keyword-trend__panel[aria-label="영상별 키워드 표본 비교"] li strong {
+  font-variant-numeric:tabular-nums;
+}
+@media(max-width:720px) {
+  .keyword-trend__panel[aria-label="영상별 키워드 표본 비교"] li {
+    grid-template-columns:minmax(0,1fr);
+  }
+}

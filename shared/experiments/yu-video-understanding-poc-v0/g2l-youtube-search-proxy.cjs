@@ -2,11 +2,17 @@
 /**
  * G2-L: loopback-only, opt-in YouTube Data API search boundary.
  * No API calls occur at startup. Browser never sees the API key.
- * Node >= 24. No video downloads, comments, AI inference, or persistence.
+ * G2-M: optional, user-clicked commentThreads.list first-page of top-level
+ * comments for at most 3 previously discovered videos. No replies, downloads,
+ * AI inference, persistent logging, or production auth.
+ * Node >= 24.
  */
 const http = require("node:http");
 
 const SEARCH_API = "https://www.googleapis.com/youtube/v3/search";
+const COMMENTS_API = "https://www.googleapis.com/youtube/v3/commentThreads";
+const MAX_COMMENT_RESULTS = 100;
+const MAX_COMMENT_VIDEOS = 3;
 const MAX_BODY = 2048;
 const MAX_RESULTS = 10;
 const PORT = 8787;
@@ -62,6 +68,51 @@ function normalizeSearchItems(payload) {
   return items;
 }
 
+/**
+ * Normalize only public, top-level comments from the officially returned
+ * first page. Do not treat the response as a full history or all replies.
+ * Author details, replies, and moderation metadata never leave this server.
+ */
+function normalizeCommentThreads(payload, video) {
+  if (!payload || !Array.isArray(payload.items) || !video ||
+      !validVideoId(video.videoId)) return null;
+  const comments = [];
+  const seen = new Set();
+  let skipped = 0;
+  let truncated = 0;
+  for (const item of payload.items.slice(0, MAX_COMMENT_RESULTS)) {
+    const thread = item && item.snippet;
+    const comment = thread && thread.topLevelComment;
+    const snippet = comment && comment.snippet;
+    const id = comment && comment.id;
+    const body = snippet && snippet.textDisplay;
+    const publishedAt = snippet && snippet.publishedAt;
+    if (!thread || thread.videoId !== video.videoId ||
+        thread.isPublic === false ||
+        !snippet || typeof body !== "string" ||
+        !body.trim() || typeof id !== "string" ||
+        !/^[A-Za-z0-9_.-]{1,160}$/.test(id) ||
+        seen.has(id) || typeof publishedAt !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(publishedAt) ||
+        !Number.isFinite(Date.parse(publishedAt))) {
+      skipped++;
+      continue;
+    }
+    if (body.length > 2000) truncated++;
+    seen.add(id);
+    comments.push({
+      id,
+      videoId: video.videoId,
+      videoTitle: video.title,
+      channelId: video.channelId,
+      channelName: video.channelTitle,
+      publishedAt,
+      text: body.slice(0, 2000),
+    });
+  }
+  return { comments, skipped, truncated };
+}
+
 function send(res, status, payload) {
   const body = JSON.stringify(payload);
   res.writeHead(status, {
@@ -97,6 +148,9 @@ function createLocalDiscoveryServer(options = {}) {
   let count = 0;
   let day = "";
   let busy = false;
+  let discovered = new Map(); // Only IDs returned by the latest successful search
+  let sampled = new Set();    // Maximum three distinct videos per search
+  let discoveredQuery = "";
   return http.createServer(async (req, res) => {
     const url = new URL(req.url || "/", "http://127.0.0.1");
     const port = req.socket.localPort;
@@ -110,7 +164,9 @@ function createLocalDiscoveryServer(options = {}) {
     if (url.pathname === "/api/youtube/discover/health" && req.method === "GET") {
       return send(res, 200, { kind: "HEALTH", configured: Boolean(apiKey) });
     }
-    if (url.pathname !== "/api/youtube/discover" || req.method !== "POST") {
+    const commentRequest = url.pathname === "/api/youtube/comments";
+    const searchRequest = url.pathname === "/api/youtube/discover";
+    if (!(commentRequest || searchRequest) || req.method !== "POST") {
       return send(res, 404, { kind: "ERROR", code: "NOT_FOUND" });
     }
     if (req.headers["x-youtopia-local-search"] !== "1") {
@@ -121,10 +177,23 @@ function createLocalDiscoveryServer(options = {}) {
     catch {
       return send(res, 400, { kind: "ERROR", code: "INVALID_REQUEST" });
     }
-    const query = normalizeSearchQuery(input && input.query);
-    const order = input && input.order === "date" ? "date" :
-      input && input.order === "relevance" ? "relevance" : null;
-    if (!query || !order) return send(res, 422, { kind: "ERROR", code: "INVALID_QUERY" });
+    const query = searchRequest ? normalizeSearchQuery(input && input.query) : null;
+    const order = searchRequest && input && input.order === "date" ? "date" :
+      searchRequest && input && input.order === "relevance" ? "relevance" : null;
+    if (searchRequest && (!query || !order)) {
+      return send(res, 422, { kind: "ERROR", code: "INVALID_QUERY" });
+    }
+    const videoId = commentRequest && input && input.videoId;
+    if (commentRequest && !validVideoId(videoId)) {
+      return send(res, 422, { kind: "ERROR", code: "INVALID_VIDEO" });
+    }
+    const video = commentRequest ? discovered.get(videoId) : null;
+    if (commentRequest && !video) {
+      return send(res, 409, { kind: "ERROR", code: "VIDEO_NOT_SEARCHED" });
+    }
+    if (commentRequest && !sampled.has(videoId) && sampled.size >= MAX_COMMENT_VIDEOS) {
+      return send(res, 429, { kind: "ERROR", code: "VIDEO_SAMPLE_LIMIT" });
+    }
     if (!apiKey) return send(res, 503, { kind: "ERROR", code: "NOT_CONFIGURED" });
     const currentDay = new Date(now()).toISOString().slice(0, 10);
     if (day !== currentDay) { day = currentDay; count = 0; }
@@ -133,13 +202,20 @@ function createLocalDiscoveryServer(options = {}) {
     count++;
     busy = true;
     try {
-      const upstream = new URL(SEARCH_API);
+      const upstream = new URL(commentRequest ? COMMENTS_API : SEARCH_API);
       upstream.searchParams.set("part", "snippet");
-      upstream.searchParams.set("type", "video");
-      upstream.searchParams.set("q", query);
-      upstream.searchParams.set("order", order);
-      upstream.searchParams.set("maxResults", String(MAX_RESULTS));
-      upstream.searchParams.set("safeSearch", "moderate");
+      if (commentRequest) {
+        upstream.searchParams.set("videoId", videoId);
+        upstream.searchParams.set("order", "time");
+        upstream.searchParams.set("textFormat", "plainText");
+        upstream.searchParams.set("maxResults", String(MAX_COMMENT_RESULTS));
+      } else {
+        upstream.searchParams.set("type", "video");
+        upstream.searchParams.set("q", query);
+        upstream.searchParams.set("order", order);
+        upstream.searchParams.set("maxResults", String(MAX_RESULTS));
+        upstream.searchParams.set("safeSearch", "moderate");
+      }
       upstream.searchParams.set("key", apiKey);
       const response = await fetcher(upstream.href, {
         method: "GET",
@@ -151,8 +227,35 @@ function createLocalDiscoveryServer(options = {}) {
         return send(res, 502, { kind: "ERROR", code: "YOUTUBE_REQUEST_FAILED" });
       }
       const data = await response.json();
+      if (commentRequest) {
+        const normalized = normalizeCommentThreads(data, video);
+        if (!normalized) {
+          return send(res, 502, { kind: "ERROR", code: "INVALID_UPSTREAM" });
+        }
+        sampled.add(videoId);
+        return send(res, 200, {
+          kind: "YOUTUBE_PUBLIC_TOP_LEVEL_COMMENTS_V1",
+          source: "YOUTUBE_DATA_API_COMMENT_THREADS",
+          query: discoveredQuery,
+          videoId,
+          videoTitle: video.title,
+          channelId: video.channelId,
+          channelTitle: video.channelTitle,
+          fetchedAt: new Date(now()).toISOString(),
+          scope: "FIRST_PAGE_TOP_LEVEL_MAX_100",
+          order: "time",
+          sampledCount: normalized.comments.length,
+          skipped: normalized.skipped,
+          truncated: normalized.truncated,
+          hasMore: Boolean(data.nextPageToken),
+          comments: normalized.comments,
+        });
+      }
       const videos = normalizeSearchItems(data);
       if (!videos) return send(res, 502, { kind: "ERROR", code: "INVALID_UPSTREAM" });
+      discovered = new Map(videos.map((candidate) => [candidate.videoId, candidate]));
+      sampled = new Set();
+      discoveredQuery = query;
       return send(res, 200, {
         kind: "YOUTUBE_PUBLIC_VIDEO_SEARCH_V1",
         source: "YOUTUBE_DATA_API_SEARCH",
@@ -186,4 +289,5 @@ module.exports = {
   createLocalDiscoveryServer,
   normalizeSearchQuery,
   normalizeSearchItems,
+  normalizeCommentThreads,
 };

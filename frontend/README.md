@@ -186,3 +186,14 @@ Then run pnpm dev in the frontend directory and open /analysis/youtube/trend-key
 No requests occur at server startup or during CI. Each user click issues at most one bounded search; default local cap 20/day. Successful real YouTube search depends on a configured key and Google Cloud project quotas. G2-K/G2-L Windows browser manual QA remains pending, as does any production integration.
 
 Detailed contract: docs/research/YU_VIDEO_G2L_USER_KEYWORD_YOUTUBE_SEARCH_V01.md.
+
+
+## G2-M — user-clicked top-level YouTube comment samples (development only)
+
+After G2-L user-defined video discovery, click the per-video latest-comment sample button. The existing 127.0.0.1:8787 Node server makes one official YouTube commentThreads.list request for up to 100 recent public top-level comments per selected video, up to 3 videos per search. No replies, additional pages, video downloads, user author profiles, AI analysis or background crawling.
+
+The UI keeps API comments and local CSV records as separate selectable sources, and shows per-video keyword match counts with denominators plus UTC comment-date distribution. These are sampled mentions, not sentiment or a proven rising trend.
+
+G2-K / G2-L / G2-M live Windows manual QA is still pending. Offline CI uses mocked upstream responses only.
+
+Details: docs/research/YU_VIDEO_G2M_TOP_LEVEL_COMMENT_KEYWORD_SAMPLE_V01.md.

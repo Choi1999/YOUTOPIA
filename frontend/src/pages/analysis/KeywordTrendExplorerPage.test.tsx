@@ -95,4 +95,90 @@ describe("G2-K user-driven keyword entry",()=>{
     } finally {vi.unstubAllGlobals();}
   });
 
+
+  it("fetches selected video comments only on a separate user click, and shows bounded per-video ratios",async()=>{
+    const user=userEvent.setup();
+    const video={
+      videoId:"AbCdefghI12",title:"독일 와인 리뷰",channelId:"UCabc",
+      channelTitle:"시음 채널",publishedAt:"2026-11-08T00:00:00Z",
+      thumbnailUrl:null,videoUrl:"https://www.youtube.com/watch?v=AbCdefghI12",
+    };
+    const comments=[
+      {id:"Ugx.1",videoId:video.videoId,videoTitle:video.title,
+       channelId:video.channelId,channelName:video.channelTitle,
+       publishedAt:"2026-11-09T09:00:00Z",text:"독일 와인 리뷰가 마음에 들어요"},
+      {id:"Ugx.2",videoId:video.videoId,videoTitle:video.title,
+       channelId:video.channelId,channelName:video.channelTitle,
+       publishedAt:"2026-11-08T09:00:00Z",text:"상관없는 이야기"},
+    ];
+    const mock=vi.fn(async (path:string,_init?:RequestInit)=>({
+      ok:true,
+      json:async()=>path==="/api/youtube/discover"?{
+        kind:"YOUTUBE_PUBLIC_VIDEO_SEARCH_V1",source:"YOUTUBE_DATA_API_SEARCH",
+        query:"독일 와인",fetchedAt:"2026-11-09T10:00:00Z",videos:[video],
+      }:{
+        kind:"YOUTUBE_PUBLIC_TOP_LEVEL_COMMENTS_V1",
+        source:"YOUTUBE_DATA_API_COMMENT_THREADS",scope:"FIRST_PAGE_TOP_LEVEL_MAX_100",
+        order:"time",query:"독일 와인",videoId:video.videoId,
+        videoTitle:video.title,channelId:video.channelId,channelTitle:video.channelTitle,
+        fetchedAt:"2026-11-09T10:01:00Z",sampledCount:2,skipped:0,truncated:0,
+        hasMore:true,comments,
+      },
+    }));
+    vi.stubGlobal("fetch",mock);
+    try{
+      render(<KeywordTrendExplorerPage/>);
+      await user.type(screen.getByLabelText("어떤 키워드가 궁금한가요?"),"독일 와인");
+      await user.click(screen.getByRole("button",{name:"키워드 적용"}));
+      expect(mock).not.toHaveBeenCalled();
+      await user.click(screen.getByRole("button",{name:"YouTube 영상 검색"}));
+      expect(await screen.findByText("독일 와인 리뷰")).toBeInTheDocument();
+      expect(mock).toHaveBeenCalledTimes(1);
+      await user.click(screen.getByRole("button",{name:"독일 와인 리뷰 댓글 표본 가져오기"}));
+      expect(await screen.findByText("독일 와인 리뷰가 마음에 들어요")).toBeInTheDocument();
+      expect(mock).toHaveBeenCalledTimes(2);
+      expect(screen.getByLabelText("댓글 분석 출처")).toHaveValue("YOUTUBE");
+      const comparison=screen.getByLabelText("영상별 키워드 표본 비교");
+      expect(within(comparison).getByText(/1\/2개/)).toBeInTheDocument();
+      expect(within(comparison).getByText(/50%/)).toBeInTheDocument();
+      expect(within(comparison).getByText(/추가 페이지 존재/)).toBeInTheDocument();
+      const request=mock.mock.calls[1];
+      expect(request[0]).toBe("/api/youtube/comments");
+      expect(JSON.stringify(request[1])).toContain(video.videoId);
+      await user.click(screen.getByRole("button",{name:"댓글 표본 비우기"}));
+      expect(screen.getByRole("heading",{name:"“독일 와인” 관측 자료 없음"})).toBeInTheDocument();
+    }finally{vi.unstubAllGlobals();}
+  });
+
+  it("does not mix local CSV and API comments or invent results from failed fetches",async()=>{
+    const user=userEvent.setup();
+    const mock=vi.fn(async (path:string,_init?:RequestInit)=>({
+      ok:path==="/api/youtube/discover",
+      json:async()=>path==="/api/youtube/discover"?{
+        kind:"YOUTUBE_PUBLIC_VIDEO_SEARCH_V1",source:"YOUTUBE_DATA_API_SEARCH",
+        query:"독일 와인",fetchedAt:"2026-11-09T10:00:00Z",
+        videos:[{videoId:"AbCdefghI12",title:"독일 와인 리뷰",
+          channelId:"UCabc",channelTitle:"채널",publishedAt:"2026-11-09T00:00:00Z",
+          thumbnailUrl:null,videoUrl:"https://www.youtube.com/watch?v=AbCdefghI12"}],
+      }:{kind:"ERROR",code:"YOUTUBE_REQUEST_FAILED"},
+    }));
+    vi.stubGlobal("fetch",mock);
+    try{
+      render(<KeywordTrendExplorerPage/>);
+      await user.type(screen.getByLabelText("어떤 키워드가 궁금한가요?"),"독일 와인");
+      await user.click(screen.getByRole("button",{name:"키워드 적용"}));
+      await user.upload(screen.getByLabelText("키워드 관측 CSV"),
+        new File([csv],"user.csv",{type:"text/csv"}));
+      await waitFor(()=>expect(screen.getByText(/관측 댓글 2개를 로컬로 읽었습니다/)).toBeInTheDocument());
+      expect(screen.getByLabelText("댓글 분석 출처")).toHaveValue("CSV");
+      await user.click(screen.getByRole("button",{name:"YouTube 영상 검색"}));
+      await screen.findByText("독일 와인 리뷰");
+      await user.click(screen.getByRole("button",{name:"독일 와인 리뷰 댓글 표본 가져오기"}));
+      expect(await screen.findByRole("alert")).toHaveTextContent("댓글 조회가 거부");
+      expect(screen.getByLabelText("댓글 분석 출처")).toHaveValue("CSV");
+      expect(screen.queryByLabelText("영상별 키워드 표본 비교")).not.toBeInTheDocument();
+      expect(screen.getByText("독일 와인에 관한 이야기")).toBeInTheDocument();
+    }finally{vi.unstubAllGlobals();}
+  });
+
 });

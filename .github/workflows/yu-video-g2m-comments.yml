@@ -1,0 +1,48 @@
+name: YOUTOPIA G2-M sampled comments offline
+
+on:
+  push:
+    branches:
+      - feature/yu-video-g2m-top-level-comments-v01
+    paths:
+      - 'frontend/**'
+      - 'shared/experiments/yu-video-understanding-poc-v0/g2l-youtube-search-proxy.cjs'
+      - 'shared/experiments/yu-video-understanding-poc-v0/tests/g2m-comment-sample.test.cjs'
+      - '.github/workflows/yu-video-g2m-comments.yml'
+  pull_request:
+    branches:
+      - feature/yu-video-g2l-youtube-search-boundary-v01
+    paths:
+      - 'frontend/**'
+      - 'shared/experiments/yu-video-understanding-poc-v0/g2l-youtube-search-proxy.cjs'
+      - 'shared/experiments/yu-video-understanding-poc-v0/tests/g2m-comment-sample.test.cjs'
+      - '.github/workflows/yu-video-g2m-comments.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  sample-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '12.9.1'
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Offline search and comment proxy tests with fake upstream
+        run: node --test shared/experiments/yu-video-understanding-poc-v0/tests/g2l-youtube-search-proxy.test.cjs shared/experiments/yu-video-understanding-poc-v0/tests/g2m-comment-sample.test.cjs
+      - name: Frozen dependency installation
+        run: pnpm --dir frontend install --frozen-lockfile
+      - name: Frontend Vitest
+        run: pnpm --dir frontend test
+      - name: TypeScript check and Vite build
+        run: pnpm --dir frontend build

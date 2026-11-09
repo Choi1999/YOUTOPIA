@@ -1,5 +1,7 @@
 import {useEffect,useMemo,useRef,useState,type FormEvent,type ChangeEvent} from "react";
 import {searchPublicYoutubeVideos,type PublicSearchResult} from "../../features/trend/youtubeSearchClient";
+import {collectPublicVideoComments,type CollectedCommentSample} from "../../features/trend/youtubeCommentClient";
+import {compareVideoCommentSamples} from "../../features/trend/videoCommentComparison";
 import {
   importKeywordCsv,inspectKeyword,userKeyword,MAX_CSV_BYTES,
   type Observation,type TrendWindow,
@@ -30,9 +32,19 @@ export function KeywordTrendExplorerPage(){
   const [liveOrder,setLiveOrder]=useState<"relevance"|"date">("relevance");
   const [liveBusy,setLiveBusy]=useState(false);
   const [liveResult,setLiveResult]=useState<PublicSearchResult|null>(null);
-  useEffect(()=>()=>{searchAbort.current?.abort();},[]);
-  const result=useMemo(()=>keyword?inspectKeyword(keyword,records,period):null,
-    [keyword,records,period]);
+  const [samples,setSamples]=useState<readonly CollectedCommentSample[]>([]);
+  const [source,setSource]=useState<"CSV"|"YOUTUBE">("CSV");
+  const [commentBusy,setCommentBusy]=useState<string|null>(null);
+  const [commentError,setCommentError]=useState("");
+  const commentVersion=useRef(0);
+  const commentAbort=useRef<AbortController|null>(null);
+  useEffect(()=>()=>{searchAbort.current?.abort();commentAbort.current?.abort();},[]);
+  const activeRecords=useMemo(()=>source==="YOUTUBE"
+    ?samples.flatMap(sample=>sample.comments):records,[source,samples,records]);
+  const result=useMemo(()=>keyword?inspectKeyword(keyword,activeRecords,period):null,
+    [keyword,activeRecords,period]);
+  const videoComparisons=result?.kind==="READY"&&source==="YOUTUBE"
+    ?compareVideoCommentSamples(keyword,samples,result.startDay,result.endDay):[];
   const max=result?.kind==="READY"
     ?Math.max(1,...result.days.map(x=>x.matched)):1;
 
@@ -44,6 +56,12 @@ export function KeywordTrendExplorerPage(){
     searchAbort.current?.abort();
     setLiveBusy(false);
     setLiveResult(null);
+    ++commentVersion.current;
+    commentAbort.current?.abort();
+    setCommentBusy(null);
+    setCommentError("");
+    setSamples([]);
+    setSource("CSV");
     setKeyword(term);
     setNotice("사용자가 입력한 문구 그대로 탐색합니다. 추천 키워드나 자동 확장은 적용하지 않습니다.");
   }
@@ -61,6 +79,7 @@ export function KeywordTrendExplorerPage(){
       if(parsed.kind==="INVALID"){setNotice(parsed.reason+" 기존 자료는 유지됩니다.");return;}
       setRecords(parsed.observations);
       setFileName(file.name);
+      setSource("CSV");
       setNotice("관측 댓글 "+parsed.observations.length+"개를 로컬로 읽었습니다. 원본 진위는 별도 확인이 필요합니다.");
     }catch{
       if(seq===reading.current)setNotice("CSV를 읽지 못했습니다. 기존 자료는 유지됩니다.");
@@ -74,14 +93,51 @@ export function KeywordTrendExplorerPage(){
     searchAbort.current=controller;
     setLiveBusy(true);
     setLiveResult(null);
+    ++commentVersion.current;
+    commentAbort.current?.abort();
+    setCommentBusy(null);
+    setCommentError("");
+    setSamples([]);
+    setSource("CSV");
     const next=await searchPublicYoutubeVideos(keyword,liveOrder,controller.signal);
     if(id!==searchVersion.current)return;
     setLiveBusy(false);
     setLiveResult(next);
   }
+  async function collectComments(videoId:string){
+    if(!keyword||commentBusy||liveBusy||liveResult?.kind!=="READY"||
+       !liveResult.videos.some(video=>video.videoId===videoId)||
+       (samples.length>=3&&!samples.some(sample=>sample.videoId===videoId)))return;
+    const seq=++commentVersion.current;
+    commentAbort.current?.abort();
+    const controller=new AbortController();
+    commentAbort.current=controller;
+    setCommentBusy(videoId);
+    setCommentError("");
+    const response=await collectPublicVideoComments(videoId,keyword,controller.signal);
+    if(seq!==commentVersion.current)return;
+    setCommentBusy(null);
+    if(response.kind==="ERROR"){
+      setCommentError(response.message);
+      return;
+    }
+    setSamples(previous=>{
+      const without=previous.filter(sample=>sample.videoId!==videoId);
+      return [...without,response.sample];
+    });
+    setSource("YOUTUBE");
+  }
   function clearRecords(){
     ++reading.current;setRecords([]);setFileName("");
-    setNotice("현재 세션의 관측 자료만 비웠습니다. 원본 파일은 변경하지 않았습니다.");
+    setNotice("현재 세션의 로컬 CSV만 비웠습니다. 원본 파일은 변경하지 않았습니다.");
+  }
+  function clearComments(){
+    ++commentVersion.current;
+    commentAbort.current?.abort();
+    setCommentBusy(null);
+    setCommentError("");
+    setSamples([]);
+    setSource("CSV");
   }
 
   return <div className="product-screen keyword-trend">
@@ -119,8 +175,17 @@ export function KeywordTrendExplorerPage(){
           <option value={90}>기록 기준 90일</option>
         </select>
       </label>
+      <label className="keyword-trend__period">댓글 분석 출처
+        <select aria-label="댓글 분석 출처" value={source}
+          onChange={e=>setSource(e.currentTarget.value as "CSV"|"YOUTUBE")}>
+          <option value="CSV">로컬 CSV</option>
+          <option value="YOUTUBE" disabled={!samples.length}>YouTube 최신 댓글 표본</option>
+        </select>
+      </label>
       {fileName&&<button type="button" className="keyword-trend__clear"
         onClick={clearRecords}>자료 비우기</button>}
+      {samples.length>0&&<button type="button" className="keyword-trend__clear"
+        onClick={clearComments}>댓글 표본 비우기</button>}
     </section>
     <section className="keyword-trend__live" aria-label="실제 YouTube 영상 검색">
       <div className="keyword-trend__live-header">
@@ -150,6 +215,7 @@ export function KeywordTrendExplorerPage(){
         <div className="keyword-trend__live-results">
           <p>{liveResult.videos.length}개 공개 영상 후보 · 조회 시각 {liveResult.fetchedAt} ·
           첫 페이지 최대 10개. 이 목록은 인기 순위나 댓글 반응 분석 결과가 아닙니다.</p>
+          {commentError&&<p className="keyword-trend__live-error" role="alert">{commentError}</p>}
           {liveResult.videos.length?
             <ol>{liveResult.videos.map(video=>
               <li key={video.videoId}>
@@ -160,10 +226,28 @@ export function KeywordTrendExplorerPage(){
                     <small>{video.channelTitle||"채널 정보 없음"} · {video.publishedAt||"게시일 미확인"}</small>
                   </span>
                 </a>
+                <div className="keyword-trend__comment-action">
+                  <button type="button"
+                    aria-label={video.title+" 댓글 표본 가져오기"}
+                    disabled={Boolean(commentBusy)||liveBusy||
+                      (samples.length>=3&&!samples.some(item=>item.videoId===video.videoId))}
+                    onClick={()=>{void collectComments(video.videoId);}}>
+                    {commentBusy===video.videoId?"댓글 조회 중":
+                      samples.some(item=>item.videoId===video.videoId)
+                        ?"댓글 표본 새로 조회":"최신 댓글 표본 가져오기"}
+                  </button>
+                  <small>{samples.find(item=>item.videoId===video.videoId)
+                    ?samples.find(item=>item.videoId===video.videoId)?.sampledCount+"개 최상위 댓글 수집"
+                    :"영상당 첫 페이지 최대 100개 · 최대 3개 영상"}</small>
+                </div>
               </li>
             )}</ol>:<p>해당 검색에서 반환된 공개 영상이 없습니다.</p>}
         </div>
       :<p className="keyword-trend__live-note">아직 YouTube API 요청을 실행하지 않았습니다. 로컬 검색 서버와 키가 설정된 경우에만 동작합니다.</p>}
+      {samples.length>0&&<p className="keyword-trend__live-note">
+        {samples.length}개 영상의 최상위 댓글 첫 페이지를 가져왔습니다.
+        검색 결과가 바뀌면 기존 API 댓글 표본도 초기화됩니다. 답글·전체 댓글은 포함하지 않습니다.
+      </p>}
     </section>
     {notice&&<p className="keyword-trend__notice" role="status">{notice}</p>}
     {!keyword?(
@@ -174,7 +258,9 @@ export function KeywordTrendExplorerPage(){
     ):result?.kind==="NO_DATA"?(
       <section className="keyword-trend__empty" role="status">
         <h2>“{keyword}” 관측 자료 없음</h2>
-        <p>키워드는 적용되었습니다. 로컬 CSV를 선택하면 해당 표본의 댓글 근거를 탐색합니다.</p>
+        <p>{source==="CSV"
+          ?"로컬 CSV를 선택하거나 검색된 영상의 댓글 표본을 가져오면 근거를 탐색할 수 있습니다."
+          :"현재 가져온 영상에서는 유효한 최신 최상위 댓글 표본이 없습니다."}</p>
       </section>
     ):result?.kind==="READY"?(
       <div className="keyword-trend__results" aria-label="키워드 관측 결과">
@@ -184,7 +270,8 @@ export function KeywordTrendExplorerPage(){
             <h2>“{result.keyword}” 관측 결과</h2>
             <p>{result.startDay} ~ {result.endDay} · 기록의 마지막 UTC 게시 날짜 기준</p>
           </div>
-          <small>{fileName} · 로컬 파일</small>
+          <small>{source==="CSV"?fileName+" · 로컬 CSV":
+            samples.length+"개 영상 · YouTube Data API · 첫 페이지 최상위 댓글 표본"}</small>
         </div>
         <div className="keyword-trend__metrics">
           <article><span>표본 댓글</span><strong>{result.total.toLocaleString()}개</strong></article>
@@ -192,9 +279,23 @@ export function KeywordTrendExplorerPage(){
           <article><span>표본 내 언급 비중</span><strong>{result.total
             ?(result.matches/result.total*100).toFixed(1)+"%":"산출 불가"}</strong></article>
         </div>
+        {source==="YOUTUBE"&&<section className="keyword-trend__panel" aria-label="영상별 키워드 표본 비교">
+          <h3>영상별 키워드 언급 비중</h3>
+          <p>분모는 해당 영상에서 가져온 첫 페이지 최상위 댓글 중 표시 기간에 해당하는 댓글입니다.
+            각 영상의 전체 댓글이나 시청자 여론을 대표하지 않습니다.</p>
+          <ol>{videoComparisons.map(video=><li key={video.videoId}>
+            <span>{video.videoTitle}</span>
+            <strong>{video.keywordMatches}/{video.periodTotal}개 ·
+              {video.matchPercent===null?"산출 불가":video.matchPercent+"%"}</strong>
+            <small>총 가져온 댓글 {video.sampledTotal}개 ·
+              {video.hasMore?"추가 페이지 존재":"추가 페이지 미표시"} ·
+              조회 {video.fetchedAt}</small>
+          </li>)}</ol>
+        </section>}
         <section className="keyword-trend__panel">
           <h3>관측 날짜별 언급 분포</h3>
-          <p>자료가 없는 날짜는 실제 언급 0건이 아니라 미관측일 수 있습니다.</p>
+          <p>자료가 없는 날짜는 실제 언급 0건이 아니라 미관측일 수 있습니다.
+            {source==="YOUTUBE"?" 최신 100개 상한의 편향된 표본으로 전 기간의 추세를 검증할 수 없습니다.":""}</p>
           <div className="keyword-trend__bars" role="list" aria-label="날짜별 관측 분포">
             {result.days.map(day=><div key={day.day} role="listitem"
               className="keyword-trend__bar-holder"
@@ -226,17 +327,17 @@ export function KeywordTrendExplorerPage(){
             {result.evidence.map(x=><li key={x.id}>
               <div><strong>{x.videoTitle}</strong><time>{x.publishedAt}</time></div>
               <p>{x.text}</p>
-              <small>{x.channelName} · CSV 기록 ID {x.id}</small>
+              <small>{x.channelName} · {source==="CSV"?"CSV 기록 ID":"YouTube 댓글 ID"} {x.id}</small>
             </li>)}</ol>:<p>표본에서 일치하는 댓글 근거가 없습니다.</p>}
         </section>
       </div>
     ):null}
     <footer className="keyword-trend__disclosure">
-      CSV 댓글 통계는 사용자 파일 표본에만 적용됩니다. 별도의 YouTube 검색 버튼은 로컬 검색 서버가
-      설정된 경우에만 YouTube Data API에서 공개 영상 메타데이터를 조회합니다.
-      API 키는 브라우저로 전송하지 않으며 댓글·영상 원본 다운로드·외부 AI 전송·서버 영구 저장은 수행하지 않습니다.
-      영상 검색 결과는 인기 순위, 실제 관심도, 댓글 분석이나 트렌드 상승의 증거가 아닙니다.
-      검색어와 CSV는 새로고침 시 초기화됩니다.
+      로컬 CSV와 공식 YouTube API의 최상위 댓글 첫 페이지는 서로 구분하여 표시하고 합산하지 않습니다.
+      댓글 표본은 최대 3개 영상의 최근 100개 이내 공개 최상위 댓글만 포함하며 답글·전체 댓글 수집을 하지 않습니다.
+      YouTube 검색과 댓글 조회는 사용자 버튼 클릭 시에만 수행합니다. API 키는 브라우저로 보내지 않습니다.
+      영상 다운로드·외부 AI 분석·서버 영구 저장은 없으며, 관측 언급량은 실제 상승·확산·감성이나 여론을 증명하지 않습니다.
+      검색어·CSV·API 댓글 표본은 새로고침 시 초기화됩니다.
     </footer>
   </div>;
 }
