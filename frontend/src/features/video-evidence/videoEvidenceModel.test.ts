@@ -59,12 +59,12 @@ describe("YU-49 G2-G read-only evidence import", () => {
   });
   it("does not generate timestamp markers for UNSUPPORTED claims", () => {
     const p = fixture();
-    p.questions[5].result = {
+    Object.assign(p.questions[5].result, {
       status: "APPROVE", finalVerdict: "UNSUPPORTED", operatorViewedSource: true,
       fullMovieReviewed: true,
       absenceRationale: "원본 전체에서 별도의 시간 정보를 찾지 못했다는 합성 기록",
       finalAnswerText: "시점을 확정할 수 없다.", finalEvidence: [],
-    };
+    });
     const result = importG2gEvidence(JSON.stringify(p));
     expect(result.kind).toBe("READY");
     if (result.kind !== "READY") return;
