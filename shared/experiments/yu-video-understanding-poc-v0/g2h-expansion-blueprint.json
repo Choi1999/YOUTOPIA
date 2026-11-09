@@ -1,0 +1,556 @@
+{
+  "schemaVersion": 1,
+  "registryId": "YU_VIDEO_G2H_DATASET_EXPANSION_BLUEPRINT_V01",
+  "documentedAt": "2026-11-09",
+  "status": "DESIGN_ONLY_UNSELECTED_UNVERIFIED",
+  "baselineContract": "G0_6_FILMS_36_QUESTIONS_UNCHANGED",
+  "usesPriorEvidence": "G2B_NASA_RESEARCH_CANDIDATES_AND_G2E_2_FILM_PILOT_COUNTS",
+  "existingPilot": {
+    "filmCount": 2,
+    "questionCount": 12,
+    "operatorAdjudicatedApproved": 10,
+    "operatorAdjudicatedHeld": 2,
+    "independentBlindGoldApproved": 0
+  },
+  "target": {
+    "filmCount": 6,
+    "questionCount": 36,
+    "genres": {
+      "INTERVIEW": 2,
+      "SCREENCAST": 2,
+      "ACTION": 2
+    },
+    "questionKinds": {
+      "SPEECH": 12,
+      "VISUAL": 8,
+      "OCR": 6,
+      "TEMPORAL": 5,
+      "UNSUPPORTED": 5
+    }
+  },
+  "extension": {
+    "filmCount": 4,
+    "questionCount": 24,
+    "genres": {
+      "INTERVIEW": 2,
+      "SCREENCAST": 2
+    },
+    "questionKinds": {
+      "SPEECH": 8,
+      "VISUAL": 4,
+      "OCR": 6,
+      "TEMPORAL": 3,
+      "UNSUPPORTED": 3
+    }
+  },
+  "authorizedMediaDownloaded": false,
+  "approvedForMediaIngestion": false,
+  "rightsClearedCount": 0,
+  "independentBlindGoldApproved": 0,
+  "modelQualityVerified": false,
+  "g3Authorized": false,
+  "externalProviderCalls": 0,
+  "actualSpendUsd": 0,
+  "entries": [
+    {
+      "slot": "SYNTH-VID-01",
+      "category": "INTERVIEW",
+      "candidateTitle": "Transients from Space — Science Workshop Interviews",
+      "officialSource": "https://science.nasa.gov/asset/webb/transients-from-space-science-workshop-interviews/",
+      "candidateEvidence": "OFFICIAL_MP4_AND_SRT_VTT_TXT_LISTED_NOT_LOCALLY_ACQUIRED",
+      "sourceStatus": "RESEARCH_CANDIDATE_NOT_DATASET",
+      "rightsStatus": "UNVERIFIED_FOR_YOUTOPIA",
+      "youtubeEditionStatus": "UNVERIFIED_NO_MEDIA_COMPARISON",
+      "captionAlignmentStatus": "UNVERIFIED_NO_CAPTION_COMPARISON",
+      "realDurationMs": null,
+      "authorizedLocalVideoSha256": null,
+      "authorizedLocalCaptionSha256": null,
+      "independentBlindLabelerCount": 0,
+      "operatorAdjudicationApproved": false,
+      "g3Ready": false,
+      "blockingEvidence": [
+        "SCOPED_SERVICE_AND_MODEL_TRANSMISSION_RIGHTS",
+        "PEOPLE_AND_PARTNER_CREDIT_REVIEW",
+        "OFFICIAL_YOUTUBE_ID_UNCONFIRMED",
+        "PUBLISHER_EDITION_AND_TIMED_CAPTION_ALIGNMENT",
+        "RUNTIME_AND_SCENE_DIVERSITY_UNVERIFIED"
+      ],
+      "questionBlueprints": [
+        {
+          "id": "G2H-01-01",
+          "kind": "SPEECH",
+          "promptDesign": "인터뷰 초반에 직접 들리는 과학적 현상 또는 주제의 핵심 설명을 묻는다.",
+          "requiredModalities": [
+            "AUDIO",
+            "TRANSCRIPT"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-01-02",
+          "kind": "SPEECH",
+          "promptDesign": "인터뷰 도중 화자가 제시한 관측 근거나 이유를 정확하게 묻는다.",
+          "requiredModalities": [
+            "AUDIO",
+            "TRANSCRIPT"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-01-03",
+          "kind": "SPEECH",
+          "promptDesign": "인터뷰 후반에 화자가 언급한 제한점이나 다음 과제를 묻는다.",
+          "requiredModalities": [
+            "AUDIO",
+            "TRANSCRIPT"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-01-04",
+          "kind": "VISUAL",
+          "promptDesign": "인터뷰 화면에서 실제로 확인되는 한 인물의 제스처·시각 자료·동작을 묻는다.",
+          "requiredModalities": [
+            "FRAME"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-01-05",
+          "kind": "TEMPORAL",
+          "promptDesign": "처음과 나중에 등장하는 서로 다른 실제 발언 또는 장면 두 개의 순서를 묻는다.",
+          "requiredModalities": [
+            "FRAME",
+            "AUDIO"
+          ],
+          "minimumEvidenceSegments": 2,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-01-06",
+          "kind": "UNSUPPORTED",
+          "promptDesign": "영상·대사에 제시되지 않은 특정 사실을 추정하도록 유도하지 않고, 실제 전체 범위에서 답변 불가능함을 검증할 질문을 설계한다.",
+          "requiredModalities": [],
+          "minimumEvidenceSegments": 0,
+          "requiresWholeVideoAbsenceCheck": true,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        }
+      ]
+    },
+    {
+      "slot": "SYNTH-VID-02",
+      "category": "INTERVIEW",
+      "candidateTitle": "Webb Draws Back the Curtains — Interview with Tommaso Treu",
+      "officialSource": "https://science.nasa.gov/asset/webb/webb-draws-back-the-curtains-on-an-undiscovered-universe-interview-with-tommaso-treu/",
+      "candidateEvidence": "OFFICIAL_MP4_AND_SRT_VTT_TXT_LISTED_THIRD_PARTY_MUSIC",
+      "sourceStatus": "RESEARCH_CANDIDATE_NOT_DATASET",
+      "rightsStatus": "UNVERIFIED_FOR_YOUTOPIA",
+      "youtubeEditionStatus": "UNVERIFIED_NO_MEDIA_COMPARISON",
+      "captionAlignmentStatus": "UNVERIFIED_NO_CAPTION_COMPARISON",
+      "realDurationMs": null,
+      "authorizedLocalVideoSha256": null,
+      "authorizedLocalCaptionSha256": null,
+      "independentBlindLabelerCount": 0,
+      "operatorAdjudicationApproved": false,
+      "g3Ready": false,
+      "blockingEvidence": [
+        "SOUNDSTRIPE_MUSIC_RIGHTS_NOT_CLEARED",
+        "IDENTIFIABLE_PERSON_COMMERCIAL_RIGHTS",
+        "OFFICIAL_YOUTUBE_ID_UNCONFIRMED",
+        "SCOPED_SERVICE_AND_MODEL_TRANSMISSION_RIGHTS",
+        "PUBLISHER_EDITION_AND_TIMED_CAPTION_ALIGNMENT"
+      ],
+      "questionBlueprints": [
+        {
+          "id": "G2H-02-01",
+          "kind": "SPEECH",
+          "promptDesign": "화자가 관측된 대상에 관하여 실제 언급한 주요 사실을 묻는다.",
+          "requiredModalities": [
+            "AUDIO",
+            "TRANSCRIPT"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-02-02",
+          "kind": "SPEECH",
+          "promptDesign": "특정 관찰 결과를 설명하면서 화자가 직접 말한 수치 또는 비교를 묻는다.",
+          "requiredModalities": [
+            "AUDIO",
+            "TRANSCRIPT"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-02-03",
+          "kind": "SPEECH",
+          "promptDesign": "인터뷰에서 설명한 해석·의미 또는 다음 과제 중 실제 발언을 묻는다.",
+          "requiredModalities": [
+            "AUDIO",
+            "TRANSCRIPT"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-02-04",
+          "kind": "VISUAL",
+          "promptDesign": "화면에 제시된 인터뷰 대상·표정·제스처 또는 구체적 시각 자료를 묻는다.",
+          "requiredModalities": [
+            "FRAME"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-02-05",
+          "kind": "TEMPORAL",
+          "promptDesign": "인터뷰 진행 중 선행 발언과 후행 발언의 순서를 실제로 구별할 수 있는 질문을 설계한다.",
+          "requiredModalities": [
+            "FRAME",
+            "AUDIO"
+          ],
+          "minimumEvidenceSegments": 2,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-02-06",
+          "kind": "UNSUPPORTED",
+          "promptDesign": "영상 전체에 없는 세부 사실에 대한 부재를 실제로 판정할 수 있는지 검증한 뒤 질문을 작성한다.",
+          "requiredModalities": [],
+          "minimumEvidenceSegments": 0,
+          "requiresWholeVideoAbsenceCheck": true,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        }
+      ]
+    },
+    {
+      "slot": "SYNTH-VID-03",
+      "category": "SCREENCAST",
+      "candidateTitle": "Tutorial — NASA's Eyes on the Earth",
+      "officialSource": "https://science.nasa.gov/resource/tutorial-nasas-eyes-on-the-earth/",
+      "candidateEvidence": "OFFICIAL_1080P_MP4_AND_OFFICIAL_YOUTUBE_EMBED_LISTED_NO_TIMED_SRT_CONFIRMED",
+      "sourceStatus": "RESEARCH_CANDIDATE_NOT_DATASET",
+      "rightsStatus": "UNVERIFIED_FOR_YOUTOPIA",
+      "youtubeEditionStatus": "UNVERIFIED_NO_MEDIA_COMPARISON",
+      "captionAlignmentStatus": "UNVERIFIED_NO_CAPTION_COMPARISON",
+      "realDurationMs": null,
+      "authorizedLocalVideoSha256": null,
+      "authorizedLocalCaptionSha256": null,
+      "independentBlindLabelerCount": 0,
+      "operatorAdjudicationApproved": false,
+      "g3Ready": false,
+      "blockingEvidence": [
+        "OFFICIAL_TIMED_CAPTIONS_OR_AUTHORIZED_TRANSCRIPT_NOT_CONFIRMED",
+        "ORIGINAL_AND_YOUTUBE_EDITION_NOT_ALIGNED",
+        "SCOPED_SERVICE_AND_MODEL_TRANSMISSION_RIGHTS",
+        "ONSCREEN_OCR_TEXT_LEGIBILITY_NOT_CHECKED",
+        "RUNTIME_AND_LANGUAGE_NOT_VERIFIED"
+      ],
+      "questionBlueprints": [
+        {
+          "id": "G2H-03-01",
+          "kind": "SPEECH",
+          "promptDesign": "실제 시연 음성에서 특정 화면 조작을 설명하는 발화의 핵심 내용을 묻는다.",
+          "requiredModalities": [
+            "AUDIO",
+            "TRANSCRIPT"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-03-02",
+          "kind": "VISUAL",
+          "promptDesign": "시연자가 실제 실행한 입력·클릭·회전·화면 변화 동작을 묻는다.",
+          "requiredModalities": [
+            "FRAME"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-03-03",
+          "kind": "OCR",
+          "promptDesign": "실제로 화면에 표시되는 메뉴 또는 패널 제목의 정확한 텍스트를 묻는다.",
+          "requiredModalities": [
+            "FRAME",
+            "OCR"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-03-04",
+          "kind": "OCR",
+          "promptDesign": "확인 가능한 화면 버튼·탭·항목 가운데 한 개의 표시 문자열을 묻는다.",
+          "requiredModalities": [
+            "FRAME",
+            "OCR"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-03-05",
+          "kind": "OCR",
+          "promptDesign": "시간과 판본이 고정된 화면의 수치·레이블을 보이는 그대로 읽게 하는 질문을 설계한다.",
+          "requiredModalities": [
+            "FRAME",
+            "OCR"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-03-06",
+          "kind": "TEMPORAL",
+          "promptDesign": "서로 다른 두 개의 UI 조작 또는 화면 전환 순서를 묻는다.",
+          "requiredModalities": [
+            "FRAME",
+            "AUDIO"
+          ],
+          "minimumEvidenceSegments": 2,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        }
+      ]
+    },
+    {
+      "slot": "SYNTH-VID-04",
+      "category": "SCREENCAST",
+      "candidateTitle": "Eyes on Exoplanets Tutorial",
+      "officialSource": "https://science.nasa.gov/tutorials/eyes-on-exoplanets-tutorial/",
+      "candidateEvidence": "OFFICIAL_WEB_TUTORIAL_AND_TEXT_TRANSCRIPT_LISTED_MP4_SRT_YOUTUBE_MAPPING_UNCONFIRMED",
+      "sourceStatus": "RESEARCH_CANDIDATE_NOT_DATASET",
+      "rightsStatus": "UNVERIFIED_FOR_YOUTOPIA",
+      "youtubeEditionStatus": "UNVERIFIED_NO_MEDIA_COMPARISON",
+      "captionAlignmentStatus": "UNVERIFIED_NO_CAPTION_COMPARISON",
+      "realDurationMs": null,
+      "authorizedLocalVideoSha256": null,
+      "authorizedLocalCaptionSha256": null,
+      "independentBlindLabelerCount": 0,
+      "operatorAdjudicationApproved": false,
+      "g3Ready": false,
+      "blockingEvidence": [
+        "OFFICIAL_DOWNLOADABLE_MP4_UNCONFIRMED",
+        "OFFICIAL_TIMED_SRT_OR_VTT_UNCONFIRMED",
+        "OFFICIAL_YOUTUBE_ID_UNCONFIRMED",
+        "PUBLISHER_EDITION_AND_TRANSCRIPT_TIME_ALIGNMENT",
+        "SCOPED_SERVICE_AND_MODEL_TRANSMISSION_RIGHTS",
+        "ONSCREEN_OCR_TEXT_LEGIBILITY_NOT_CHECKED"
+      ],
+      "questionBlueprints": [
+        {
+          "id": "G2H-04-01",
+          "kind": "SPEECH",
+          "promptDesign": "음성 설명에서 사용 방법 또는 선택 기능에 관하여 직접 말한 내용을 묻는다.",
+          "requiredModalities": [
+            "AUDIO",
+            "TRANSCRIPT"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-04-02",
+          "kind": "VISUAL",
+          "promptDesign": "실제 시연에서 지도·시점·검색 등 화면 요소가 변화하는 행동을 묻는다.",
+          "requiredModalities": [
+            "FRAME"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-04-03",
+          "kind": "OCR",
+          "promptDesign": "영상에 실제 표시된 검색창·메뉴의 정확한 표시 글자를 묻는다.",
+          "requiredModalities": [
+            "FRAME",
+            "OCR"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-04-04",
+          "kind": "OCR",
+          "promptDesign": "실제로 볼 수 있는 설정이나 표시 옵션의 문자열을 묻는다.",
+          "requiredModalities": [
+            "FRAME",
+            "OCR"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-04-05",
+          "kind": "OCR",
+          "promptDesign": "화면에 정지해 나타나는 이름·레이블·숫자 중 확인할 수 있는 정보를 묻는다.",
+          "requiredModalities": [
+            "FRAME",
+            "OCR"
+          ],
+          "minimumEvidenceSegments": 1,
+          "requiresWholeVideoAbsenceCheck": false,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        },
+        {
+          "id": "G2H-04-06",
+          "kind": "UNSUPPORTED",
+          "promptDesign": "시연 전체에 표시되지 않는 특정 조작 결과나 수치를 임의로 추론할 수 없음을 확인할 질문을 설계한다.",
+          "requiredModalities": [],
+          "minimumEvidenceSegments": 0,
+          "requiresWholeVideoAbsenceCheck": true,
+          "answerability": null,
+          "answerText": null,
+          "anchorLocalMs": null,
+          "evidence": [],
+          "candidateStatus": "QUESTION_TEMPLATE_NOT_REAL_MEDIA_OBSERVED",
+          "independentBlindGoldApproved": false
+        }
+      ]
+    }
+  ]
+}
