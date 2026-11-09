@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "registryId": "YU_VIDEO_G2H1_NASA_METADATA_SOURCE_READINESS_V01",
+  "auditedAt": "2026-11-09",
+  "status": "PUBLIC_METADATA_REVIEW_ONLY_SOURCES_UNAPPROVED",
+  "baselineContract": "G0_6_FILMS_36_QUESTIONS_UNCHANGED",
+  "phase": "G2-H1_SOURCE_AND_RIGHTS_RESEARCH",
+  "sources": [
+    {
+      "key": "NASA_MEDIA_USAGE",
+      "url": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "finding": "NASA media are generally copyright-free in the US subject to exceptions; commercial use, recognizable people, third-party materials, trademark and endorsement restrictions need scoped review."
+    },
+    {
+      "key": "YOUTUBE_API_POLICY",
+      "url": "https://developers.google.com/youtube/terms/developer-policies",
+      "finding": "YouTube audiovisual content may not be downloaded, imported, cached or backed up through API clients without YouTube prior written approval."
+    }
+  ],
+  "candidates": [
+    {
+      "slot": "SYNTH-VID-01",
+      "category": "INTERVIEW",
+      "title": "Transients from Space — Science Workshop Interviews",
+      "officialPage": "https://science.nasa.gov/asset/webb/transients-from-space-science-workshop-interviews/",
+      "reportedReleaseDate": "2025-03-31",
+      "officialCredit": "NASA, ESA, CSA, STScI, Danielle Kirshenblat",
+      "assets": [
+        {
+          "kind": "MP4_WITHOUT_SUBTITLES",
+          "resolution": "1920x1080",
+          "fps": 30,
+          "listedSizeMb": 22.98
+        },
+        {
+          "kind": "MP4_WITH_SUBTITLES",
+          "resolution": "1920x1080",
+          "fps": 30,
+          "listedSizeMb": 23.03
+        },
+        {
+          "kind": "SRT",
+          "resolution": null,
+          "fps": null,
+          "listedSizeMb": null
+        },
+        {
+          "kind": "VTT",
+          "resolution": null,
+          "fps": null,
+          "listedSizeMb": null
+        },
+        {
+          "kind": "TXT_TRANSCRIPT",
+          "resolution": null,
+          "fps": null,
+          "listedSizeMb": null
+        }
+      ],
+      "officialMovieListed": true,
+      "officialTimedCaptionListed": true,
+      "officialTranscriptListed": true,
+      "officialYouTubePlayerObserved": true,
+      "officialYouTubeId": null,
+      "youtubeIdEstablished": false,
+      "originalVersusYouTubeEditionVerified": false,
+      "videoDurationMsVerified": null,
+      "durationWithinG0ThreeToFifteenMin": "UNKNOWN_UNVERIFIED",
+      "captionAudioAlignmentVerified": false,
+      "localMediaBytesInspected": false,
+      "rightsForYoutopiaServiceApproved": false,
+      "thirdPartyCreditsRequireReview": true,
+      "identifiablePeopleRightsRequireReview": true,
+      "status": "PUBLIC_ASSETS_DOCUMENTED_SELECTION_BLOCKED",
+      "blockers": [
+        "NO_VERIFIED_RUNTIME_3_TO_15_MINUTES",
+        "UNCONFIRMED_OFFICIAL_YOUTUBE_VIDEO_ID",
+        "MULTIPARTY_CREDITS_AND_PEOPLE_RIGHTS",
+        "MODEL_TRANSMISSION_AND_COMMERCIAL_SCOPE_UNREVIEWED",
+        "PUBLISHER_VIDEO_VERSUS_YOUTUBE_VERSION_UNALIGNED",
+        "OFFICIAL_CAPTIONS_EXIST_BUT_TIMING_UNCHECKED"
+      ],
+      "nextReadOnlyAction": "Confirm runtime, one canonical publisher edition and official video ID from authorized first-party metadata; evaluate each credited party's relevant rights before any media ingestion."
+    },
+    {
+      "slot": "SYNTH-VID-03",
+      "category": "SCREENCAST",
+      "title": "Tutorial — NASA's Eyes on the Earth",
+      "officialPage": "https://science.nasa.gov/resource/tutorial-nasas-eyes-on-the-earth/",
+      "reportedReleaseDate": "2023-03-28",
+      "officialCredit": "NASA/JPL-Caltech",
+      "assets": [
+        {
+          "kind": "MP4_1080P",
+          "resolution": "1920x1080",
+          "fps": null,
+          "listedSizeMb": 182.08
+        }
+      ],
+      "officialMovieListed": true,
+      "officialTimedCaptionListed": false,
+      "officialTranscriptListed": false,
+      "officialYouTubePlayerObserved": true,
+      "officialYouTubeId": "p-6DusnZ1pQ",
+      "youtubeIdEstablished": true,
+      "originalVersusYouTubeEditionVerified": false,
+      "videoDurationMsVerified": null,
+      "durationWithinG0ThreeToFifteenMin": "UNKNOWN_UNVERIFIED",
+      "captionAudioAlignmentVerified": false,
+      "localMediaBytesInspected": false,
+      "rightsForYoutopiaServiceApproved": false,
+      "thirdPartyCreditsRequireReview": true,
+      "identifiablePeopleRightsRequireReview": true,
+      "status": "PUBLIC_ASSETS_DOCUMENTED_SELECTION_BLOCKED",
+      "blockers": [
+        "NO_OFFICIAL_TIMED_SRT_OR_VTT_LISTED",
+        "NO_VERIFIED_RUNTIME_3_TO_15_MINUTES",
+        "PUBLISHER_MP4_YOUTUBE_SAME_EDIT_NOT_PROVEN",
+        "MODEL_TRANSMISSION_AND_COMMERCIAL_SCOPE_UNREVIEWED",
+        "ONSCREEN_OCR_AND_SPEECH_COVERAGE_UNVERIFIED",
+        "IDENTIFIABLE_PEOPLE_AND_THIRD_PARTY_ELEMENTS_NOT_AUDITED"
+      ],
+      "nextReadOnlyAction": "Identify official timed captions or an authorized aligned transcript, confirm publisher MP4 and YouTube embed refer to comparable editions and review rights before any media ingestion."
+    }
+  ],
+  "researchCandidateCount": 2,
+  "officialMediaListingCount": 2,
+  "officialTimedCaptionListingCount": 1,
+  "officialYoutubeIdConfirmedCount": 1,
+  "sourceRuntimeVerifiedCount": 0,
+  "sourceEditionMatchedCount": 0,
+  "scopedRightsApprovedCount": 0,
+  "mediaIngestApprovedCount": 0,
+  "independentBlindGoldApproved": 0,
+  "externalProviderCalls": 0,
+  "actualSpendUsd": 0,
+  "g3Authorized": false,
+  "noVideoOrCaptionsDownloadedByThisResearch": true,
+  "outputDoesNotCertifyRealMediaOrRights": true
+}
