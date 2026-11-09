@@ -145,33 +145,12 @@ jobs:
         with:
           version: '12.9.1'
 
-      - name: Preload pinned Spring test Gradle wrapper with bounded download retry
+      - name: Prepare pinned Gradle 8.14.3 CLI from immutable official image (R04-AA)
         shell: bash
         run: |
           set -euo pipefail
-          # Only the ephemeral, pinned test checkout's download timeout changes.
-          # No source code, security boundary, production deployment or test
-          # expectation is modified. The upstream distribution can transiently
-          # return HTTP 504 on GitHub-hosted runners.
-          props=_r04x_backend/gradle/wrapper/gradle-wrapper.properties
-          test -f "$props"
-          if grep -q '^networkTimeout=' "$props"; then
-            sed -i -E 's/^networkTimeout=[0-9]+/networkTimeout=60000/' "$props"
-          else
-            printf '\nnetworkTimeout=60000\n' >> "$props"
-          fi
-          chmod +x _r04x_backend/gradlew
-          for attempt in 1 2 3; do
-            if (cd _r04x_backend && ./gradlew --no-daemon --version); then
-              echo 'PINNED_GRADLE_READY'
-              exit 0
-            fi
-            if [ "$attempt" -eq 3 ]; then
-              echo 'Gradle distribution unavailable after bounded retries'
-              exit 1
-            fi
-            sleep 5
-          done
+          bash -n tools/ci/prepare-r04-pinned-gradle.sh
+          bash tools/ci/prepare-r04-pinned-gradle.sh _r04x_backend
 
       - name: Start local-only Spring TEST fixture, no secrets or provider API
         shell: bash
@@ -180,7 +159,7 @@ jobs:
           chmod +x _r04x_backend/gradlew
           (
             cd _r04x_backend
-            setsid ./gradlew --no-daemon runR04XSyntheticMetadataLoopback \
+            setsid "$R04_PINNED_GRADLE" --no-daemon runR04XSyntheticMetadataLoopback \
               > /tmp/r04x-spring.log 2>&1 &
             echo $! > /tmp/r04x-spring.pid
           )
@@ -273,13 +252,20 @@ jobs:
         with:
           version: '12.9.1'
 
+      - name: Prepare pinned Gradle 8.14.3 CLI from immutable official image (R04-AG)
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n tools/ci/prepare-r04-pinned-gradle.sh
+          bash tools/ci/prepare-r04-pinned-gradle.sh _r04ag_backend
+
       - name: Verify actual AF Spring 401/403/503 through pinned MockMvc and request contracts
         shell: bash
         run: |
           set -euo pipefail
           cd _r04ag_backend
-          chmod +x ./gradlew
-          ./gradlew --no-daemon test \
+          test -f ./gradlew
+          "$R04_PINNED_GRADLE" --no-daemon test \
             --tests 'com.youtopia.youtube.metadata.MetadataConsumerContractTest' \
             --tests 'com.youtopia.youtube.metadata.MetadataConsumerOfflineSecurityTest'
 
@@ -289,7 +275,7 @@ jobs:
           set -euo pipefail
           (
             cd _r04ag_backend
-            setsid ./gradlew --no-daemon runR04XSyntheticMetadataLoopback \
+            setsid "$R04_PINNED_GRADLE" --no-daemon runR04XSyntheticMetadataLoopback \
               > /tmp/r04ag-spring.log 2>&1 &
             echo $! > /tmp/r04ag-spring.pid
           )
