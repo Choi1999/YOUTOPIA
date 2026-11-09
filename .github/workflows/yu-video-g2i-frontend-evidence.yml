@@ -1,0 +1,42 @@
+name: YOUTOPIA G2-I local evidence explorer frontend
+
+on:
+  push:
+    branches:
+      - experiment/yu-video-understanding-poc-v01
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/yu-video-g2i-frontend-evidence.yml'
+  pull_request:
+    branches:
+      - experiment/yu-video-understanding-poc-v01
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/yu-video-g2i-frontend-evidence.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  frontend-local-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '12.9.1'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Frozen dependency install
+        run: pnpm --dir frontend install --frozen-lockfile
+      - name: Frontend Vitest offline component and parser tests
+        run: pnpm --dir frontend test
+      - name: TypeScript check and Vite build
+        run: pnpm --dir frontend build
