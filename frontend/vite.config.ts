@@ -47,6 +47,7 @@ export default defineConfig(({command, mode}) => {
         } : {}),
         ...(authProxyEnabled ? {
           "^/api/v1/auth/(?:csrf|login|me|logout)$": authLoopback,
+          "^/api/v1/youtube/metadata/capabilities$": authLoopback,
         } : {}),
       },
     } : undefined,
