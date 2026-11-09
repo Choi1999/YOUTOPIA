@@ -375,3 +375,11 @@ $adjudicate = '.\shared\experiments\yu-video-understanding-poc-v0\g2g-windows-fi
 ```
 
 처음에는 6문항 모두 PENDING이고 자동 승인하지 않는다. AI 모범답변·근거·관찰 기록·판정 사유의 초안이 자동 채워지며, `AI 초안 입력란에 적용` 버튼으로 추천 판정을 명시적으로 불러올 수 있다. 기본 추천은 SUPPORTED 10문항 APPROVE 후보, UNSUPPORTED 2문항 HOLD 후보이지만, 둘 다 실제 운영자의 판정이 아니다. 운영자가 직접 근거를 확인하고 승인 사유를 남겨야만 개별 APPROVE가 가능하다. G2-G의 APPROVE는 **비블라인드 검수에 대한 운영자 채택**이며 독립 블라인드 Gold 승인이나 G3 승인으로 전이하지 않는다. 상세 절차는 `docs/research/YU_VIDEO_G2G_OPERATOR_FINAL_ADJUDICATION_V01.md` 참조.
+
+## G2-G 파일럿 최종 결과 및 G3 진입 심사 — 2026-11-09
+
+운영자 Windows 로그 기준 Sintel과 Tears of Steel 각 6문항씩 총 12문항 모두 판정 완료, APPROVE 10문항·HOLD 2문항·PENDING 0문항. G2-G 판정 JSON 두 파일은 사용자 PC에 SHA-256 일치 검사 후 별도 백업되었고, 비공개 원본과 해시는 Git에 올리지 않았다.
+
+이는 **AI 보조 비블라인드 검수에 대한 운영자 채택 결과**로, 원래 G0 목표인 6편/36문항·독립 Gold·영상 이용권·YouTube/공식 원본 동등성·제공자 비용/보안 게이트를 충족시키지 않는다. 따라서 **G3_NO_GO / NO_LIVE_API / NO_MERGE**를 유지한다.
+
+최종 보고: [G2 파일럿 종료 및 G3 진입 심사](../../../docs/research/YU_VIDEO_G2_PILOT_CLOSEOUT_G3_READINESS_20261109.md).
