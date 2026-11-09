@@ -16,6 +16,7 @@ assert.equal(process.env.VITE_R04AO_LOCAL_AUTH_PROXY, "enabled");
 
 const base = "http://" + host + ":" + port;
 const paths = [];
+const apiPaths = [];
 const browser = await chromium.launch({ headless: true });
 try {
   const context = await browser.newContext({ serviceWorkers: "block" });
