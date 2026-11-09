@@ -26,6 +26,23 @@
 .server-session-identity p {margin: 3px 0;}
 .server-session-identity code {font-family: ui-monospace, SFMono-Regular, Consolas, monospace;font-size: 12px;}
 .server-session-actions {display: flex;flex-wrap: wrap;gap: 9px;margin: 14px 0;}
+.server-metadata-status {
+  margin-top: 13px;
+  padding: 12px 0 2px;
+  border-top: 1px solid rgba(138,170,235,.25);
+}
+.server-session-card .server-metadata-status-label {
+  margin: 0 0 4px;
+  font-weight: 700;
+  color: #d9e6ff;
+}
+.server-session-card .server-metadata-status-text {
+  margin: 0 0 10px;
+  color: #b9cbea;
+}
+.server-metadata-status button {min-height: 36px;font-size: 12px;padding: 7px 11px;}
+[data-theme="light"] .server-session-card .server-metadata-status-label {color:#284671;}
+[data-theme="light"] .server-session-card .server-metadata-status-text {color:#3a5276;}
 .server-session-card button {
   min-height: 43px;
   padding: 9px 14px;
