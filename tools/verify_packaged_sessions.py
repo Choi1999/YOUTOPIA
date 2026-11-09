@@ -205,7 +205,9 @@ try:
             subprocess.run([sys.executable, str(root/'tools/verify_current_react_browser.py'),
                             str(arguments.current_frontend)], cwd=root, env=browser_env,
                            timeout=240, check=True)
-            result['current_react_real_spring_browser_e2e'] = 'PASS'
+            result.update(current_react_real_spring_browser_e2e='PASS',
+                          browser_ui_verified=True,
+                          browser_scope='CURRENT_REACT_REAL_SPRING_SYNTHETIC_CHROMIUM')
         stop(first)
         start(FIRST_PORT)
         assert request(FIRST_PORT, '/api/v1/auth/me', cookie=cookie)[0] == 200
