@@ -431,3 +431,18 @@ node .\shared\experiments\yu-video-understanding-poc-v0\g2h1-nasa-source-readine
 ```
 
 공식 근거·차단 조건·후속 권리조사: [G2-H1 NASA 소스 적격성 조사](../../../docs/research/YU_VIDEO_G2H1_SOURCE_ELIGIBILITY_VID01_VID03_20261109.md).
+
+
+## G2-I — 사용자용 로컬 영상 근거 탐색 (기능 개발 전환)
+
+2026-11-09 사용자 승인으로 **G2-H1 추가 NASA 자료 조사는 일시 보류**하고, 기존 G2-F/G2-G 근거 탐색 경험을 YOUTOPIA 일반 사용자 화면으로 제공하는 기능 개발에 전환했다. 이미 작성된 G2-H/H1 보고서와 원장을 삭제하거나 승인 상태를 허위 변경하지 않는다.
+
+프런트엔드 진입점: `frontend/src/pages/analysis/VideoEvidenceExplorerPage.tsx`, AppShell > 분석 > **영상 근거 탐색 · 로컬**, 라우트 `/analysis/youtube/evidence-explorer` (YU-49).
+
+사용자가 로컬 영상을 직접 선택하거나 드래그앤드롭하면 브라우저 내 플레이어로 열고, 별도 SRT 자막 및 비공개 G2-G 운영자 판정 JSON을 사용자가 직접 선택할 수 있다. **G2-G 판정이 APPROVE이고 구체적 근거 시간이 있는 항목만** 카드·타임라인에 표시하며, 근거 없는/HOLD 문항을 시간 마커로 위조하지 않는다. 질문·관찰 기록 검색, 유형 필터, 시점 이동, 개인 임시 메모를 지원한다.
+
+영상 파일 및 개인 JSON은 로컬 브라우저 메모리에서만 처리하며 백엔드 전송, YouTube 다운로드, 영상 AI 추론, 댓글 수집, Gold 승인, G3 API 호출은 없다. 현재 브라우저는 선택한 영상과 판정 JSON의 **원본 SHA-256를 대조하지 않으므로** 영상 판본 동일성/시간 정확성을 승인하지 않는다. 사용자 개인 메모는 재로딩하면 사라진다.
+
+실행 지침: [G2-I 로컬 영상 근거 탐색 개발·QA](../../../docs/research/YU_VIDEO_G2I_LOCAL_EVIDENCE_EXPLORER_V01.md).
+
+**상태:** `G2H1_RESEARCH_PAUSED / G2I_LOCAL_EVIDENCE_EXPLORER_IMPLEMENTED / USER_CHROME_QA_PENDING / G3_NO_GO / NO_MERGE`.
