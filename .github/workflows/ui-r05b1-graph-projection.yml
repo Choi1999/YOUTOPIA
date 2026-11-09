@@ -1,0 +1,44 @@
+name: YOUTOPIA R05-B1 pure GraphProjection offline
+
+on:
+  push:
+    branches:
+      - feature/ui-r05b1-graph-projection-contract-v01
+    paths:
+      - 'frontend/**'
+      - 'docs/design/UI_R05B1_GRAPH_PROJECTION_V01.md'
+      - '.github/workflows/ui-r05b1-graph-projection.yml'
+  pull_request:
+    branches:
+      - design/ui-r05a-graph-extension-g2o-integration-contract-v01
+    paths:
+      - 'frontend/**'
+      - 'docs/design/UI_R05B1_GRAPH_PROJECTION_V01.md'
+      - '.github/workflows/ui-r05b1-graph-projection.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  graph-projection-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Existing extension Node regression
+        run: node --test extension/tests/*.test.cjs
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '12.9.1'
+      - name: Install locked frontend dependencies
+        run: pnpm --dir frontend install --frozen-lockfile
+      - name: Full React/Vitest suite including R05-B1
+        run: pnpm --dir frontend test
+      - name: TypeScript check and Vite production build
+        run: pnpm --dir frontend build
