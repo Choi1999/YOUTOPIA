@@ -407,3 +407,27 @@ node .\shared\experiments\yu-video-understanding-poc-v0\g2h-expansion-plan.cjs
 예상 결과는 `DESIGN_ONLY_4_FILMS_24_QUESTION_BLUEPRINTS_NO_G3`, 권리 승인 0, 미디어 인입 승인 false, 독립 블라인드 Gold 0, G3 승인 false다. 동종 후보 교체·질문 재배분이 필요하면 G0 전체 유형 분포를 보존하고 설계 개정을 먼저 기록한다.
 
 상세 설계와 후보별 위험·역할·게이트: [G2-H 데이터셋 확장 설계](../../../docs/research/YU_VIDEO_G2H_DATASET_EXPANSION_PLAN_V01.md). 실영상 다운로드, YouTube API, 제공자 실호출, 사업화용 권리 승인 또는 PR 병합은 **이 설계 작업의 범위에 포함되지 않는다**.
+
+
+## G2-H1 — VID-01·VID-03 NASA 공식 소스 적격성 연구
+
+사용자 승인에 따라 기존 G2-H의 NASA 연구 후보 가운데 VID-01 인터뷰와 VID-03 화면 시연을 대상으로 **공식 공개 메타데이터와 이용 정책만** 확인했다. 영상·자막 원문을 다운로드하지 않았고, 실제 파일을 재생/해싱하지 않았다.
+
+| 기준 | VID-01 NASA 인터뷰 | VID-03 NASA 화면 시연 |
+|---|---|---|
+| 공식 MP4 목록 | 확인 (자막 있는/없는 1080p판) | 확인 (1080p판) |
+| 별도 SRT/VTT 목록 | 확인 | 공식 페이지에서 미확인 |
+| 공식 YouTube ID | 미확정 | p-6DusnZ1pQ 확인 |
+| 러닝타임 3~15분 | 미검증 | 미검증 |
+| 판본/음성 정합성·실서비스 이용권 | 미승인 | 미승인 |
+
+**현재 판정은 `PUBLIC_METADATA_RESEARCH_COMPLETE_SOURCE_ELIGIBILITY_BLOCKED`**다. NASA의 공공 미디어 이용 일반 안내와 유튜브 정책을 참고하되, 저작자·출연자·제3자 요소·모델 전송 허용 여부의 상세 검토 없이는 YOUTOPIA에 자료를 인입하거나 G3를 진행하지 않는다.
+
+오프라인 출처 메타데이터 검증:
+
+```powershell
+cd C:\Projects\YOUTOPIA-VIDEO-G2C
+node .\shared\experiments\yu-video-understanding-poc-v0\g2h1-nasa-source-readiness.cjs
+```
+
+공식 근거·차단 조건·후속 권리조사: [G2-H1 NASA 소스 적격성 조사](../../../docs/research/YU_VIDEO_G2H1_SOURCE_ELIGIBILITY_VID01_VID03_20261109.md).
