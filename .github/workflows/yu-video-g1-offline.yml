@@ -12,6 +12,9 @@ on:
       - docs/research/YU_VIDEO_G2D_HUMAN_SYNC_YOUTUBE_REVIEW_V01.md
       - docs/research/YU_VIDEO_G2E_GOLD_CANDIDATE_DESIGN_V01.md
       - docs/research/YU_VIDEO_G2F_INDEPENDENT_GOLD_REVIEW_V01.md
+      - docs/research/YU_VIDEO_G2G_OPERATOR_FINAL_ADJUDICATION_V01.md
+      - docs/research/YU_VIDEO_G2H_DATASET_EXPANSION_PLAN_V01.md
+      - docs/research/YU_VIDEO_G2H1_SOURCE_ELIGIBILITY_VID01_VID03_20261109.md
       - .github/workflows/yu-video-g1-offline.yml
   pull_request:
     paths:
@@ -51,6 +54,8 @@ jobs:
           node --check shared/experiments/yu-video-understanding-poc-v0/g2g-final-adjudication-client.js
           node --check shared/experiments/yu-video-understanding-poc-v0/g2g-adjudication-proposals.cjs
           node --check shared/experiments/yu-video-understanding-poc-v0/g2h-expansion-plan.cjs
+          node --check shared/experiments/yu-video-understanding-poc-v0/g2h1-nasa-source-readiness.cjs
+          node shared/experiments/yu-video-understanding-poc-v0/g2h1-nasa-source-readiness.cjs
           node --test shared/experiments/yu-video-understanding-poc-v0/tests/*.test.cjs
       - name: Fail-closed gate
         run: |
