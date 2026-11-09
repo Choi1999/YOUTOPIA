@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.server.ConfigurableWebServerFactory;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
@@ -23,6 +24,11 @@ import org.springframework.security.web.SecurityFilterChain;
  * The server listens on LOOPBACK, port 8765 and serves ONLY synthetic GETs.
  * All other routes and writes are denied.
  */
+// Prevent this test-only Boot configuration and its auto-configuration
+// exclusions from entering the normal YoutopiaApplication component scan.
+// Synthetic HTTP fixture tests and the explicit JavaExec main opt into this
+// profile; the production and integration-test defaults do not.
+@Profile("metadata-offline-test")
 @SpringBootApplication(
         scanBasePackageClasses = MetadataSyntheticLoopbackApplication.class,
         excludeName = {
