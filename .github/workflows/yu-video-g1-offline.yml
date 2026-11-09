@@ -50,6 +50,7 @@ jobs:
           node --check shared/experiments/yu-video-understanding-poc-v0/g2g-final-adjudication-server.cjs
           node --check shared/experiments/yu-video-understanding-poc-v0/g2g-final-adjudication-client.js
           node --check shared/experiments/yu-video-understanding-poc-v0/g2g-adjudication-proposals.cjs
+          node --check shared/experiments/yu-video-understanding-poc-v0/g2h-expansion-plan.cjs
           node --test shared/experiments/yu-video-understanding-poc-v0/tests/*.test.cjs
       - name: Fail-closed gate
         run: |
