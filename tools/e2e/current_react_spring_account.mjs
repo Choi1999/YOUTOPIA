@@ -31,6 +31,7 @@ try {
   const page = await context.newPage();
   page.on("request", request => {
     const url = new URL(request.url());
+    if (url.pathname.startsWith("/api/v1/")) apiPaths.push(url.pathname);
     if (url.pathname.startsWith("/api/v1/auth/")) paths.push(url.pathname);
   });
 
