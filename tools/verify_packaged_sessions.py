@@ -18,6 +18,7 @@ from test_services import load_state
 
 arguments = argparse.ArgumentParser(description=__doc__)
 arguments.add_argument('--with-browser', action='store_true', help='Run saved React browser E2E against these isolated JAR processes')
+arguments.add_argument('--current-frontend', type=Path, help='Independent latest React checkout for opt-in Chromium and real packaged Spring USER-session E2E')
 arguments.add_argument('--deployment-redis-state', type=Path, help='Owned disposable deployment Redis descriptor; never a production endpoint')
 arguments = arguments.parse_args()
 
@@ -189,6 +190,21 @@ try:
         result.update(game_list_detail_search=True, real_zero_preserved=True, optional_telemetry_absence_preserves_search=True, game_authorization_and_csrf=True)
         result["optional_telemetry_absence_preserves_search"] = "NOT_EXECUTED_THIS_PROFILE" if arguments.with_browser else "PASS"
         result.update(packaged_jar_started=True, real_password_login=True, csrf_and_secure_cookie=True, two_instances_share_session=True)
+        if arguments.current_frontend:
+            # Credentials here are synthetic and never leave the disposable local
+            # test environment. Do not forward Spring DB/Redis/HMAC variables to Vite.
+            browser_env = {k: v for k, v in os.environ.items() if not k.startswith(
+                ('DB_', 'PG', 'YOUTOPIA_', 'DOCKER_HOST', 'DOCKER_CONTEXT', 'DOCKER_TLS', 'DOCKER_CERT_PATH'))}
+            browser_env.update(
+                VITE_R04AO_LOCAL_AUTH_PROXY='enabled',
+                YOUTOPIA_LOCAL_AUTH_PORT=str(FIRST_PORT),
+                YOUTOPIA_TEST_WEB_PORT=str(WEB_PORT),
+                YOUTOPIA_E2E_MEMBER_EMAIL=fake['email'],
+                YOUTOPIA_E2E_MEMBER_PASSWORD=fake['password'])
+            subprocess.run([sys.executable, str(root/'tools/verify_current_react_browser.py'),
+                            str(arguments.current_frontend)], cwd=root, env=browser_env,
+                           timeout=240, check=True)
+            result['current_react_real_spring_browser_e2e'] = 'PASS'
         stop(first)
         start(FIRST_PORT)
         assert request(FIRST_PORT, '/api/v1/auth/me', cookie=cookie)[0] == 200
