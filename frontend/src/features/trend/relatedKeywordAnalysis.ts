@@ -110,8 +110,11 @@ export function analyzeExpandedKeyword(
   selectedRelated: readonly string[],
 ): ExpandedKeywordResult {
   const baseline = inspectKeyword(rawKeyword, observations, period);
-  if (baseline.kind === "INVALID_KEYWORD") return { kind: "INVALID" };
-  if (baseline.kind === "NO_DATA") return { kind: "NO_DATA" };
+  // TrendResult has a shared NO_DATA | INVALID_KEYWORD variant; narrow to
+  // READY explicitly before accessing the baseline's data-bearing properties.
+  if (baseline.kind !== "READY") {
+    return { kind: baseline.kind === "NO_DATA" ? "NO_DATA" : "INVALID" };
+  }
   if (selectedRelated.length > MAX_RELATED_EXPRESSIONS) return { kind: "INVALID" };
   const related: string[] = [];
   for (const raw of selectedRelated) {
