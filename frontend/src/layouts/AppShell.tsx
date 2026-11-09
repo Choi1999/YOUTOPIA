@@ -67,6 +67,7 @@ const groups = [
       { label: "채널 분석 · DEMO", route: getRoute("YU-44"), dark: youtubeDark, light: youtubeLight },
       { label: "채널 비교 · DEMO", route: getRoute("YU-47"), dark: reactionsDark, light: reactionsLight },
       { label: "주제 탐색 · DEMO", route: getRoute("YU-48"), dark: keywordsDark, light: keywordsLight },
+      { label: "영상 근거 탐색 · 로컬", route: getRoute("YU-49"), dark: overviewDark, light: overviewLight },
     ],
   },
 ];
