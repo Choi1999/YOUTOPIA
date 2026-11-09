@@ -146,7 +146,8 @@ describe("G2-K user-driven keyword entry",()=>{
       expect(await screen.findByText("독일 와인 리뷰")).toBeInTheDocument();
       expect(mock).toHaveBeenCalledTimes(1);
       await user.click(screen.getByRole("button",{name:"독일 와인 리뷰 댓글 표본 가져오기"}));
-      expect(await screen.findByText("독일 와인 리뷰가 마음에 들어요")).toBeInTheDocument();
+      await waitFor(()=>expect(within(screen.getByLabelText("키워드 관측 결과"))
+        .getByText("독일 와인 리뷰가 마음에 들어요")).toBeInTheDocument());
       expect(mock).toHaveBeenCalledTimes(2);
       expect(screen.getByLabelText("댓글 분석 출처")).toHaveValue("YOUTUBE");
       const comparison=screen.getByLabelText("영상별 키워드 표본 비교");
@@ -188,7 +189,8 @@ describe("G2-K user-driven keyword entry",()=>{
       expect(await screen.findByRole("alert")).toHaveTextContent("댓글 조회가 거부");
       expect(screen.getByLabelText("댓글 분석 출처")).toHaveValue("CSV");
       expect(screen.queryByLabelText("영상별 키워드 표본 비교")).not.toBeInTheDocument();
-      expect(screen.getByText("독일 와인에 관한 이야기")).toBeInTheDocument();
+      expect(within(screen.getByLabelText("키워드 관측 결과"))
+        .getByText("독일 와인에 관한 이야기")).toBeInTheDocument();
     }finally{vi.unstubAllGlobals();}
   });
 
@@ -234,7 +236,8 @@ describe("G2-K user-driven keyword entry",()=>{
     await user.upload(screen.getByLabelText("키워드 관측 CSV"),
       new File([source],"music-observations.csv",{type:"text/csv"}));
     await waitFor(()=>expect(screen.getByText(/관측 댓글 4개를 로컬로 읽었습니다/)).toBeInTheDocument());
-    expect(screen.getByText("음악이 좋아요")).toBeInTheDocument();
+    expect(within(screen.getByLabelText("키워드 관측 결과"))
+      .getByText("음악이 좋아요")).toBeInTheDocument();
     expect(screen.queryByText("노래가 너무 좋아요")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button",{name:"노래 후보 선택"}));
     expect(exact).toHaveAttribute("aria-pressed","true");
