@@ -102,6 +102,13 @@ class MetadataSyntheticHttpLoopbackTest {
 
     @Test
     void fixtureControllerIsExplicitlyTestProfileAndPropertyGated() {
+        // The executable synthetic Boot app must not be component-scanned into
+        // normal Spring integration tests, where its Redis exclusions would
+        // prevent USER sessions and other Redis clients from being created.
+        var appProfile = MetadataSyntheticLoopbackApplication.class.getAnnotation(
+                org.springframework.context.annotation.Profile.class);
+        assertNotNull(appProfile);
+        assertArrayEquals(new String[]{"metadata-offline-test"}, appProfile.value());
         var klass = MetadataSyntheticHttpController.class;
         var profile = klass.getAnnotation(org.springframework.context.annotation.Profile.class);
         var property = klass.getAnnotation(
