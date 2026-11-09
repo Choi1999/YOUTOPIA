@@ -161,7 +161,7 @@ export function KeywordTrendExplorerPage(){
     <section className="keyword-trend__sources" aria-label="자료 및 관측 기간">
       <div>
         <h2>관측 범위</h2>
-        <p>댓글 반응 분석은 직접 선택한 CSV 표본에 한정됩니다. 실제 YouTube 영상 후보 검색은 아래의 별도 버튼으로 실행합니다.</p>
+        <p>키워드 언급 분석은 로컬 CSV 또는 사용자가 선택한 영상에서 가져온 YouTube 최상위 댓글 표본을 지원합니다. 두 자료는 분리되며, 전체 댓글이나 시청자 여론을 대표하지 않습니다.</p>
       </div>
       <label className="keyword-trend__upload">로컬 CSV 불러오기
         <input type="file" accept=".csv,text/csv" aria-label="키워드 관측 CSV"
@@ -301,7 +301,7 @@ export function KeywordTrendExplorerPage(){
               className="keyword-trend__bar-holder"
               aria-label={day.day+": 표본 "+day.observed+"건 중 언급 "+day.matched+"건"}
               title={day.day+" · 일치 "+day.matched+" / 표본 "+day.observed}>
-              {day.observed>0&&<div className="keyword-trend__bar"
+              {day.matched>0&&<div className="keyword-trend__bar"
                 style={{height:(day.matched/max*100)+"%"}}/>}
             </div>)}
           </div>
@@ -309,16 +309,16 @@ export function KeywordTrendExplorerPage(){
         </section>
         <div className="keyword-trend__columns">
           <section className="keyword-trend__panel">
-            <h3>연관 영상</h3>
+            <h3>입력 문구가 관측된 영상</h3>
             {result.videos.length?<ol>{result.videos.map(x=><li key={x.id}>
               <span>{x.label}</span><strong>{x.count}건</strong></li>)}</ol>
-              :<p>해당 키워드가 관측되지 않았습니다.</p>}
+              :<p>현재 표본에서 입력 문구와 일치하는 댓글이 없습니다.</p>}
           </section>
           <section className="keyword-trend__panel">
-            <h3>연관 채널</h3>
+            <h3>입력 문구가 관측된 채널</h3>
             {result.channels.length?<ol>{result.channels.map(x=><li key={x.id}>
               <span>{x.label}</span><strong>{x.count}건</strong></li>)}</ol>
-              :<p>해당 키워드가 관측되지 않았습니다.</p>}
+              :<p>현재 표본에서 입력 문구와 일치하는 댓글이 없습니다.</p>}
           </section>
         </div>
         <section className="keyword-trend__panel">

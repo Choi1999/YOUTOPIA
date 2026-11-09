@@ -35,6 +35,17 @@ describe("G2-K user-driven keyword entry",()=>{
     const result=screen.getByLabelText("키워드 관측 결과");
     expect(within(result).getByRole("heading",{name:"“독일 와인” 관측 결과"})).toBeInTheDocument();
     expect(within(result).getByText("독일 와인에 관한 이야기")).toBeInTheDocument();
+    expect(within(result).getByRole("heading", {name:"입력 문구가 관측된 영상"})).toBeInTheDocument();
+    expect(within(result).getByRole("heading", {name:"입력 문구가 관측된 채널"})).toBeInTheDocument();
+    // One day has an observed comment but zero keyword matches; draw no false bar.
+    const dates = within(result).getByRole("list", {name:"날짜별 관측 분포"});
+    expect(dates.querySelectorAll(".keyword-trend__bar")).toHaveLength(1);
+    const unmatchedDay = within(dates).getByRole("listitem", {
+      name:"2026-11-09: 표본 1건 중 언급 0건",
+    });
+    expect(unmatchedDay.querySelector(".keyword-trend__bar")).toBeNull();
+    expect(screen.getByText(/로컬 CSV 또는 사용자가 선택한 영상에서 가져온 YouTube 최상위 댓글 표본/))
+      .toBeInTheDocument();
     expect(within(result).queryByText("전혀 다른 주제")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button",{name:"자료 비우기"}));
     expect(screen.getByRole("heading",{name:"“독일 와인” 관측 자료 없음"})).toBeInTheDocument();
@@ -180,5 +191,25 @@ describe("G2-K user-driven keyword entry",()=>{
       expect(screen.getByText("독일 와인에 관한 이야기")).toBeInTheDocument();
     }finally{vi.unstubAllGlobals();}
   });
+
+
+  it("does not render purple bars for zero direct keyword matches even when comments were observed",async()=>{
+    const user=userEvent.setup();
+    render(<KeywordTrendExplorerPage/>);
+    await user.type(screen.getByLabelText("어떤 키워드가 궁금한가요?"),"관련 없는 검색 문구");
+    await user.click(screen.getByRole("button",{name:"키워드 적용"}));
+    await user.upload(screen.getByLabelText("키워드 관측 CSV"),
+      new File([csv],"user.csv",{type:"text/csv"}));
+    await waitFor(()=>expect(screen.getByText(/관측 댓글 2개를 로컬로 읽었습니다/)).toBeInTheDocument());
+    const results=screen.getByLabelText("키워드 관측 결과");
+    const dates=within(results).getByRole("list",{name:"날짜별 관측 분포"});
+    expect(dates.querySelectorAll(".keyword-trend__bar")).toHaveLength(0);
+    expect(within(dates).getByRole("listitem",{
+      name:"2026-11-08: 표본 1건 중 언급 0건",
+    })).toBeInTheDocument();
+    expect(within(results).getAllByText("현재 표본에서 입력 문구와 일치하는 댓글이 없습니다."))
+      .toHaveLength(2);
+  });
+
 
 });
