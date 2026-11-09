@@ -156,7 +156,11 @@ def main():
     parser.add_argument('command', choices=['start', 'status', 'stop', 'verify'])
     parser.add_argument('--quiet', action='store_true')
     parser.add_argument('--with-browser', action='store_true')
+    parser.add_argument('--current-frontend', type=Path,
+                        help='Explicit separate React checkout for isolated real Spring browser E2E')
     args = parser.parse_args()
+    if args.current_frontend and (args.command != 'verify' or args.with_browser):
+        parser.error('--current-frontend requires verify without --with-browser')
     if args.command == 'stop':
         stop()
     elif args.command == 'verify':
@@ -166,8 +170,12 @@ def main():
             start()
             subprocess.run([str(ROOT/'gradlew'), '--no-daemon', '--max-workers=2', 'check', 'bootJar'],
                            cwd=ROOT, env=child_env(), check=True)
-            subprocess.run([sys.executable, str(ROOT/'tools/verify_packaged_sessions.py')]
-                           +(['--with-browser'] if args.with_browser else []), cwd=ROOT, env=child_env(), check=True)
+            session_args = [sys.executable, str(ROOT/'tools/verify_packaged_sessions.py')]
+            if args.with_browser:
+                session_args.append('--with-browser')
+            if args.current_frontend:
+                session_args.extend(['--current-frontend', str(args.current_frontend.resolve(strict=True))])
+            subprocess.run(session_args, cwd=ROOT, env=child_env(), check=True)
         finally:
             stop()
     else:
