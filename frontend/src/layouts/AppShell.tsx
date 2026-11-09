@@ -167,6 +167,12 @@ export function AppShell() {
             label="AI · 보고서"
             light={collectionLight}
           />
+          <NavLink to="/account/server"
+            className={({ isActive }) => isActive ? "sidebar-link active" : "sidebar-link"}
+            title="실제 Spring 회원 세션 상태 확인">
+            <NavigationIcon dark={settingsDark} light={settingsLight} />
+            <span className="sidebar-label">Spring 회원 로그인</span>
+          </NavLink>
           <button aria-disabled="true" className="sidebar-link" disabled title="설정" type="button">
             <NavigationIcon dark={settingsDark} light={settingsLight} />
             <span className="sidebar-label">설정</span>
