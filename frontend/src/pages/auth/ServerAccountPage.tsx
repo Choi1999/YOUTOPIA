@@ -4,6 +4,9 @@ import {
   serverMemberClient, serverSessionErrorMessage, ServerSessionError,
   type ServerMemberIdentity,
 } from "../../features/server-session/serverMemberSession";
+import {
+  MetadataCapabilityError, serverMetadataCapabilitiesClient,
+} from "../../features/server-session/serverMetadataCapabilities";
 import "./server-account.css";
 
 type View =
@@ -20,6 +23,9 @@ export function ServerAccountPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [metadataStatus, setMetadataStatus] = useState<
+    "unchecked" | "checking" | "policy_hold" | "unavailable"
+  >("unchecked");
   const inFlight = useRef(false);
   const mounted = useRef(true);
   useEffect(() => {
@@ -40,6 +46,7 @@ export function ServerAccountPage() {
         // Bad credentials are not a server outage; neither outcome grants a role.
         setView({ status: cause instanceof ServerSessionError &&
           cause.code === "LOGIN_REJECTED" ? "guest" : "unavailable" });
+        setMetadataStatus("unchecked");
         setError(serverSessionErrorMessage(cause));
       }
     } finally {
@@ -53,6 +60,7 @@ export function ServerAccountPage() {
       const current = await serverMemberClient.check();
       if (!mounted.current) return;
       setView(current);
+      setMetadataStatus("unchecked");
       setMessage(current.status === "authenticated"
         ? "Spring 서버가 USER 회원 세션을 확인했습니다."
         : "현재 인증된 Spring 회원 세션이 없습니다.");
@@ -73,6 +81,7 @@ export function ServerAccountPage() {
       const identity = await serverMemberClient.login(login,password);
       if (!mounted.current) return;
       setView({ status: "authenticated", identity });
+      setMetadataStatus("unchecked");
       setMessage("Spring 서버가 로그인 후 USER 세션을 다시 확인했습니다.");
     });
   }
@@ -82,7 +91,32 @@ export function ServerAccountPage() {
       await serverMemberClient.logout();
       if (!mounted.current) return;
       setView({ status: "guest" });
+      setMetadataStatus("unchecked");
       setMessage("Spring 서버에서 세션 종료를 확인했습니다.");
+    });
+  }
+
+  function checkMetadataAvailability() {
+    if (view.status !== "authenticated" || inFlight.current) return;
+    inFlight.current = true;
+    setBusy(true);
+    setMetadataStatus("checking");
+    void serverMetadataCapabilitiesClient.check().then(() => {
+      if (mounted.current) setMetadataStatus("policy_hold");
+    }).catch((cause: unknown) => {
+      if (!mounted.current) return;
+      if (cause instanceof MetadataCapabilityError &&
+          cause.code === "AUTH_REQUIRED") {
+        setView({ status: "guest" });
+        setMetadataStatus("unchecked");
+        setMessage("서버 세션이 만료되었습니다. 다시 로그인해 주세요.");
+      } else {
+        // Unknown/invalid/denied capability responses never enable a reader.
+        setMetadataStatus("unavailable");
+      }
+    }).finally(() => {
+      inFlight.current = false;
+      if (mounted.current) setBusy(false);
     });
   }
 
@@ -119,6 +153,24 @@ export function ServerAccountPage() {
             서버 로그아웃
           </button>
         </div>
+        {view.status === "authenticated" && (
+          <div className="server-metadata-status" aria-label="YouTube 조회 기능 상태">
+            <p className="server-metadata-status-label">YouTube 조회 기능</p>
+            <p role="status" className="server-metadata-status-text">
+              {metadataStatus === "unchecked"
+                ? "현재 기능 상태를 아직 확인하지 않았습니다."
+                : metadataStatus === "checking"
+                  ? "조회 가능 여부를 확인하고 있습니다."
+                  : metadataStatus === "policy_hold"
+                    ? "YouTube 영상 정보와 댓글 조회는 아직 제공되지 않습니다."
+                    : "서버 상태를 확인할 수 없어 조회 기능을 사용할 수 없습니다."}
+            </p>
+            <button type="button" disabled={busy}
+              onClick={checkMetadataAvailability}>
+              조회 가능 여부 확인
+            </button>
+          </div>
+        )}
         {error && <p role="alert" className="server-session-error">{error}</p>}
         {message && <p className="server-session-message">{message}</p>}
       </section>
