@@ -1,0 +1,42 @@
+name: YOUTOPIA G2-K user keyword frontend
+
+on:
+  push:
+    branches:
+      - feature/yu-video-g2k-user-keyword-trend-v01
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/yu-video-g2k-frontend-keyword.yml'
+  pull_request:
+    branches:
+      - feature/yu-video-g2j-evidence-navigation-v01
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/yu-video-g2k-frontend-keyword.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  keyword-local:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '12.9.1'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Frozen install
+        run: pnpm --dir frontend install --frozen-lockfile
+      - name: Run Vitest unit and component tests
+        run: pnpm --dir frontend test
+      - name: TypeScript and Vite build
+        run: pnpm --dir frontend build
