@@ -1,0 +1,44 @@
+name: YOUTOPIA R05-B2 offline Graph-First UI
+
+on:
+  push:
+    branches:
+      - feature/ui-r05b2-graph-first-projection-ui-v01
+    paths:
+      - 'frontend/**'
+      - 'docs/design/UI_R05B2_GRAPH_FIRST_OFFLINE_UI_V01.md'
+      - '.github/workflows/ui-r05b2-graph-first.yml'
+  pull_request:
+    branches:
+      - feature/ui-r05b1-graph-projection-contract-v01
+    paths:
+      - 'frontend/**'
+      - 'docs/design/UI_R05B2_GRAPH_FIRST_OFFLINE_UI_V01.md'
+      - '.github/workflows/ui-r05b2-graph-first.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  offline-graph-frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Existing extension tests (offline)
+        run: node --test extension/tests/*.test.cjs
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '12.9.1'
+      - name: Install frozen frontend dependencies
+        run: pnpm --dir frontend install --frozen-lockfile
+      - name: React / Vitest all suites
+        run: pnpm --dir frontend test
+      - name: TypeScript and Vite build
+        run: pnpm --dir frontend build

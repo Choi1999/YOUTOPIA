@@ -1,10 +1,14 @@
 import {
-  useEffect, useRef, useState, type Dispatch, type SetStateAction,
+  useEffect, useMemo, useRef, useState, type ChangeEvent, type Dispatch, type SetStateAction,
   type CSSProperties, type DragEvent, type FormEvent, type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
 import { WorkspaceUrlCanvas } from "./WorkspaceUrlCanvas";
+import {WorkspaceProjectionCanvas,WorkspaceProjectionNodeDetail} from "./WorkspaceProjectionCanvas";
+import {createR05OfflineProjection,R05_SYNTHETIC_CSV} from "./workspaceOfflineProjection";
+import type {TrendWindow} from "../trend/userKeywordTrend";
+import type {R05SourceKind} from "./workspaceGraphProjection";
 import { WorkspaceDiagnosticsDock } from "./WorkspaceDiagnosticsDock";
 import { WorkspaceBrowserSaveControls } from "./WorkspaceBrowserSaveControls";
 import { WorkspaceTargetArtwork } from "./WorkspaceTargetArtwork";
@@ -124,6 +128,21 @@ export function WorkspaceFocusMode({
     updateDockState(prev => withWorkspaceDockWidths(prev, widths));
   const [search, setSearch] = useState("");
   const [input, setInput] = useState("");
+  // R05-B2: independent, session-ephemeral offline graph preview. Original
+  // URL target registration, bookmarks, groups and selected URL key untouched.
+  const [graphMode,setGraphMode]=useState<"URL"|"OFFLINE">("URL");
+  const [offlineInput,setOfflineInput]=useState<{
+    text:string;sourceKind:"USER_CSV_UNVERIFIED"|"SYNTHETIC_FIXTURE";
+    title:string;importedAt:string;scopeId:string;
+  }|null>(null);
+  const [offlineKeywordDraft,setOfflineKeywordDraft]=useState("음악");
+  const [offlineKeyword,setOfflineKeyword]=useState("음악");
+  const [offlinePeriod,setOfflinePeriod]=useState<TrendWindow>(30);
+  const [offlineSelectedKey,setOfflineSelectedKey]=useState<string|null>(null);
+  const [offlineMessage,setOfflineMessage]=useState("CSV 또는 명시적 합성 예시를 선택하세요.");
+  const [offlineError,setOfflineError]=useState(false);
+  const offlineVersion=useRef(0);
+  const offlineCounter=useRef(0);
   const [labelDraft, setLabelDraft] = useState("");
   const [imageDraft, setImageDraft] = useState("");
   // Disclosure state is ephemeral UI only; forms/destructive controls are
@@ -178,6 +197,15 @@ export function WorkspaceFocusMode({
     return () => observer.disconnect();
   }, [listOpen, detailOpen]);
 
+  const offline=useMemo(()=>offlineInput
+    ?createR05OfflineProjection(
+      offlineInput.text,offlineKeyword,offlinePeriod,offlineInput.sourceKind,
+      offlineInput.importedAt,offlineInput.scopeId,targets,groups,
+    ):null,
+    [offlineInput,offlineKeyword,offlinePeriod,targets,groups]);
+  const offlineNode=offline?.kind==="READY"
+    ?offline.projection.nodes.find(node=>node.key===offlineSelectedKey)??null
+    :null;
   const selected = targets.find(item => workspaceUrlTargetKey(item) === selectedKey) ?? null;
   const providerSelected = selected ? readyProviderMetadata(
     presentation.providerStates?.[selectedKey ?? ""],selected) : null;
@@ -230,6 +258,81 @@ export function WorkspaceFocusMode({
       chooseWorkspaceDockTarget(prev, key, registered, inNarrowViewport()));
   }
 
+  function focusOfflineNode(key:string){
+    if(offline?.kind!=="READY"||
+      !offline.projection.nodes.some(node=>node.key===key))return;
+    setOfflineSelectedKey(key);
+    // Keep URL selection untouched; only open the existing responsive detail
+    // dock. At narrow sizes the list overlay is closed for readability.
+    updateDockState(prev=>({...prev,detailOpen:true,
+      listOpen:inNarrowViewport()?false:prev.listOpen}));
+  }
+  function clearOffline(){
+    offlineVersion.current++;
+    setOfflineInput(null);
+    setOfflineSelectedKey(null);
+    setOfflineMessage("현재 화면의 오프라인 표본을 비웠습니다. 원본 CSV 파일은 변경하지 않았습니다.");
+    setOfflineError(false);
+  }
+  function loadSyntheticOffline(){
+    offlineVersion.current++;
+    const next=++offlineCounter.current;
+    setOfflineKeywordDraft("음악");
+    setOfflineKeyword("음악");
+    setOfflinePeriod(7);
+    setOfflineInput({text:R05_SYNTHETIC_CSV,sourceKind:"SYNTHETIC_FIXTURE",
+      title:"명시적 합성 예시",scopeId:"r05-demo-"+next,
+      importedAt:new Date().toISOString()});
+    setOfflineSelectedKey(null);
+    setOfflineMessage("합성 예시만 불러왔습니다. 실제 YouTube 응답이 아닙니다.");
+    setOfflineError(false);
+  }
+  function loadOfflineCsv(event:ChangeEvent<HTMLInputElement>){
+    const file=event.currentTarget.files?.[0];
+    event.currentTarget.value="";
+    if(!file)return;
+    const version=++offlineVersion.current;
+    if(!/\.csv$/i.test(file.name)||file.size===0||file.size>2*1024*1024){
+      setOfflineMessage("2MiB 이하의 UTF-8 CSV 파일을 선택하세요. 기존 표본은 유지됩니다.");
+      setOfflineError(true);
+      return;
+    }
+    const reader=new FileReader();
+    reader.onload=()=>{
+      if(version!==offlineVersion.current)return;
+      if(typeof reader.result!=="string"){
+        setOfflineMessage("CSV 텍스트를 읽지 못했습니다.");
+        setOfflineError(true);
+        return;
+      }
+      const next=offlineCounter.current+1;
+      const importedAt=new Date().toISOString();
+      const candidate={
+        text:reader.result,sourceKind:"USER_CSV_UNVERIFIED" as const,
+        title:file.name.slice(0,120),importedAt,scopeId:"r05-local-"+next,
+      };
+      const checked=createR05OfflineProjection(
+        candidate.text,offlineKeyword,offlinePeriod,candidate.sourceKind,
+        importedAt,candidate.scopeId,targets,groups);
+      if(checked.kind!=="READY"){
+        setOfflineMessage(checked.message+" 기존 표본은 유지됩니다.");
+        setOfflineError(true);
+        return;
+      }
+      offlineCounter.current=next;
+      setOfflineInput(candidate);
+      setOfflineSelectedKey(null);
+      setOfflineMessage("사용자 선택 CSV를 메모리에서 읽었습니다. 공식 YouTube 자료로 검증하지 않았습니다.");
+      setOfflineError(false);
+    };
+    reader.onerror=()=>{
+      if(version===offlineVersion.current){
+        setOfflineMessage("CSV를 읽지 못했습니다. 기존 표본을 유지합니다.");
+        setOfflineError(true);
+      }
+    };
+    reader.readAsText(file,"UTF-8");
+  }
   function toggleList() {
     updateDockState(prev => toggleWorkspaceDockSide(prev,"list",inNarrowViewport()));
   }
@@ -247,6 +350,7 @@ export function WorkspaceFocusMode({
       " · 실데이터 미조회",
     );
     if (result.added.length) {
+      setGraphMode("URL");
       setInput("");
       // React props still contain the previous URL set until the next
       // render; the just-returned canonical target list is authoritative.
@@ -490,12 +594,16 @@ export function WorkspaceFocusMode({
               {allowChannelImage ? "채널 이미지 끄기" : "채널 이미지 켜기"}
             </button>
           )}
-          <button type="button" disabled={!selectedVisit || !onBookmarksChange}
+          <button type="button" disabled={graphMode==="OFFLINE"||!selectedVisit||!onBookmarksChange}
             onClick={toggleFocusBookmark}
             aria-pressed={selectedIsBookmarked}
             aria-label={selectedIsBookmarked
               ? "집중 모드 북마크 해제" : "집중 모드 북마크 추가"}>
             {selectedIsBookmarked ? "★ 북마크됨" : "☆ 북마크 추가"}
+          </button>
+          <button type="button" aria-pressed={graphMode==="OFFLINE"}
+            onClick={()=>setGraphMode(value=>value==="URL"?"OFFLINE":"URL")}>
+            {graphMode==="OFFLINE"?"URL 그래프로 돌아가기":"오프라인 관측 그래프"}
           </button>
           <button ref={listToggleRef} type="button"
             aria-pressed={listOpen} aria-controls="workspace-focus-target-dock"
@@ -511,6 +619,47 @@ export function WorkspaceFocusMode({
             onClick={onExit}>집중 모드 종료</button>
         </div>
       </header>
+      {graphMode==="OFFLINE"&&<section className="workspace-focus__offline-controls"
+        aria-label="오프라인 그래프 자료 입력">
+        <label htmlFor="r05-offline-keyword">원래 키워드</label>
+        <input id="r05-offline-keyword" type="text" maxLength={100}
+          value={offlineKeywordDraft}
+          onChange={event=>setOfflineKeywordDraft(event.target.value)}
+          placeholder="자유 키워드"/>
+        <button type="button" onClick={()=>{
+          setOfflineKeyword(offlineKeywordDraft);
+          setOfflineSelectedKey(null);
+        }}>키워드 분석 적용</button>
+        <label>관측 기간
+          <select aria-label="오프라인 관측 기간" value={offlinePeriod}
+            onChange={event=>{
+              setOfflinePeriod(Number(event.target.value) as TrendWindow);
+              setOfflineSelectedKey(null);
+            }}>
+            <option value={7}>7일</option><option value={30}>30일</option>
+            <option value={90}>90일</option>
+          </select>
+        </label>
+        <label>로컬 CSV 불러오기
+          <input type="file" accept=".csv,text/csv" aria-label="오프라인 관측 CSV 선택"
+            onChange={loadOfflineCsv}/>
+        </label>
+        <button type="button" onClick={loadSyntheticOffline}>
+          합성 예시 불러오기
+        </button>
+        {offlineInput&&<button type="button" onClick={clearOffline}>
+          관측 표본 비우기
+        </button>}
+        <p className="workspace-focus__offline-status" role="status"
+          data-error={offlineError}>
+          {offlineMessage}
+          {offlineInput?" · 출처: "+offlineInput.title:""}
+          {offline?.kind==="READY"
+            ?" · 기간 내 표본 "+offline.periodTotal+"개 · 원래 문구 "+offline.primaryMatches+"개"
+            :offline?.kind==="INVALID"?" · "+offline.message:""}
+          {" · 저장/외부 API 호출 없음"}
+        </p>
+      </section>}
       <div className="workspace-focus__message" role="status">
         {(syntheticPreviewEnabled || syntheticServerEnabled || stateDemoEnabled) && (
           <strong>합성 데이터 미리보기 · 실제 영상·채널 제목이나 YouTube 응답이 아닙니다. 분석 데이터 없음. </strong>
@@ -531,6 +680,33 @@ export function WorkspaceFocusMode({
                 listToggleRef.current?.focus();
               }} aria-label="대상 목록 닫기">닫기</button>
             </div>
+            {graphMode==="OFFLINE"?
+              <div role="group" aria-label="관측 노드 선택 목록">
+                <label className="workspace-focus__search-label"
+                  htmlFor="focus-projection-filter">관측 노드 검색</label>
+                <input id="focus-projection-filter" type="search" maxLength={80}
+                  placeholder="노드 이름 또는 ID" value={search}
+                  onChange={event=>setSearch(event.target.value)}/>
+                <p className="workspace-focus__dock-count">
+                  관측 노드는 현재 출처에 한정되며 저장되지 않습니다.
+                </p>
+                <div className="workspace-focus__items">
+                  {offline?.kind==="READY"?
+                    offline.projection.nodes.filter(node=>{
+                      const text=(offline.labels[node.key]??node.label)+" "+node.key;
+                      return text.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
+                    }).slice(0,128).map(node=>
+                      <button type="button" key={node.key}
+                        aria-label={"관측 목록 노드 선택 "+(offline.labels[node.key]??node.label)}
+                        aria-pressed={offlineSelectedKey===node.key}
+                        onClick={()=>focusOfflineNode(node.key)}>
+                        <strong>{offline.labels[node.key]??node.label}</strong>
+                        <span>{node.kind} · {node.status}</span>
+                      </button>)
+                    :<p>CSV나 합성 예시를 불러오면 노드가 표시됩니다.</p>}
+                </div>
+              </div>
+              :<>
             <label className="workspace-focus__search-label" htmlFor="focus-target-filter">
               ID·핸들 검색
             </label>
@@ -568,6 +744,7 @@ export function WorkspaceFocusMode({
                 );
               })}
             </div>
+              </>}
           </aside>
         )}
         {listOpen && (
@@ -584,7 +761,17 @@ export function WorkspaceFocusMode({
             onKeyDown={event => keyboardResize("list", event)} />
         )}
         <div className="workspace-focus__graph" aria-label="중앙 그래프 탐색 영역">
-          {targets.length ? (
+          {graphMode==="OFFLINE" ? (
+            offline?.kind==="READY"?
+              <WorkspaceProjectionCanvas projection={offline.projection}
+                labels={offline.labels} selectedKey={offlineSelectedKey}
+                onSelect={focusOfflineNode}/>:
+              <div className="workspace-focus__empty" role="status">
+                <strong>오프라인 관측 그래프</strong>
+                <p>CSV 또는 합성 예시를 명시적으로 불러오세요.
+                  아직 실제 YouTube 데이터를 조회하지 않았습니다.</p>
+              </div>
+          ) : targets.length ? (
             <WorkspaceUrlCanvas targets={targets} focusedKey={selectedKey}
               onFocusChange={focusTarget} allowVideoImage={allowVideoImage}
               allowChannelImage={allowChannelImage}
@@ -624,7 +811,11 @@ export function WorkspaceFocusMode({
                 detailToggleRef.current?.focus();
               }} aria-label="선택 상세 닫기">닫기</button>
             </div>
-            {selected ? (
+            {graphMode==="OFFLINE" ? (
+              offline?.kind==="READY" ?
+                <WorkspaceProjectionNodeDetail data={offline} node={offlineNode}/>:
+                <p>CSV 또는 합성 자료를 선택한 뒤 관측 노드를 선택하세요.</p>
+            ) : selected ? (
               <div key={selectedKey ?? "none"} className="workspace-focus__details">
                 <div className="workspace-focus__identity" role="group"
                   aria-label="선택 대상 요약">
