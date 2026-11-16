@@ -55,6 +55,11 @@ def assess(inventory, policy, *, now=None):
         if db.get(name,{}).get('status')!='OK':blockers.append('DB_QUERY_UNAVAILABLE:'+name)
     configs=[x for x in inventory.get('configs',[]) if x.get('status')=='OK' and x.get('path')==policy.get('reviewed_ccu_config_path')]
     settings=configs[0]['settings'] if len(configs)==1 else {}
+    if len(configs)==1 and configs[0].get('source')=='PINNED_IMAGE_DEFAULT':
+        if not policy.get('image_config_wiring_reviewed'):
+            blockers.append('IMAGE_PROFILE_EFFECTIVE_WIRING_NOT_REVIEWED')
+        if configs[0].get('source_image_id')!=image.get('data',{}).get('id'):
+            blockers.append('IMAGE_PROFILE_IDENTITY_MISMATCH')
     actual_interval=settings.get('steam.ccu.slot_minutes')
     if isinstance(actual_interval,bool) or not isinstance(actual_interval,int) or actual_interval<1:
         blockers.append('OPERATING_CCU_INTERVAL_UNKNOWN')

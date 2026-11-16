@@ -13,6 +13,7 @@ import re
 import shlex
 import socket
 import subprocess
+import uuid
 
 SAFE_PATH = re.compile(r'/[A-Za-z0-9_./+\-]+\Z')
 SAFE_IMAGE = re.compile(r'[a-z0-9][a-z0-9._:/@\-]{1,200}\Z')
@@ -135,7 +136,17 @@ def execution_projection(text,assignments):
                 if len(bits) in [2,3] and all(SAFE_PATH.fullmatch(x) and '..' not in Path(x).parts for x in bits[:2]) and (len(bits)==2 or bits[2] in ['ro','rw']):
                     run['binds'].append({'host':bits[0],'container':bits[1],'mode':bits[2] if len(bits)==3 else 'rw'})
                 else:run['unresolved_mounts']+=1
-            elif item=='--mount':run['unresolved_mounts']+=1
+            elif item=='--mount':
+                fields={};valid=True
+                for part in value.split(','):
+                    key,sep,entry=part.partition('=')
+                    if key in fields or key not in {'type','src','source','dst','target','destination','readonly'}:valid=False
+                    fields[key]=entry if sep else True
+                source=fields.get('src',fields.get('source'))
+                target=fields.get('dst',fields.get('target',fields.get('destination')))
+                if valid and fields.get('type')=='bind' and isinstance(source,str) and isinstance(target,str) and all(SAFE_PATH.fullmatch(x) and '..' not in Path(x).parts for x in [source,target]):
+                    run['binds'].append({'host':source,'container':target,'mode':'ro' if fields.get('readonly') in [True,'true','1'] else 'rw'})
+                else:run['unresolved_mounts']+=1
             elif item in ['-e','--env']:
                 name=parts[i+1].split('=',1)[0]
                 if re.fullmatch(r'[A-Z][A-Z0-9_]{0,79}',name):run['env_names'].append(name)
@@ -145,6 +156,118 @@ def execution_projection(text,assignments):
         out['docker_runs'].append(run)
     out['lock_paths']=sorted(set(out['lock_paths']))
     return out
+
+
+_SHELL_WORDS=set('if then else elif fi case in esac do done for while function local export readonly set echo printf exit exec shift return test docker flock timeout date mkdir basename dirname cat rm sleep hostname id whoami env true false youtopia-collector python python3'.split())
+_SHELL_OPERATORS={'[',']','[[',']]',';',';;',';&','&&','||','|','(',')','{','}','!',':','>','>>','2>','2>>','&','\\'}
+_ASSIGNMENTS=ASSIGNMENT_NAMES|{'JOB','LIMIT','RUN_CMD','LOG_FILE','LOCK_FD','RC','EXIT_CODE','TZ','CRON_TZ','SHELL'}
+
+
+def safe_shell_tokens(text,*,maximum_lines=180):
+    """Static structure for review. Unknown literals and secret assignments omitted.
+
+    Never evaluates a shell, reads referenced files, or exports a complete script.
+    Compound strings are tokenized only, not interpreted as shell commands.
+    """
+    def token(value,depth=0):
+        if depth>3:return {'omitted':'NESTED_VALUE'}
+        assignment=re.fullmatch(r'([A-Z_][A-Z0-9_]*)=(.*)',value,re.S)
+        if assignment:
+            name,rhs=assignment.groups()
+            if name not in _ASSIGNMENTS:return {'assignment':name,'value':'OMITTED'}
+            if name in {'TZ','CRON_TZ'}:
+                from zoneinfo import ZoneInfo,ZoneInfoNotFoundError
+                try:
+                    ZoneInfo(rhs)
+                    return {'assignment':name,'value_tokens':[rhs]}
+                except (ValueError,ZoneInfoNotFoundError):return {'assignment':name,'value':'OMITTED'}
+            try:parts=shlex.split(rhs,comments=False)
+            except ValueError:return {'assignment':name,'value':'OMITTED'}
+            return {'assignment':name,'value_tokens':[token(x,depth+1) for x in parts]}
+        if value in _SHELL_WORDS|_SHELL_OPERATORS:return value
+        if re.fullmatch(r'--[A-Za-z][A-Za-z0-9-]{0,60}|-[A-Za-z]{1,8}',value):return value
+        if re.fullmatch(r'[0-9]{1,6}(?:[smh])?',value):return value
+        if re.fullmatch(r'[a-z0-9_-]{1,32}',value) and re.search(r'(hour|daily|day|week|steam|youtube|review|current|stats|ccu)',value):return value
+        if re.fullmatch(r'(?:youtopia-collector|qwe1asd/youtopia-collector)(?::[a-zA-Z0-9_.-]+|@sha256:[0-9a-f]{64})?',value):return value
+        if SAFE_PATH.fullmatch(value) and '..' not in Path(value).parts:return value
+        if re.fullmatch(r'[a-zA-Z0-9_.-]{1,80}\.json',value):return value
+        # References remain literal. Do not expand secrets or execute $().
+        if '$(' not in value and '`' not in value:
+            remainder=re.sub(r'\$(?:\{[A-Z_][A-Z0-9_]*(?:\[@\])?\}|[A-Z_][A-Z0-9_]*|[0-9@#?$])','VAR',value)
+            if remainder!=value and re.fullmatch(r'[A-Za-z0-9_./:+,{}\[\]@-]+',remainder):return value
+            if re.fullmatch(r'\$\{[A-Z_0-9][A-Z0-9_]*:?-?[0-9]{1,6}\}',value):return value
+        return {'omitted':'UNREVIEWED_LITERAL','variable_names':sorted(set(re.findall(r'\$(?:\{)?([A-Z_][A-Z0-9_]*)',value)))}
+    result=[]
+    for number,line in enumerate(text.splitlines(),1):
+        if not line.strip() or line.lstrip().startswith('#'):continue
+        continuation=line.rstrip().endswith('\\')
+        parse_line=line.rstrip()[:-1] if continuation else line
+        try:
+            lexer=shlex.shlex(parse_line,posix=True,punctuation_chars=';&|()')
+            lexer.whitespace_split=True;parts=list(lexer)
+        except ValueError:parts=[]
+        result.append({'line':number,'tokens':[token(x) for x in parts],'parse_complete':bool(parts),'continuation':continuation})
+        if len(result)>=maximum_lines:break
+    return {'rows':result,'truncated':len([x for x in text.splitlines() if x.strip() and not x.lstrip().startswith('#')])>len(result),
+            'semantics':'STATIC_TOKENS_NOT_EXECUTED; omitted literals must not be guessed'}
+
+
+IMAGE_CONFIG_READER=r'''
+import json,re,sys
+from pathlib import Path
+fields=json.loads(sys.argv[1]);rows=[]
+for p in sorted(Path('/app/config').glob('*.json'))[:30]:
+    if not ('production' in p.name or 'config' in p.name):continue
+    if p.is_symlink() or not p.is_file() or p.stat().st_size>512000:
+        rows.append({'path':str(p),'status':'UNAVAILABLE'});continue
+    try:
+        body=p.read_bytes();d=json.loads(body.decode('utf-8-sig'));settings={}
+        for field in fields:
+            v=d
+            for key in field.split('.'):
+                v=v.get(key) if isinstance(v,dict) else None
+            if v is None or isinstance(v,(bool,int,float)):settings[field]=v
+            elif isinstance(v,str) and re.fullmatch(r'[A-Za-z0-9_./+\-]{1,70}',v):settings[field]=v
+            elif isinstance(v,list) and all(isinstance(x,str) and re.fullmatch(r'[A-Z_]{1,50}',x) for x in v):settings[field]=v
+            elif isinstance(v,dict) and all(re.fullmatch(r'[A-Z_]{1,50}',str(k)) and isinstance(x,int) and not isinstance(x,bool) for k,x in v.items()):settings[field]=v
+            else:settings[field]='UNSUPPORTED_VALUE_OMITTED'
+        # Deliberately no full config, environment, credential, or config-derived
+        # hash exported. Unknown configuration fields are never copied.
+        rows.append({'path':str(p),'status':'OK','settings':settings,'source':'PINNED_IMAGE_DEFAULT'})
+    except (OSError,ValueError,TypeError):rows.append({'path':str(p),'status':'UNAVAILABLE'})
+print(json.dumps({'kind':'IMAGE_CONFIG_FIELDS_V1','profiles':rows}))
+'''
+
+
+def image_config_report(image_id,*,expected_host=None):
+    """Explicit opt-in: short-lived isolated Python, never collector entrypoint.
+
+    No env-file, host mounts, DB network, host ports, or API call. Cleanup is
+    limited to the randomly named container with our exact purpose label.
+    """
+    if not re.fullmatch(r'sha256:[0-9a-f]{64}',image_id):return {'status':'UNAVAILABLE','reason':'IMAGE_ID_UNKNOWN'}
+    daemon=run(['docker','info','--format','{{.Name}}'])
+    if daemon['status']!='OK' or (expected_host and daemon['stdout'].strip().split('.')[0]!=expected_host):
+        return {'status':'UNAVAILABLE','reason':'DOCKER_DAEMON_IDENTITY_UNCONFIRMED'}
+    name='youtopia-readonly-config-'+uuid.uuid4().hex
+    label='com.youtopia.audit-purpose=readonly-config'
+    try:
+        result=run(['docker','run','--rm','--pull=never','--name',name,'--label',label,
+            '--network','none','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges',
+            '--pids-limit','64','--memory','96m','--cpus','0.5','--user','10001:10001',
+            '--entrypoint','python','-i',image_id,'-I','-B','-',json.dumps(sorted(CONFIG_FIELDS))],
+            timeout=20,input_text=IMAGE_CONFIG_READER)
+        if result['status']!='OK':return result
+        doc=json.loads(result['stdout'])
+        if doc.get('kind')!='IMAGE_CONFIG_FIELDS_V1' or not isinstance(doc.get('profiles'),list):raise ValueError()
+        return {'status':'OK','image_id':image_id,'profiles':doc['profiles'],
+            'scope':'IMAGE_DEFAULTS_NOT_PROVEN_EFFECTIVE_UNTIL_WRAPPER_AND_MOUNTS_REVIEWED',
+            'diagnostic_containers_requested':1,'collector_executions':0,'env_files_passed':False,'host_mounts_passed':False,'network':'none'}
+    except (ValueError,TypeError):return {'status':'UNAVAILABLE','reason':'IMAGE_CONFIG_RESULT_INVALID'}
+    finally:
+        owned=run(['docker','inspect',name,'--format','{{index .Config.Labels "com.youtopia.audit-purpose"}}'])
+        if owned['status']=='OK' and owned['stdout'].strip()=='readonly-config':
+            run(['docker','rm','--force','--volumes',name])
 
 def database_report(container, database, user):
     for value in (container, database, user):
@@ -189,6 +312,7 @@ def collect(args):
                          'literal_assignments': assignments, 'raw_script_exported': False,
                          'execution_flow': 'STATIC_ONLY_NOT_EVALUATED'}
     result['execution_metadata']=execution_projection(text,assignments)
+    result['wrapper']['structure']=safe_shell_tokens(text)
     cron = Path(args.cron)
     schedules = []
     if cron.is_file() and not cron.is_symlink() and cron.stat().st_size < 65536:
@@ -202,8 +326,18 @@ def collect(args):
             if len(parts) >= 7 and str(path) in parts:
                 schedules.append({'schedule': parts[:5], 'os_user': parts[5],
                                   'recognized_job_tokens': [x for x in parts[6:] if x in JOBS],
+                                  'structure':safe_shell_tokens(' '.join(shlex.quote(x) for x in parts[6:])),
                                   'full_command_exported': False})
-    result['cron'] = {'path': str(cron), 'jobs': schedules}
+    timezone=None
+    tzfile=Path('/etc/timezone')
+    if tzfile.is_file() and not tzfile.is_symlink() and tzfile.stat().st_size<200:
+        candidate=tzfile.read_text().strip()
+        if re.fullmatch(r'[A-Za-z0-9_+/\-]{1,80}',candidate):timezone=candidate
+    directives=[]
+    if cron.is_file() and not cron.is_symlink() and cron.stat().st_size<65536:
+        directives=[{'line':i,'tokens':safe_shell_tokens(line)['rows']} for i,line in enumerate(cron.read_text().splitlines(),1)
+                    if re.match(r'\s*(?:CRON_TZ|TZ|SHELL)\s*=',line)]
+    result['cron'] = {'path': str(cron), 'jobs': schedules,'host_timezone_file':timezone,'environment_directives':directives}
     image = args.image or assignments.get('IMAGE')
     if image and SAFE_IMAGE.fullmatch(image):
         inspected = run(['docker', 'image', 'inspect', image, '--format',
@@ -228,6 +362,14 @@ def collect(args):
                     if 'production' in p.name or 'config' in p.name:
                         configs.add(str(p))
     result['configs'] = [config_projection(x) for x in sorted(configs)[:30]]
+    result['image_config_inspection']={'status':'NOT_REQUESTED'}
+    if args.inspect_image_configs:
+        report=image_config_report(result.get('image',{}).get('data',{}).get('id',''),expected_host=args.expected_host)
+        result['image_config_inspection']=report
+        if report.get('status')=='OK':
+            for profile in report['profiles']:
+                profile['source_image_id']=report['image_id']
+                result['configs'].append(profile)
     result['database'] = database_report(args.postgres_container, args.database, args.db_user) if args.include_db else {'status': 'NOT_REQUESTED'}
     result['not_verified'] = ['Shell branch/variable execution semantics', 'Other API consumers and provider-approved limits',
                               'Original source Git commit and Docker build reproducibility']
@@ -242,6 +384,7 @@ def main(argv=None):
     parser.add_argument('--image')
     parser.add_argument('--config-path', action='append')
     parser.add_argument('--config-root', action='append')
+    parser.add_argument('--inspect-image-configs',action='store_true',help='Opt-in isolated Python container: image config fields only, no collector or env-file.')
     parser.add_argument('--include-db', action='store_true')
     parser.add_argument('--postgres-container')
     parser.add_argument('--database')

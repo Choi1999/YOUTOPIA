@@ -41,6 +41,10 @@
 
 `inventory.py`는 운영자가 실행하는 stdlib 도구다. 원문 shell/config/env/log를 내보내지 않으며 source/exec로 수집기를 실행하지 않는다. DB는 명시한 계정으로 `BEGIN READ ONLY`, statement 3초/lock 500ms timeout, `ROLLBACK`만 실행한다. 거부/timeout은 미확인이고 0건이 아니다. wrapper SHA만으로 전체 shell 분기·mount·lock을 검증한 것으로 보지 않는다.
 
+호스트에서 `/app/config`를 찾을 수 없을 때 이를 설정 없음으로 단정하지 않는다. `--inspect-image-configs`를 명시하면 이미 존재하는 image ID로 잠깐 실행하는 **진단용 Python container**에서 `/app/config`의 허용된 설정 필드만 읽는다. 기존 collector entrypoint를 실행하지 않고, pull·network·host volume·env-file을 전달하지 않으며 20초 timeout과 메모리/CPU 제한을 사용한다. 자신의 이름/label을 확인한 진단 container만 정리한다. 기존 운영 container에는 exec/stop/restart를 하지 않는다. 원문 설정/키/환경변수/설정 파일 hash는 내보내지 않는다.
+
+이 결과의 `PINNED_IMAGE_DEFAULT`는 이미지 기본값이다. 실제 wrapper가 어느 profile을 고르고 어떤 mount로 덮는지 검토한 뒤에만 `image_config_wiring_reviewed=true`를 설정한다. 그렇지 않으면 gate가 차단한다. `wrapper.structure`와 cron structure는 안전한 static token/변수 참조이며 미분류 literal은 생략한다. 이를 실행 가능한 원문이나 전체 shell 의미 검증 결과로 취급하지 않는다. 기존 pinned collector가 DB에 쓰는 job code는 `STEAM_CCU`이며 CLI의 `steam-ccu`와 구별한다. 성공 확인용 policy도 실제 DB job code를 사용한다.
+
 필수 신규 변수(값 자체는 비밀이 아닌 feature wiring):
 
 | 이름 | 용도 |
