@@ -1,0 +1,262 @@
+"""Bounded operator-run metadata and SELECT-only collector diagnostics.
+
+Never source shell files, execute collector code, read environment files, print
+raw logs, or change services. Docker/psql is used only with explicit arguments.
+"""
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shlex
+import socket
+import subprocess
+
+SAFE_PATH = re.compile(r'/[A-Za-z0-9_./+\-]+\Z')
+SAFE_IMAGE = re.compile(r'[a-z0-9][a-z0-9._:/@\-]{1,200}\Z')
+ASSIGNMENT_NAMES = {'IMAGE', 'CODE', 'CONFIG', 'OVERRIDES', 'DATA_DIR', 'LOG_DIR',
+                    'CONTAINER', 'NETWORK', 'ENV_FILE','LOCK','LOCK_FILE','LOCK_PATH','LOCK_DIR'}
+JOBS = {'current', 'daily', 'weekly', 'hourly', 'ccu', 'review', 'reviews',
+        'steam-candidates', 'steam-ccu', 'steam-review-recent', 'steam-hub-sync',
+        'youtube-search', 'youtube-stats', 'all', 'test-all'}
+CONFIG_FIELDS = {
+    'app_env', 'collector_version', 'time.slot_timezone', 'time.display_timezone',
+    'retry.max_attempts', 'retry.base_delay_seconds', 'retry.max_delay_seconds',
+    'steam.candidate.enabled', 'steam.candidate.sources', 'steam.candidate.top_n_each',
+    'steam.candidate.source_limits', 'steam.candidate.slot_minutes',
+    'steam.candidate.metadata_batch_size', 'steam.candidate.weekly_history_weeks',
+    'steam.candidate.category_rankings.enabled', 'steam.candidate.category_rankings.limit',
+    'steam.candidate.category_rankings.ranking_scope',
+    'steam.ccu.enabled', 'steam.ccu.slot_minutes', 'steam.ccu.maximum_games_per_run',
+    'steam.review_recent.enabled', 'steam.review_recent.maximum_games_per_run',
+    'steam.review_recent.slot_minutes', 'youtube.search.enabled',
+    'youtube.search.maximum_games_per_run', 'youtube.search.max_pages_per_run',
+    'youtube.stats.enabled', 'youtube.stats.maximum_videos_per_run',
+}
+
+
+def run(argv, timeout=5, input_text=None):
+    try:
+        result = subprocess.run(argv, input=input_text, capture_output=True, text=True,
+                                timeout=timeout, stdin=None if input_text is not None else subprocess.DEVNULL)
+        if result.returncode:
+            stderr = result.stderr.lower()
+            reason = 'PERMISSION_DENIED' if 'permission denied' in stderr else 'TIMEOUT' if 'statement timeout' in stderr else 'COMMAND_FAILED'
+            return {'status': 'UNAVAILABLE', 'reason': reason, 'exit_code': result.returncode}
+        return {'status': 'OK', 'stdout': result.stdout[:300000]}
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return {'status': 'UNAVAILABLE', 'reason': type(error).__name__}
+
+
+def literal_assignments(text):
+    """Extract allowlisted literals; shell evaluation and command substitution forbidden."""
+    values = {}
+    for line in text.splitlines():
+        match = re.fullmatch(r'\s*(?:export\s+)?([A-Z_]+)=(.*?)\s*', line)
+        if not match or match[1] not in ASSIGNMENT_NAMES:
+            continue
+        try:
+            tokens = shlex.split(match[2], comments=True)
+        except ValueError:
+            continue
+        if len(tokens) != 1:
+            continue
+        value = tokens[0]
+        if any(x in value for x in ('$(', '`', '\n', '\r', '://')):
+            continue
+        # Only simple path-variable concatenation, never shell operators/defaults.
+        for key, known in values.items():
+            value = value.replace('${' + key + '}', known)
+            value = re.sub(r'\$' + re.escape(key) + r'(?=/|$)', lambda _: known, value)
+        if '$' in value or '..' in Path(value).parts:
+            continue
+        if match[1] == 'IMAGE':
+            if SAFE_IMAGE.fullmatch(value):
+                values[match[1]] = value
+        elif SAFE_PATH.fullmatch(value) or re.fullmatch(r'[A-Za-z0-9_.-]{1,120}', value):
+            values[match[1]] = value
+    return values
+
+
+def config_projection(path):
+    p = Path(path)
+    if p.is_symlink() or not p.is_file() or p.stat().st_size > 512000:
+        return {'path': str(p), 'status': 'UNAVAILABLE'}
+
+
+    if p.name.startswith('.env') or p.suffix.lower() != '.json':
+        return {'path': str(p), 'status': 'REFUSED_NON_JSON_CONFIG'}
+    try:
+        doc = json.loads(p.read_text(encoding='utf-8-sig'))
+        output = {}
+        for field in sorted(CONFIG_FIELDS):
+            value = doc
+            for key in field.split('.'):
+                if not isinstance(value, dict) or key not in value:
+                    value = None
+                    break
+                value = value[key]
+            if value is None or isinstance(value, (bool, int, float)):
+                output[field] = value
+            elif isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9_./+\-]{1,70}', value):
+                output[field] = value
+            elif isinstance(value, list) and all(isinstance(x, str) and re.fullmatch(r'[A-Z_]{1,50}', x) for x in value):
+                output[field] = value
+            elif isinstance(value, dict) and all(re.fullmatch(r'[A-Z_]{1,50}', str(k)) and isinstance(v, int) and not isinstance(v, bool) for k, v in value.items()):
+                output[field] = value
+            else:
+                output[field] = 'UNSUPPORTED_VALUE_OMITTED'
+        return {'path': str(p), 'status': 'OK', 'settings': output}
+    except (OSError, ValueError, TypeError):
+        return {'path': str(p), 'status': 'UNAVAILABLE'}
+
+
+def execution_projection(text,assignments):
+    """Allowlisted static options only. Never return a complete command or env value."""
+    out={'docker_runs':[],'lock_paths':[],'flow':'STATIC_ONLY_NOT_EVALUATED'}
+    for line in text.replace('\\\n',' ').splitlines():
+        try:parts=shlex.split(line,comments=True)
+        except ValueError:continue
+        def resolve(value):
+            for key,known in assignments.items():
+                value=value.replace('${'+key+'}',known)
+                value=re.sub(r'\$'+re.escape(key)+r'(?=/|:|$)',lambda _:known,value)
+            return value
+        if 'flock' in parts:
+            out['lock_paths'].extend(resolve(x) for x in parts if SAFE_PATH.fullmatch(resolve(x)) and resolve(x).endswith('.lock'))
+        if not any(parts[i:i+2]==['docker','run'] for i in range(len(parts)-1)):continue
+        run={'binds':[],'env_names':[],'unresolved_mounts':0}
+        for i,item in enumerate(parts[:-1]):
+            value=resolve(parts[i+1])
+            if item in ['-v','--volume']:
+                bits=value.split(':')
+                if len(bits) in [2,3] and all(SAFE_PATH.fullmatch(x) and '..' not in Path(x).parts for x in bits[:2]) and (len(bits)==2 or bits[2] in ['ro','rw']):
+                    run['binds'].append({'host':bits[0],'container':bits[1],'mode':bits[2] if len(bits)==3 else 'rw'})
+                else:run['unresolved_mounts']+=1
+            elif item=='--mount':run['unresolved_mounts']+=1
+            elif item in ['-e','--env']:
+                name=parts[i+1].split('=',1)[0]
+                if re.fullmatch(r'[A-Z][A-Z0-9_]{0,79}',name):run['env_names'].append(name)
+            elif item=='--env-file' and SAFE_PATH.fullmatch(value):run['env_file_path']=value
+            elif item=='--network' and re.fullmatch(r'[A-Za-z0-9_.-]{1,120}',value):run['network']=value
+            elif item=='--user' and re.fullmatch(r'[0-9]+(?::[0-9]+)?',value):run['numeric_user']=value
+        out['docker_runs'].append(run)
+    out['lock_paths']=sorted(set(out['lock_paths']))
+    return out
+
+def database_report(container, database, user):
+    for value in (container, database, user):
+        if not re.fullmatch(r'[A-Za-z0-9_.-]{1,80}', value):
+            raise ValueError('INVALID_DATABASE_TARGET')
+    queries = {
+        'identity': "SELECT json_build_object('database',current_database(),'session_user',session_user,'effective_user',current_user,'read_only',current_setting('transaction_read_only'),'server_version',current_setting('server_version'),'as_of',CURRENT_TIMESTAMP)",
+        'target_counts': "SELECT json_build_object('total',count(*),'active',count(*) FILTER(WHERE active IS TRUE),'inactive',count(*) FILTER(WHERE active IS FALSE),'null_active',count(*) FILTER(WHERE active IS NULL),'last_success_at',max(last_success_at)) FROM collector.steam_ccu_target",
+        'recent_jobs': "SELECT coalesce(json_agg(r),'[]'::json) FROM (SELECT job_type,status,collector_version,started_at,finished_at FROM collector.job_run ORDER BY started_at DESC LIMIT 30) r",
+        'attempts_24h': "SELECT coalesce(json_agg(r),'[]'::json) FROM (SELECT c.source_type,c.operation,a.http_status,count(*) AS actual_attempts FROM collector.api_call_attempt a JOIN collector.api_call c ON c.api_call_id=a.api_call_id WHERE a.started_at>=CURRENT_TIMESTAMP-INTERVAL '24 hours' GROUP BY c.source_type,c.operation,a.http_status) r",
+        'new_release_signals': "SELECT json_build_object('total',count(*),'unexpired',count(*) FILTER(WHERE deactivated_at IS NULL AND expires_at>CURRENT_TIMESTAMP)) FROM collector.steam_tracking_signal WHERE signal_source='NEW_RELEASE'",
+        'registered_app_ids': "SELECT coalesce(json_agg(app_id),'[]'::json) FROM (SELECT app_id FROM collector.steam_ccu_target UNION SELECT app_id FROM collector.youtube_game_target ORDER BY app_id LIMIT 100001) r",
+        'genre_tag_catalog': "SELECT coalesce(json_agg(r),'[]'::json) FROM (SELECT tag_id,display_name,source_language,is_active FROM collector.steam_tag WHERE tag_id IN (19,21,122,492,493,597,599,699,701,9) ORDER BY tag_id LIMIT 20) r",
+    }
+    output = {}
+    for name, query in queries.items():
+        sql = "BEGIN READ ONLY; SET LOCAL statement_timeout='3s'; SET LOCAL lock_timeout='500ms'; " + query + '; ROLLBACK;'
+        result = run(['docker', 'exec', '-i', '--user', 'postgres', container, 'psql', '-X', '-q', '-A', '-t',
+                      '-v', 'ON_ERROR_STOP=1', '-U', user, '-d', database], timeout=6, input_text=sql)
+        if result['status'] == 'OK':
+            try:
+                output[name] = {'status': 'OK', 'data': json.loads(result['stdout'].strip())}
+            except ValueError:
+                output[name] = {'status': 'UNAVAILABLE', 'reason': 'UNPARSEABLE_RESULT'}
+        else:
+            output[name] = result
+    return output
+
+
+def collect(args):
+    result = {'kind': 'COLLECTOR_READINESS_INVENTORY_V1', 'as_of_utc': datetime.now(timezone.utc).isoformat(),
+              'host': socket.gethostname(), 'production_changes': 0, 'collector_executions': 0,
+              'credential_values_exported': False, 'raw_logs_exported': False}
+    if args.expected_host and socket.gethostname().split('.')[0] != args.expected_host:
+        raise ValueError('WRONG_HOST')
+    path = Path(args.wrapper)
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > 65536:
+        raise ValueError('WRAPPER_MISSING_OR_UNSAFE')
+    text = path.read_text()
+    assignments = literal_assignments(text)
+    result['wrapper'] = {'path': str(path), 'sha256': hashlib.sha256(text.encode()).hexdigest(),
+                         'literal_assignments': assignments, 'raw_script_exported': False,
+                         'execution_flow': 'STATIC_ONLY_NOT_EVALUATED'}
+    result['execution_metadata']=execution_projection(text,assignments)
+    cron = Path(args.cron)
+    schedules = []
+    if cron.is_file() and not cron.is_symlink() and cron.stat().st_size < 65536:
+        for line in cron.read_text().splitlines():
+            if not line.strip() or line.lstrip().startswith('#'):
+                continue
+            try:
+                parts = shlex.split(line, comments=True)
+            except ValueError:
+                continue
+            if len(parts) >= 7 and str(path) in parts:
+                schedules.append({'schedule': parts[:5], 'os_user': parts[5],
+                                  'recognized_job_tokens': [x for x in parts[6:] if x in JOBS],
+                                  'full_command_exported': False})
+    result['cron'] = {'path': str(cron), 'jobs': schedules}
+    image = args.image or assignments.get('IMAGE')
+    if image and SAFE_IMAGE.fullmatch(image):
+        inspected = run(['docker', 'image', 'inspect', image, '--format',
+                         '{"id":{{json .Id}},"repo_digests":{{json .RepoDigests}}}'])
+        try:
+            result['image'] = {'requested': image, 'status': inspected['status'],
+                               'data': json.loads(inspected['stdout'])} if inspected['status'] == 'OK' else inspected
+        except ValueError:
+            result['image'] = {'status': 'UNAVAILABLE', 'reason': 'UNPARSEABLE_IMAGE_METADATA'}
+    else:
+        result['image'] = {'status': 'UNAVAILABLE', 'reason': 'IMAGE_NOT_RESOLVED'}
+    configs = set(args.config_path or [])
+    if assignments.get('CONFIG', '').startswith('/'):
+        configs.add(assignments['CONFIG'])
+    roots=set(args.config_root or [])
+    if assignments.get('CODE'):roots.add(assignments['CODE'])
+    for code in sorted(roots)[:5]:
+        if not SAFE_PATH.fullmatch(code) or not Path(code).is_dir():continue
+        for base in (Path(code), Path(code) / 'config',Path(code)/'configs',Path(code)/'current'/'config'):
+            if base.is_dir() and not base.is_symlink():
+                for p in list(base.glob('*.json'))[:20]:
+                    if 'production' in p.name or 'config' in p.name:
+                        configs.add(str(p))
+    result['configs'] = [config_projection(x) for x in sorted(configs)[:30]]
+    result['database'] = database_report(args.postgres_container, args.database, args.db_user) if args.include_db else {'status': 'NOT_REQUESTED'}
+    result['not_verified'] = ['Shell branch/variable execution semantics', 'Other API consumers and provider-approved limits',
+                              'Original source Git commit and Docker build reproducibility']
+    return result
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--expected-host')
+    parser.add_argument('--wrapper', required=True)
+    parser.add_argument('--cron', required=True)
+    parser.add_argument('--image')
+    parser.add_argument('--config-path', action='append')
+    parser.add_argument('--config-root', action='append')
+    parser.add_argument('--include-db', action='store_true')
+    parser.add_argument('--postgres-container')
+    parser.add_argument('--database')
+    parser.add_argument('--db-user')
+    args = parser.parse_args(argv)
+    if args.include_db and not all((args.postgres_container, args.database, args.db_user)):
+        parser.error('Database diagnostic requires explicit container/database/user.')
+    try:
+        result = collect(args)
+    except (OSError, ValueError) as error:
+        print(json.dumps({'status': 'BLOCKED', 'reason': str(error) if isinstance(error, ValueError) else type(error).__name__}))
+        return 2
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

@@ -1,0 +1,20 @@
+{
+  "expected_host": null,
+  "expected_database": null,
+  "reviewed_wrapper_sha256": null,
+  "reviewed_ccu_config_path": null,
+  "reviewed_overlay_image_id": null,
+  "reviewed_success_job_types": ["steam-ccu"],
+  "all_steam_jobs_share_guard_state": false,
+  "other_api_consumers_accounted_for": false,
+  "state_path": "/collector-guard/steam-budget.sqlite",
+  "state_id": null,
+  "rolling_day_limit": null,
+  "new_rolling_day_limit": null,
+  "failure_and_other_work_reserve": null,
+  "minute_limit": 60,
+  "minimum_interval_seconds": 1,
+  "maximum_games": 10,
+  "interval_minutes": null,
+  "initial_observation_days": 14
+}

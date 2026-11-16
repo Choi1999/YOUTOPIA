@@ -1,0 +1,11 @@
+{
+  "tag:19": "Action",
+  "action": "Action",
+  "adventure": "Adventure",
+  "casual": "Casual",
+  "racing": "Racing",
+  "rpg": "RPG",
+  "simulation": "Simulation",
+  "sports": "Sports",
+  "strategy": "Strategy"
+}
