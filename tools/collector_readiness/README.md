@@ -37,9 +37,15 @@
 - guard에 의한 CCU 차단은 게임의 availability/failure_count를 변경하지 않는다. 해당 task를 재개 가능한 PENDING으로 남기고 현재 run을 실패/부분 실패로 중단한다. 남은 모든 게임을 개별 실패로 소진하거나 정상 수집으로 보고하지 않는다. 전역 보호가 작동하는 동안 관측 간격이 생길 수 있으므로 무중단을 보장하지 않는다.
 - SQLite와 PostgreSQL은 분산 원자 transaction이 아니다. 중간 실패 시 metadata만 적재되거나 일부 게임만 적용될 수 있다. immutable decision/event와 RAW를 확인하고 **같은 plan/장부**로 재개한다. 다른 plan 생성·장부 재생성으로 우회하지 않는다. metadata 요청의 HTTP 장부는 staging/budget에 있으며 기존 PostgreSQL `api_call_attempt` 집계만 보면 새 발견 호출이 빠진다는 점에 유의한다.
 
+이 overlay는 기존 CCU 스케줄러의 두 재호출 경로도 수정한다. 유효 source가 갱신돼도 이미 active인 게임의 성공 간격/404·실패 대기를 앞당기지 않는다. 실제 INACTIVE target의 적격 재진입은 즉시 due가 된다. 대기 task를 claim할 때 active/next_due를 다시 확인한다. 이미 claim한 뒤의 동시 상태 변경까지 외부 요청과 원자적이라고 주장하지 않으며 기존 wrapper lock 검토가 필요하다. 이 두 수정은 새 이미지에 포함되며 기능 flag와 별개다. 운영 반영 전에는 구버전 동작이 유지된다.
+
+공식 호출 규칙과 현행 source별 승격 조건, 전체 수집량 계산 방법은 [CCU_CALL_REVIEW.md](CCU_CALL_REVIEW.md)를 참고한다.
+
 ## 운영 전 확인과 설정
 
 `inventory.py`는 운영자가 실행하는 stdlib 도구다. 원문 shell/config/env/log를 내보내지 않으며 source/exec로 수집기를 실행하지 않는다. DB는 명시한 계정으로 `BEGIN READ ONLY`, statement 3초/lock 500ms timeout, `ROLLBACK`만 실행한다. 거부/timeout은 미확인이고 0건이 아니다. wrapper SHA만으로 전체 shell 분기·mount·lock을 검증한 것으로 보지 않는다.
+
+`--include-db --deep-ccu-audit`를 함께 지정하면 target 상태/현재 유효 source, AppID별 최근 24시간 CCU 시도(상위 30개), job 처리량/시간, 대기 task와 중단·대기 target의 충돌, 기록된 분/시간별 peak를 추가한다. `selection_reason`은 최초 선정 출처이며 현재 유효 source와 다를 수 있다. HTTP 상태가 없는 실패나 조회 실패를 관측 0으로 바꾸지 않는다. alias 값·오류 원문·응답은 내보내지 않는다. 분/시간 peak는 calendar bucket 집계이며 rolling minute 보장값이 아니다. 이 수치는 해당 DB에 기록된 시도이고 다른 실행자·redirect·commit 전 종료한 요청까지 포함한다고 주장하지 않는다.
 
 호스트에서 `/app/config`를 찾을 수 없을 때 이를 설정 없음으로 단정하지 않는다. `--inspect-image-configs`를 명시하면 이미 존재하는 image ID로 잠깐 실행하는 **진단용 Python container**에서 `/app/config`의 허용된 설정 필드만 읽는다. 기존 collector entrypoint를 실행하지 않고, pull·network·host volume·env-file을 전달하지 않으며 20초 timeout과 메모리/CPU 제한을 사용한다. 자신의 이름/label을 확인한 진단 container만 정리한다. 기존 운영 container에는 exec/stop/restart를 하지 않는다. 원문 설정/키/환경변수/설정 파일 hash는 내보내지 않는다.
 

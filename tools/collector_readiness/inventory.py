@@ -269,7 +269,87 @@ def image_config_report(image_id,*,expected_host=None):
         if owned['status']=='OK' and owned['stdout'].strip()=='readonly-config':
             run(['docker','rm','--force','--volumes',name])
 
-def database_report(container, database, user):
+# Explicit opt-in. These are bounded diagnostics, not migrations. Source presence
+# alone does not prove promotion: eligibility, feature flags and effective config
+# must be reviewed too. No credential aliases, messages or response bodies leave
+# the database. Counts are recorded attempts, not proof of every network send.
+DEEP_CCU_QUERIES = {
+    'ccu_target_states': """SELECT coalesce(json_agg(r),'[]'::json) FROM (
+        SELECT t.active,t.lifecycle_state,t.availability_status,t.selection_reason,
+               c.eligibility_status,count(*) AS games,
+               count(*) FILTER(WHERE t.next_due_at IS NULL OR t.next_due_at<=CURRENT_TIMESTAMP) AS due_now,
+               min(t.next_due_at) AS earliest_due,max(t.last_success_at) AS last_success_at
+        FROM collector.steam_ccu_target t
+        LEFT JOIN collector.steam_app_candidate c ON c.app_id=t.app_id
+        GROUP BY t.active,t.lifecycle_state,t.availability_status,t.selection_reason,c.eligibility_status
+        ORDER BY t.active DESC,t.lifecycle_state,t.availability_status,t.selection_reason,c.eligibility_status
+    ) r""",
+    'ccu_current_sources': """SELECT coalesce(json_agg(r),'[]'::json) FROM (
+        SELECT t.active,t.lifecycle_state,c.eligibility_status,
+               coalesce(s.concurrent_players,FALSE) AS concurrent_players,
+               coalesce(s.manual,FALSE) AS manual,coalesce(s.new_release,FALSE) AS new_release,
+               count(*) AS games
+        FROM collector.steam_ccu_target t
+        LEFT JOIN collector.steam_app_candidate c ON c.app_id=t.app_id
+        LEFT JOIN (
+            SELECT app_id,bool_or(signal_source='CONCURRENT_PLAYERS') AS concurrent_players,
+                   bool_or(signal_source='MANUAL') AS manual,bool_or(signal_source='NEW_RELEASE') AS new_release
+            FROM collector.steam_tracking_signal
+            WHERE deactivated_at IS NULL AND (
+                (signal_source IN ('CONCURRENT_PLAYERS','MANUAL') AND (expires_at IS NULL OR expires_at>CURRENT_TIMESTAMP))
+                OR (signal_source='NEW_RELEASE' AND expires_at>CURRENT_TIMESTAMP))
+            GROUP BY app_id
+        ) s ON s.app_id=t.app_id
+        GROUP BY t.active,t.lifecycle_state,c.eligibility_status,s.concurrent_players,s.manual,s.new_release
+    ) r""",
+    'ccu_attempts_by_app_24h': """SELECT coalesce(json_agg(r),'[]'::json) FROM (
+        SELECT t.app_id,count(DISTINCT a.attempt_id) AS recorded_attempts,
+               count(DISTINCT a.attempt_id) FILTER(WHERE a.http_status=200) AS http_200,
+               count(DISTINCT a.attempt_id) FILTER(WHERE a.http_status=404) AS http_404,
+               count(DISTINCT a.attempt_id) FILTER(WHERE a.http_status=429) AS http_429,
+               count(DISTINCT a.attempt_id) FILTER(WHERE a.http_status IS NULL) AS no_http_status,
+               bool_or(a.credential_alias IS NOT NULL) AS credential_alias_present,
+               min(a.started_at) AS first_recorded_at,max(a.started_at) AS last_recorded_at
+        FROM collector.api_call_attempt a
+        JOIN collector.api_call c ON c.api_call_id=a.api_call_id
+        JOIN collector.api_call_task ct ON ct.api_call_id=c.api_call_id
+        JOIN collector.collection_task t ON t.task_id=ct.task_id
+        WHERE a.started_at>=CURRENT_TIMESTAMP-INTERVAL '24 hours'
+          AND c.source_type='STEAM' AND c.operation='CURRENT_PLAYERS' AND t.task_type='STEAM_CCU'
+        GROUP BY t.app_id ORDER BY http_404 DESC,http_429 DESC,recorded_attempts DESC,t.app_id LIMIT 30
+    ) r""",
+    'ccu_jobs_24h': """SELECT coalesce(json_agg(r),'[]'::json) FROM (
+        SELECT status,count(*) AS runs,sum(target_count) AS target_count,sum(success_count) AS success_count,
+               sum(failure_count) AS failure_count,sum(skipped_count) AS skipped_count,
+               max(extract(epoch FROM finished_at-started_at)) AS longest_finished_seconds,
+               max(started_at) AS latest_started_at,max(finished_at) AS latest_finished_at
+        FROM collector.job_run
+        WHERE started_at>=CURRENT_TIMESTAMP-INTERVAL '24 hours'
+          AND upper(replace(job_type,'-','_'))='STEAM_CCU'
+        GROUP BY status
+    ) r""",
+    'ccu_queued_target_states': """SELECT coalesce(json_agg(r),'[]'::json) FROM (
+        SELECT q.status,count(*) AS tasks,
+               count(*) FILTER(WHERE t.app_id IS NULL) AS target_missing,
+               count(*) FILTER(WHERE t.app_id IS NOT NULL AND t.active IS NOT TRUE) AS target_inactive,
+               count(*) FILTER(WHERE t.next_due_at>CURRENT_TIMESTAMP) AS target_not_due,
+               min(q.scheduled_at) AS oldest_slot,max(q.scheduled_at) AS newest_slot
+        FROM collector.collection_task q LEFT JOIN collector.steam_ccu_target t ON t.app_id=q.app_id
+        WHERE q.task_type='STEAM_CCU' AND q.status IN ('PENDING','CLAIMED','RUNNING') GROUP BY q.status
+    ) r""",
+    'steam_recorded_peaks_24h': """WITH attempts AS (
+        SELECT a.started_at,c.operation FROM collector.api_call_attempt a
+        JOIN collector.api_call c ON c.api_call_id=a.api_call_id
+        WHERE a.started_at>=CURRENT_TIMESTAMP-INTERVAL '24 hours' AND c.source_type='STEAM'
+    ) SELECT json_build_object(
+        'recorded_attempts',(SELECT count(*) FROM attempts),
+        'review_histogram_store_attempts',(SELECT count(*) FROM attempts WHERE operation='REVIEW_HISTOGRAM'),
+        'highest_calendar_minute',(SELECT coalesce(max(n),0) FROM (SELECT count(*) n FROM attempts GROUP BY date_trunc('minute',started_at)) r),
+        'highest_calendar_hour',(SELECT coalesce(max(n),0) FROM (SELECT count(*) n FROM attempts GROUP BY date_trunc('hour',started_at)) r))""",
+}
+
+
+def database_report(container, database, user, *, deep_ccu_audit=False):
     for value in (container, database, user):
         if not re.fullmatch(r'[A-Za-z0-9_.-]{1,80}', value):
             raise ValueError('INVALID_DATABASE_TARGET')
@@ -282,6 +362,8 @@ def database_report(container, database, user):
         'registered_app_ids': "SELECT coalesce(json_agg(app_id),'[]'::json) FROM (SELECT app_id FROM collector.steam_ccu_target UNION SELECT app_id FROM collector.youtube_game_target ORDER BY app_id LIMIT 100001) r",
         'genre_tag_catalog': "SELECT coalesce(json_agg(r),'[]'::json) FROM (SELECT tag_id,display_name,source_language,is_active FROM collector.steam_tag WHERE tag_id IN (19,21,122,492,493,597,599,699,701,9) ORDER BY tag_id LIMIT 20) r",
     }
+    if deep_ccu_audit:
+        queries.update(DEEP_CCU_QUERIES)
     output = {}
     for name, query in queries.items():
         sql = "BEGIN READ ONLY; SET LOCAL statement_timeout='3s'; SET LOCAL lock_timeout='500ms'; " + query + '; ROLLBACK;'
@@ -370,7 +452,8 @@ def collect(args):
             for profile in report['profiles']:
                 profile['source_image_id']=report['image_id']
                 result['configs'].append(profile)
-    result['database'] = database_report(args.postgres_container, args.database, args.db_user) if args.include_db else {'status': 'NOT_REQUESTED'}
+    result['database'] = database_report(args.postgres_container, args.database, args.db_user,
+        deep_ccu_audit=args.deep_ccu_audit) if args.include_db else {'status': 'NOT_REQUESTED'}
     result['not_verified'] = ['Shell branch/variable execution semantics', 'Other API consumers and provider-approved limits',
                               'Original source Git commit and Docker build reproducibility']
     return result
@@ -386,12 +469,15 @@ def main(argv=None):
     parser.add_argument('--config-root', action='append')
     parser.add_argument('--inspect-image-configs',action='store_true',help='Opt-in isolated Python container: image config fields only, no collector or env-file.')
     parser.add_argument('--include-db', action='store_true')
+    parser.add_argument('--deep-ccu-audit', action='store_true', help='Opt-in target/source, per-app attempts, queue, job and recorded burst counts. Read-only with per-query timeouts.')
     parser.add_argument('--postgres-container')
     parser.add_argument('--database')
     parser.add_argument('--db-user')
     args = parser.parse_args(argv)
     if args.include_db and not all((args.postgres_container, args.database, args.db_user)):
         parser.error('Database diagnostic requires explicit container/database/user.')
+    if args.deep_ccu_audit and not args.include_db:
+        parser.error('--deep-ccu-audit requires --include-db.')
     try:
         result = collect(args)
     except (OSError, ValueError) as error:

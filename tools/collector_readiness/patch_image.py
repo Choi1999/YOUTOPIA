@@ -54,6 +54,40 @@ def patched(root):
     if repository.count(anchor) != 1:
         raise ValueError('RECONCILE_PATCH_ANCHOR_MISMATCH')
     repository = repository.replace(anchor, anchor + EXTRA_RECONCILE)
+    # Refreshing a source does not make an active game's successful interval or
+    # failure backoff due earlier. A genuinely retired eligible target may reenter.
+    anchor = '''                next_due_at=CASE
+                    WHEN target.next_due_at IS NULL THEN EXCLUDED.next_due_at
+                    ELSE LEAST(target.next_due_at, EXCLUDED.next_due_at)
+                END,'''
+    if repository.count(anchor) != 1:
+        raise ValueError('CCU_DUE_REFRESH_ANCHOR_MISMATCH')
+    repository = repository.replace(anchor, '''                next_due_at=CASE
+                    WHEN target.active IS NOT TRUE OR target.lifecycle_state='INACTIVE'
+                        THEN EXCLUDED.next_due_at
+                    WHEN target.next_due_at IS NULL THEN EXCLUDED.next_due_at
+                    ELSE target.next_due_at
+                END,''')
+    # Tasks can outlive a stop/backoff decision. Recheck CCU eligibility at claim
+    # time; other task types keep their original selection and parameter order.
+    anchor = '''        params: list[object] = [task_type, now]
+        if scheduled_at is not None:'''
+    if repository.count(anchor) != 1:
+        raise ValueError('CCU_CLAIM_PARAMETERS_ANCHOR_MISMATCH')
+    repository = repository.replace(anchor, '''        ccu_filter_sql = (
+            f"AND EXISTS (SELECT 1 FROM {self._c('steam_ccu_target')} current_target "
+            "WHERE current_target.app_id=queued.app_id AND current_target.active IS TRUE "
+            "AND (current_target.next_due_at IS NULL OR current_target.next_due_at<=%s))"
+            if task_type == "STEAM_CCU" else ""
+        )
+        params: list[object] = [task_type, now]
+        if task_type == "STEAM_CCU":
+            params.append(now)
+        if scheduled_at is not None:''')
+    anchor = "                    WHERE queued.task_type=%s AND queued.status='PENDING' AND queued.scheduled_at <= %s\n"
+    if repository.count(anchor) != 1:
+        raise ValueError('CCU_CLAIM_ELIGIBILITY_ANCHOR_MISMATCH')
+    repository = repository.replace(anchor, anchor + '                    {ccu_filter_sql}\n')
     ccu=originals['jobs/steam_ccu.py']
     anchor='    context.repository.ensure_ccu_tasks(scheduled_at=scheduled_at, now=now)\n'
     if ccu.count(anchor)!=1:raise ValueError('CCU_MAINTENANCE_ANCHOR_MISMATCH')

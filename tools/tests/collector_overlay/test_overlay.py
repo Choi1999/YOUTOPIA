@@ -82,6 +82,25 @@ class ReconcileTests(unittest.TestCase):
         with self.db.transaction() as c:c.execute('UPDATE collector.steam_tracking_signal SET deactivated_at=%s',(self.now,))
         self.signal();self.reconcile();ccu,youtube=self.targets();self.assertEqual(ccu[0][1],'ACTIVE');self.assertEqual(youtube,[(True,'COOLDOWN')])
 
+    def test_legacy_promotion_preserves_success_interval_and_failure_backoff(self):
+        self.signal('CONCURRENT_PLAYERS',expires=72);self.reconcile()
+        for state,delay in [('ACTIVE',timedelta(minutes=60)),('ACTIVE',timedelta(hours=24)),('COOLDOWN',timedelta(hours=24))]:
+            with self.subTest(state=state,delay=delay):
+                due=self.now+delay
+                with self.db.transaction() as c:
+                    c.execute('UPDATE collector.steam_ccu_target SET next_due_at=%s,lifecycle_state=%s',(due,state))
+                self.reconcile(now=self.now+timedelta(minutes=1))
+                with self.db.transaction() as c:
+                    self.assertEqual(c.execute('SELECT next_due_at FROM collector.steam_ccu_target').fetchone()[0],due)
+
+    def test_retired_eligible_target_reentry_is_due_now(self):
+        self.signal('CONCURRENT_PLAYERS',expires=72);self.reconcile()
+        with self.db.transaction() as c:
+            c.execute("UPDATE collector.steam_ccu_target SET active=FALSE,lifecycle_state='INACTIVE',next_due_at=%s",(self.now+timedelta(days=1),))
+        reentry=self.now+timedelta(minutes=1);self.reconcile(now=reentry)
+        with self.db.transaction() as c:
+            self.assertEqual(c.execute('SELECT active,lifecycle_state,next_due_at FROM collector.steam_ccu_target').fetchone(),(True,'ACTIVE',reentry))
+
 
 class RuntimeGuardTests(unittest.TestCase):
     def setUp(self):

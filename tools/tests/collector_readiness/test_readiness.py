@@ -252,5 +252,23 @@ class InventoryTests(unittest.TestCase):
         for argv,kwargs in calls:
             self.assertIn('BEGIN READ ONLY',kwargs['input_text']);self.assertIn("statement_timeout='3s'",kwargs['input_text']);self.assertTrue(kwargs['input_text'].endswith('ROLLBACK;'));self.assertNotIn('ALTER ',kwargs['input_text'])
 
+    def test_deep_ccu_audit_is_opt_in_bounded_and_failure_is_not_zero(self):
+        calls=[]
+        def fake(argv,**kwargs):
+            calls.append((argv,kwargs))
+            return {'status':'UNAVAILABLE','reason':'PERMISSION_DENIED'}
+        with patch('tools.collector_readiness.inventory.run',fake):
+            result=database_report('synthetic-pg','synthetic','synthetic-reader',deep_ccu_audit=True)
+        self.assertEqual(len(calls),13)
+        self.assertTrue(all(x=={'status':'UNAVAILABLE','reason':'PERMISSION_DENIED'} for x in result.values()))
+        for argv,kwargs in calls:
+            self.assertIn('BEGIN READ ONLY',kwargs['input_text'])
+            self.assertIn("statement_timeout='3s'",kwargs['input_text'])
+            self.assertIn("lock_timeout='500ms'",kwargs['input_text'])
+            self.assertTrue(kwargs['input_text'].endswith('ROLLBACK;'))
+            self.assertEqual(kwargs['timeout'],6)
+            for field in ['error_message','quota_scope_alias','worker_identity']:
+                self.assertNotIn(field,kwargs['input_text'])
+
 
 if __name__=='__main__':unittest.main()

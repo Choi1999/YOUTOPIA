@@ -199,7 +199,7 @@ class AdmissionTests(unittest.TestCase):
         Path(self.args.plan).write_text(json.dumps(document))
         with self.assertRaisesRegex(Blocked,'CAP_REACHED'):self.execute()
 
-    def test_inventory_read_only_queries_match_pinned_schema(self):
+    def fixture_inventory(self, *, deep=False):
         from collector_readiness.inventory import database_report
         def fake(argv,**kwargs):
             values=[]
@@ -210,7 +210,11 @@ class AdmissionTests(unittest.TestCase):
                     if not cur.nextset():break
             return {'status':'OK','stdout':json.dumps(values[0])}
         with patch('collector_readiness.inventory.run',fake):
-            result=database_report('isolated-fixture',DATABASE,'postgres')
+            return database_report('isolated-fixture',DATABASE,'postgres',deep_ccu_audit=deep)
+
+    def test_inventory_read_only_queries_match_pinned_schema(self):
+        result=self.fixture_inventory(deep=True)
+        self.assertEqual(len(result),13)
         self.assertTrue(all(x['status']=='OK' for x in result.values()))
         self.assertEqual(result['identity']['data']['read_only'],'on')
 
@@ -259,6 +263,64 @@ class AdmissionTests(unittest.TestCase):
             self.assertEqual(c.execute('SELECT status FROM collector.collection_task').fetchone(),('PENDING',))
             self.assertEqual(c.execute('SELECT http_status FROM collector.api_call_attempt').fetchone(),(429,))
         self.assertEqual(Budget(self.policy['state_path'],self.policy).status()['reservations_total'],1)
+
+    def test_real_ccu_404_wait_survives_new_release_signal_refresh(self):
+        from requests import Response
+        self.execute();now=datetime.now(timezone.utc)
+        response=Response();response.status_code=404;response._content=b'{}'
+        job=self.context.repository.start_job(job_type='steam-ccu',trigger_type='TEST',collector_version=__version__,app_env='production',started_at=now)
+        with patch.object(self.context.transport._session,'get',return_value=response) as send:
+            steam_ccu.run(self.context,job)
+        self.assertEqual(send.call_count,1)
+        with self.context.database.transaction() as c:
+            before=c.execute('SELECT next_due_at,availability_status,active FROM collector.steam_ccu_target').fetchone()
+            self.assertEqual(before[1:],('UNAVAILABLE',True))
+            self.assertGreater(before[0],now+timedelta(hours=23))
+            self.context.repository._reconcile_targets(c,now=now+timedelta(hours=1),app_ids=[501])
+            self.assertEqual(c.execute('SELECT next_due_at FROM collector.steam_ccu_target').fetchone()[0],before[0])
+        self.context.repository.ensure_ccu_tasks(scheduled_at=now+timedelta(hours=1),now=now+timedelta(hours=1))
+        self.assertEqual(self.count('collector.collection_task'),1)
+
+    def test_ccu_pending_task_is_not_claimed_after_target_stops(self):
+        self.execute();now=datetime.now(timezone.utc)
+        self.context.repository.ensure_ccu_tasks(scheduled_at=now,now=now)
+        with self.context.database.transaction() as c:
+            c.execute("UPDATE collector.steam_ccu_target SET active=FALSE,lifecycle_state='INACTIVE'")
+        job=self.context.repository.start_job(job_type='steam-ccu',trigger_type='TEST',collector_version=__version__,app_env='production',started_at=now)
+        self.assertEqual(self.context.repository.claim_ccu_tasks(job=job,now=now,limit=1,scheduled_at=now),())
+        with self.context.database.transaction() as c:
+            self.assertEqual(c.execute('SELECT status FROM collector.collection_task').fetchone(),('PENDING',))
+
+    def test_ccu_pending_task_is_not_claimed_before_updated_due_time(self):
+        self.execute();now=datetime.now(timezone.utc)
+        self.context.repository.ensure_ccu_tasks(scheduled_at=now,now=now)
+        with self.context.database.transaction() as c:
+            c.execute('UPDATE collector.steam_ccu_target SET next_due_at=%s',(now+timedelta(days=1),))
+        job=self.context.repository.start_job(job_type='steam-ccu',trigger_type='TEST',collector_version=__version__,app_env='production',started_at=now)
+        self.assertEqual(self.context.repository.claim_ccu_tasks(job=job,now=now,limit=None),())
+        with self.context.database.transaction() as c:
+            self.assertEqual(c.execute('SELECT status FROM collector.collection_task').fetchone(),('PENDING',))
+
+    def test_deep_inventory_reports_real_mocked_attempt_and_queue_without_credential_values(self):
+        from requests import Response
+        self.execute();now=datetime.now(timezone.utc)
+        response=Response();response.status_code=404;response._content=b'{}'
+        job=self.context.repository.start_job(job_type='steam-ccu',trigger_type='TEST',collector_version=__version__,app_env='production',started_at=now)
+        with patch.object(self.context.transport._session,'get',return_value=response):
+            steam_ccu.run(self.context,job)
+        with self.context.database.transaction() as c:
+            c.execute("UPDATE collector.api_call_attempt SET credential_alias='synthetic-private-alias'")
+        result=self.fixture_inventory(deep=True)
+        self.assertTrue(all(x['status']=='OK' for x in result.values()))
+        attempts=result['ccu_attempts_by_app_24h']['data']
+        self.assertEqual(len(attempts),1)
+        self.assertEqual((attempts[0]['app_id'],attempts[0]['recorded_attempts'],attempts[0]['http_404']),(501,1,1))
+        self.assertTrue(attempts[0]['credential_alias_present'])
+        peaks=result['steam_recorded_peaks_24h']['data']
+        self.assertEqual((peaks['recorded_attempts'],peaks['review_histogram_store_attempts'],peaks['highest_calendar_minute']),(1,0,1))
+        self.assertEqual(result['ccu_current_sources']['data'][0]['new_release'],True)
+        self.assertEqual(result['ccu_target_states']['data'][0]['availability_status'],'UNAVAILABLE')
+        self.assertNotIn('synthetic-private-alias',json.dumps(result))
 
 
 if __name__=='__main__':unittest.main()
