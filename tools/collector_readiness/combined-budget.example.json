@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "total_ccu_games": 500,
+  "interval_minutes": 60,
+  "ccu_max_attempts": 3,
+  "review_pages_24h": null,
+  "review_max_attempts": null,
+  "other_steam_attempts_24h": null,
+  "safety_reserve_24h": 10000,
+  "prior_day_debit": null,
+  "rolling_day_limit": 50000,
+  "minute_limit": 60,
+  "minimum_interval_seconds": 1,
+  "reviewed_slot_seconds": null,
+  "non_ccu_slot_reserve_seconds": null,
+  "bounded_send_duration_seconds": null,
+  "other_consumers_accounted_for": false,
+  "shared_ledger_wiring_verified": false
+}

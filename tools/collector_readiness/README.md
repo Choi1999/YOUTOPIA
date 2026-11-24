@@ -93,6 +93,10 @@ python -B -m collector_readiness rollback --staging STAGING --plan ORIGINAL_PLAN
 
 process crash의 RESERVED 한 건은 `status`의 unresolved ID로 확인한다. collector lock 확보·진행 중 worker 없음·외부 전송 여부 불명확함을 확인한 뒤 `resolve-unknown --policy POLICY --request-id ID --confirm-no-running-worker`로 NETWORK_UNKNOWN 처리할 수 있다. 예약 수는 유지하고 5분 cooldown을 둔다. 한도 리셋 수단으로 쓰지 않는다.
 
+## 일반 CCU 확대와 리뷰 본문 수집
+
+기존 히스토그램과 별도인 리뷰 본문 런타임, CCU 일반 확대, 전처리·학습·서비스 전송의 연결 계약은 [CCU_REVIEW_INTEGRATION.md](CCU_REVIEW_INTEGRATION.md)에 있다. 새 `combined_budget.py`는 CCU와 리뷰 페이지·다른 Steam 호출·초기 debit·실행 시간 여유를 합산하는 독립 오프라인 검토기다. 실제 HTTP/DB 연결이나 수집을 실행하지 않는다. `combined-budget.example.json`의 500개/일일 50,000회는 검토 예시이며 `null`/`false`가 남아 있어 결과가 BLOCKED다. 운영값으로 사용하거나 기존 신작용 admission을 일반 확대에 그대로 적용하지 않는다.
+
 ## 격리 검증
 
 ```bash
