@@ -1,0 +1,307 @@
+{
+  "status": "PASS",
+  "taxonomy_version": "v0.5",
+  "reviews": 70,
+  "source_opinions": 112,
+  "active_opinions": 118,
+  "held_opinions": 7,
+  "registered_leaves": 71,
+  "observed_leaves": 65,
+  "split_source_opinions": 6,
+  "review_text_hashes": "PASS",
+  "evidence_offsets": "PASS",
+  "migration_coverage": "PASS",
+  "polarity_parent_preservation": "PASS",
+  "hold_exclusion_preservation": "PASS",
+  "leaf_aggregation": "PASS",
+  "manifest_hashes": "PASS",
+  "training_performed": false,
+  "deployment_performed": false,
+  "user_verified_new_leaf_labels": 0,
+  "support_by_leaf": {
+    "BALANCE.DIFFICULTY": {
+      "reviews": 5,
+      "opinions": 5
+    },
+    "BALANCE.RANDOMNESS": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "BALANCE.RELATIVE_POWER": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "BALANCE.UNSPECIFIED": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "CHARACTER.APPEARANCE": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "CHARACTER.MOTIVATION_NARRATIVE": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "CHARACTER.PERSONALITY_BEHAVIOR": {
+      "reviews": 1,
+      "opinions": 2
+    },
+    "CHARACTER.RELATIONSHIP": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "CHARACTER.UNSPECIFIED": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "CONTENT.AMOUNT": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "CONTENT.LONGEVITY": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "CONTENT.MOD_EXPANSION": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "CONTENT.REPETITIVE_GRIND": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "CONTENT.REPLAYABILITY": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "CONTENT.UNSPECIFIED": {
+      "reviews": 0,
+      "opinions": 0
+    },
+    "CONTENT.VARIETY": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "GAMEPLAY.ACTION": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.AUTOMATION": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.BUILDING_MANAGEMENT": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "GAMEPLAY.COMBAT": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "GAMEPLAY.HIT_FEEL": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.PACING": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.PLAYER_AGENCY": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.PUZZLE": {
+      "reviews": 1,
+      "opinions": 2
+    },
+    "GAMEPLAY.ROMANCE_ACTIVITY": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.RULES_SYSTEM": {
+      "reviews": 7,
+      "opinions": 8
+    },
+    "GAMEPLAY.SELF_DIRECTED_DISCOVERY": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.SESSION_LENGTH": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.SESSION_TIME_FLEXIBILITY": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.STRATEGY_CHOICE": {
+      "reviews": 4,
+      "opinions": 5
+    },
+    "GAMEPLAY.UNSPECIFIED": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GRAPHICS.CAMERA_VIEWPOINT": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GRAPHICS.IMAGE_QUALITY": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GRAPHICS.LIGHTING_VISIBILITY": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GRAPHICS.UNSPECIFIED": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "GRAPHICS.VISUAL_DIRECTION": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "MONETIZATION.PRICE_LEVEL": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "MONETIZATION.PURCHASE_ACCESS": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "MONETIZATION.UNSPECIFIED": {
+      "reviews": 0,
+      "opinions": 0
+    },
+    "MONETIZATION.VALUE_FOR_MONEY": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "OPERATIONS.PATCH_RESPONSE": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "OPERATIONS.SANCTIONS": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "OPERATIONS.TRANSLATION": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "OPERATIONS.UNSPECIFIED": {
+      "reviews": 0,
+      "opinions": 0
+    },
+    "SOCIAL.COOP_EXPERIENCE": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "SOCIAL.MATCHMAKING": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "SOCIAL.PARTICIPATION_ACCESS": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "SOCIAL.PLAYER_BEHAVIOR": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "SOCIAL.UNSPECIFIED": {
+      "reviews": 0,
+      "opinions": 0
+    },
+    "SOUND.MUSIC_BGM": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "SOUND.SFX": {
+      "reviews": 0,
+      "opinions": 0
+    },
+    "SOUND.UNSPECIFIED": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "SOUND.VOICE_DUBBING": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "STORY.IMMERSION": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "STORY.NARRATIVE_PACING": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "STORY.NARRATIVE_TONE": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "STORY.PLOT_COHERENCE": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "STORY.UNSPECIFIED": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "STORY.WORLD_SETTING": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "TECHNICAL.CONNECTION": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "TECHNICAL.CRASH_FREEZE": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "TECHNICAL.FUNCTIONAL_BLOCK": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "TECHNICAL.GENERAL_BUGS": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "TECHNICAL.LOADING": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "TECHNICAL.SAVE_PROGRESS_LOSS": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "TECHNICAL.UNSPECIFIED": {
+      "reviews": 0,
+      "opinions": 0
+    },
+    "USABILITY.CONTROLS": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "USABILITY.LEARNING_GUIDANCE": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "USABILITY.NAVIGATION": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "USABILITY.SETTINGS_ACCESSIBILITY": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "USABILITY.UNSPECIFIED": {
+      "reviews": 2,
+      "opinions": 2
+    }
+  }
+}

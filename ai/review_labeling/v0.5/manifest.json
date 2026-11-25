@@ -1,0 +1,19 @@
+{
+  "taxonomy_version": "v0.5",
+  "files": {
+    "AGENTS.md": "84e2a9d0dd75002568edb4c34efd15259dfcfc3ada586ee47e79b33e41e8b230",
+    "ai/review_labeling/CURRENT.json": "77dfc44e702ae633163503e9ecd2367ce9db90b68b2c14a712a4322e72cbbde2",
+    "ai/review_labeling/v0.5/CHANGELOG.md": "938dbb98be2981610fa2e6fb501b3f13eebed66a45c755434fc9ef1dc6e67688",
+    "ai/review_labeling/v0.5/CODEX_HANDOFF.md": "f5df004dc4df32a902acb2a124181784c040a35293c90970aa54319d5861bbff",
+    "ai/review_labeling/v0.5/GUIDELINES_KO.md": "a4d2d8cb80ad6e3968db0b289a89d911d5ce81520e782f5eae54c7508167d1ee",
+    "ai/review_labeling/v0.5/migration_v04_to_v05.json": "f48a40f14cf2741d70de53bb7fc436e8e2acf6c813f605faa464fba36a60fb33",
+    "ai/review_labeling/v0.5/pilot70.json": "c725153182e99647e859b04cecf07699ec869508bda405d6e0f7ec36aeb5e1d4",
+    "ai/review_labeling/v0.5/pilot70_review.md": "f5d2cfe5d4f6d20addde409d7acebaca7736e728c2d28eff202470e9522c2fc6",
+    "ai/review_labeling/v0.5/taxonomy.json": "d475313a17c63136c694dae57c46d2eee6c48c7b6e34af4f73c93eabc5712363",
+    "ai/review_labeling/v0.5/validate.py": "423e504630a92fe33887f7c95ddc804d94c44be4dc5af72d2dd0c958b17fbf64"
+  },
+  "excluded_generated_files": [
+    "ai/review_labeling/v0.5/validation.json"
+  ],
+  "note": "manifest excludes itself; validation.json is reproducible validator output"
+}

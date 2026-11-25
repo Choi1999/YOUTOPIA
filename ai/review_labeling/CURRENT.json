@@ -1,0 +1,12 @@
+{
+  "taxonomy_version": "v0.5",
+  "guideline_version": "v1.2.0",
+  "pilot_schema": "youtopia_pilot_consolidated_review_v2",
+  "taxonomy": "ai/review_labeling/v0.5/taxonomy.json",
+  "guidelines": "ai/review_labeling/v0.5/GUIDELINES_KO.md",
+  "pilot": "ai/review_labeling/v0.5/pilot70.json",
+  "review_table": "ai/review_labeling/v0.5/pilot70_review.md",
+  "handoff": "ai/review_labeling/v0.5/CODEX_HANDOFF.md",
+  "manifest": "ai/review_labeling/v0.5/manifest.json",
+  "status": "PILOT_TAXONOMY_NOT_TRAINING_READY"
+}
