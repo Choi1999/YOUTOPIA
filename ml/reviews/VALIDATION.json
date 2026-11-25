@@ -1,0 +1,45 @@
+{
+  "date_kst": "2026-11-25",
+  "scope": "isolated CPU synthetic regression",
+  "test_command": "HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python -m unittest discover -s ml/reviews/tests -v",
+  "tests_passed": 37,
+  "tests_failed": 0,
+  "training_fixture": {
+    "reviews": 60,
+    "games": 10,
+    "encoder": "locally initialized random tiny ELECTRA, one layer, hidden size 16",
+    "models": ["tfidf", "textcnn", "frozen", "full"],
+    "seeds": [13, 42],
+    "epochs_requested_per_neural_run": 2,
+    "max_tokens": 64,
+    "device": "cpu",
+    "pretrained_model_downloads": 0,
+    "external_model_api_calls": 0,
+    "socket_connect_during_learning_tests": "blocked by test guard"
+  },
+  "verified": [
+    "48-label taxonomy; original opposite opinions preserved with separate mixed review aggregation",
+    "human review scope linkage without rewriting legacy flags; pending/stale/conflicting approvals blocked",
+    "Steam recommendation and helpful votes kept separate; no automatic polarity inversion",
+    "held opinions, invalid evidence offsets, missing pilot inventory, excluded spans",
+    "game disjoint split, duplicate-body rejection, dataset hash and base identity checks",
+    "all four actual trainers, checkpoint reload, finite inference scores and constant-label reporting",
+    "frozen encoder gradients absent while head gradients exist",
+    "long reviews held during build and prediction; no silent truncation",
+    "validation selection, fixed final test across eight trained artifacts, repeat final claim blocked",
+    "batch source lineage, held/rejected/success states, model error produces no success artifact",
+    "package dependency consistency: pip check passed"
+  ],
+  "not_verified": [
+    "latest original 50 and additional 10 pilot files and full human adjudication",
+    "real KcELECTRA binary import and full Korean gold training",
+    "real classifier accuracy, rare-label quality, domain generalization or confidence calibration",
+    "CUDA wheel and NVIDIA L4 driver compatibility, GPU training, memory, throughput or recovery",
+    "production database transfer, RAG evidence retrieval, service deployment and browser behavior",
+    "remote GitHub Actions run (workflow added; local execution only at this point)"
+  ],
+  "production_changes": false,
+  "gpu_server_changes": false,
+  "release_approved": false,
+  "note": "This is implementation regression evidence, not a real model performance report. Original uploaded packages are preserved."
+}

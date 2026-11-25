@@ -1,0 +1,11 @@
+# CPU validation uses torch==2.15.0 from the official CPU index, installed separately.
+# A CUDA wheel/driver combination must be verified on the paused GPU server later.
+numpy==2.3.5
+scipy==1.17.0
+scikit-learn==1.8.0
+matplotlib==3.10.8
+transformers==4.57.6
+tokenizers==0.22.2
+huggingface-hub==0.36.2
+safetensors==0.7.0
+packaging==26.4
