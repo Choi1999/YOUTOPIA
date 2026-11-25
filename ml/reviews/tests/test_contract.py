@@ -3,15 +3,18 @@ import tempfile
 import unittest
 from pathlib import Path
 from ml.reviews.common import canonical, digest, fingerprint, parse, read, seal, verify, write
-from ml.reviews.contract import POLICY, aggregate, approval_candidates, labels, validate
+from ml.reviews.contract import POLICY, aggregate, approval_candidates, labels, validate, taxonomy
 from ml.reviews.dataset import audit, check_registry, split_games
 from ml.reviews.tests.fixtures import approvals, record
 
 
 class ContractTest(unittest.TestCase):
-    def test_48_targets_character_and_overall_boundaries(self):
-        self.assertEqual(len(labels()), 48)
-        self.assertTrue(any(x.startswith('CHARACTER::') for x in labels()))
+    def test_fine_targets_character_and_overall_boundaries(self):
+        from ml.reviews.taxonomy import target_map
+        self.assertEqual(len(labels()), len(target_map()) * 4)
+        self.assertTrue(any(x.startswith('CHARACTER.APPEARANCE::') for x in labels()))
+        self.assertTrue(any(x.startswith('SOUND.VOICE_ACTING::') for x in labels()))
+        self.assertFalse(any(x.startswith('SOUND::') for x in labels()))
         self.assertFalse(any(x.startswith(('OTHER::', 'OVERALL::')) for x in labels()))
 
     def test_opposite_distinct_opinions_preserved_review_aggregate_separate(self):
@@ -21,7 +24,7 @@ class ContractTest(unittest.TestCase):
         before = copy.deepcopy(row)
         result = validate(row, approvals(row))
         self.assertTrue(result['eligible'])
-        self.assertEqual(result['labels'], ['SOUND::혼합'])
+        self.assertEqual(result['labels'], ['SOUND.MUSIC::혼합'])
         self.assertEqual([o['polarity'] for o in result['opinions']], ['긍정', '부정'])
         self.assertEqual(row, before)
 
@@ -78,7 +81,7 @@ class ContractTest(unittest.TestCase):
         for voted_up in (True, False, None):
             row = record(polarity='부정'); row['voted_up'] = voted_up; row['votes_up'] = 123
             result = validate(row, approvals(row))
-            self.assertEqual(result['labels'], ['SOUND::부정'])
+            self.assertEqual(result['labels'], ['SOUND.MUSIC::부정'])
             self.assertEqual(result['text'], row['clean_text'])
             self.assertEqual(result['steam_context']['voted_up'], voted_up)
 
@@ -126,13 +129,68 @@ class ContractTest(unittest.TestCase):
     def test_excluded_joke_kept_in_body_and_does_not_create_negative_target(self):
         row = record(); row['excluded_spans'] = [{'start': 0, 'end': 1, 'text': row['clean_text'][:1], 'reason': 'synthetic-joke'}]
         result = validate(row, approvals(row))
-        self.assertEqual(result['text'], row['clean_text']); self.assertEqual(result['labels'], ['SOUND::긍정'])
+        self.assertEqual(result['text'], row['clean_text']); self.assertEqual(result['labels'], ['SOUND.MUSIC::긍정'])
 
     def test_registry_missing_new_pilot_batch_blocks_real_build(self):
         with self.assertRaisesRegex(ValueError, 'INVENTORY_INCOMPLETE'):
-            check_registry({'complete': True, 'source_ref': 'synthetic-reference', 'batches': []})
+            check_registry({'schema': 'pilot-reference-registry-v2', 'complete': True,
+                            'source_ref': 'synthetic-reference', 'inventory': [], 'batches': []})
         with self.assertRaisesRegex(ValueError, 'INCOMPLETE'):
             check_registry({'complete': False})
+
+    def test_distinct_sound_targets_remain_positive_and_negative_without_parent_mixed(self):
+        row = record(text='음악 좋다. 더빙 연기는 어색하다.')
+        row['annotations'].append({**copy.deepcopy(row['annotations'][0]), 'id': 'o2',
+                                   'target_code': 'SOUND.VOICE_ACTING', 'polarity': '부정'})
+        row['active_opinion_ids'].append('o2')
+        result = validate(row, approvals(row))
+        self.assertEqual(result['labels'], ['SOUND.MUSIC::긍정', 'SOUND.VOICE_ACTING::부정'])
+        self.assertEqual(len(result['aspect_summary']['SOUND']), 2)
+        self.assertFalse(any('혼합' in label for label in result['labels']))
+
+    def test_navigation_settings_controls_are_independent(self):
+        row = record(text='길 찾기 쉽다. 난도 설정 좋다. 조작감 나쁘다.')
+        template = row['annotations'][0]
+        row['annotations'] = [{**copy.deepcopy(template), 'id': str(i), 'aspect_code': 'USABILITY',
+                               'target_code': code, 'polarity': polarity}
+                              for i, (code, polarity) in enumerate([
+                                  ('USABILITY.NAVIGATION', '긍정'), ('USABILITY.SETTINGS', '긍정'),
+                                  ('USABILITY.CONTROLS', '부정')])]
+        row['active_opinion_ids'] = [a['id'] for a in row['annotations']]
+        result = validate(row, approvals(row))
+        self.assertEqual(len(result['labels']), 3)
+        self.assertNotIn('USABILITY::혼합', result['labels'])
+
+    def test_crash_connection_loading_are_independent(self):
+        row = record(text='시작하자마자 튕긴다. 다시 접속이 안 된다. 로딩도 길다.')
+        template = row['annotations'][0]
+        row['annotations'] = [{**copy.deepcopy(template), 'id': str(i), 'aspect_code': 'TECHNICAL',
+                               'target_code': code, 'polarity': '부정'}
+                              for i, code in enumerate(('TECHNICAL.CRASH', 'TECHNICAL.CONNECTION', 'TECHNICAL.LOADING'))]
+        row['active_opinion_ids'] = [a['id'] for a in row['annotations']]
+        self.assertEqual(len(validate(row, approvals(row))['labels']), 3)
+
+    def test_coarse_annotation_cannot_be_guessed_into_music(self):
+        row = record(); row['annotations'][0].pop('target_code')
+        result = validate(row, approvals(row))
+        self.assertFalse(result['eligible']); self.assertEqual(result['labels'], [])
+        self.assertIn('TARGET_RECLASSIFICATION_REQUIRED', result['reasons'])
+
+    def test_target_parent_mismatch_rejected(self):
+        row = record(); row['annotations'][0]['target_code'] = 'CHARACTER.APPEARANCE'
+        with self.assertRaisesRegex(ValueError, 'TARGET_PARENT_MISMATCH'):
+            validate(row, approvals(row))
+
+    def test_changing_only_target_invalidates_old_human_scope(self):
+        row = record(); ledger = approvals(row)
+        row['annotations'][0]['target_code'] = 'SOUND.VOICE_ACTING'
+        self.assertFalse(validate(row, ledger)['eligible'])
+
+    def test_preview_taxonomy_never_authorizes_real_training(self):
+        from ml.reviews.taxonomy import require_confirmed
+        self.assertEqual(taxonomy()['status'], 'draft')
+        with self.assertRaisesRegex(ValueError, 'FULL_CONFIRMED'):
+            require_confirmed(taxonomy(), False)
 
     def test_game_split_reproducible_and_disjoint(self):
         data = [{'appid': 'g' + str(i), 'key': str(i)} for i in range(10)]

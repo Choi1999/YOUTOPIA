@@ -4,16 +4,26 @@ import unicodedata
 from pathlib import Path
 from .common import digest, fingerprint, read, rows, seal, verify, write, write_rows, file_hash
 from .contract import POLICY, labels, taxonomy, validate
+from .taxonomy import require_confirmed
 
 
 def check_registry(registry):
     if registry.get('complete') is not True or not registry.get('source_ref', '').strip():
         raise ValueError('PILOT_REGISTRY_INCOMPLETE')
+    if registry.get('schema') != 'pilot-reference-registry-v2':
+        raise ValueError('PILOT_REGISTRY_MIGRATION_REQUIRED')
     batches = registry['batches']
-    if not registry.get('synthetic', False):
-        required = {'reviewed_pilot_50': 50, 'additional_draft_10': 10}
-        if {b['id']: b['expected_count'] for b in batches} != required:
-            raise ValueError('PILOT_BATCH_INVENTORY_INCOMPLETE')
+    inventory = registry.get('inventory', [])
+    required = {batch['id']: batch['expected_count'] for batch in inventory}
+    if (not inventory or len(required) != len(inventory) or len({b['id'] for b in batches}) != len(batches)
+            or {b['id']: b['expected_count'] for b in batches} != required):
+        raise ValueError('PILOT_BATCH_INVENTORY_INCOMPLETE')
+    for batch in inventory:
+        checksum = batch.get('source_sha256')
+        if (type(batch['expected_count']) is not int or batch['expected_count'] < 1
+                or not isinstance(checksum, str) or len(checksum) != 64
+                or any(c not in '0123456789abcdef' for c in checksum)):
+            raise ValueError('PILOT_SOURCE_INVENTORY_INVALID')
     all_keys = []
     for batch in batches:
         if not batch.get('id') or len(batch['keys']) != batch['expected_count']:
@@ -28,7 +38,8 @@ def normalized(text):
     return ' '.join(unicodedata.normalize('NFC', text).split())
 
 
-def audit(records, ledger):
+def audit(records, ledger, tax=None):
+    tax = taxonomy(tax)
     workbench, errors = [], []
     decisions = {}
     for entry in ledger:
@@ -42,7 +53,7 @@ def audit(records, ledger):
             if record.get('key') in seen:
                 raise ValueError('DUPLICATE_REVIEW_NEEDS_ADJUDICATION')
             seen.add(record.get('key'))
-            workbench.append(validate(record, ledger))
+            workbench.append(validate(record, ledger, tax))
         except (ValueError, KeyError, TypeError) as exc:
             errors.append({'key': record.get('key'), 'reason': str(exc)})
     return workbench, errors
@@ -82,9 +93,11 @@ def check_leakage(splits):
                 raise ValueError('NEAR_DUPLICATE_CROSS_SPLIT_NEEDS_ADJUDICATION')
 
 
-def build(source, approvals, registry_path, base, destination, max_tokens=256, seed=42):
+def build(source, approvals, registry_path, base, destination, max_tokens=256, seed=42, taxonomy_path=None):
     from transformers import AutoConfig, AutoTokenizer
     registry = read(registry_path)
+    tax = taxonomy(taxonomy_path)
+    require_confirmed(tax, registry.get('synthetic', False))
     excluded = check_registry(registry)
     base_meta = verify(base)
     if base_meta.get('synthetic', False) != registry.get('synthetic', False):
@@ -95,7 +108,7 @@ def build(source, approvals, registry_path, base, destination, max_tokens=256, s
     config = AutoConfig.from_pretrained(base, local_files_only=True, trust_remote_code=False)
     if max_tokens > config.max_position_embeddings:
         raise ValueError('INPUT_LIMIT_EXCEEDS_ENCODER_CAPACITY')
-    workbench, errors = audit(read(source)['records'], rows(approvals))
+    workbench, errors = audit(read(source)['records'], rows(approvals), tax)
     if errors:
         raise ValueError('INVALID_SOURCE_RECORDS; run audit for private details')
     included = []
@@ -113,6 +126,7 @@ def build(source, approvals, registry_path, base, destination, max_tokens=256, s
     check_leakage(splits)
     target = Path(destination)
     target.mkdir(parents=True, exist_ok=False)
+    write(target / 'taxonomy.json', tax)
     write_rows(target / 'workbench.jsonl', workbench)
     for split, records in splits.items():
         write_rows(target / (split + '.jsonl'), records)
@@ -125,8 +139,9 @@ def build(source, approvals, registry_path, base, destination, max_tokens=256, s
     }
     write(target / 'audit.json', summary)
     metadata = {
-        'contract': 'review-training-v1', 'taxonomy_sha256': fingerprint(taxonomy()),
-        'policy_sha256': fingerprint(POLICY), 'labels': labels(), 'seed': seed,
+        'contract': 'review-training-v2', 'taxonomy_sha256': fingerprint(tax), 'taxonomy': tax,
+        'classification_unit': 'evaluation_target',
+        'policy_sha256': fingerprint(POLICY), 'labels': labels(tax), 'label_schema_sha256': fingerprint(labels(tax)), 'seed': seed,
         'synthetic': registry.get('synthetic', False), 'base_sha256': file_hash(Path(base) / 'READY.json'),
         'base': base_meta, 'max_tokens': max_tokens, 'steam_in_model_input': False,
         'source_sha256': file_hash(source), 'approvals_sha256': file_hash(approvals),
@@ -141,7 +156,13 @@ def build(source, approvals, registry_path, base, destination, max_tokens=256, s
 
 def load(root, split):
     metadata = verify(root)
-    if metadata['labels'] != labels() or metadata['policy_sha256'] != fingerprint(POLICY) or metadata['taxonomy_sha256'] != fingerprint(taxonomy()):
+    if metadata.get('contract') != 'review-training-v2' or metadata.get('classification_unit') != 'evaluation_target':
+        raise ValueError('LEGACY_COARSE_DATASET_REQUIRES_REBUILD')
+    tax = taxonomy(read(Path(root) / 'taxonomy.json'))
+    require_confirmed(tax, metadata['synthetic'])
+    if (metadata['taxonomy'] != tax or metadata['labels'] != labels(tax)
+            or metadata['label_schema_sha256'] != fingerprint(labels(tax))
+            or metadata['policy_sha256'] != fingerprint(POLICY) or metadata['taxonomy_sha256'] != fingerprint(tax)):
         raise ValueError('DATASET_CONTRACT_CHANGED')
     records = rows(Path(root) / (split + '.jsonl'))
     if not records or len(records) != metadata['split_counts'][split]:

@@ -1,28 +1,25 @@
 """Opinion-level human evidence and a separate review-level training target."""
 from datetime import datetime
-from pathlib import Path
-from .common import digest, fingerprint, read
+from .common import digest, fingerprint
+from .taxonomy import taxonomy, target_map
 
 POLARITIES = ('긍정', '부정', '혼합', '중립')
 POLICY = {
-    'version': 'review-opinion-v1',
-    'aggregation': 'positive+negative or explicit mixed -> mixed; neutral alone -> neutral',
+    'version': 'review-target-opinion-v2',
+    'aggregation': 'only within the SAME fine target: positive+negative or explicit mixed -> mixed; neutral alone -> neutral',
+    'parent_rollup': 'preserve every target/polarity pair; never collapse different targets into parent mixed',
     'input': 'body_only; steam voted_up is auxiliary annotation context',
     'long_input': 'hold_whole_review; never broadcast review labels to chunks',
-    'task': 'review_aspect_polarity_presence; no opinion/evidence extraction model',
+    'task': 'review_target_polarity_presence; no opinion/evidence extraction model',
 }
 
 
-def taxonomy():
-    return read(Path(__file__).parent / 'taxonomy.json')
+def aspects(tax=None):
+    return [item['code'] for item in taxonomy(tax)['categories']]
 
 
-def aspects():
-    return [item['code'] for item in taxonomy()['categories'] if item['code'] != 'OTHER']
-
-
-def labels():
-    return [aspect + '::' + polarity for aspect in aspects() for polarity in POLARITIES]
+def labels(tax=None):
+    return [target + '::' + polarity for target in target_map(tax) for polarity in POLARITIES]
 
 
 def scope_hash(record, scope):
@@ -31,7 +28,7 @@ def scope_hash(record, scope):
         value = {key: record.get(key) for key in (
             'key', 'appid', 'review_id', 'clean_text', 'text_sha256', 'review_status',
             'active_opinion_ids', 'held_opinion_ids', 'excluded_spans', 'annotations',
-            'taxonomy_version', 'taxonomy_sha256', 'voted_up', 'votes_up', 'behaviors')}
+            'taxonomy_version', 'taxonomy_sha256', 'voted_up', 'votes_up', 'behaviors', 'migration')}
     else:
         matches = [item for item in record['annotations'] if item['id'] == scope.removeprefix('opinion:')]
         if not scope.startswith('opinion:') or len(matches) != 1:
@@ -69,7 +66,7 @@ def approval_candidates(record):
 def aggregate(opinions):
     grouped = {}
     for opinion in opinions:
-        grouped.setdefault(opinion['aspect_code'], set()).add(opinion['polarity'])
+        grouped.setdefault(opinion['target_code'], set()).add(opinion['polarity'])
     result = {}
     for aspect, polarities in grouped.items():
         if '혼합' in polarities or {'긍정', '부정'} <= polarities:
@@ -83,7 +80,18 @@ def aggregate(opinions):
     return result
 
 
-def validate(record, ledger):
+def rollup(target_labels, tax=None):
+    """Parents are views of fine pairs, never a replacement sentiment label."""
+    mapping = target_map(tax); result = {}
+    for label in sorted(set(target_labels)):
+        code, polarity = label.split('::')
+        if code not in mapping or polarity not in POLARITIES:
+            raise ValueError('UNKNOWN_TARGET_LABEL')
+        result.setdefault(mapping[code]['aspect_code'], []).append({'target_code': code, 'polarity': polarity})
+    return result
+
+
+def validate(record, ledger, tax=None):
     """Return workbench data even when incomplete; invalid evidence fails explicitly."""
     if str(record['appid']) + ':' + str(record['review_id']) != record['key']:
         raise ValueError('REVIEW_KEY_MISMATCH')
@@ -96,7 +104,7 @@ def validate(record, ledger):
                 or not isinstance(span.get('reason'), str) or not span['reason'].strip()
                 or ('text' in span and span['text'] != text[start:end])):
             raise ValueError('EXCLUDED_SPAN_INVALID')
-    tax = taxonomy()
+    tax = taxonomy(tax); mapping = target_map(tax)
     if record.get('taxonomy_version') != tax['version'] or record.get('taxonomy_sha256') != fingerprint(tax):
         raise ValueError('TAXONOMY_MISMATCH')
     for field in ('voted_up',):
@@ -118,15 +126,20 @@ def validate(record, ledger):
         if annotation['id'] not in active:
             continue
         polarity = {'복합': '혼합'}.get(annotation['polarity'], annotation['polarity'])
-        if annotation['aspect_code'] not in aspects() or polarity not in POLARITIES:
+        if annotation['aspect_code'] not in aspects(tax) or polarity not in POLARITIES:
             raise ValueError('UNKNOWN_OR_HELD_ASPECT')
+        code = annotation.get('target_code')
+        if code is None:
+            reasons.append('TARGET_RECLASSIFICATION_REQUIRED')
+        elif code not in mapping or mapping[code]['aspect_code'] != annotation['aspect_code']:
+            raise ValueError('TARGET_PARENT_MISMATCH_OR_UNKNOWN_TARGET')
         human = annotation.get('human_review') or {}
         if any(human.get(k) for k in ('corrected_aspect', 'corrected_polarity', 'corrected_target', 'corrected_evidence')):
             reasons.append('UNAPPLIED_CORRECTION')
         spans = annotation.get('evidence_spans', [])
         if not spans:
             raise ValueError('MISSING_BODY_EVIDENCE')
-        for span in spans:
+        for span in [*spans, *annotation.get('target_spans', [])]:
             start, end = span['start'], span['end']
             if type(start) is not int or type(end) is not int or not 0 <= start < end <= len(text) or text[start:end] != span['text']:
                 raise ValueError('EVIDENCE_OFFSETS_MISMATCH')
@@ -136,7 +149,7 @@ def validate(record, ledger):
         context = annotation.get('steam_context_check')
         if context and (context.get('basis') != 'body_evidence' or context.get('voted_up') != record.get('voted_up')):
             raise ValueError('METADATA_ONLY_OR_STALE_SENTIMENT_OVERRIDE')
-        if approved(record, 'opinion:' + annotation['id'], ledger):
+        if code is not None and approved(record, 'opinion:' + annotation['id'], ledger):
             confirmed.append({**annotation, 'polarity': polarity})
         else:
             reasons.append('OPINION_CONFIRMATION_UNLINKED')
@@ -154,6 +167,8 @@ def validate(record, ledger):
         'source': record, 'key': record['key'], 'appid': str(record['appid']),
         'text': text, 'text_sha256': record['text_sha256'], 'opinions': confirmed,
         'aggregate': result, 'labels': sorted(a + '::' + p for a, p in result.items()),
+        'aspect_summary': rollup([a + '::' + p for a, p in result.items()], tax),
+        'classification_unit': 'evaluation_target',
         'eligible': not reasons, 'reasons': sorted(set(reasons)),
         'human_review_evidence_count': sum(approved(record, 'opinion:' + a['id'], ledger) for a in annotations),
         'human_review_flags_present': record.get('human_reviewed'),

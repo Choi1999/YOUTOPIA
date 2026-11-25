@@ -9,14 +9,20 @@ def main():
     sub = parser.add_subparsers(dest='command', required=True)
     for name in ('audit', 'approval-candidates'):
         p = sub.add_parser(name); p.add_argument('--source', required=True); p.add_argument('--out', required=True)
+        p.add_argument('--taxonomy', dest='taxonomy_path')
         if name == 'audit':
             p.add_argument('--approvals', required=True)
+    p = sub.add_parser('migrate')
+    for name in ('source', 'approvals', 'out'):
+        p.add_argument('--' + name, required=True)
+    p.add_argument('--taxonomy', dest='taxonomy_path')
     p = sub.add_parser('import-base')
     p.add_argument('--source', required=True); p.add_argument('--out', required=True)
     p = sub.add_parser('build')
     for name in ('source', 'approvals', 'registry', 'base', 'out'):
         p.add_argument('--' + name, required=True)
     p.add_argument('--max-tokens', type=int, default=256); p.add_argument('--seed', type=int, default=42)
+    p.add_argument('--taxonomy', dest='taxonomy_path')
     p = sub.add_parser('train')
     for name in ('dataset', 'base', 'out'):
         p.add_argument('--' + name, required=True)
@@ -31,9 +37,13 @@ def main():
     for name in ('source', 'model', 'out'):
         p.add_argument('--' + name, required=True)
     p.add_argument('--device', choices=['cpu', 'cuda'], default='cpu')
+    p = sub.add_parser('summarize')
+    p.add_argument('--source', required=True); p.add_argument('--out', required=True)
     args = parser.parse_args(); a = vars(args); command = a.pop('command')
     out = a.pop('out')
     if command in ('audit', 'approval-candidates'):
+        from .taxonomy import taxonomy
+        tax = taxonomy(a['taxonomy_path'])
         records = read(a['source'])['records']; target = Path(out); target.mkdir(parents=True, exist_ok=False)
         if command == 'approval-candidates':
             from .contract import approval_candidates
@@ -41,7 +51,7 @@ def main():
             result = {'status': 'pending; not human approval', 'reviews': len(records)}
         else:
             from .dataset import audit
-            workbench, errors = audit(records, rows(a['approvals']))
+            workbench, errors = audit(records, rows(a['approvals']), tax)
             write_rows(target / 'workbench.jsonl', workbench)
             result = {'input_reviews': len(records), 'eligible_reviews': sum(r['eligible'] for r in workbench),
                       'linked_human_opinions': sum(r['human_review_evidence_count'] for r in workbench), 'errors': errors,
@@ -49,6 +59,9 @@ def main():
             write(target / 'audit.json', result)
             if errors:
                 raise SystemExit('INVALID_SOURCE; private audit.json contains details')
+    elif command == 'migrate':
+        from .migrate import migrate
+        result = migrate(**a, destination=out)
     elif command == 'import-base':
         from .assets import import_base
         import_base(a['source'], out); result = {'base_imported': True, 'training_started': False}
@@ -66,6 +79,9 @@ def main():
     elif command == 'final':
         from .experiment import final_test
         result = final_test(**a, destination=out)
+    elif command == 'summarize':
+        from .summarize import summarize
+        result = summarize(**a, destination=out)
     else:
         from .experiment import batch_predict
         result = batch_predict(**a, destination=out)

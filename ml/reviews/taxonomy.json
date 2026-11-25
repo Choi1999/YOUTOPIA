@@ -4,87 +4,357 @@
       "boundary": "인물 성격·행동 동기 자체는 캐릭터. 전투 진행 속도는 게임성, 서사 전개 속도는 스토리.",
       "code": "STORY",
       "include": "줄거리·사건 전개·결말·복선·세계관 설명·이야기의 개연성.",
-      "label": "스토리"
+      "label": "스토리",
+      "detail_status": "preview_proposal",
+      "targets": [
+        {
+          "code": "STORY.EVENTS",
+          "label": "사건·개연성"
+        },
+        {
+          "code": "STORY.PACING",
+          "label": "전개 속도"
+        },
+        {
+          "code": "STORY.ENDING",
+          "label": "결말"
+        },
+        {
+          "code": "STORY.WORLD",
+          "label": "세계관"
+        },
+        {
+          "code": "STORY.UNSPECIFIED",
+          "label": "스토리 전반·세부 미명시",
+          "status": "implementation_proposal"
+        }
+      ]
     },
     {
       "boundary": "캐릭터 외모는 여기로 분류. 단순 인물 호감·역할극은 설계 품질 평가로 확대하지 않음. 능력 강약은 밸런스.",
       "code": "CHARACTER",
       "include": "캐릭터의 외모·디자인·매력, 성격·개성·행동 동기·성장·관계 묘사·일관성.",
-      "label": "캐릭터"
+      "label": "캐릭터",
+      "detail_status": "preview_proposal",
+      "targets": [
+        {
+          "code": "CHARACTER.APPEARANCE",
+          "label": "외모"
+        },
+        {
+          "code": "CHARACTER.PERSONALITY",
+          "label": "성격·행동"
+        },
+        {
+          "code": "CHARACTER.MOTIVATION",
+          "label": "서사·동기"
+        },
+        {
+          "code": "CHARACTER.RELATIONSHIPS",
+          "label": "관계·상호작용"
+        },
+        {
+          "code": "CHARACTER.UNSPECIFIED",
+          "label": "캐릭터 전반·세부 미명시",
+          "status": "implementation_proposal"
+        }
+      ]
     },
     {
       "boundary": "할 거리의 양·종류·반복은 콘텐츠·분량. 조작 입력은 조작·편의성. 구체적 대상 없는 재미·추천은 내용 없음.",
       "code": "GAMEPLAY",
       "include": "전투·탐험·퍼즐·덱 구성·농사 등 핵심 플레이 방식과 규칙, 전략·선택·행동의 재미.",
-      "label": "게임성"
+      "label": "게임성",
+      "detail_status": "preview_proposal",
+      "targets": [
+        {
+          "code": "GAMEPLAY.COMBAT",
+          "label": "전투·타격감"
+        },
+        {
+          "code": "GAMEPLAY.STRATEGY",
+          "label": "전략·선택"
+        },
+        {
+          "code": "GAMEPLAY.EXPLORATION",
+          "label": "탐험"
+        },
+        {
+          "code": "GAMEPLAY.PUZZLE",
+          "label": "퍼즐"
+        },
+        {
+          "code": "GAMEPLAY.CRAFT_MANAGEMENT",
+          "label": "제작·경영"
+        },
+        {
+          "code": "GAMEPLAY.UNSPECIFIED",
+          "label": "게임성 전반·세부 미명시",
+          "status": "implementation_proposal"
+        }
+      ]
     },
     {
       "boundary": "특정 캐릭터의 외모·디자인 평가는 캐릭터. 화면 깨짐·프레임 저하는 성능·버그.",
       "code": "GRAPHICS",
       "include": "화면·색감·그림체·배경·애니메이션·카메라·시각 연출.",
-      "label": "그래픽·연출"
+      "label": "그래픽·연출",
+      "detail_status": "preview_proposal",
+      "targets": [
+        {
+          "code": "GRAPHICS.ART",
+          "label": "그림체·미술"
+        },
+        {
+          "code": "GRAPHICS.MODELING_ANIMATION",
+          "label": "모델링·애니메이션"
+        },
+        {
+          "code": "GRAPHICS.DIRECTION",
+          "label": "시각적 연출"
+        },
+        {
+          "code": "GRAPHICS.UNSPECIFIED",
+          "label": "그래픽·연출 전반·세부 미명시",
+          "status": "implementation_proposal"
+        }
+      ]
     },
     {
       "boundary": "음성 재생이 안 되는 오류는 성능·버그. 대사의 의미·내용은 스토리 또는 캐릭터.",
       "code": "SOUND",
       "include": "배경음악·효과음·더빙·성우 연기·음향 표현.",
-      "label": "사운드"
+      "label": "사운드",
+      "detail_status": "preview_proposal",
+      "targets": [
+        {
+          "code": "SOUND.MUSIC",
+          "label": "음악·BGM"
+        },
+        {
+          "code": "SOUND.VOICE_ACTING",
+          "label": "더빙·음성 연기"
+        },
+        {
+          "code": "SOUND.EFFECTS",
+          "label": "효과음"
+        },
+        {
+          "code": "SOUND.UNSPECIFIED",
+          "label": "사운드 전반·세부 미명시",
+          "status": "implementation_proposal"
+        }
+      ]
     },
     {
       "boundary": "버튼이 아예 작동하지 않는 결함은 성능·버그. 튜토리얼 적이 너무 강하다는 평가는 난이도·밸런스.",
       "code": "USABILITY",
       "include": "조작감·키 배치·UI·메뉴·설명·튜토리얼의 이해도·접근성·번역 가독성·한국어 지원.",
-      "label": "조작·편의성"
+      "label": "조작·편의성",
+      "detail_status": "preview_proposal",
+      "targets": [
+        {
+          "code": "USABILITY.CONTROLS",
+          "label": "조작감"
+        },
+        {
+          "code": "USABILITY.INTERFACE",
+          "label": "UI·메뉴"
+        },
+        {
+          "code": "USABILITY.NAVIGATION",
+          "label": "길찾기·정보 안내"
+        },
+        {
+          "code": "USABILITY.TUTORIAL",
+          "label": "튜토리얼"
+        },
+        {
+          "code": "USABILITY.SETTINGS",
+          "label": "설정 기능"
+        },
+        {
+          "code": "USABILITY.UNSPECIFIED",
+          "label": "조작·편의성 전반·세부 미명시",
+          "status": "implementation_proposal"
+        }
+      ]
     },
     {
       "boundary": "핵심 규칙의 재미는 게임성. 분량 대비 가격 평가는 가격·과금. 모드 설치 오류는 성능·버그.",
       "code": "CONTENT",
       "include": "할 거리·플레이 분량·다양성·반복성·재플레이·엔드 콘텐츠·모드로 늘어난 콘텐츠.",
-      "label": "콘텐츠·분량"
+      "label": "콘텐츠·분량",
+      "detail_status": "preview_proposal",
+      "targets": [
+        {
+          "code": "CONTENT.VOLUME",
+          "label": "분량"
+        },
+        {
+          "code": "CONTENT.VARIETY",
+          "label": "다양성"
+        },
+        {
+          "code": "CONTENT.GRIND",
+          "label": "반복 작업"
+        },
+        {
+          "code": "CONTENT.REPLAY",
+          "label": "재플레이 매력"
+        },
+        {
+          "code": "CONTENT.UNSPECIFIED",
+          "label": "콘텐츠·분량 전반·세부 미명시",
+          "status": "implementation_proposal"
+        }
+      ]
     },
     {
       "boundary": "과금 비용·상품 구성은 가격·과금. 이용자의 핵 사용 경험은 멀티·이용자, 핵 방치는 운영·지원.",
       "code": "BALANCE",
       "include": "쉬움·어려움·운 의존·성장 곡선·보상 균형·무기나 능력의 강약·경쟁 공정성.",
-      "label": "난이도·밸런스"
+      "label": "난이도·밸런스",
+      "detail_status": "preview_proposal",
+      "targets": [
+        {
+          "code": "BALANCE.DIFFICULTY",
+          "label": "체감 난도"
+        },
+        {
+          "code": "BALANCE.DIFFICULTY_CURVE",
+          "label": "난도 변화"
+        },
+        {
+          "code": "BALANCE.RANDOMNESS",
+          "label": "운 의존"
+        },
+        {
+          "code": "BALANCE.RELATIVE_POWER",
+          "label": "캐릭터·무기 간 강약"
+        },
+        {
+          "code": "BALANCE.UNSPECIFIED",
+          "label": "난이도·밸런스 전반·세부 미명시",
+          "status": "implementation_proposal"
+        }
+      ]
     },
     {
       "boundary": "개발사의 문제 대응 평가는 운영·지원. 메뉴가 불편하지만 정상 작동하는 경우는 조작·편의성.",
       "code": "TECHNICAL",
       "include": "최적화·프레임·로딩·렉·접속 오류·충돌·튕김·저장 문제·진행 불가·호환성.",
-      "label": "성능·버그"
+      "label": "성능·버그",
+      "detail_status": "preview_proposal",
+      "targets": [
+        {
+          "code": "TECHNICAL.FRAMERATE",
+          "label": "프레임·끊김"
+        },
+        {
+          "code": "TECHNICAL.LOADING",
+          "label": "로딩"
+        },
+        {
+          "code": "TECHNICAL.CRASH",
+          "label": "충돌·종료"
+        },
+        {
+          "code": "TECHNICAL.CONNECTION",
+          "label": "접속"
+        },
+        {
+          "code": "TECHNICAL.SAVE_PROGRESS",
+          "label": "저장·진행 손실"
+        },
+        {
+          "code": "TECHNICAL.UNSPECIFIED",
+          "label": "성능·버그 전반·세부 미명시",
+          "status": "implementation_proposal"
+        }
+      ]
     },
     {
       "boundary": "돈을 쓴 만큼 오래 즐겼다는 가성비 평가는 여기에 기록. 경쟁에서 유료 능력이 압도한다는 별도 주장은 밸런스에도 기록 가능.",
       "code": "MONETIZATION",
       "include": "구매 가격·할인·가성비·DLC 가격·확률형 상품·유료 상품 구성·과금 부담.",
-      "label": "가격·과금"
+      "label": "가격·과금",
+      "detail_status": "preview_proposal",
+      "targets": [
+        {
+          "code": "MONETIZATION.PRICE",
+          "label": "가격 수준"
+        },
+        {
+          "code": "MONETIZATION.VALUE",
+          "label": "가격 대비 가치"
+        },
+        {
+          "code": "MONETIZATION.ACCESS_MODEL",
+          "label": "구매·이용 방식"
+        },
+        {
+          "code": "MONETIZATION.UNSPECIFIED",
+          "label": "가격·과금 전반·세부 미명시",
+          "status": "implementation_proposal"
+        }
+      ]
     },
     {
       "boundary": "결함의 현상 자체는 성능·버그. 콘텐츠가 많다는 평가는 콘텐츠·분량. 한 문장에 결함과 대응 비판이 모두 있으면 각각 기록.",
       "code": "OPERATIONS",
       "include": "패치·업데이트 대응·공지·고객 지원·제재 정책·핵 대응·운영 신뢰·서비스 종료 정책.",
-      "label": "운영·지원"
+      "label": "운영·지원",
+      "detail_status": "unconfirmed_not_trainable",
+      "targets": []
     },
     {
       "boundary": "친구와 했다는 사실만 있고 사회적 경험에 대한 평가·설명이 없으면 문맥에만 기록. 접속 끊김은 성능·버그.",
       "code": "SOCIAL",
       "include": "협동·경쟁의 사회적 경험·역할 분담·매칭 경험·친구와의 상호작용·이용자 분위기·비매너·핵 사용자 경험.",
-      "label": "멀티·이용자"
-    },
-    {
-      "boundary": "확정 분류가 아닌 판단 보류 후보. 해결 전 학습·강점 집계에서 제외.",
-      "code": "OTHER",
-      "include": "게임 관련 내용이지만 기존 항목에 맞지 않거나 경계를 결정하기 어려운 경우.",
-      "label": "기타·분류 검토"
+      "label": "멀티·이용자",
+      "detail_status": "preview_proposal",
+      "targets": [
+        {
+          "code": "SOCIAL.COOP_ENJOYMENT",
+          "label": "협동의 재미"
+        },
+        {
+          "code": "SOCIAL.COOP_REQUIREMENT",
+          "label": "협동 강제"
+        },
+        {
+          "code": "SOCIAL.MATCHMAKING",
+          "label": "매칭"
+        },
+        {
+          "code": "SOCIAL.PLAYER_BEHAVIOR",
+          "label": "다른 이용자의 행동"
+        },
+        {
+          "code": "SOCIAL.UNSPECIFIED",
+          "label": "멀티·이용자 전반·세부 미명시",
+          "status": "implementation_proposal"
+        }
+      ]
     }
   ],
-  "status": "pilot",
-  "version": "v0.3",
+  "status": "draft",
+  "version": "v0.4-preview-draft",
   "removed_categories": [
     {
       "code": "OVERALL",
       "reason": "구체적 요소 평가에 집중. 포괄적 여론은 원문과 스팀 추천 메타데이터로 보존."
     }
+  ],
+  "schema": "review-target-taxonomy-v2",
+  "source_ref": "User-supplied bounded conversation preview, 2026-11-25; full latest taxonomy not recovered",
+  "limitations": [
+    "Visible separation table is a proposal, not the full confirmed taxonomy.",
+    "Target codes and UNSPECIFIED leaves are implementation proposals.",
+    "OPERATIONS and remaining boundaries await the complete latest source."
+  ],
+  "held_categories": [
+    "OTHER"
   ]
 }

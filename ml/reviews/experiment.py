@@ -6,6 +6,7 @@ import numpy as np
 from .common import claim, file_hash, fingerprint, read, rows, seal, verify, write, write_rows
 from .dataset import load
 from .models import KINDS, Predictor, decode, fit, metrics, predict, targets
+from .contract import rollup
 
 
 def train(dataset, base, destination, seeds=(13, 42, 73), epochs=5, batch_size=16, device='cpu'):
@@ -20,7 +21,7 @@ def train(dataset, base, destination, seeds=(13, 42, 73), epochs=5, batch_size=1
             report = fit(dataset, base, target / relative, kind, seed=seed,
                          epochs=epochs, batch_size=batch_size, device=device)
             experiments.append({'path': relative, 'kind': kind, 'seed': seed,
-                                'macro': report['validation']['macro_f1_all_48_zero_division_0'],
+                                'macro': report['validation']['macro_f1_all_labels_zero_division_0'],
                                 'micro': report['validation']['micro_f1'],
                                 'artifact_sha256': file_hash(target / relative / 'READY.json')})
     groups = []
@@ -31,24 +32,25 @@ def train(dataset, base, destination, seeds=(13, 42, 73), epochs=5, batch_size=1
                        'seeds': len(scores), 'uncertainty_note': 'seed variation; not confidence interval'})
     best_kind = max(groups, key=lambda r: (r['macro_mean'], -KINDS.index(r['kind'])))['kind']
     chosen = max((r for r in experiments if r['kind'] == best_kind), key=lambda r: (r['macro'], r['micro'], -r['seed']))
-    selection = {'contract': 'review-experiment-v1', 'dataset_sha256': file_hash(Path(dataset) / 'READY.json'),
+    selection = {'contract': 'review-experiment-v2', 'dataset_sha256': file_hash(Path(dataset) / 'READY.json'),
+                 'classification_unit': 'evaluation_target', 'label_count': len(metadata['labels']),
                  'experiments': experiments, 'comparison': groups, 'selected_path': chosen['path'],
                  'rule': 'best mean validation macro by kind; best validation macro/micro seed within kind; lower seed tie',
                  'synthetic': metadata['synthetic'], 'test_used_for_selection': False}
     write(target / 'selection.json', selection)
-    plots(target, groups)
+    plots(target, groups, len(metadata['labels']))
     seal(target, {'contract': selection['contract'], 'synthetic': metadata['synthetic']})
     return selection
 
 
-def plots(destination, comparisons):
+def plots(destination, comparisons, label_count):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(8, 4), layout='constrained')
     ax.bar([r['kind'] for r in comparisons], [r['macro_mean'] for r in comparisons],
            yerr=[r['macro_sample_std'] or 0 for r in comparisons], capsize=5)
-    ax.set(ylabel='Validation Macro-F1 (all 48; absent = 0)', ylim=(0, 1),
+    ax.set(ylabel=f'Validation Macro-F1 (all {label_count} target labels; absent = 0)', ylim=(0, 1),
            title='Model comparison: error bars = seed standard deviation')
     fig.savefig(Path(destination) / 'validation_comparison.png', dpi=160)
     plt.close(fig)
@@ -58,6 +60,8 @@ def final_test(dataset, experiment, destination, device='cpu'):
     """One local claim per sealed experiment. Crash leaves claim; no auto retry."""
     experiment = Path(experiment).resolve(); verify(experiment)
     selection = read(experiment / 'selection.json')
+    if selection.get('contract') != 'review-experiment-v2':
+        raise ValueError('LEGACY_COARSE_EXPERIMENT_REQUIRES_RETRAINING')
     test_rows, metadata = load(dataset, 'test')
     if file_hash(Path(dataset) / 'READY.json') != selection['dataset_sha256']:
         raise ValueError('FINAL_DATASET_CHANGED')
@@ -111,28 +115,37 @@ def batch_predict(source, model, destination, device='cpu'):
         result.update({'model_sha256': file_hash(root / 'READY.json'),
                        'taxonomy_sha256': report['dataset']['taxonomy_sha256'],
                        'policy_sha256': report['dataset']['policy_sha256'],
-                       'synthetic_model': report['synthetic'], 'evidence_spans': None})
+                       'synthetic_model': report['synthetic'], 'evidence_spans': None,
+                       'classification_unit': 'evaluation_target',
+                       'threshold': report['threshold'],
+                       'taxonomy_version': report['dataset']['taxonomy']['version']})
         key = row.get('key')
         if (not isinstance(row.get('text'), str) or not row['text'].strip()
                 or row.get('text_sha256') != digest(row['text'])
                 or not row.get('source_revision') or not row.get('snapshot_id')
                 or key != str(row.get('appid')) + ':' + str(row.get('review_id')) or key in seen):
-            result.update({'state': 'REJECTED_INPUT', 'labels': None, 'scores': None})
+            result.update({'state': 'REJECTED_INPUT', 'labels': None, 'scores': None, 'aspect_summary': None})
         else:
             seen.add(key)
             try:
                 scores = predictor.score([row['text']])
                 prediction = decode(scores, report['threshold'], report['dataset']['labels'])[0]
                 selected = [label for label, flag in zip(report['dataset']['labels'], prediction) if flag]
-                result.update({'state': 'PREDICTED_ASPECTS' if selected else 'NO_ASPECT_PREDICTED',
-                               'labels': selected, 'scores': {l: float(v) for l, v in zip(report['dataset']['labels'], scores[0])}})
+                result.update({'state': 'PREDICTED_TARGETS' if selected else 'NO_TARGET_PREDICTED',
+                               'labels': selected, 'scores': {l: float(v) for l, v in zip(report['dataset']['labels'], scores[0])},
+                               'aspect_summary': rollup(selected, report['dataset']['taxonomy'])})
             except ValueError as exc:
                 if str(exc) != 'LONG_BODY_HELD_NO_TRUNCATION':
                     raise  # abort batch; no success artifact on model/state failure
-                result.update({'state': 'HELD_LONG_INPUT', 'labels': None, 'scores': None})
+                result.update({'state': 'HELD_LONG_INPUT', 'labels': None, 'scores': None, 'aspect_summary': None})
         output.append(result)
     target = Path(destination); target.mkdir(parents=True, exist_ok=False)
+    write(target / 'taxonomy.json', report['dataset']['taxonomy'])
     write_rows(target / 'predictions.jsonl', output)
     seal(target, {'model_sha256': file_hash(root / 'READY.json'), 'rows': len(output),
-                  'database_writes': False, 'not_evidence_extraction': True})
+                  'database_writes': False, 'not_evidence_extraction': True,
+                  'classification_unit': 'evaluation_target', 'synthetic_model': report['synthetic'],
+                  'threshold': report['threshold'],
+                  'taxonomy_sha256': report['dataset']['taxonomy_sha256'],
+                  'policy_sha256': report['dataset']['policy_sha256']})
     return {'rows': len(output), 'model_sha256': file_hash(root / 'READY.json')}

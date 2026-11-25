@@ -5,7 +5,6 @@ import time
 from pathlib import Path
 import numpy as np
 from .common import file_hash, read, seal, verify, write
-from .contract import aspects
 from .dataset import load
 
 KINDS = ('tfidf', 'textcnn', 'frozen', 'full')
@@ -27,8 +26,11 @@ def decode(scores, threshold, labels):
     if not math.isfinite(threshold) or not 0 < threshold < 1:
         raise ValueError('INVALID_THRESHOLD')
     selected = np.zeros_like(values, dtype=np.int8)
-    for aspect in aspects():
-        indices = [i for i, label in enumerate(labels) if label.startswith(aspect + '::')]
+    units = list(dict.fromkeys(label.split('::')[0] for label in labels))
+    if any('.' not in unit for unit in units):
+        raise ValueError('FINE_TARGET_LABEL_SCHEMA_REQUIRED')
+    for unit in units:
+        indices = [i for i, label in enumerate(labels) if label.startswith(unit + '::')]
         best = values[:, indices].argmax(axis=1)
         for row, local in enumerate(best):
             index = indices[local]
@@ -41,7 +43,8 @@ def metrics(truth, predicted, labels):
     from sklearn.metrics import f1_score, precision_recall_fscore_support
     precision, recall, f1, support = precision_recall_fscore_support(truth, predicted, average=None, zero_division=0)
     return {
-        'reviews': len(truth), 'macro_f1_all_48_zero_division_0': float(np.mean(f1)),
+        'reviews': len(truth), 'macro_f1_all_labels_zero_division_0': float(np.mean(f1)),
+        'classification_unit': 'evaluation_target', 'label_count': len(labels),
         'macro_f1_supported': float(np.mean(f1[support > 0])) if (support > 0).any() else None,
         'micro_f1': float(f1_score(truth, predicted, average='micro', zero_division=0)),
         'exact_match': float(np.all(truth == predicted, axis=1).mean()),
@@ -59,7 +62,7 @@ def metrics(truth, predicted, labels):
 def select_threshold(truth, scores, labels):
     candidates = [{'threshold': threshold, 'metrics': metrics(truth, decode(scores, threshold, labels), labels)}
                   for threshold in (.3, .5, .7)]
-    best = max(candidates, key=lambda c: (c['metrics']['macro_f1_all_48_zero_division_0'],
+    best = max(candidates, key=lambda c: (c['metrics']['macro_f1_all_labels_zero_division_0'],
                                          c['metrics']['micro_f1'], -abs(c['threshold'] - .5)))
     return best, candidates
 
@@ -94,15 +97,20 @@ def fit_tfidf(train, truth, target, seed):
     return constants
 
 
-def tfidf_scores(root, texts):
-    from scipy.special import expit
+def tfidf_bundle(root):
     from sklearn.feature_extraction.text import TfidfVectorizer
     root = Path(root)
-    weights = np.load(root / 'baseline.npz', allow_pickle=False)
     vectorizer = TfidfVectorizer(analyzer='char_wb', ngram_range=(2, 5), sublinear_tf=True,
                                  vocabulary=read(root / 'vocabulary.json'))
-    vectorizer.idf_ = weights['idf']
-    return expit(vectorizer.transform(texts) @ weights['coefficients'].T + weights['biases'])
+    with np.load(root / 'baseline.npz', allow_pickle=False) as weights:
+        vectorizer.idf_ = weights['idf']
+        return vectorizer, weights['coefficients'], weights['biases']
+
+
+def tfidf_scores(root, texts, bundle=None):
+    from scipy.special import expit
+    vectorizer, coefficients, biases = bundle if bundle is not None else tfidf_bundle(root)
+    return expit(vectorizer.transform(texts) @ coefficients.T + biases)
 
 
 def network(kind, base, label_count, pretrained):
@@ -225,7 +233,7 @@ def fit(dataset, base, destination, kind, seed=42, epochs=5, batch_size=16, lr=N
             scores = constant_scores(neural_scores(model, tokenizer, [r['text'] for r in val],
                                       metadata['max_tokens'], device, batch_size), constants)
             selection, thresholds = select_threshold(val_truth, scores, labels)
-            score = selection['metrics']['macro_f1_all_48_zero_division_0']
+            score = selection['metrics']['macro_f1_all_labels_zero_division_0']
             history.append({'epoch': epoch, 'train_bce': total_loss / len(train), 'validation_macro_f1': score})
             write(target / 'history.json', history)
             if score > best:
@@ -241,10 +249,11 @@ def fit(dataset, base, destination, kind, seed=42, epochs=5, batch_size=16, lr=N
               'threshold': chosen['threshold'], 'validation': chosen['metrics'], 'threshold_candidates': candidates,
               'constants': constants, 'unlearnable_labels': [l for l, c in zip(labels, constants) if c is not None],
               'dataset_sha256': file_hash(Path(dataset) / 'READY.json'), 'dataset': metadata,
-              'selection': 'validation macro all-48, micro, nearest threshold .5; first best epoch',
+              'selection': 'validation macro across frozen target labels, micro, nearest threshold .5; first best epoch',
               'seconds': time.perf_counter() - started, 'torch': torch.__version__,
               'synthetic': metadata['synthetic'], 'test_used_for_selection': False,
-              'task_limit': 'review-level presence; not trained opinion/evidence extraction; no Steam recommendation input'}
+              'task_limit': 'review-level fine-target presence; not trained opinion/evidence extraction; no Steam recommendation input',
+              'classification_unit': 'evaluation_target'}
     write(target / 'report.json', report)
     seal(target, {'kind': kind, 'dataset_sha256': report['dataset_sha256'], 'synthetic': metadata['synthetic']})
     return report
@@ -258,12 +267,21 @@ class Predictor:
         from .common import fingerprint
         self.root = Path(model_root); verify(self.root)
         self.report = read(self.root / 'report.json'); report = self.report
-        if (report['dataset']['labels'] != labels() or report['dataset']['policy_sha256'] != fingerprint(POLICY)
-                or report['dataset']['taxonomy_sha256'] != fingerprint(taxonomy())):
+        if report.get('classification_unit') != 'evaluation_target' or report['dataset'].get('contract') != 'review-training-v2':
+            raise ValueError('LEGACY_COARSE_MODEL_REQUIRES_RETRAINING')
+        tax = taxonomy(report['dataset']['taxonomy'])
+        from .taxonomy import require_confirmed
+        require_confirmed(tax, report['synthetic'])
+        if (report['dataset']['labels'] != labels(tax)
+                or report['dataset']['label_schema_sha256'] != fingerprint(labels(tax))
+                or report['dataset']['policy_sha256'] != fingerprint(POLICY)
+                or report['dataset']['taxonomy_sha256'] != fingerprint(tax)):
             raise ValueError('MODEL_CONTRACT_CHANGED')
         self.tokenizer = AutoTokenizer.from_pretrained(self.root / 'tokenizer', local_files_only=True, trust_remote_code=False)
         self.device = device
-        if report['kind'] != 'tfidf':
+        if report['kind'] == 'tfidf':
+            self.baseline = tfidf_bundle(self.root)
+        else:
             from safetensors.torch import load_file
             self.model = network(report['kind'], self.root / 'encoder_config', len(report['dataset']['labels']), pretrained=False)
             self.model.load_state_dict(load_file(str(self.root / 'model.safetensors'), device='cpu'), strict=True)
@@ -276,7 +294,7 @@ class Predictor:
         if any(len(self.tokenizer(text, truncation=False)['input_ids']) > report['max_tokens'] for text in texts):
             raise ValueError('LONG_BODY_HELD_NO_TRUNCATION')
         if report['kind'] == 'tfidf':
-            scores = tfidf_scores(self.root, texts)
+            scores = tfidf_scores(self.root, texts, self.baseline)
         else:
             scores = neural_scores(self.model, self.tokenizer, texts, report['max_tokens'], self.device, report['batch_size'])
         return checked(constant_scores(scores, report['constants']), len(texts), report['dataset']['labels'])
