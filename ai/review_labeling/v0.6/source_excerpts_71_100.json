@@ -1,0 +1,605 @@
+{
+  "note": "Selected fields from preserved Steam API responses; original response SHA256 is retained. Local full raw-response verification was performed during assembly.",
+  "records": [
+    {
+      "display_number": 71,
+      "appid": 504230,
+      "raw_response_sha256": "19bc0e7c3ba200432c10ccfd5d80b83671cf0a1131364331a3cb7199deb3578f",
+      "observed_at": "2026-11-25T05:48:52.220666+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561198831017507/recommended/504230/",
+      "api_review_fields": {
+        "recommendationid": "231275819",
+        "language": "koreana",
+        "review": "어렵긴 하지만 불합리하지 않고 스토리, 게임플레이, 브금 모두 좋았습니다",
+        "voted_up": true,
+        "timestamp_created": 1784982319,
+        "timestamp_updated": 1784982319,
+        "author": {
+          "playtime_at_review": 1241,
+          "playtime_forever": 2443,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 72,
+      "appid": 1091500,
+      "raw_response_sha256": "10f3e64d5a05c5f923a01036382270c7dc3918c43e06de708d7e91704ff0bb64",
+      "observed_at": "2026-11-25T05:49:20.448794+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561198048466280/recommended/1091500/",
+      "api_review_fields": {
+        "recommendationid": "240688907",
+        "language": "koreana",
+        "review": "2026.11.19 올 업적달성.\r\n팬텀리버티 할인때 사서 재밌게 했습니다.\r\n더빙량에 찬사를 보내며, 덕분에 훨씬 몰입해서 즐길 수 있었습니다.",
+        "voted_up": true,
+        "timestamp_created": 1795247004,
+        "timestamp_updated": 1795247004,
+        "author": {
+          "playtime_at_review": 11575,
+          "playtime_forever": 11575,
+          "playtime_last_two_weeks": 503
+        }
+      }
+    },
+    {
+      "display_number": 73,
+      "appid": 105600,
+      "raw_response_sha256": "d15c4a41481daadb1d1e23c3fe637f4bbad91556ec3484226d7b5573b1b7ecb2",
+      "observed_at": "2026-11-23T07:33:25.391020+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561199642454426/recommended/105600/",
+      "api_review_fields": {
+        "recommendationid": "237357541",
+        "language": "koreana",
+        "review": "키 설정하면 자꾸 게임이 멈춤",
+        "voted_up": false,
+        "timestamp_created": 1791627011,
+        "timestamp_updated": 1791627011,
+        "author": {
+          "playtime_at_review": 989,
+          "playtime_forever": 2125,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 74,
+      "appid": 739630,
+      "raw_response_sha256": "065c70e1be73d779cee97f3816cfbbde0fce9425728c87bc04a556ddced5708e",
+      "observed_at": "2026-11-23T07:33:47.367440+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561198404552205/recommended/739630/",
+      "api_review_fields": {
+        "recommendationid": "236781516",
+        "language": "koreana",
+        "review": "로비 마이크도 안되고 주파수도 안되고 게임은 쳐 튕김",
+        "voted_up": false,
+        "timestamp_created": 1791032004,
+        "timestamp_updated": 1791032004,
+        "author": {
+          "playtime_at_review": 106,
+          "playtime_forever": 106,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 75,
+      "appid": 292030,
+      "raw_response_sha256": "e8b65913c53e0049c12ebd4612285d375334a4b2a768719064a7f42ba8848156",
+      "observed_at": "2026-11-23T07:32:37.571254+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561198885101146/recommended/292030/",
+      "api_review_fields": {
+        "recommendationid": "237610989",
+        "language": "koreana",
+        "review": "조작감 쓰레기+붕쯔붕쯔+길도 못찾음 걍 총체적 난국 쓰레기 게임",
+        "voted_up": false,
+        "timestamp_created": 1791877055,
+        "timestamp_updated": 1791877055,
+        "author": {
+          "playtime_at_review": 746,
+          "playtime_forever": 746,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 76,
+      "appid": 289070,
+      "raw_response_sha256": "9dbfd45161d1ec3b14a23e168e28f1a750fe0e051d7d7a3f62209f83ab5c0c55",
+      "observed_at": "2026-11-23T07:32:37.551178+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561198421697949/recommended/289070/",
+      "api_review_fields": {
+        "recommendationid": "239575201",
+        "language": "koreana",
+        "review": "싸다고 샀다가 DLC가 본체인 걸 깨달으면\n개빡침^^ 다시 추가로 사려고 보면 더 비싸지는 신기한 게임\n정떨어져서 삭제함",
+        "voted_up": false,
+        "timestamp_created": 1794026595,
+        "timestamp_updated": 1794026595,
+        "author": {
+          "playtime_at_review": 338,
+          "playtime_forever": 338,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 77,
+      "appid": 582010,
+      "raw_response_sha256": "c098453e78fbf73f675ca165662d404ce4b3ae1825ea485dd04e8ed411f08f05",
+      "observed_at": "2026-11-23T07:33:25.487084+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561199145193982/recommended/582010/",
+      "api_review_fields": {
+        "recommendationid": "239673671",
+        "language": "koreana",
+        "review": "겜은 재밌는데 진짜 클라우드 동기화 오류로 저장 했는데도 날라갔는데 먼짓을 해도 안되네 다시 해야 되는게 너무 짜증나네요",
+        "voted_up": false,
+        "timestamp_created": 1794113206,
+        "timestamp_updated": 1794113206,
+        "author": {
+          "playtime_at_review": 1569,
+          "playtime_forever": 6534,
+          "playtime_last_two_weeks": 4672
+        }
+      }
+    },
+    {
+      "display_number": 78,
+      "appid": 427520,
+      "raw_response_sha256": "691a992e23f01cee6bc8514899e48e7bafd5d0a05148aa96ec88b839190794dc",
+      "observed_at": "2026-11-25T05:49:04.307352+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561198866844908/recommended/427520/",
+      "api_review_fields": {
+        "recommendationid": "232873115",
+        "language": "koreana",
+        "review": "튜토리얼 10시간 하고 저는 그만 질려버렸읍니다.,..",
+        "voted_up": true,
+        "timestamp_created": 1786785604,
+        "timestamp_updated": 1786785604,
+        "author": {
+          "playtime_at_review": 643,
+          "playtime_forever": 910,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 79,
+      "appid": 1426210,
+      "raw_response_sha256": "9c7603b5d5dab21d7edd88620b0789e8a66f28e8827c3552b1742e21a14f0e6e",
+      "observed_at": "2026-11-25T05:49:09.924908+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561199129712295/recommended/1426210/",
+      "api_review_fields": {
+        "recommendationid": "239860943",
+        "language": "koreana",
+        "review": "스토리도 재미있고 협동게임이라 재밌어요 한명만 사도 되니까 좋아요.",
+        "voted_up": true,
+        "timestamp_created": 1794318155,
+        "timestamp_updated": 1794318155,
+        "author": {
+          "playtime_at_review": 1138,
+          "playtime_forever": 1205,
+          "playtime_last_two_weeks": 66
+        }
+      }
+    },
+    {
+      "display_number": 80,
+      "appid": 1868140,
+      "raw_response_sha256": "bd14dd369686c38ba5709ade33f65adf2b4c6336863d9042bc6fa6c0df3420d1",
+      "observed_at": "2026-11-25T05:48:57.852742+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561198076002660/recommended/1868140/",
+      "api_review_fields": {
+        "recommendationid": "240348777",
+        "language": "koreana",
+        "review": "스토리 깨고 그런건 재밌는데 물고기 종류가 맨날 똑같아서 즐려서 안하게 됐음 DLC나오면 뭐함 물고기는 그대로이고 보스나 스토리만 들어가지",
+        "voted_up": true,
+        "timestamp_created": 1794829578,
+        "timestamp_updated": 1794829578,
+        "author": {
+          "playtime_at_review": 3524,
+          "playtime_forever": 3524,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 81,
+      "appid": 1551360,
+      "raw_response_sha256": "e443aa4c42996aa24d3684ddca7a72de02a0f83dd7e3628fad444f96c55dc024",
+      "observed_at": "2026-11-25T13:58:55.341929+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561199077874786/recommended/1551360/",
+      "api_review_fields": {
+        "recommendationid": "240286120",
+        "language": "koreana",
+        "review": "핸들링이 매우 아쉽지만, 다양한 차종들로 여러 자연 경관을 보며 레이싱 즐기기가 좋은 게임",
+        "voted_up": true,
+        "timestamp_created": 1794755500,
+        "timestamp_updated": 1794755500,
+        "author": {
+          "playtime_at_review": 20336,
+          "playtime_forever": 20410,
+          "playtime_last_two_weeks": 74
+        }
+      }
+    },
+    {
+      "display_number": 82,
+      "appid": 1551360,
+      "raw_response_sha256": "25216e58c75df194286aa85bbb3e7d0d536c56ca54525faa65fd0caf7326e559",
+      "observed_at": "2026-11-25T13:59:00.874080+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561199046396453/recommended/1551360/",
+      "api_review_fields": {
+        "recommendationid": "228012621",
+        "language": "koreana",
+        "review": "오랜만에 접속했더니 그동안 한게 싹다 날라가 있네요..",
+        "voted_up": false,
+        "timestamp_created": 1781513838,
+        "timestamp_updated": 1781513838,
+        "author": {
+          "playtime_at_review": 3959,
+          "playtime_forever": 3959,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 83,
+      "appid": 1364780,
+      "raw_response_sha256": "57a5c13eeb717b0a58d94b3d0aa2f99dbb18fa5fe0b92ab7790b31cc2086f34c",
+      "observed_at": "2026-11-25T13:59:15.717928+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561199032078782/recommended/1364780/",
+      "api_review_fields": {
+        "recommendationid": "240147472",
+        "language": "koreana",
+        "review": "조이스틱 호환안됌",
+        "voted_up": false,
+        "timestamp_created": 1794620987,
+        "timestamp_updated": 1794620987,
+        "author": {
+          "playtime_at_review": 44,
+          "playtime_forever": 44,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 84,
+      "appid": 1364780,
+      "raw_response_sha256": "c7b209f2e88b6b9bcbfa114924af1783ae91a4d49d18baa2cfaee2f4b68974db",
+      "observed_at": "2026-11-25T13:59:09.478025+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561199057593554/recommended/1364780/",
+      "api_review_fields": {
+        "recommendationid": "235500239",
+        "language": "koreana",
+        "review": "철권,혈풍담,길기,스파 다 해봤는데 \r\n\r\n이만큼 격겜 뉴비 친화적인 게임은 못봤음 츄라이 츄라이",
+        "voted_up": true,
+        "timestamp_created": 1789688810,
+        "timestamp_updated": 1789688810,
+        "author": {
+          "playtime_at_review": 571,
+          "playtime_forever": 1151,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 85,
+      "appid": 1665460,
+      "raw_response_sha256": "28d85472b093b4785b4028fcfaa7170955d993fd2140c5b76b2712036bf773a0",
+      "observed_at": "2026-11-25T13:59:24.849920+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561197960471040/recommended/1665460/",
+      "api_review_fields": {
+        "recommendationid": "235692754",
+        "language": "koreana",
+        "review": "무료인데 조작감이 피파 보다 나은듯",
+        "voted_up": true,
+        "timestamp_created": 1789914098,
+        "timestamp_updated": 1789914098,
+        "author": {
+          "playtime_at_review": 705,
+          "playtime_forever": 1480,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 86,
+      "appid": 1665460,
+      "raw_response_sha256": "61f8d28c2b6825535d5bb420845fe59ff69fdd78018ffa8dc0a330bafce5185a",
+      "observed_at": "2026-11-25T13:59:29.242074+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561199435618680/recommended/1665460/",
+      "api_review_fields": {
+        "recommendationid": "230961329",
+        "language": "koreana",
+        "review": "진짜 ㅈㄴ 어렵습니다 매칭도 급이 맞는 사람이랑 해줘야 뭔가 좀 해볼만하다고 생각하고 해보는데 무슨 첫판 돌릴때부터 고인물들이랑만 만나서 매판마다 개털리니까 하고싶지가 않네요 그냥 하지 마십쇼",
+        "voted_up": false,
+        "timestamp_created": 1784618478,
+        "timestamp_updated": 1784618478,
+        "author": {
+          "playtime_at_review": 273,
+          "playtime_forever": 273,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 87,
+      "appid": 244210,
+      "raw_response_sha256": "adf6c7ef4924d021f78fb3054ee01a7f395f5d40a0e14c61dc48c4bfa78a6a35",
+      "observed_at": "2026-11-25T13:59:42.697862+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561199120139045/recommended/244210/",
+      "api_review_fields": {
+        "recommendationid": "177403690",
+        "language": "koreana",
+        "review": "아니 한글화 지원도 안 하면서 왜 게임 제목은 한글로 되어있냐 개열받네",
+        "voted_up": false,
+        "timestamp_created": 1729430527,
+        "timestamp_updated": 1729430527,
+        "author": {
+          "playtime_at_review": 20,
+          "playtime_forever": 21,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 88,
+      "appid": 244210,
+      "raw_response_sha256": "ea9e418cded1b7ff644e54fb1ecb0b35ba1327ca434bc4128f136a9e161ad741",
+      "observed_at": "2026-11-25T13:59:38.177923+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561199143158994/recommended/244210/",
+      "api_review_fields": {
+        "recommendationid": "237308127",
+        "language": "koreana",
+        "review": "이겜은 진짜 전설이다 모드며 기본 dlc들 전부 괜찮다 지금은 다른 선택지가 많았졌지만 아직도 모드는 원탑이다 한국 서킷과 한국 차량이 좋다면 이게임을 하는게 맞다\r\n",
+        "voted_up": true,
+        "timestamp_created": 1791571983,
+        "timestamp_updated": 1791571983,
+        "author": {
+          "playtime_at_review": 25195,
+          "playtime_forever": 26463,
+          "playtime_last_two_weeks": 475
+        }
+      }
+    },
+    {
+      "display_number": 89,
+      "appid": 1966720,
+      "raw_response_sha256": "1e8ca7c07c1225b9feb5e7d6436f5b07119767a7bd93a479eb886da7eb516a20",
+      "observed_at": "2026-11-25T13:59:14.553917+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561198678299935/recommended/1966720/",
+      "api_review_fields": {
+        "recommendationid": "231253027",
+        "language": "koreana",
+        "review": "한국어 패치 해라 안하면 리톤임",
+        "voted_up": false,
+        "timestamp_created": 1784953338,
+        "timestamp_updated": 1784953338,
+        "author": {
+          "playtime_at_review": 93,
+          "playtime_forever": 93,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 90,
+      "appid": 1966720,
+      "raw_response_sha256": "1e8ca7c07c1225b9feb5e7d6436f5b07119767a7bd93a479eb886da7eb516a20",
+      "observed_at": "2026-11-25T13:59:14.553917+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561198762532671/recommended/1966720/",
+      "api_review_fields": {
+        "recommendationid": "239349826",
+        "language": "koreana",
+        "review": "이 ㅈ같은겜 배경음 끄는것좀 제발",
+        "voted_up": false,
+        "timestamp_created": 1793793412,
+        "timestamp_updated": 1793793412,
+        "author": {
+          "playtime_at_review": 534,
+          "playtime_forever": 591,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 91,
+      "appid": 242760,
+      "raw_response_sha256": "9a516c73cab039250ca4bb54ec2b91a0329a48bebefb8ff8c74e7c5c1e857870",
+      "observed_at": "2026-11-25T13:59:23.149934+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561198421806760/recommended/242760/",
+      "api_review_fields": {
+        "recommendationid": "239276841",
+        "language": "koreana",
+        "review": "첨엔 분명 개무서웠어서 첫날밤에 엉엉 울면서 껐었는데\n친구들이랑 며칠 붙잡고해보니까 그냥 식인종은 배민같은 느낌이구 재밋음\n집짓는것두 재밋구 동굴탐험도 쫄리지만 재밌었음",
+        "voted_up": true,
+        "timestamp_created": 1793718566,
+        "timestamp_updated": 1793718566,
+        "author": {
+          "playtime_at_review": 3551,
+          "playtime_forever": 3551,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 92,
+      "appid": 242760,
+      "raw_response_sha256": "5440632b80cf5c5799dc220a7a41e5ce5883ced6ba804a3c2bc1696a7909ec4b",
+      "observed_at": "2026-11-25T13:59:27.573932+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561199554873780/recommended/242760/",
+      "api_review_fields": {
+        "recommendationid": "218153669",
+        "language": "koreana",
+        "review": "괴물 소리 너무 무서워",
+        "voted_up": false,
+        "timestamp_created": 1770910285,
+        "timestamp_updated": 1770910285,
+        "author": {
+          "playtime_at_review": 195,
+          "playtime_forever": 195,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 93,
+      "appid": 736260,
+      "raw_response_sha256": "8ca8a96ed5d8fd4cb9af80833c997400eafa72fa9ac6f67e3a33ad1c88cf4a59",
+      "observed_at": "2026-11-25T13:59:37.590051+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561199130872344/recommended/736260/",
+      "api_review_fields": {
+        "recommendationid": "235387424",
+        "language": "koreana",
+        "review": "[h2]별점 : ★★★★★[/h2]\n\n역대 퍼즐 게임들 중 부동의 1위이지 않을까?\n규칙을 이용해 퍼즐을 푸는 게 아니라, 규칙 자체를 퍼즐로 만들어버린 게임.",
+        "voted_up": true,
+        "timestamp_created": 1789554482,
+        "timestamp_updated": 1790090966,
+        "author": {
+          "playtime_at_review": 2441,
+          "playtime_forever": 2441,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 94,
+      "appid": 493520,
+      "raw_response_sha256": "9085694eb7e48f87bc4b3093da45bbf6f135dc86163a3b6be85e4982311e85b3",
+      "observed_at": "2026-11-25T13:59:53.337947+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561199049550085/recommended/493520/",
+      "api_review_fields": {
+        "recommendationid": "236477959",
+        "language": "koreana",
+        "review": "먹을수록 개매운데 맛있게 매워서 땡기는 느낌. 어려운데 재밌고 총쏘는 맛이 있음",
+        "voted_up": true,
+        "timestamp_created": 1790696480,
+        "timestamp_updated": 1790696480,
+        "author": {
+          "playtime_at_review": 3651,
+          "playtime_forever": 4768,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 95,
+      "appid": 977950,
+      "raw_response_sha256": "bf6bdd3c93f57d1a1650bf696ff63252362100d731832a164173ea507e13ba03",
+      "observed_at": "2026-11-25T13:59:24.521974+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561198714906699/recommended/977950/",
+      "api_review_fields": {
+        "recommendationid": "238229030",
+        "language": "koreana",
+        "review": "원하는 노래는 죄다 없노",
+        "voted_up": false,
+        "timestamp_created": 1792579050,
+        "timestamp_updated": 1792579050,
+        "author": {
+          "playtime_at_review": 21,
+          "playtime_forever": 21,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 96,
+      "appid": 247080,
+      "raw_response_sha256": "bc064c0c38cd15333c8f2fc76edc822d83b0d2166d523cab140833ac4975f18d",
+      "observed_at": "2026-11-25T13:59:33.293996+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561198880644291/recommended/247080/",
+      "api_review_fields": {
+        "recommendationid": "226188029",
+        "language": "koreana",
+        "review": "캐릭터마다 악기를 바꿔서 곡 장르를 바꾸는게 너무 변태게임같고 좋아요",
+        "voted_up": true,
+        "timestamp_created": 1779501894,
+        "timestamp_updated": 1779501894,
+        "author": {
+          "playtime_at_review": 10873,
+          "playtime_forever": 12188,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 97,
+      "appid": 247080,
+      "raw_response_sha256": "788a643cb358b93f2503a1c9f885baa91cb7f2b024a21481736c00d3a85d3af7",
+      "observed_at": "2026-11-25T13:59:42.265990+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561198132944070/recommended/247080/",
+      "api_review_fields": {
+        "recommendationid": "199131779",
+        "language": "koreana",
+        "review": "리듬게임은 좋아하는데 캐릭터를 가지고 플레이하는거라 이동에 제약이 많은 게임을 그렇게 좋아하지 않는다.\n취향이 맞지 않아 환불함",
+        "voted_up": false,
+        "timestamp_created": 1751824902,
+        "timestamp_updated": 1751824902,
+        "author": {
+          "playtime_at_review": 20,
+          "playtime_forever": 20,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 98,
+      "appid": 394360,
+      "raw_response_sha256": "b0dd7a05fcfac5848727aa5936a3c943749bd7fdfbdfe9453df1cede8ff5fefa",
+      "observed_at": "2026-11-25T13:59:54.805959+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561198348471229/recommended/394360/",
+      "api_review_fields": {
+        "recommendationid": "236848748",
+        "language": "koreana",
+        "review": "튜토리얼도 불친절하고 어떻게 진행하라는 건지 모르겠는 게임. 신규 진입자한테는 정말 불친절함의 끝판왕임",
+        "voted_up": false,
+        "timestamp_created": 1791090761,
+        "timestamp_updated": 1791090761,
+        "author": {
+          "playtime_at_review": 383,
+          "playtime_forever": 383,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 99,
+      "appid": 457140,
+      "raw_response_sha256": "3b81d67d1a90a693705533651a441464a8df4142712d467343fc088d03b83248",
+      "observed_at": "2026-11-25T14:00:09.482000+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561198120293955/recommended/457140/",
+      "api_review_fields": {
+        "recommendationid": "240644516",
+        "language": "koreana",
+        "review": "DLC 기능을 빼서 무료로 풀어버리면 시발 내가 DLC를 산 의미가 없는데 시발놈들아",
+        "voted_up": false,
+        "timestamp_created": 1795191405,
+        "timestamp_updated": 1795191405,
+        "author": {
+          "playtime_at_review": 5977,
+          "playtime_forever": 5977,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    },
+    {
+      "display_number": 100,
+      "appid": 457140,
+      "raw_response_sha256": "3b81d67d1a90a693705533651a441464a8df4142712d467343fc088d03b83248",
+      "observed_at": "2026-11-25T14:00:09.482000+00:00",
+      "review_url": "https://steamcommunity.com/profiles/76561198384127791/recommended/457140/",
+      "api_review_fields": {
+        "recommendationid": "183989340",
+        "language": "koreana",
+        "review": "순수 재미가 있는 게임.\n더 효율적인 기지를 건설하고싶은 오기가 생기면서 계속 하게 되는데\n남에게 추천할만하냐 하면 그건 또 아님. 존나 취향탐.\n\n7/10",
+        "voted_up": false,
+        "timestamp_created": 1735393915,
+        "timestamp_updated": 1785753393,
+        "author": {
+          "playtime_at_review": 2278,
+          "playtime_forever": 2409,
+          "playtime_last_two_weeks": 0
+        }
+      }
+    }
+  ]
+}

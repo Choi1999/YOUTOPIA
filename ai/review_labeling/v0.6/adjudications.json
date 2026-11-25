@@ -1,0 +1,62 @@
+{
+  "schema": "youtopia_review_adjudication_log_v1",
+  "recorded_at": "2026-11-25T14:49:51.344240+00:00",
+  "events": [
+    {
+      "event_id": "user_accept_71_80_20261125",
+      "review_numbers": [
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80
+      ],
+      "user_message": "전체적으로 판독제외,보류사항은 유지하고 검수후보는 승인함. 단 78번의 경우 남긴사람의 실제 플레이시간을 찾아와야할듯.80번은 스토리긍정에 콘텐츠 부정이겠지.",
+      "followup": "78 source author metadata checked: 643 min at review, 910 min at collection; does not measure tutorial-only duration."
+    },
+    {
+      "event_id": "user_correct_accept_81_100_20261125",
+      "review_numbers": [
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100
+      ],
+      "user_message": "83번은 조작에 관한문제로변경하는게 좋아보임\n84은 결과없음. 어느부분에서인지 명확하지않음\n92번은 스팀라벨링에따라서 긍부정판독\n95 세부항목으로 두어도될듯. git에반영\n96 게임성 긍정 추가\n나머지는 승인으로두고\n그리고 이거 게임 플레이어들 층이 달라서 절대적인난이도값이 아닐수있다는점 참고해야한다는 문구가있어야할듯 gtfo는 애초에 하드한 게임방식을 즐기는 사람들이 하는거라 체감자체가 다를거임",
+      "changes": {
+        "83": "TECHNICAL.UNSPECIFIED -> USABILITY.CONTROLS, 부정 유지",
+        "84": "USABILITY.UNSPECIFIED 긍정 -> NO_CONCRETE_EVALUATION",
+        "91": "Approve GAMEPLAY.EXPLORATION 긍정 proposal",
+        "92": "SOUND.SFX HOLD -> 부정 using source steam_recommended=false; metadata-assisted only",
+        "95": "CONTENT.UNSPECIFIED -> CONTENT.TRACK_CATALOG, 부정 유지",
+        "96": "Keep SOUND.MUSIC_BGM 긍정; add GAMEPLAY.RULES_SYSTEM 긍정 with shared source_opinion_id"
+      }
+    }
+  ],
+  "legacy_review_states_preserved": true,
+  "resolved_hold_review_numbers": [
+    92
+  ],
+  "independent_blind_annotation": false
+}

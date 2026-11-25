@@ -1,0 +1,321 @@
+{
+  "status": "PASS",
+  "taxonomy_version": "v0.6",
+  "guideline_version": "v1.3.0",
+  "reviews": 100,
+  "active_opinions": 164,
+  "held_opinions": 8,
+  "reviews_with_holds": 7,
+  "no_concrete_evaluation_reviews": 15,
+  "active_opinions_user_verified": 46,
+  "records_with_user_verified_leaf_decisions": 30,
+  "legacy_records_pending_leaf_review": 70,
+  "metadata_assisted_reviews": 1,
+  "registered_leaves": 73,
+  "observed_leaves": 69,
+  "review_text_hashes": "PASS",
+  "evidence_offsets": "PASS",
+  "source_excerpt_integrity": "PASS",
+  "archived_version_preservation": "PASS",
+  "user_corrections": "PASS",
+  "hold_exclusion_preservation": "PASS",
+  "metadata_input_separation": "PASS",
+  "leaf_aggregation": "PASS",
+  "manifest_hashes": "PASS",
+  "training_performed": false,
+  "deployment_performed": false,
+  "support_by_leaf": {
+    "BALANCE.DIFFICULTY": {
+      "reviews": 8,
+      "opinions": 8
+    },
+    "BALANCE.RANDOMNESS": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "BALANCE.RELATIVE_POWER": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "BALANCE.UNSPECIFIED": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "CHARACTER.APPEARANCE": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "CHARACTER.MOTIVATION_NARRATIVE": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "CHARACTER.PERSONALITY_BEHAVIOR": {
+      "reviews": 1,
+      "opinions": 2
+    },
+    "CHARACTER.RELATIONSHIP": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "CHARACTER.UNSPECIFIED": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "CONTENT.AMOUNT": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "CONTENT.LONGEVITY": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "CONTENT.MOD_EXPANSION": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "CONTENT.REPETITIVE_GRIND": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "CONTENT.REPLAYABILITY": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "CONTENT.TRACK_CATALOG": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "CONTENT.UNSPECIFIED": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "CONTENT.VARIETY": {
+      "reviews": 5,
+      "opinions": 5
+    },
+    "GAMEPLAY.ACTION": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.AUTOMATION": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.BUILDING_MANAGEMENT": {
+      "reviews": 5,
+      "opinions": 5
+    },
+    "GAMEPLAY.COMBAT": {
+      "reviews": 4,
+      "opinions": 4
+    },
+    "GAMEPLAY.EXPLORATION": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.HIT_FEEL": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.PACING": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.PLAYER_AGENCY": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.PUZZLE": {
+      "reviews": 1,
+      "opinions": 2
+    },
+    "GAMEPLAY.ROMANCE_ACTIVITY": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.RULES_SYSTEM": {
+      "reviews": 10,
+      "opinions": 11
+    },
+    "GAMEPLAY.SELF_DIRECTED_DISCOVERY": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.SESSION_LENGTH": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.SESSION_TIME_FLEXIBILITY": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GAMEPLAY.STRATEGY_CHOICE": {
+      "reviews": 4,
+      "opinions": 5
+    },
+    "GAMEPLAY.UNSPECIFIED": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "GRAPHICS.CAMERA_VIEWPOINT": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GRAPHICS.IMAGE_QUALITY": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GRAPHICS.LIGHTING_VISIBILITY": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "GRAPHICS.UNSPECIFIED": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "GRAPHICS.VISUAL_DIRECTION": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "MONETIZATION.PRICE_LEVEL": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "MONETIZATION.PURCHASE_ACCESS": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "MONETIZATION.UNSPECIFIED": {
+      "reviews": 0,
+      "opinions": 0
+    },
+    "MONETIZATION.VALUE_FOR_MONEY": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "OPERATIONS.PATCH_RESPONSE": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "OPERATIONS.SANCTIONS": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "OPERATIONS.TRANSLATION": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "OPERATIONS.UNSPECIFIED": {
+      "reviews": 0,
+      "opinions": 0
+    },
+    "SOCIAL.COOP_EXPERIENCE": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "SOCIAL.MATCHMAKING": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "SOCIAL.PARTICIPATION_ACCESS": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "SOCIAL.PLAYER_BEHAVIOR": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "SOCIAL.UNSPECIFIED": {
+      "reviews": 0,
+      "opinions": 0
+    },
+    "SOUND.MUSIC_BGM": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "SOUND.SFX": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "SOUND.UNSPECIFIED": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "SOUND.VOICE_DUBBING": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "STORY.IMMERSION": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "STORY.NARRATIVE_PACING": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "STORY.NARRATIVE_TONE": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "STORY.PLOT_COHERENCE": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "STORY.UNSPECIFIED": {
+      "reviews": 5,
+      "opinions": 5
+    },
+    "STORY.WORLD_SETTING": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "TECHNICAL.CONNECTION": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "TECHNICAL.CRASH_FREEZE": {
+      "reviews": 5,
+      "opinions": 5
+    },
+    "TECHNICAL.FUNCTIONAL_BLOCK": {
+      "reviews": 4,
+      "opinions": 5
+    },
+    "TECHNICAL.GENERAL_BUGS": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "TECHNICAL.LOADING": {
+      "reviews": 1,
+      "opinions": 1
+    },
+    "TECHNICAL.SAVE_PROGRESS_LOSS": {
+      "reviews": 3,
+      "opinions": 3
+    },
+    "TECHNICAL.UNSPECIFIED": {
+      "reviews": 0,
+      "opinions": 0
+    },
+    "USABILITY.CONTROLS": {
+      "reviews": 7,
+      "opinions": 7
+    },
+    "USABILITY.LEARNING_GUIDANCE": {
+      "reviews": 5,
+      "opinions": 5
+    },
+    "USABILITY.NAVIGATION": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "USABILITY.SETTINGS_ACCESSIBILITY": {
+      "reviews": 2,
+      "opinions": 2
+    },
+    "USABILITY.UNSPECIFIED": {
+      "reviews": 2,
+      "opinions": 2
+    }
+  }
+}
