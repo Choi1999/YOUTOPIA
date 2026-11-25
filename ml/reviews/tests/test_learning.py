@@ -48,8 +48,42 @@ class LearningTest(unittest.TestCase):
         result = final_test(self.dataset, self.experiment, self.root / 'final')
         self.assertEqual(result['models_evaluated'], 8); self.assertFalse(result['release_approved'])
         self.assertEqual(file_hash(self.experiment / 'selection.json'), before)
-        with self.assertRaises(FileExistsError):
-            final_test(self.dataset, self.experiment, self.root / 'second-final')
+        with patch('ml.reviews.experiment.load', wraps=load) as loader:
+            with self.assertRaises(FileExistsError):
+                final_test(self.dataset, self.experiment, self.root / 'second-final')
+            self.assertEqual([call.args[1] for call in loader.call_args_list], ['validation'])
+        # Exercise real local final reports against actual mocked provider
+        # adapters and the combined-report consumer, not hand-written report fixtures.
+        from ml.reviews.benchmark import CONDITIONS, initialize_budget, prepare, run
+        from ml.reviews.comparison import combine
+        from ml.reviews.common import canonical
+        plan = self.root / 'api-plan'
+        prepare(self.dataset, {'schema': 'review-api-benchmark-config-v1',
+                'models': {'openai': 'mock-openai', 'gemini': 'mock-gemini'},
+                'conditions': list(CONDITIONS), 'max_output_tokens': 2048, 'timeout_seconds': 5}, plan)
+        budget = self.root / 'api-budget.sqlite'
+        initialize_budget(budget, 4 * read(self.dataset / 'READY.json')['metadata']['split_counts']['test'])
+
+        def mocked_transport(url, headers, request, timeout):
+            is_openai = url.startswith('https://api.openai.com/')
+            text = (request['input'][0]['content'][0]['text'] if is_openai
+                    else request['contents'][0]['parts'][0]['text'])
+            body = canonical({'labels': ['SOUND.MUSIC_BGM::긍정' if '좋다' in text else 'TECHNICAL.CRASH_FREEZE::부정']})
+            if is_openai:
+                return {'status': 'completed', 'model': 'mock-openai',
+                        'output': [{'type': 'message', 'role': 'assistant',
+                                    'content': [{'type': 'output_text', 'text': body}]}]}
+            return {'modelVersion': 'mock-gemini',
+                    'candidates': [{'finishReason': 'STOP', 'content': {'parts': [{'text': body}]}}]}
+
+        run(plan, self.dataset, budget, self.root / 'api-final', transport=mocked_transport,
+            environ={'OPENAI_API_KEY': 'synthetic-openai-key', 'GEMINI_API_KEY': 'synthetic-gemini-key'})
+        combine(self.root / 'final', self.root / 'all-comparison', self.root / 'api-final')
+        comparison = read(self.root / 'all-comparison/comparison.json')
+        self.assertEqual(len(comparison['conditions']), 8)
+        self.assertTrue(comparison['synthetic'])
+        self.assertTrue(all(c['coverage'] == 1 for c in comparison['conditions']))
+        self.assertTrue((self.root / 'all-comparison/comparison.png').is_file())
 
     def test_metrics_unsupported_not_accuracy_claim_and_threshold_uses_validation(self):
         truth = np.zeros((2, len(labels())), dtype=int); truth[:, 0] = [1, 0]
@@ -201,7 +235,7 @@ class LearningTest(unittest.TestCase):
         registry = read(self.root / 'registry.json'); registry['synthetic'] = False
         path = self.root / 'real-registry.json'; write(path, registry)
         with patch('transformers.AutoTokenizer.from_pretrained') as loader:
-            with self.assertRaisesRegex(ValueError, 'PINNED_V05_PILOT_EXCLUSION_REQUIRED'):
+            with self.assertRaisesRegex(ValueError, 'PINNED_V06_PILOT_EXCLUSION_REQUIRED'):
                 build(self.root / 'source.json', self.root / 'approvals.jsonl', path,
                       self.root / 'base-not-accessed', self.root / 'real-build-not-created')
             loader.assert_not_called()

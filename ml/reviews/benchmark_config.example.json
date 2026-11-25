@@ -1,0 +1,7 @@
+{
+  "schema": "review-api-benchmark-config-v1",
+  "models": {"openai": "", "gemini": ""},
+  "conditions": ["openai_baseline", "openai_prompt", "gemini_baseline", "gemini_prompt"],
+  "max_output_tokens": 2048,
+  "timeout_seconds": 30
+}

@@ -8,6 +8,7 @@ from .taxonomy import taxonomy
 
 PINNED_PILOT_SHA256 = 'c725153182e99647e859b04cecf07699ec869508bda405d6e0f7ec36aeb5e1d4'
 PINNED_KEYSET_SHA256 = 'b548aeb7ade50e9b32cfd8d7a824c7fc8acffda77e51914208e990919dc12423'
+LEGACY_TAXONOMY = Path(__file__).parent / 'legacy' / 'taxonomy-v0.5.json'
 
 
 def convert_record(record, tax):
@@ -35,7 +36,7 @@ def convert_record(record, tax):
 
 
 def import_pilot(source, destination, taxonomy_path=None):
-    original = read(source); tax = taxonomy(taxonomy_path)
+    original = read(source); tax = taxonomy(taxonomy_path or LEGACY_TAXONOMY)
     if original.get('schema') != 'youtopia_pilot_consolidated_review_v2' or original.get('taxonomy_version') != tax['version']:
         raise ValueError('PILOT_V05_VERSION_OR_SCHEMA_MISMATCH')
     converted = [convert_record(record, tax) for record in original['records']]

@@ -5,10 +5,11 @@ from .taxonomy import taxonomy, target_map
 
 POLARITIES = ('긍정', '부정')
 POLICY = {
-    'version': 'review-leaf-opinion-v05',
+    'version': 'review-leaf-opinion-v06',
     'aggregation': 'preserve independent positive/negative labels within each leaf; mixed is derived, never a training class',
     'parent_rollup': 'preserve every target/polarity pair; never collapse different targets into parent mixed',
-    'input': 'body_only; steam voted_up is auxiliary annotation context',
+    'input': 'text_only; metadata-assisted sentiment is preserved but excluded from text-only targets',
+    'metadata_assistance': 'no implied negative labels; hold whole review until a separate equally supplied metadata task is implemented',
     'long_input': 'hold_whole_review; never broadcast review labels to chunks',
     'task': 'review_target_polarity_presence; no opinion/evidence extraction model',
 }
@@ -29,7 +30,8 @@ def scope_hash(record, scope):
             'key', 'appid', 'review_id', 'clean_text', 'text_sha256', 'review_status',
             'active_opinion_ids', 'held_opinion_ids', 'excluded_spans', 'annotations',
             'taxonomy_version', 'taxonomy_sha256', 'voted_up', 'votes_up', 'behaviors', 'migration',
-            'learning_eligible', 'batch_role', 'source_review_acceptance', 'reclassification_review')}
+            'learning_eligible', 'batch_role', 'source_review_acceptance', 'reclassification_review',
+            'metadata', 'annotation_input', 'guideline_version', 'annotation_protocol')}
     else:
         matches = [item for item in record['annotations'] if item['id'] == scope.removeprefix('opinion:')]
         if not scope.startswith('opinion:') or len(matches) != 1:
@@ -83,6 +85,45 @@ def rollup(target_labels, tax=None):
     return result
 
 
+def annotation_input_requirements(record):
+    """Preserve annotation context without silently making it classifier input.
+
+    A known metadata-assisted polarity cannot become text-only gold, including
+    when a caller supplies a fresh approval ledger. Unknown input declarations
+    fail closed rather than treating the missing polarity as a negative label.
+    """
+    metadata = record.get('metadata', {})
+    requirement = record.get('annotation_input', {})
+    if not isinstance(metadata, dict) or not isinstance(requirement, dict):
+        raise ValueError('ANNOTATION_INPUT_METADATA_OBJECT_REQUIRED')
+    sufficient = requirement.get('text_only_sufficient', True)
+    fields = requirement.get('required_metadata', [])
+    if (type(sufficient) is not bool or not isinstance(fields, list)
+            or any(not isinstance(field, str) or not field.strip() for field in fields)
+            or len(fields) != len(set(fields))):
+        raise ValueError('ANNOTATION_INPUT_REQUIREMENTS_INVALID')
+    for field in ('steam_recommended', 'voted_up'):
+        if field in metadata and metadata[field] is not None and type(metadata[field]) is not bool:
+            raise ValueError('STEAM_RECOMMENDATION_TYPE')
+    nested = metadata.get('steam_recommended', metadata.get('voted_up'))
+    if nested is not None and record.get('voted_up') is not None and nested != record['voted_up']:
+        raise ValueError('STEAM_RECOMMENDATION_CONFLICT')
+    bases = [a.get('sentiment_basis') for a in record['annotations']
+             if a['id'] in record['active_opinion_ids']]
+    allowed = (None, 'REVIEW_TEXT', 'TEXT_ONLY', 'BODY_EVIDENCE', 'STEAM_RECOMMENDATION_TIEBREAK')
+    unknown_basis = any(basis not in allowed for basis in bases)
+    assisted = not sufficient or bool(fields) or 'STEAM_RECOMMENDATION_TIEBREAK' in bases
+    if assisted and 'STEAM_RECOMMENDATION_TIEBREAK' in bases and not fields:
+        fields = ['steam_recommended']
+    missing = [field for field in fields if field not in metadata or metadata[field] is None]
+    # Support legacy top-level voted_up only when explicitly requested as such.
+    missing = [field for field in missing if field != 'voted_up' or record.get('voted_up') is None]
+    return {'task': 'text_only', 'text_only_sentiment_eligible': not assisted and not unknown_basis,
+            'metadata_assisted': assisted, 'unknown_sentiment_basis': unknown_basis,
+            'required_metadata': fields, 'missing_required_metadata': missing,
+            'metadata_supplied_to_model': False}
+
+
 def validate(record, ledger, tax=None):
     """Return workbench data even when incomplete; invalid evidence fails explicitly."""
     if str(record['appid']) + ':' + str(record['review_id']) != record['key']:
@@ -113,7 +154,13 @@ def validate(record, ledger, tax=None):
     active, held = set(active_list), set(held_list)
     if len(active) != len(active_list) or len(held) != len(held_list) or active & held or not (active | held) <= set(ids):
         raise ValueError('OPINION_SELECTION_CONFLICT')
-    confirmed, reasons = [], []
+    input_requirements = annotation_input_requirements(record)
+    confirmed, metadata_assisted, reasons = [], [], []
+    if not input_requirements['text_only_sentiment_eligible']:
+        reasons.append('TEXT_ONLY_SENTIMENT_REQUIRES_METADATA' if input_requirements['metadata_assisted']
+                       else 'UNKNOWN_SENTIMENT_BASIS_REQUIRES_ADJUDICATION')
+    if input_requirements['missing_required_metadata']:
+        reasons.append('ANNOTATION_REQUIRED_METADATA_MISSING')
     if record.get('learning_eligible') is False or str(record.get('batch_role', '')).startswith('guideline_pilot'):
         reasons.append('SOURCE_TRAINING_EXCLUDED')
     for annotation in annotations:
@@ -151,7 +198,10 @@ def validate(record, ledger, tax=None):
         if context and (context.get('basis') != 'body_evidence' or context.get('voted_up') != record.get('voted_up')):
             raise ValueError('METADATA_ONLY_OR_STALE_SENTIMENT_OVERRIDE')
         if code is not None and approved(record, 'opinion:' + annotation['id'], ledger):
-            confirmed.append({**annotation, 'polarity': polarity})
+            if input_requirements['text_only_sentiment_eligible']:
+                confirmed.append({**annotation, 'polarity': polarity})
+            else:
+                metadata_assisted.append({**annotation, 'polarity': polarity})
         else:
             reasons.append('OPINION_CONFIRMATION_UNLINKED')
     if held:
@@ -172,6 +222,12 @@ def validate(record, ledger, tax=None):
         'derived_mixed_leaves': sorted(leaf for leaf, directions in result.items() if len(directions) > 1),
         'aspect_summary': rollup(target_labels, tax),
         'classification_unit': 'leaf_id',
+        'task_eligibility': input_requirements,
+        'metadata_assisted_opinions': metadata_assisted,
+        'text_evidenced_target_ids': sorted({a['leaf_id'] for a in annotations
+                                           if a['id'] in active and a.get('leaf_id') in mapping}),
+        'annotation_metadata': record.get('metadata', {}),
+        'annotation_input': record.get('annotation_input', {}),
         'eligible': not reasons, 'reasons': sorted(set(reasons)),
         'human_review_evidence_count': sum(approved(record, 'opinion:' + a['id'], ledger) for a in annotations),
         'human_review_flags_present': record.get('human_reviewed'),

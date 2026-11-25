@@ -25,13 +25,22 @@ def check_registry(registry):
                 or any(c not in '0123456789abcdef' for c in checksum)):
             raise ValueError('PILOT_SOURCE_INVENTORY_INVALID')
     if not registry.get('synthetic', False):
-        from .pilot_v05 import PINNED_PILOT_SHA256, PINNED_KEYSET_SHA256
-        source = next((batch for batch in inventory if batch['id'] == 'guideline-pilot-v0.5'), None)
-        if source is None or source['expected_count'] != 70 or source['source_sha256'] != PINNED_PILOT_SHA256:
-            raise ValueError('PINNED_V05_PILOT_EXCLUSION_REQUIRED')
-        batch = next(batch for batch in batches if batch['id'] == 'guideline-pilot-v0.5')
+        from .pilot_v06 import PINNED_PILOT_SHA256, PINNED_KEYSET_SHA256, PINNED_BODYSET_SHA256
+        source = next((batch for batch in inventory if batch['id'] == 'guideline-pilot-v0.6'), None)
+        if source is None or source['expected_count'] != 100 or source['source_sha256'] != PINNED_PILOT_SHA256:
+            raise ValueError('PINNED_V06_PILOT_EXCLUSION_REQUIRED')
+        batch = next(batch for batch in batches if batch['id'] == 'guideline-pilot-v0.6')
         if fingerprint(sorted(batch['keys'])) != PINNED_KEYSET_SHA256:
-            raise ValueError('PINNED_V05_PILOT_EXCLUSION_KEYS_CHANGED')
+            raise ValueError('PINNED_V06_PILOT_EXCLUSION_KEYS_CHANGED')
+        reference = batch.get('reference_bodies', [])
+        if (not isinstance(reference, list) or len(reference) != 100
+                or any(not isinstance(r, dict) for r in reference)
+                or {r.get('key') for r in reference} != set(batch['keys'])
+                or any(not isinstance(r.get('text'), str) or not r['text'].strip()
+                       or digest(r['text']) != r.get('text_sha256') for r in reference)
+                or fingerprint(sorted([{'key': r['key'], 'text_sha256': r['text_sha256']} for r in reference],
+                                      key=lambda r: r['key'])) != PINNED_BODYSET_SHA256):
+            raise ValueError('PINNED_V06_PILOT_REFERENCE_BODIES_CHANGED')
     all_keys = []
     for batch in batches:
         if not batch.get('id') or len(batch['keys']) != batch['expected_count']:
@@ -46,17 +55,65 @@ def normalized(text):
     return ' '.join(unicodedata.normalize('NFC', text).split())
 
 
+def reference_pilot_matches(workbench, registry):
+    """Find copied reference bodies even under different IDs; do not claim semantics.
+
+    Real builds validate the pinned body's exact hash set in check_registry.
+    Normalization and similarity here are solely exclusion screening, never
+    destructive preprocessing of raw texts or transfer of reference labels.
+    """
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    references = [normalized(row['text']) for batch in registry['batches']
+                  for row in batch.get('reference_bodies', [])]
+    if not references or not workbench:
+        return {}
+    exact = set(references); matches = {}
+    candidates = []
+    for row in workbench:
+        if normalized(row['text']) in exact:
+            matches[row['key']] = 'REFERENCE_PILOT_BODY_EXCLUDED'
+        else:
+            candidates.append(row)
+    if not candidates:
+        return matches
+    texts = [normalized(row['text']) for row in candidates]
+    # Fitting exclusion screening over candidate/reference bodies uses no gold
+    # labels and cannot leak vocabulary into any learned classifier artifact.
+    vectorizer = TfidfVectorizer(analyzer='char', ngram_range=(3, 5))
+    try:
+        matrix = vectorizer.fit_transform([*references, *texts])
+    except ValueError as exc:
+        if 'empty vocabulary' not in str(exc):
+            raise
+        return matches  # short strings were already checked exactly
+    reference_matrix = matrix[:len(references)]
+    candidate_matrix = matrix[len(references):]
+    for start in range(0, len(candidates), 128):
+        similarity = (candidate_matrix[start:start + 128] @ reference_matrix.T).tocoo()
+        for i, score in zip(similarity.row, similarity.data):
+            if score >= .97:
+                matches[candidates[start + i]['key']] = 'NEAR_REFERENCE_PILOT_BODY_HELD'
+    return matches
+
+
 def audit(records, ledger, tax=None):
     tax = taxonomy(tax)
+    if not isinstance(records, list) or not isinstance(ledger, list):
+        raise ValueError('AUDIT_LISTS_REQUIRED')
     workbench, errors = [], []
     decisions = {}
     for entry in ledger:
+        if not isinstance(entry, dict):
+            return [], [{'key': None, 'reason': 'APPROVAL_OBJECT_REQUIRED'}]
         identity = tuple(entry.get(field) for field in ('key', 'scope', 'text_sha256', 'scope_sha256'))
         if identity in decisions and decisions[identity] != entry:
             return [], [{'key': entry.get('key'), 'reason': 'CONFLICTING_APPROVAL_LEDGER_ENTRIES'}]
         decisions[identity] = entry
     seen = set()
     for record in records:
+        if not isinstance(record, dict):
+            errors.append({'key': None, 'reason': 'RECORD_OBJECT_REQUIRED'})
+            continue
         try:
             if record.get('key') in seen:
                 raise ValueError('DUPLICATE_REVIEW_NEEDS_ADJUDICATION')
@@ -119,10 +176,13 @@ def build(source, approvals, registry_path, base, destination, max_tokens=256, s
     workbench, errors = audit(read(source)['records'], rows(approvals), tax)
     if errors:
         raise ValueError('INVALID_SOURCE_RECORDS; run audit for private details')
+    reference_matches = reference_pilot_matches(workbench, registry)
     included = []
     for record in workbench:
         if record['key'] in excluded:
             record['reasons'].append('REFERENCE_PILOT_EXCLUDED')
+        if record['key'] in reference_matches:
+            record['reasons'].append(reference_matches[record['key']])
         tokens = tokenizer(record['text'], add_special_tokens=True, truncation=False)['input_ids']
         record['token_count'] = len(tokens)
         if len(tokens) > max_tokens:
@@ -147,8 +207,8 @@ def build(source, approvals, registry_path, base, destination, max_tokens=256, s
     }
     write(target / 'audit.json', summary)
     metadata = {
-        'contract': 'review-training-v05', 'taxonomy_sha256': fingerprint(tax), 'taxonomy': tax,
-        'classification_unit': 'leaf_id',
+        'contract': 'review-training-v06', 'taxonomy_sha256': fingerprint(tax), 'taxonomy': tax,
+        'classification_unit': 'leaf_id', 'comparison_task': 'text_only-v06',
         'policy_sha256': fingerprint(POLICY), 'labels': labels(tax), 'label_schema_sha256': fingerprint(labels(tax)), 'seed': seed,
         'label_to_id_sha256': fingerprint({label: i for i, label in enumerate(labels(tax))}),
         'preprocessing_version': 'preserved-review-body-v1',
@@ -161,7 +221,7 @@ def build(source, approvals, registry_path, base, destination, max_tokens=256, s
         'pilot_registry_sha256': file_hash(registry_path),
         'split_counts': {key: len(value) for key, value in splits.items()},
         'game_counts': {key: len({r['appid'] for r in value}) for key, value in splits.items()},
-        'dedup': 'NFC whitespace exact + cross-split char 3..5 TF-IDF cosine >= .97 block; no semantic guarantee',
+        'dedup': 'reference exact/char3..5 cosine >= .97 hold; NFC whitespace exact + cross-split char3..5 cosine >= .97 block; no semantic guarantee',
     }
     seal(target, metadata)
     return summary
@@ -169,7 +229,7 @@ def build(source, approvals, registry_path, base, destination, max_tokens=256, s
 
 def load(root, split):
     metadata = verify(root)
-    if metadata.get('contract') != 'review-training-v05' or metadata.get('classification_unit') != 'leaf_id':
+    if metadata.get('contract') != 'review-training-v06' or metadata.get('classification_unit') != 'leaf_id':
         raise ValueError('LEGACY_COARSE_DATASET_REQUIRES_REBUILD')
     tax = taxonomy(read(Path(root) / 'taxonomy.json'))
     require_frozen_taxonomy(tax, metadata['synthetic'])
@@ -181,4 +241,11 @@ def load(root, split):
     records = rows(Path(root) / (split + '.jsonl'))
     if not records or len(records) != metadata['split_counts'][split]:
         raise ValueError('EMPTY_OR_CHANGED_SPLIT')
+    if (metadata.get('comparison_task') != 'text_only-v06' or metadata.get('steam_in_model_input') is not False
+            or any(row.get('eligible') is not True
+                   or row.get('task_eligibility', {}).get('task') != 'text_only'
+                   or row.get('task_eligibility', {}).get('text_only_sentiment_eligible') is not True
+                   or row.get('task_eligibility', {}).get('metadata_supplied_to_model') is not False
+                   for row in records)):
+        raise ValueError('TEXT_ONLY_DATASET_CONTAINS_INELIGIBLE_TASK')
     return records, metadata

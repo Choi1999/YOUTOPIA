@@ -1,6 +1,7 @@
 """Validation selection, sealed final-test execution, and private diagnostic reports."""
 import csv
 import statistics
+import time
 from pathlib import Path
 import numpy as np
 from .common import claim, file_hash, fingerprint, read, rows, seal, verify, write, write_rows
@@ -9,13 +10,15 @@ from .models import KINDS, Predictor, decode, fit, metrics, predict, targets
 from .contract import rollup
 
 
-def train(dataset, base, destination, seeds=(13, 42, 73), epochs=5, batch_size=16, device='cpu'):
+def train(dataset, base, destination, seeds=(42,), epochs=5, batch_size=16, device='cpu', kinds=KINDS):
     if not seeds or len(seeds) != len(set(seeds)):
         raise ValueError('DISTINCT_TRAINING_SEEDS_REQUIRED')
+    if not kinds or len(kinds) != len(set(kinds)) or any(kind not in KINDS for kind in kinds):
+        raise ValueError('DISTINCT_SUPPORTED_MODEL_KINDS_REQUIRED')
     _, metadata = load(dataset, 'train')
     target = Path(destination); target.mkdir(parents=True, exist_ok=False)
     experiments = []
-    for kind in KINDS:
+    for kind in kinds:
         for seed in seeds:
             relative = kind + '-' + str(seed)
             report = fit(dataset, base, target / relative, kind, seed=seed,
@@ -25,14 +28,14 @@ def train(dataset, base, destination, seeds=(13, 42, 73), epochs=5, batch_size=1
                                 'micro': report['validation']['micro_f1'],
                                 'artifact_sha256': file_hash(target / relative / 'READY.json')})
     groups = []
-    for kind in KINDS:
+    for kind in kinds:
         scores = [r['macro'] for r in experiments if r['kind'] == kind]
         groups.append({'kind': kind, 'macro_mean': statistics.mean(scores),
                        'macro_sample_std': statistics.stdev(scores) if len(scores) > 1 else None,
                        'seeds': len(scores), 'uncertainty_note': 'seed variation; not confidence interval'})
     best_kind = max(groups, key=lambda r: (r['macro_mean'], -KINDS.index(r['kind'])))['kind']
     chosen = max((r for r in experiments if r['kind'] == best_kind), key=lambda r: (r['macro'], r['micro'], -r['seed']))
-    selection = {'contract': 'review-experiment-v05', 'dataset_sha256': file_hash(Path(dataset) / 'READY.json'),
+    selection = {'contract': 'review-experiment-v06', 'dataset_sha256': file_hash(Path(dataset) / 'READY.json'),
                  'classification_unit': 'leaf_id', 'label_count': len(metadata['labels']),
                  'experiments': experiments, 'comparison': groups, 'selected_path': chosen['path'],
                  'rule': 'best mean validation macro by kind; best validation macro/micro seed within kind; lower seed tie',
@@ -60,9 +63,10 @@ def final_test(dataset, experiment, destination, device='cpu'):
     """One local claim per sealed experiment. Crash leaves claim; no auto retry."""
     experiment = Path(experiment).resolve(); verify(experiment)
     selection = read(experiment / 'selection.json')
-    if selection.get('contract') != 'review-experiment-v05':
+    if selection.get('contract') != 'review-experiment-v06':
         raise ValueError('LEGACY_COARSE_EXPERIMENT_REQUIRES_RETRAINING')
-    test_rows, metadata = load(dataset, 'test')
+    # Check the sealed contract without reading final labels before the claim.
+    _, metadata = load(dataset, 'validation')
     if file_hash(Path(dataset) / 'READY.json') != selection['dataset_sha256']:
         raise ValueError('FINAL_DATASET_CHANGED')
     if Path(destination).exists():
@@ -73,18 +77,31 @@ def final_test(dataset, experiment, destination, device='cpu'):
     claim(experiment.with_name(experiment.name + '.FINAL_TEST_CLAIM.json'),
           {'experiment_sha256': file_hash(experiment / 'READY.json'),
            'selection_sha256': file_hash(experiment / 'selection.json'), 'status': 'claimed; no automatic retry'})
+    test_rows, test_metadata = load(dataset, 'test')
+    if test_metadata != metadata:
+        raise ValueError('FINAL_DATASET_CHANGED')
     target = Path(destination); target.mkdir(parents=True, exist_ok=False)
     reports = []
     for item in selection['experiments']:
+        started = time.perf_counter()
         scores, report = predict(experiment / item['path'], [r['text'] for r in test_rows], device)
+        inference_seconds = time.perf_counter() - started
         truth = targets(test_rows, metadata['labels'])
         predicted = decode(scores, report['threshold'], metadata['labels'])
         result = metrics(truth, predicted, metadata['labels'])
         result.update({'model': item['path'], 'threshold': report['threshold'],
-                       'selected_before_test': item['path'] == selection['selected_path'], 'split': 'test'})
+                       'selected_before_test': item['path'] == selection['selected_path'], 'split': 'test',
+                       'kind': item['kind'], 'seed': item['seed'], 'coverage': 1.0,
+                       'reviews': len(test_rows), 'inference_seconds': inference_seconds,
+                       'reviews_per_second': len(test_rows) / inference_seconds if inference_seconds > 0 else None,
+                       'timing_scope': 'single batch including verified model load; not a latency percentile or GPU benchmark'})
         model_dir = target / item['path']; model_dir.mkdir()
         write(model_dir / 'metrics.json', result)
         np.savez(model_dir / 'scores.npz', truth=truth, scores=scores)
+        write_rows(model_dir / 'predictions.jsonl', [
+            {'key': row['key'], 'text_sha256': row['text_sha256'], 'gold': row['labels'],
+             'predicted': [label for label, value in zip(metadata['labels'], predicted[index]) if value]}
+            for index, row in enumerate(test_rows)])
         errors = []
         for index, row in enumerate(test_rows):
             prediction = [label for label, v in zip(metadata['labels'], predicted[index]) if v]
@@ -98,7 +115,14 @@ def final_test(dataset, experiment, destination, device='cpu'):
             writer = csv.DictWriter(stream, fieldnames=list(result['per_label'][0]))
             writer.writeheader(); writer.writerows(result['per_label'])
         reports.append(result)
-    write(target / 'final.json', {'reports': reports, 'selected_path': selection['selected_path'],
+    lineage = {'dataset_sha256': file_hash(Path(dataset) / 'READY.json'),
+               'taxonomy_sha256': metadata['taxonomy_sha256'], 'policy_sha256': metadata['policy_sha256'],
+               'label_schema_sha256': metadata['label_schema_sha256'],
+               'input_scope': metadata['input_scope'], 'input_scope_sha256': fingerprint(metadata['input_scope']),
+               'split': 'test', 'test_reviews': len(test_rows),
+               'test_keyset_sha256': fingerprint(sorted(r['key'] for r in test_rows)),
+               'test_truth_sha256': fingerprint([{'key': r['key'], 'labels': sorted(r['labels'])} for r in test_rows])}
+    write(target / 'final.json', {**lineage, 'reports': reports, 'selected_path': selection['selected_path'],
                                  'selection_changed_after_test': False, 'synthetic': metadata['synthetic'],
                                  'release_approved': False, 'note': 'No automatic accuracy or production approval'})
     seal(target, {'split': 'test', 'synthetic': metadata['synthetic']})
@@ -107,6 +131,7 @@ def final_test(dataset, experiment, destination, device='cpu'):
 
 def batch_predict(source, model, destination, device='cpu'):
     """A failed/held inference never turns into an empty successful analysis."""
+    from .scope import CONTEXT_SCHEMA, SCOPE_SCHEMA, metadata_from_row
     root = Path(model); predictor = Predictor(root, device)
     report = predictor.report; output = []; seen = set()
     from .common import digest
@@ -119,8 +144,16 @@ def batch_predict(source, model, destination, device='cpu'):
                        'classification_unit': 'leaf_id',
                        'threshold': report['threshold'],
                        'taxonomy_version': report['dataset']['taxonomy']['version']})
+        try:
+            context = metadata_from_row(row, text=row.get('text') if isinstance(row.get('text'), str) else None)
+            result.update(context, scope_metadata_status='VALIDATED')
+            invalid_metadata = False
+        except ValueError:
+            # Malformed context is not sent to a model or copied into error output.
+            result.update(metadata_from_row({}), scope_metadata_status='REJECTED')
+            invalid_metadata = True
         key = row.get('key')
-        if (not isinstance(row.get('text'), str) or not row['text'].strip()
+        if (invalid_metadata or not isinstance(row.get('text'), str) or not row['text'].strip()
                 or row.get('text_sha256') != digest(row['text'])
                 or not row.get('source_revision') or not row.get('snapshot_id')
                 or key != str(row.get('appid')) + ':' + str(row.get('review_id')) or key in seen):
@@ -147,5 +180,6 @@ def batch_predict(source, model, destination, device='cpu'):
                   'classification_unit': 'leaf_id', 'synthetic_model': report['synthetic'],
                   'threshold': report['threshold'],
                   'taxonomy_sha256': report['dataset']['taxonomy_sha256'],
-                  'policy_sha256': report['dataset']['policy_sha256']})
+                  'policy_sha256': report['dataset']['policy_sha256'],
+                  'observation_scope_schema': SCOPE_SCHEMA, 'review_context_schema': CONTEXT_SCHEMA})
     return {'rows': len(output), 'model_sha256': file_hash(root / 'READY.json')}

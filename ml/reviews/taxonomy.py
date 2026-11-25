@@ -1,4 +1,4 @@
-"""Pinned v0.5 leaf taxonomy. Pilot definitions are not human-adjudicated gold."""
+"""Pinned v0.6 leaf taxonomy. Pilot definitions are not human-adjudicated gold."""
 import re
 from pathlib import Path
 from .common import fingerprint, read

@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from ml.reviews.common import digest, read, write
 from ml.reviews.contract import labels, taxonomy, validate
-from ml.reviews.pilot_v05 import convert_record, import_pilot
+from ml.reviews.pilot_v05 import LEGACY_TAXONOMY, convert_record, import_pilot
 from ml.reviews.tests.fixtures import approvals, record
 
 
@@ -35,13 +35,13 @@ def consolidated():
 class PilotV05Test(unittest.TestCase):
     def test_actual_v05_schema_preserves_target_condition_strength_and_source_link(self):
         source = consolidated(); before = copy.deepcopy(source)
-        adapted = convert_record(source, taxonomy())
+        adapted = convert_record(source, taxonomy(LEGACY_TAXONOMY))
         original = source['annotations'][0]; annotation = adapted['annotations'][0]
         for field in ('leaf_id', 'source_opinion_id', 'scope', 'target', 'polarity_strength', 'classification_review'):
             self.assertEqual(annotation[field], original[field])
         self.assertEqual(source, before)
         self.assertEqual(adapted['held_opinion_ids'], source['held_opinion_ids'])
-        self.assertFalse(validate(adapted, approvals(adapted))['eligible'])
+        self.assertFalse(validate(adapted, approvals(adapted), taxonomy(LEGACY_TAXONOMY))['eligible'])
 
     def test_import_separates_old_acceptance_from_new_leaf_verification(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -58,10 +58,10 @@ class PilotV05Test(unittest.TestCase):
     def test_wrong_schema_and_exclusion_policy_not_guessed(self):
         row = consolidated(); row['schema_version'] = 'unknown'
         with self.assertRaisesRegex(ValueError, 'SCHEMA_MISMATCH'):
-            convert_record(row, taxonomy())
+            convert_record(row, taxonomy(LEGACY_TAXONOMY))
         row = consolidated(); row['excluded_spans'] = [{'retain_in_model_input': False}]
         with self.assertRaisesRegex(ValueError, 'RETENTION_POLICY'):
-            convert_record(row, taxonomy())
+            convert_record(row, taxonomy(LEGACY_TAXONOMY))
 
     def test_story_unspecified_weak_positive_and_pacing_negative_are_distinct(self):
         row = record(text='이야기 자체는 괜찮다. 전개는 느리다.')
@@ -86,6 +86,7 @@ class PilotV05Test(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'OFFSETS_MISMATCH'):
             validate(row, approvals(row))
 
-    def test_two_polarities_per_71_leaves_without_mixed_or_neutral_head(self):
-        self.assertEqual(len(labels()), 142)
+    def test_archived_v05_preserves_71_leaf_schema_without_mixed_or_neutral_head(self):
+        self.assertEqual(len(labels(taxonomy(LEGACY_TAXONOMY))), 142)
+        self.assertEqual(len(labels()), 146)
         self.assertFalse(any(label.endswith(('::혼합', '::복합', '::중립')) for label in labels()))

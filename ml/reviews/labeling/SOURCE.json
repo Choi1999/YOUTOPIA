@@ -1,18 +1,46 @@
 {
   "repository": "Choi1999/YOUTOPIA",
   "branch_read_only": "feat/review-labeling-v05-20261125",
-  "commit": "f2eca056d9a4375c9c717b70aa34ea3efb19461a",
-  "taxonomy_version": "v0.5",
-  "guideline_version": "v1.2.0",
+  "commit": "6affe7fc4103223d3d4eb93c0a7033c931909a34",
+  "taxonomy_version": "v0.6",
+  "guideline_version": "v1.3.0",
   "source_status": "PILOT_TAXONOMY_NOT_TRAINING_READY",
-  "taxonomy_path": "ai/review_labeling/v0.5/taxonomy.json",
-  "taxonomy_file_sha256": "d475313a17c63136c694dae57c46d2eee6c48c7b6e34af4f73c93eabc5712363",
-  "guidelines_path": "ai/review_labeling/v0.5/GUIDELINES_KO.md",
-  "guidelines_file_sha256": "a4d2d8cb80ad6e3968db0b289a89d911d5ce81520e782f5eae54c7508167d1ee",
-  "registered_leaves": 71,
+  "taxonomy_path": "ai/review_labeling/v0.6/taxonomy.json",
+  "taxonomy_file_sha256": "0212a8b1ec6f403119521b79a321ec8335718c8c2417e734e820276c9c30ea93",
+  "guidelines_path": "ai/review_labeling/v0.6/GUIDELINES_KO.md",
+  "guidelines_file_sha256": "a5b564036cd4f81fcbf30ce367789484a08671cf941813f35862484d572a3c9d",
+  "registered_leaves": 73,
   "active_polarities": ["긍정", "부정"],
   "mixed_is_derived": true,
   "raw_pilots_copied_to_this_branch": false,
   "training_performed": false,
-  "source_validation": {"status":"PASS","reviews":70,"active_opinions":118,"held_opinions":7,"observed_leaves":65,"new_leaf_labels_user_verified":0}
+  "pilot_reference": {
+    "path": "ai/review_labeling/v0.6/pilot100.json",
+    "source_sha256": "ec4492251e3fe0fa23f28a63e9f6383bdccc5734dd0f5b05a3fd59898204c032",
+    "keyset_sha256": "219ae23a38e6999238d00c414af27c89fd6ed3e63400904c13354c981e8d7dd3",
+    "bodyset_sha256": "52c1c1ecdbebca09a4bae88c88776ccd26bccb49c75de269669ffa176ec07889",
+    "excluded_reviews": 100,
+    "excluded_revisions": "all"
+  },
+  "source_reported_counts": {
+    "reviews": 100,
+    "active_opinions": 164,
+    "held_opinions": 8,
+    "user_reviewed_ai_draft_records": 30,
+    "legacy_records_pending_new_leaf_review": 70,
+    "metadata_assisted_reviews": 1,
+    "independent_blind_gold": false
+  },
+  "source_manifest_validation": {
+    "status": "MISMATCH",
+    "matched_files": 11,
+    "total_files": 12,
+    "mismatched_file": "ai/review_labeling/v0.6/pilot100_review.md",
+    "manifest_sha256": "d3a2c917ef3fb42236f4ac9b61337ef92aa5b7eb30abc98df3add7edd1ef8e7f",
+    "actual_sha256": "bc6c2ac1766ec977bb7f43a4765622ed388918bc01756a18b7f5efb26ac4e982",
+    "actual_git_blob_sha": "ac3541713291f025650412dbedeebec925757b77",
+    "taxonomy_guideline_pilot_json_hashes": "MATCH",
+    "reference_branch_modified": false
+  },
+  "prior_source": "SOURCE_v0.5.json"
 }

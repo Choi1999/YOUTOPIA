@@ -5,6 +5,26 @@ from pathlib import Path
 from .common import fingerprint, read, rows, seal, verify, write
 from .contract import POLICY, POLARITIES, labels, rollup
 from .taxonomy import taxonomy, target_map
+from .scope import (context_summary, insight_contract, metadata_from_row,
+                    observation_scope, scope_unknowns)
+
+
+def _game():
+    return {'successful_review_predictions': 0, 'no_target_predicted_reviews': 0,
+            'input_prediction_rows': 0, 'state_counts': {}, 'leaf_counts': {},
+            'derived_mixed_review_counts': {}, 'parent_review_presence': {}}
+
+
+def _scope(row, game_id, scopes, contexts):
+    if row.get('scope_metadata_status', 'VALIDATED') != 'VALIDATED':
+        raise ValueError('SUCCESSFUL_OR_HELD_PREDICTION_HAS_REJECTED_CONTEXT')
+    metadata = metadata_from_row(row)
+    if row.get('scope_sha256', metadata['scope_sha256']) != metadata['scope_sha256']:
+        raise ValueError('OBSERVATION_SCOPE_HASH_CHANGED')
+    if game_id in scopes and scopes[game_id] != metadata['observation_scope']:
+        raise ValueError('MIXED_OBSERVATION_SCOPES_REQUIRE_SEPARATE_SUMMARIES')
+    scopes[game_id] = metadata['observation_scope']
+    contexts.setdefault(game_id, []).append(metadata['review_context'])
 
 
 def summarize(source, destination):
@@ -18,6 +38,8 @@ def summarize(source, destination):
     if len(data) != metadata['rows']:
         raise ValueError('PREDICTION_ROW_COUNT_CHANGED')
     games, seen, snapshots = {}, set(), set()
+    observed_seen = set()
+    scopes, contexts = {}, {}
     states = Counter(); valid_labels = set(labels(tax))
     threshold = metadata.get('threshold')
     if type(threshold) not in (int, float) or not math.isfinite(threshold) or not 0 < threshold < 1:
@@ -26,14 +48,33 @@ def summarize(source, destination):
         if any(row.get(field) != metadata[field] for field in ('taxonomy_sha256', 'policy_sha256', 'model_sha256', 'classification_unit', 'synthetic_model', 'threshold')):
             raise ValueError('MIXED_PREDICTION_LINEAGE')
         state = row.get('state'); states[state] += 1
+        game_id = str(row['appid']) if row.get('appid') is not None else None
+        game = games.setdefault(game_id, _game()) if game_id is not None else None
+        if game is not None:
+            game['input_prediction_rows'] += 1
+            game['state_counts'][state] = game['state_counts'].get(state, 0) + 1
         if state in ('REJECTED_INPUT', 'HELD_LONG_INPUT'):
             if row.get('labels') is not None or row.get('scores') is not None:
                 raise ValueError('FAILED_PREDICTION_HAS_SUCCESS_VALUES')
+            if state == 'HELD_LONG_INPUT':
+                if (not row.get('key') or row['key'] in observed_seen or not row.get('source_revision')
+                        or not row.get('snapshot_id')):
+                    raise ValueError('DUPLICATE_REVIEW_REVISION_OR_MISSING_LINEAGE')
+                observed_seen.add(row['key'])
+                if game_id is None:
+                    raise ValueError('MISSING_GAME_FOR_OBSERVATION_SCOPE')
+                _scope(row, game_id, scopes, contexts)
+                if row.get('snapshot_id'):
+                    snapshots.add(row['snapshot_id'])
             continue
         if state not in ('PREDICTED_TARGETS', 'NO_TARGET_PREDICTED'):
             raise ValueError('UNKNOWN_PREDICTION_STATE')
-        if row['key'] in seen or not row.get('source_revision') or not row.get('snapshot_id'):
+        if row['key'] in observed_seen or not row.get('source_revision') or not row.get('snapshot_id'):
             raise ValueError('DUPLICATE_REVIEW_REVISION_OR_MISSING_LINEAGE')
+        if game_id is None:
+            raise ValueError('MISSING_GAME_FOR_OBSERVATION_SCOPE')
+        _scope(row, game_id, scopes, contexts)
+        observed_seen.add(row['key'])
         seen.add(row['key']); snapshots.add(row['snapshot_id'])
         selected = row['labels']
         if (not isinstance(selected, list) or len(set(selected)) != len(selected) or not set(selected) <= valid_labels
@@ -50,10 +91,6 @@ def summarize(source, destination):
         expected = decode([[scores[label] for label in labels(tax)]], threshold, labels(tax))[0]
         if set(selected) != {label for label, selected_flag in zip(labels(tax), expected) if selected_flag}:
             raise ValueError('SCORES_DISAGREE_WITH_TARGET_LABELS')
-        game = games.setdefault(str(row['appid']), {'successful_review_predictions': 0,
-                                                    'no_target_predicted_reviews': 0,
-                                                    'leaf_counts': {}, 'derived_mixed_review_counts': {},
-                                                    'parent_review_presence': {}})
         game['successful_review_predictions'] += 1
         game['no_target_predicted_reviews'] += int(not selected)
         parents = set()
@@ -68,10 +105,36 @@ def summarize(source, destination):
                 game['derived_mixed_review_counts'][leaf] = game['derived_mixed_review_counts'].get(leaf, 0) + 1
     if len(snapshots) > 1:
         raise ValueError('MIXED_SNAPSHOTS_REQUIRE_SEPARATE_SUMMARIES')
-    for game in games.values():
+    for game_id, game in games.items():
         game['parent_details'] = {}
         for code, count in game['leaf_counts'].items():
             game['parent_details'].setdefault(mapping[code]['aspect_code'], []).append({'leaf_id': code, 'counts': count})
+        scope = scopes.get(game_id, observation_scope())
+        game['observation_scope'] = scope
+        game['scope_sha256'] = fingerprint(scope)
+        game['scope_status'] = 'PARTIAL_OR_UNKNOWN' if scope_unknowns(scope) else 'SPECIFIED'
+        game['observed_context'] = context_summary(contexts.get(game_id, []))
+        game['observed_context']['population'] = 'non-rejected prediction input rows; includes held long inputs'
+        game['insight_contract'] = insight_contract(scope)
+        game['denominators'] = {
+            'leaf_polarity': game['successful_review_predictions'],
+            'unit': 'distinct successful review predictions in this game/model/snapshot/scope',
+            'positive_negative_may_overlap': True,
+            'raw_collected_unique_reviews': None,
+            'raw_count_status': 'not supplied by this prediction-only artifact',
+            'human_confirmed_no_evaluation_reviews': None,
+            'annotation_unresolved_reviews': None,
+            'annotation_status': 'annotation HOLD and human no-evaluation are not inferred from classifier outputs'}
+        difficulty = game['leaf_counts'].get('BALANCE.DIFFICULTY', {p: 0 for p in POLARITIES})
+        both = game['derived_mixed_review_counts'].get('BALANCE.DIFFICULTY', 0)
+        game['difficulty_observations'] = {
+            'positive_review_count': difficulty['긍정'], 'negative_review_count': difficulty['부정'],
+            'both_review_count': both,
+            'mentioned_review_count': difficulty['긍정'] + difficulty['부정'] - both,
+            'unresolved_review_count': None,
+            'unresolved_status': 'not known from classifier predictions; not zero',
+            'denominator_successful_reviews': game['successful_review_predictions'],
+            'absolute_difficulty_score': None, 'cross_game_rank_allowed': False}
     result = {'classification_unit': 'leaf_id', 'taxonomy_version': tax['version'],
               'taxonomy_status': tax['status'], 'taxonomy_sha256': fingerprint(tax),
               'model_sha256': metadata['model_sha256'], 'policy_sha256': metadata['policy_sha256'],
@@ -80,7 +143,9 @@ def summarize(source, destination):
               'denominator': 'successful distinct review predictions within each game, model and snapshot',
               'limits': ['NO_TARGET_PREDICTED is not human-confirmed no evaluation',
                          'different targets in one review are not independent reviewers',
-                         'no inferred evidence quotes, population market share, causal claim or RAG answer']}
+                         'no inferred evidence quotes, population market share, causal claim or RAG answer',
+                         'difficulty is player-reported experience; no absolute difficulty ranking',
+                         'unknown scope, player skill, preference and unresolved annotations remain unknown']}
     target = Path(destination); target.mkdir(parents=True, exist_ok=False)
     write(target / 'summary.json', result); write(target / 'taxonomy.json', tax)
     seal(target, {'classification_unit': 'leaf_id', 'database_writes': False,

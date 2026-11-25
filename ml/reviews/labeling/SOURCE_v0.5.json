@@ -1,0 +1,18 @@
+{
+  "repository": "Choi1999/YOUTOPIA",
+  "branch_read_only": "feat/review-labeling-v05-20261125",
+  "commit": "f2eca056d9a4375c9c717b70aa34ea3efb19461a",
+  "taxonomy_version": "v0.5",
+  "guideline_version": "v1.2.0",
+  "source_status": "PILOT_TAXONOMY_NOT_TRAINING_READY",
+  "taxonomy_path": "ai/review_labeling/v0.5/taxonomy.json",
+  "taxonomy_file_sha256": "d475313a17c63136c694dae57c46d2eee6c48c7b6e34af4f73c93eabc5712363",
+  "guidelines_path": "ai/review_labeling/v0.5/GUIDELINES_KO.md",
+  "guidelines_file_sha256": "a4d2d8cb80ad6e3968db0b289a89d911d5ce81520e782f5eae54c7508167d1ee",
+  "registered_leaves": 71,
+  "active_polarities": ["긍정", "부정"],
+  "mixed_is_derived": true,
+  "raw_pilots_copied_to_this_branch": false,
+  "training_performed": false,
+  "source_validation": {"status":"PASS","reviews":70,"active_opinions":118,"held_opinions":7,"observed_leaves":65,"new_leaf_labels_user_verified":0}
+}

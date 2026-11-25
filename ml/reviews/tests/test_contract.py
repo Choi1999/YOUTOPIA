@@ -12,7 +12,7 @@ class ContractTest(unittest.TestCase):
     def test_fine_targets_character_and_overall_boundaries(self):
         from ml.reviews.taxonomy import target_map
         self.assertEqual(len(labels()), len(target_map()) * 2)
-        self.assertEqual(len(target_map()), 71)
+        self.assertEqual(len(target_map()), 73)
         self.assertFalse(any(label.endswith(('::혼합', '::중립')) for label in labels()))
         self.assertTrue(any(x.startswith('CHARACTER.APPEARANCE::') for x in labels()))
         self.assertTrue(any(x.startswith('SOUND.VOICE_DUBBING::') for x in labels()))

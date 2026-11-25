@@ -1,8 +1,8 @@
-# 한국어 리뷰 NLP — taxonomy v0.5
+# 한국어 리뷰 NLP — taxonomy v0.6
 
-이 패키지는 원문과 사람 검수 이력을 연결해 **리뷰별 leaf_id × 긍정/부정 존재 여부**를 학습·비교·추론한다. 현재 사전은 71개 leaf와 두 독립 감성 출력, 총 142개다. 모델은 의견별 대상·근거 구간을 추출하는 모델이 아니다. DB 전송·웹·RAG는 별도 연결 과제다.
+이 패키지는 원문과 사람 검수 이력을 연결해 **리뷰별 leaf_id × 긍정/부정 존재 여부**를 학습·비교·추론한다. 현재 사전은 73개 leaf와 두 독립 감성 출력, 총 146개다. 모델은 의견별 대상·근거 구간을 추출하는 모델이 아니다. DB 전송·웹·RAG는 별도 연결 과제다.
 
-기준은 [SOURCE.json](labeling/SOURCE.json)에 고정한 `feat/review-labeling-v05-20261125`의 commit `f2eca056d9a4375c9c717b70aa34ea3efb19461a`다. [지침 v1.2.0](labeling/GUIDELINES_v1.2.0_KO.md)과 taxonomy 파일 해시를 대조했다. 앞선 v0.4 미리보기 초안은 현재 기준이 아니다. 원본 상태 `PILOT_TAXONOMY_NOT_TRAINING_READY`를 유지한다. 사전 통합·파일럿 검증은 실제 모델 학습 완료를 뜻하지 않는다.
+기준은 [SOURCE.json](labeling/SOURCE.json)에 고정한 `feat/review-labeling-v05-20261125`의 commit `6affe7fc4103223d3d4eb93c0a7033c931909a34`다. [지침 v1.3.0](labeling/GUIDELINES_v1.3.0_KO.md)과 taxonomy 파일 해시를 대조했다. 앞선 v0.4 미리보기 초안은 현재 기준이 아니다. 원본 상태 `PILOT_TAXONOMY_NOT_TRAINING_READY`를 유지한다. 사전 통합·파일럿 검증은 실제 모델 학습 완료를 뜻하지 않는다.
 
 ## 보존하는 기준
 
@@ -13,17 +13,17 @@
 - 원문, Unicode 코드포인트의 근거 위치, `target`, `scope`, `polarity_strength`, `source_opinion_id`, 제외 구간과 HOLD를 보존한다. ‘weak’는 별도 근거 메타데이터이며 모델의 보정된 확률이 아니다. 현재 분류기는 강도까지 학습하지 않는다.
 - `voted_up`은 전체 추천 의향, `votes_up`은 도움됨 수다. 보조 정보로 보존하며 항목 감성을 자동 생성·반전하거나 의견 인원 수로 사용하지 않는다. 학습 입력은 동일한 원문 본문이다.
 
-## 실제 70건과 학습 정답의 구분
+## 실제 100건과 학습 정답의 구분
 
-원본 검증기를 격리 실행하고 manifest·원문 해시·근거·이관·집계를 확인했다. 기록상 기존 리뷰 검수 수락은 70건, 활성 의견은 118개, HOLD는 7개다. 새 AI 세분류의 사용자 검증은 0건이며, 70건 전부 `learning_eligible=false`다. 71개 중 65개가 이 파일럿에서 관측됐다는 것은 학습된 클래스나 모델 정확도가 아니다.
+v0.6 파일럿 JSON의 원문·근거·이관과 비공개 importer를 확인했다. 100건, 활성 의견164개, HOLD8개, 새 AI 세분류를 사용자가 검수한 기록30건, 메타 참조1건이다. 이전70건의 검수 수락과 새 leaf 검수 상태는 구별한다. 100건 모두 `learning_eligible=false`이며 독립 블라인드 gold가 아니다. 원본 manifest12개 중 검토용 pilot100_review.md 하나의 해시 불일치를 확인하여 원본 전체 검증은 미통과로 기록한다. 분류표·지침·파일럿 JSON 해시는 일치한다.
 
-원본·검수 원장은 비공개 경로에서 보존한다. 이 브랜치에는 실제 파일럿 원문·ID를 복사하지 않는다. `import-pilot-v05`는 실제 consolidated v2 스키마를 읽고 다음을 만든다.
+원본·검수 원장은 비공개 경로에서 보존한다. 이 브랜치에는 실제 파일럿 원문·ID를 복사하지 않는다. `import-pilot-v06`는 실제 consolidated v2 스키마를 읽고 다음을 만든다.
 
 - 정확한 원본 사본, 원문·조건·근거·원래 주장 연결을 유지한 감사용 데이터
 - 이전 리뷰 수락과 새 분류 검증을 구별한 감사 요약
 - 실제 파일럿 키를 담은 비공개 registry 초안(`complete=false`)
 
-이 자료는 기준 수립용이므로 **학습·검증·최종 시험에서 제외**한다. 동일 리뷰의 다른 수정본도 제외한다. 실데이터 registry에는 고정된 v0.5 파일럿 원본 해시·70개 키 집합이 일치해야 하며, 추가 기준 자료가 있다면 그 배치도 전체 목록에 추가해야 한다. registry의 완료 표시는 작성자의 사실 확인을 대신하지 않는다.
+이 자료는 기준 수립용이므로 **학습·검증·최종 시험에서 제외**한다. 동일 리뷰의 다른 수정본과 다른 ID로 복사된 기준 원문도 제외한다. 실데이터 registry에는 고정된 v0.6 파일럿 원본 해시·100개 키·원문 집합이 일치해야 하며, 추가 기준 자료가 있다면 그 배치도 전체 목록에 추가해야 한다. registry의 완료 표시는 작성자의 사실 확인을 대신하지 않는다.
 
 ## 독립 정답과 검수 원장
 
@@ -50,31 +50,31 @@ HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 .venv-reviews/bin/python -m unittest dis
 
 전체 검증 환경 버전은 `requirements-cpu.lock`에 있다. CPU 휠로 L4를 사용할 수 없다. CUDA 휠·드라이버·GPU 메모리·처리량·디스크 준비는 미검증이며 서버 설정 변경은 별도 재개 후 확인해야 한다.
 
-모델 원본은 고정된 `beomi/KcELECTRA-base` revision `4cf9eb1dfeec0a672afe73059882fc998a299ceb`다. 고정 원본 가중치·설정·토크나이저 해시를 검사해 safetensors로 변환한다. 학습·추론은 로컬 파일만 사용하고 원격 Python 코드를 신뢰하지 않는다. 임의 pickle/joblib/오래된 model.pt를 로드하지 않는다. 실제 KcELECTRA import와 한국어 정답 학습은 아직 실행하지 않았다.
+모델 원본은 고정된 `beomi/KcELECTRA-base` revision `4cf9eb1dfeec0a672afe73059882fc998a299ceb`다. 원본5개 파일의 가중치·설정·토크나이저 해시 검사, safetensors 변환과 실제 CPU 인코더 실행을 통과했다. 한국어 정답 분류기 학습·L4 실행은 미검증이다. 학습·추론은 로컬 파일만 사용하고 원격 Python 코드를 신뢰하지 않는다. 임의 pickle/joblib/오래된 model.pt를 로드하지 않는다.
 
 모든 원문·원장·모델·산출물은 저장소 밖의 비공개 경로를 사용한다. 아래 경로는 자리표시자이고 출력 폴더는 새로 만들어야 한다.
 
 ```bash
-python -m ml.reviews import-pilot-v05 --source /private/pilot70.json --out /private/pilot-audit
+python -m ml.reviews import-pilot-v06 --source /private/pilot100.json --out /private/pilot-audit
 # 추가 기준 자료까지 대조한 registry를 /private/pilot-registry.json에 별도로 준비
 python -m ml.reviews approval-candidates --source /private/independent-gold.json --out /private/approval-candidates
 python -m ml.reviews audit --source /private/independent-gold.json --approvals /private/approvals.jsonl --out /private/gold-audit
 python -m ml.reviews import-base --source /private/pinned-original-base --out /private/safe-base
-python -m ml.reviews build --source /private/independent-gold.json --approvals /private/approvals.jsonl --registry /private/pilot-registry.json --base /private/safe-base --max-tokens 256 --out /private/dataset-v05
-HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python -m ml.reviews train --dataset /private/dataset-v05 --base /private/safe-base --seeds 13 42 73 --epochs 5 --device cpu --out /private/experiment-v05
-python -m ml.reviews final --dataset /private/dataset-v05 --experiment /private/experiment-v05 --out /private/final-v05
-python -m ml.reviews predict --source /private/batch.jsonl --model /private/experiment-v05/<selected_path> --out /private/predictions-v05
-python -m ml.reviews summarize --source /private/predictions-v05 --out /private/summary-v05
+python -m ml.reviews build --source /private/independent-gold.json --approvals /private/approvals.jsonl --registry /private/pilot-registry.json --base /private/safe-base --max-tokens 256 --out /private/dataset-v06
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python -m ml.reviews train --dataset /private/dataset-v06 --base /private/safe-base --seeds 42 --epochs 5 --device cpu --out /private/experiment-v06
+python -m ml.reviews final --dataset /private/dataset-v06 --experiment /private/experiment-v06 --out /private/final-v06
+python -m ml.reviews predict --source /private/batch.jsonl --model /private/experiment-v06/<selected_path> --out /private/predictions-v06
+python -m ml.reviews summarize --source /private/predictions-v06 --out /private/summary-v06
 ```
 
-사전 변경 실험은 build/audit에 `--taxonomy`로 지정한다. 사전 파일·canonical 내용·label 사전·입력·정책 해시가 데이터와 모델에 고정된다. 출력 크기를 바꾼 예전 체크포인트를 새 모델로 읽지 않는다. 구형 자료의 보존용 `migrate`는 새 leaf를 비운 대기 작업만 만들며 자동 재분류·승인하지 않는다. 이미 재분류된 v0.5 파일럿에는 `import-pilot-v05`를 사용한다.
+사전 변경 실험은 build/audit에 `--taxonomy`로 지정한다. 사전 파일·canonical 내용·label 사전·입력·정책 해시가 데이터와 모델에 고정된다. 출력 크기를 바꾼 예전 체크포인트를 새 모델로 읽지 않는다. 구형 자료의 보존용 `migrate`는 새 leaf를 비운 대기 작업만 만들며 자동 재분류·승인하지 않는다. 구형 v0.5 importer·사전·지침·출처는 보존한다. 현재 파일럿은 `import-pilot-v06`, 새 consolidated-v2 MAIN 자료는 `import-labels`로 읽는다. 가져오기는 원본과 검수 이력을 유지하고 pending 승인 후보만 만들며 실제 검수를 생성하지 않는다.
 
 ## 학습·평가와 실패 처리
 
 1. 정답의 근거·검수·명시적 제외와 고정 파일럿 목록을 검사한다. 보류를 부정/부재로 채우지 않는다.
 2. 원문이 상한을 넘으면 전체 리뷰를 보류하고 원문은 유지한다. 잘린 입력이나 각 조각에 전체 리뷰 정답을 붙이지 않는다. 기본 256토큰, 합성 시험만 64다.
 3. 게임 단위 분할을 고정한다. 최소 5게임이며 리뷰별 분할로 대체하지 않는다. 동일 본문과 분할 간 높은 문자 TF-IDF 유사도를 차단한다. 의미상 중복·작성자·시점의 모든 누수를 보증하지는 않는다.
-4. 같은 사전·입력·분할에서 TF-IDF, TextCNN, KcELECTRA 본체 고정+학습 헤드, 전체 미세조정을 비교한다. 기본 3개 seed의 평균·표준편차를 제공한다. 모델·epoch·임계값은 검증으로 선택하며 시험으로 다시 고르지 않는다.
+4. 같은 사전·입력·분할에서 TF-IDF, TextCNN, KcELECTRA 본체 고정+학습 헤드, 전체 미세조정을 비교한다. 기본은 각 조건 1seed다. `--kinds frozen full`로 핵심 비교를 먼저 실행할 수 있고, 후속 seed 반복은 명시적으로 정한다. 모델·epoch·임계값은 검증으로 선택하며 시험으로 다시 고르지 않는다.
 5. 원래의 긍정·부정 출력은 독립적이다. 한 leaf에서 모두 예측할 수 있다. 미지원 출력은 상수와 `unlearnable_labels`로 보고한다. 시험 지지 0은 항목별 F1을 N/A로 남기며, 전체 라벨 0처리 Macro-F1과 지지가 있는 라벨 Macro-F1의 평균 정책을 따로 명시한다. 점수는 보정 확률이 아니다.
 6. 최종 시험은 데이터·선택·모델을 봉인한 뒤 배타 예약한다. 실패해도 자동 예약 삭제·재시도를 하지 않는다. 중앙 서버가 모든 복제 실험의 반복 시험을 막는 기능은 없다.
 7. epoch 중간 optimizer/RNG 복원은 없다. 실패 폴더를 보존하고 원인 확인 후 새 실험 ID로 시작한다. READY가 없는 미완성 폴더를 모델로 로드하지 않는다.
@@ -87,6 +87,16 @@ python -m ml.reviews summarize --source /private/predictions-v05 --out /private/
 
 집계는 같은 모델·분류표·정책·스냅샷의 고유 리뷰를 게임별로 계산한다. leaf의 긍정·부정 둘 다 유지하고 같은 leaf의 양극성 리뷰 수만 별도로 파생한다. 하위 리뷰 수를 더해 상위의 고유 리뷰 수로 사용하지 않는다. 수정본 중복·버전 혼합·점수/임계값/라벨 불일치는 차단하고 HOLD/실패를 정상 0건으로 채우지 않는다.
 
-현재 웹의 YouTube 분석 후보는 별도 계약이며 Steam leaf 결과와 아직 연결되지 않았다. 분류기는 근거 추출기가 아니므로 `evidence_spans: null`을 근거가 있다고 표현하지 않는다. DB 자동 전송·최소 권한·API·프론트·RAG는 [이관 문서](TARGET_MIGRATION_KO.md)의 후속 계약으로 연결해야 한다. 고정 질문 챗봇이나 GPT/Gemini 실제 비교를 이번 변경으로 완성했다고 표시하지 않는다.
+현재 웹의 YouTube 분석 후보는 별도 계약이며 Steam leaf 결과와 아직 연결되지 않았다. 분류기는 근거 추출기가 아니므로 `evidence_spans: null`을 근거가 있다고 표현하지 않는다. DB 자동 전송·최소 권한·API·프론트·RAG는 [이관 문서](TARGET_MIGRATION_KO.md)의 후속 계약으로 연결해야 한다. 고정 질문 챗봇이나 GPT/Gemini 실제 제공자 검증을 완료했다고 표시하지 않는다. 외부 네 조건의 실제 호출·모킹 검증은 별도 [API 비교 안내](API_BENCHMARK_KO.md)에 기록한다.
 
-다음 실제 단계는 파일럿과 분리된 사람 검수 정답 확보 → 세부 분포/오류 비용 점검 → 실제 KcELECTRA/L4 검증 → 네 조건 비교/고정 시험이다. GPU·운영 작업의 기존 보류는 유지한다.
+다음 실제 단계는 파일럿과 분리된 사람 검수 정답 확보 → 세부 분포/오류 비용 점검 → 실제 KcELECTRA/L4 검증 → 자체 네 조건 및 API 네 조건 비교/고정 시험이다. GPU·운영 작업의 기존 보류는 유지한다.
+
+## 라벨링과 병행하는 준비
+
+[준비·실행 안내](PREPARATION_KO.md)에 필요한 파일, 사전 검사, 실행 순서와 보류 범위를 정리했다. `readiness`는 누락 자료·검수 연결·제외 목록·가중치·이전 데이터셋 해시를 검사하며 미준비이면 종료 코드2와 BLOCKED 보고서를 남긴다. CUDA·DB·API 접속은 하지 않는다.
+
+외부 비교는 OpenAI와 Gemini 각각 **baseline / 프로젝트 판독 지침 prompt**, 총 네 조건이다. 같은 제공자 안에서는 명시적으로 등록한 동일 모델을 사용한다. 앱 개인화나 Gemini 미세조정은 이번 조건에 포함하지 않는다.
+
+`observation_scope`와 `review_context`는 기간·언어·수집 조건·작성/수집 시각·각 시점의 플레이시간·출처가 있는 조건을 보존한다. 없는 값은 null/UNKNOWN이다. 난이도는 해당 이용자들의 체감이며, 이용자층·숙련도·선호가 다르므로 긍부정률을 절대 난도 순위로 바꾸지 않는다. 플레이시간으로 숙련도를 추정하지 않는다.
+
+공개 사전학습 모델과 범용 긍부정 데이터는 73leaf 한국어 정답을 대신하지 않는다. KcELECTRA 원본은 이번 개발 환경에서 확보·검증했으며, 별도 외부 학습 데이터 ZIP은 아직 검증하지 않았다. 가중치는 Git·코드ZIP에 넣지 않으며 새 환경에 자동 전달되지 않는다. L4 서버는 VRAM24GB / 시스템RAM48GB / vCPU4 / 디스크100+400GB가 마지막 사용자 확인 사양이며, 이번에 GPU 설정·학습·실제 API·운영 작업은 하지 않는다.

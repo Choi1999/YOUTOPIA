@@ -261,7 +261,7 @@ class Predictor:
         from .common import fingerprint
         self.root = Path(model_root); verify(self.root)
         self.report = read(self.root / 'report.json'); report = self.report
-        if report.get('classification_unit') != 'leaf_id' or report['dataset'].get('contract') != 'review-training-v05':
+        if report.get('classification_unit') != 'leaf_id' or report['dataset'].get('contract') != 'review-training-v06':
             raise ValueError('LEGACY_COARSE_MODEL_REQUIRES_RETRAINING')
         tax = taxonomy(report['dataset']['taxonomy'])
         from .taxonomy import require_frozen_taxonomy

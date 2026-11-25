@@ -115,6 +115,12 @@
           "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
+          "code": "EXPLORATION",
+          "label": "탐험 플레이",
+          "leaf_id": "GAMEPLAY.EXPLORATION",
+          "boundary": "탐험 활동이 명시된 평가. 장르만 보고 탐험의 재미를 추정하지 않는다."
+        },
+        {
           "code": "HIT_FEEL",
           "label": "타격감",
           "leaf_id": "GAMEPLAY.HIT_FEEL",
@@ -256,7 +262,7 @@
       "subaspects_exhaustive": true
     },
     {
-      "boundary": "버튼이 아예 작동하지 않는 결함은 성능·버그. 튜토리얼 적이 너무 강하다는 평가는 난이도·밸런스. 번역 품질·지원 언어 평가는 운영·지원 > 번역으로 분리. 글꼴·자막 크기 등 표시 편의와 번역 품질을 혼동하지 않음.",
+      "boundary": "버튼이 아예 작동하지 않는 결함은 성능·버그. 튜토리얼 적이 너무 강하다는 평가는 난이도·밸런스. 번역 품질·지원 언어 평가는 운영·지원 > 번역으로 분리. 글꼴·자막 크기 등 표시 편의와 번역 품질을 혼동하지 않음. 사용자 승인 사례 83의 조이스틱 호환 불만은 CONTROLS로 기록하며 기술적 원인은 추가하지 않는다. 84의 막연한 입문자 친화 총평은 구체적 평가 없음이다.",
       "code": "USABILITY",
       "include": "조작감·키 배치·UI·메뉴·설명·튜토리얼의 이해도·접근성. 번역이 아닌 글자 크기·메뉴 배치 등의 사용 편의.",
       "label": "조작·편의성",
@@ -265,7 +271,7 @@
           "code": "CONTROLS",
           "label": "조작감·입력",
           "leaf_id": "USABILITY.CONTROLS",
-          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다. 83번처럼 입력 장치를 사용할 수 없다는 호환 불만도 사용자 판정에 따라 포함. 설정 중 게임 전체가 멈춘 73번은 TECHNICAL.CRASH_FREEZE."
         },
         {
           "code": "LEARNING_GUIDANCE",
@@ -331,6 +337,12 @@
           "boundary": "다시 시작하거나 여러 번 플레이하는 경험. 단지 오래 한다는 말은 LONGEVITY."
         },
         {
+          "code": "TRACK_CATALOG",
+          "label": "수록곡 구성",
+          "leaf_id": "CONTENT.TRACK_CATALOG",
+          "boundary": "원하는 곡의 포함 여부와 수록곡 구성. 곡의 음질·작곡 품질, 총 곡수와 구별한다."
+        },
+        {
           "code": "UNSPECIFIED",
           "label": "세부 미상",
           "leaf_id": "CONTENT.UNSPECIFIED",
@@ -355,7 +367,7 @@
           "code": "DIFFICULTY",
           "label": "체감 난도",
           "leaf_id": "BALANCE.DIFFICULTY",
-          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
+          "boundary": "작성자가 경험한 주관적 난도와 그에 대한 감성. 높은 난도 자체가 부정은 아니다. 이용자층·숙련도·모드·진행단계가 다른 게임 간 절대 난도 순위로 환산하지 않는다."
         },
         {
           "code": "RANDOMNESS",
@@ -536,15 +548,15 @@
     }
   ],
   "status": "pilot",
-  "version": "v0.5",
+  "version": "v0.6",
   "removed_categories": [
     {
       "code": "OVERALL",
       "reason": "구체적 요소 평가에 집중. 포괄적 여론은 원문과 스팀 추천 메타데이터로 보존."
     }
   ],
-  "previous_version": "v0.4",
-  "change_reason": "평가자가 구체적으로 구별한 대상별 독립 라벨 및 감성 보존",
+  "previous_version": "v0.5",
+  "change_reason": "100-review pilot; user adjudication, track catalog and exploration, metadata provenance, subjective difficulty",
   "aggregation_policy": {
     "primary_unit": "distinct review key × leaf_id; positive and negative retained separately",
     "within_leaf_mixed": "same review and same leaf with positive+negative; keep both evidence spans",
@@ -553,9 +565,10 @@
     "overlap": "one review may support several leaves; never sum child review counts as unique parent reviews",
     "unspecified": "retain generic aspect evaluation; not no-content, not absent, not HOLD",
     "absence": "empty prediction alone does not establish NO_CONCRETE_EVALUATION",
-    "hold": "excluded from resolved gold and sentiment totals; retained in counts and audit"
+    "hold": "excluded from resolved gold and sentiment totals; retained in counts and audit",
+    "difficulty": "Subjective experience under different player populations; do not infer absolute cross-game difficulty from sentiment rates."
   },
-  "guideline_version": "v1.2.0",
+  "guideline_version": "v1.3.0",
   "primary_label_unit": "leaf_id",
   "schema_version": "youtopia_review_taxonomy_v2",
   "active_polarities": [
@@ -563,5 +576,14 @@
     "부정"
   ],
   "mixed_is_derived": true,
-  "unregistered_targets": "Do not invent codes silently. Preserve description, use appropriate UNSPECIFIED or HOLD, propose next version."
+  "unregistered_targets": "Do not invent codes silently. Preserve description, use appropriate UNSPECIFIED or HOLD, propose next version.",
+  "annotation_input_policy": {
+    "default": "review_text",
+    "exception_review_numbers": [
+      92
+    ],
+    "exception_basis": "USER_APPROVED_STEAM_RECOMMENDATION_TIEBREAK",
+    "exception_not_text_only_gold": true,
+    "comparison": "Separate text-only and metadata-assisted tasks. Provide identical permitted metadata to every model."
+  }
 }
