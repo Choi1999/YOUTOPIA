@@ -10,7 +10,7 @@ def record(app='synthetic-game', rid='synthetic-review', text='음악 좋다', p
             'taxonomy_version': taxonomy()['version'], 'taxonomy_sha256': fingerprint(taxonomy()),
             'active_opinion_ids': ['o1'], 'held_opinion_ids': [], 'human_reviewed': False,
             'voted_up': None, 'votes_up': None,
-            'annotations': [{'id': 'o1', 'aspect_code': 'SOUND', 'target_code': 'SOUND.MUSIC', 'polarity': polarity,
+            'annotations': [{'id': 'o1', 'aspect_code': 'SOUND', 'leaf_id': 'SOUND.MUSIC_BGM', 'polarity': polarity,
                              'detail': '합성 평가 근거', 'evidence_spans': [{'start': 0, 'end': len(text), 'text': text}],
                              'human_reviewed': False}]}
 
@@ -49,7 +49,7 @@ def inputs(root):
                          '긍정' if item % 2 else '부정')
             if not item % 2:
                 row['annotations'][0]['aspect_code'] = 'TECHNICAL'
-                row['annotations'][0]['target_code'] = 'TECHNICAL.CRASH'
+                row['annotations'][0]['leaf_id'] = 'TECHNICAL.CRASH_FREEZE'
             records.append(row)
     write(root / 'source.json', {'records': records})
     write_rows(root / 'approvals.jsonl', [a for r in records for a in approvals(r)])

@@ -15,7 +15,7 @@ class MigrationTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary); source = root / 'old.json'; ledger = root / 'old-approvals.jsonl'
             row = record(); row['taxonomy_version'] = 'v0.3'; row['taxonomy_sha256'] = 'synthetic-old-taxonomy'
-            row['annotations'][0].pop('target_code'); row['human_reviewed'] = True
+            row['annotations'][0].pop('leaf_id'); row['human_reviewed'] = True
             write(source, {'records': [row]}); write_rows(ledger, approvals(row))
             source_before = file_hash(source); ledger_before = file_hash(ledger)
             out = root / 'migration'; summary = migrate(source, ledger, out)
@@ -25,7 +25,7 @@ class MigrationTest(unittest.TestCase):
             revised = read(out / 'reclassification.json')['records'][0]
             self.assertTrue(revised['human_reviewed']); self.assertEqual(revised['clean_text'], row['clean_text'])
             self.assertEqual(revised['annotations'][0]['polarity'], row['annotations'][0]['polarity'])
-            self.assertIsNone(revised['annotations'][0]['target_code'])
+            self.assertIsNone(revised['annotations'][0]['leaf_id'])
             self.assertEqual(revised['active_opinion_ids'], []); self.assertEqual(revised['held_opinion_ids'], ['o1'])
             self.assertFalse(validate(revised, rows(ledger))['eligible'])
             self.assertTrue(all(a['decision'] == 'pending' for a in rows(out / 'pending-approval-candidates.jsonl')))
@@ -39,24 +39,25 @@ class MigrationTest(unittest.TestCase):
                 migrate(root / 'source.json', root / 'ledger.jsonl', root / 'out')
             self.assertFalse((root / 'out').exists())
 
-    def test_root_confirmation_cannot_hide_missing_operations_or_proposal_children(self):
-        from ml.reviews.taxonomy import require_confirmed
+    def test_taxonomy_status_cannot_hide_missing_leaf_definitions(self):
+        from ml.reviews.taxonomy import require_frozen_taxonomy
         tax = copy.deepcopy(taxonomy()); tax['status'] = 'confirmed'
+        tax['categories'][0]['subaspects'] = []
         with self.assertRaisesRegex(ValueError, 'FULL_CONFIRMED'):
-            require_confirmed(tax, False)
+            require_frozen_taxonomy(tax, False)
 
     def test_duplicate_targets_and_wrong_parent_schema_rejected(self):
         for change in ('duplicate', 'parent'):
             tax = copy.deepcopy(taxonomy())
             if change == 'duplicate':
-                tax['categories'][0]['targets'].append(copy.deepcopy(tax['categories'][0]['targets'][0]))
+                tax['categories'][0]['subaspects'].append(copy.deepcopy(tax['categories'][0]['subaspects'][0]))
             else:
-                tax['categories'][0]['targets'][0]['code'] = 'SOUND.MUSIC'
+                tax['categories'][0]['subaspects'][0]['leaf_id'] = 'SOUND.MUSIC_BGM'
             with self.assertRaisesRegex(ValueError, 'TARGET'):
                 taxonomy(tax)
 
     def test_registry_inventory_accepts_actual_new_batches_without_fixed_50_10_assumption(self):
-        registry = {'schema': 'pilot-reference-registry-v2', 'complete': True, 'source_ref': 'synthetic-verification',
+        registry = {'schema': 'pilot-reference-registry-v2', 'complete': True, 'synthetic': True, 'source_ref': 'synthetic-verification',
                     'inventory': [{'id': 'synthetic-new-batch', 'expected_count': 2, 'source_sha256': digest('synthetic-file')}],
                     'batches': [{'id': 'synthetic-new-batch', 'expected_count': 2, 'keys': ['synthetic:a', 'synthetic:b']}]}
         self.assertEqual(len(check_registry(registry)), 2)
@@ -68,8 +69,8 @@ class MigrationTest(unittest.TestCase):
 class SummaryTest(unittest.TestCase):
     def fixture(self, root, mutation=None):
         target = root / 'predictions'; target.mkdir(); tax = taxonomy()
-        selected = ['SOUND.MUSIC::긍정', 'SOUND.VOICE_ACTING::부정']
-        common = {'classification_unit': 'evaluation_target', 'taxonomy_sha256': fingerprint(tax),
+        selected = ['SOUND.MUSIC_BGM::긍정', 'SOUND.VOICE_DUBBING::부정']
+        common = {'classification_unit': 'leaf_id', 'taxonomy_sha256': fingerprint(tax),
                   'policy_sha256': fingerprint(POLICY), 'model_sha256': digest('synthetic-model'),
                   'synthetic_model': True, 'threshold': .5}
         data = [{**common, 'key': 'synthetic-g:synthetic-r', 'appid': 'synthetic-g',
@@ -89,8 +90,8 @@ class SummaryTest(unittest.TestCase):
             self.assertEqual(result['successful_reviews'], 1)
             game = read(root / 'summary/summary.json')['games']['synthetic-g']
             self.assertEqual(game['parent_review_presence']['SOUND'], 1)
-            self.assertEqual(game['target_counts']['SOUND.MUSIC']['긍정'], 1)
-            self.assertEqual(game['target_counts']['SOUND.VOICE_ACTING']['부정'], 1)
+            self.assertEqual(game['leaf_counts']['SOUND.MUSIC_BGM']['긍정'], 1)
+            self.assertEqual(game['leaf_counts']['SOUND.VOICE_DUBBING']['부정'], 1)
             self.assertEqual(len(game['parent_details']['SOUND']), 2)
             self.assertNotIn('혼합', game['parent_review_presence'])
 
@@ -136,9 +137,9 @@ class SummaryTest(unittest.TestCase):
                     if change == 'missing':
                         data[0]['scores'] = {}
                     elif change == 'range':
-                        data[0]['scores']['SOUND.MUSIC::긍정'] = 5
+                        data[0]['scores']['SOUND.MUSIC_BGM::긍정'] = 5
                     else:
-                        data[0]['scores']['SOUND.MUSIC::긍정'] = 0
+                        data[0]['scores']['SOUND.MUSIC_BGM::긍정'] = 0
                 source = self.fixture(root, mutate)
                 with self.assertRaisesRegex(ValueError, error):
                     summarize(source, root / 'summary')
@@ -153,7 +154,7 @@ class SummaryTest(unittest.TestCase):
             result = read(root / 'summary/summary.json'); game = result['games']['synthetic-g']
             self.assertEqual(game['successful_review_predictions'], 1)
             self.assertEqual(game['no_target_predicted_reviews'], 1)
-            self.assertFalse(game['target_counts'])
+            self.assertFalse(game['leaf_counts'])
             self.assertTrue(any('not human-confirmed' in message for message in result['limits']))
 
     def test_held_prediction_not_added_as_zero_observation(self):
@@ -166,3 +167,16 @@ class SummaryTest(unittest.TestCase):
             result = read(root / 'summary/summary.json')
             self.assertEqual(result['input_rows'], 2); self.assertEqual(result['states']['HELD_LONG_INPUT'], 1)
             self.assertEqual(result['games']['synthetic-g']['successful_review_predictions'], 1)
+
+    def test_same_leaf_both_polarities_preserved_with_derived_mixed_review_count(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            def mutate(data):
+                selected = ['SOUND.MUSIC_BGM::긍정', 'SOUND.MUSIC_BGM::부정']
+                data[0].update(labels=selected, aspect_summary=rollup(selected),
+                               scores={label: float(label in selected) for label in labels()})
+            source = self.fixture(root, mutate); summarize(source, root / 'summary')
+            game = read(root / 'summary/summary.json')['games']['synthetic-g']
+            self.assertEqual(game['leaf_counts']['SOUND.MUSIC_BGM'], {'긍정': 1, '부정': 1})
+            self.assertEqual(game['derived_mixed_review_counts']['SOUND.MUSIC_BGM'], 1)
+            self.assertEqual(game['parent_review_presence']['SOUND'], 1)

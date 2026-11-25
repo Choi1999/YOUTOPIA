@@ -61,9 +61,9 @@ class LearningTest(unittest.TestCase):
         self.assertEqual(report['macro_f1_supported'], 1)
         self.assertIsNone(report['per_label'][1]['f1'])
 
-    def test_same_target_output_is_one_aggregate_label(self):
-        scores = np.zeros((1, len(labels()))); scores[0, :3] = [.8, .9, .95]
-        self.assertEqual(int(decode(scores, .5, labels())[0, :4].sum()), 1)
+    def test_same_leaf_preserves_both_polarity_outputs(self):
+        scores = np.zeros((1, len(labels()))); scores[0, :2] = [.8, .9]
+        self.assertEqual(int(decode(scores, .5, labels())[0, :2].sum()), 2)
 
     def test_nonfinite_out_of_range_and_bad_shape_scores_fail(self):
         for scores in (np.full((1, len(labels())), np.nan), np.full((1, len(labels())), np.inf),
@@ -168,7 +168,7 @@ class LearningTest(unittest.TestCase):
         tax = copy.deepcopy(taxonomy()); tax['version'] = 'synthetic-custom-v2'
         tax['categories'] = [category for category in tax['categories'] if category['code'] in ('SOUND', 'TECHNICAL')]
         for category in tax['categories']:
-            category['targets'] = [t for t in category['targets'] if t['code'] in ('SOUND.MUSIC', 'TECHNICAL.CRASH')]
+            category['subaspects'] = [t for t in category['subaspects'] if t['leaf_id'] in ('SOUND.MUSIC_BGM', 'TECHNICAL.CRASH_FREEZE')]
         tax_path = self.root / 'custom-taxonomy.json'; write(tax_path, tax)
         source = read(self.root / 'source.json'); ledger = []
         from ml.reviews.common import fingerprint
@@ -183,7 +183,7 @@ class LearningTest(unittest.TestCase):
             model = self.root / ('custom-' + kind)
             fit(out, self.base, model, kind, epochs=1, batch_size=8)
             scores, report = predict(model, ['음악 좋다'])
-            self.assertEqual(scores.shape, (1, 8)); self.assertEqual(report['dataset']['taxonomy']['version'], tax['version'])
+            self.assertEqual(scores.shape, (1, 4)); self.assertEqual(report['dataset']['taxonomy']['version'], tax['version'])
 
     def test_old_coarse_model_and_dataset_cannot_be_reinterpreted_as_fine_targets(self):
         from ml.reviews.common import seal
@@ -197,11 +197,11 @@ class LearningTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'LEGACY_COARSE_DATASET'):
             load(data, 'train')
 
-    def test_real_build_with_preview_taxonomy_fails_before_loading_base_or_tokenizer(self):
+    def test_real_build_without_actual_pilot_exclusions_fails_before_loading_base(self):
         registry = read(self.root / 'registry.json'); registry['synthetic'] = False
         path = self.root / 'real-registry.json'; write(path, registry)
         with patch('transformers.AutoTokenizer.from_pretrained') as loader:
-            with self.assertRaisesRegex(ValueError, 'FULL_CONFIRMED_TARGET_TAXONOMY_REQUIRED'):
+            with self.assertRaisesRegex(ValueError, 'PINNED_V05_PILOT_EXCLUSION_REQUIRED'):
                 build(self.root / 'source.json', self.root / 'approvals.jsonl', path,
                       self.root / 'base-not-accessed', self.root / 'real-build-not-created')
             loader.assert_not_called()

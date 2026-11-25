@@ -5,356 +5,563 @@
       "code": "STORY",
       "include": "줄거리·사건 전개·결말·복선·세계관 설명·이야기의 개연성.",
       "label": "스토리",
-      "detail_status": "preview_proposal",
-      "targets": [
+      "subaspects": [
         {
-          "code": "STORY.EVENTS",
-          "label": "사건·개연성"
+          "code": "IMMERSION",
+          "label": "서사 몰입",
+          "leaf_id": "STORY.IMMERSION",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "STORY.PACING",
-          "label": "전개 속도"
+          "code": "NARRATIVE_PACING",
+          "label": "이야기 전개 속도",
+          "leaf_id": "STORY.NARRATIVE_PACING",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "STORY.ENDING",
-          "label": "결말"
+          "code": "NARRATIVE_TONE",
+          "label": "서사 분위기·표현",
+          "leaf_id": "STORY.NARRATIVE_TONE",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "STORY.WORLD",
-          "label": "세계관"
+          "code": "PLOT_COHERENCE",
+          "label": "줄거리 구성·연결",
+          "leaf_id": "STORY.PLOT_COHERENCE",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "STORY.UNSPECIFIED",
-          "label": "스토리 전반·세부 미명시",
-          "status": "implementation_proposal"
+          "code": "UNSPECIFIED",
+          "label": "세부 미상",
+          "leaf_id": "STORY.UNSPECIFIED",
+          "boundary": "스토리 자체의 호평·불평. 개연성·결말 등의 세부 속성을 추정하지 않는다."
+        },
+        {
+          "code": "WORLD_SETTING",
+          "label": "세계관·설정",
+          "leaf_id": "STORY.WORLD_SETTING",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         }
-      ]
+      ],
+      "subaspects_exhaustive": true
     },
     {
       "boundary": "캐릭터 외모는 여기로 분류. 단순 인물 호감·역할극은 설계 품질 평가로 확대하지 않음. 능력 강약은 밸런스.",
       "code": "CHARACTER",
       "include": "캐릭터의 외모·디자인·매력, 성격·개성·행동 동기·성장·관계 묘사·일관성.",
       "label": "캐릭터",
-      "detail_status": "preview_proposal",
-      "targets": [
+      "subaspects": [
         {
-          "code": "CHARACTER.APPEARANCE",
-          "label": "외모"
+          "code": "APPEARANCE",
+          "label": "캐릭터 외모·디자인",
+          "leaf_id": "CHARACTER.APPEARANCE",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "CHARACTER.PERSONALITY",
-          "label": "성격·행동"
+          "code": "MOTIVATION_NARRATIVE",
+          "label": "캐릭터 동기·서사",
+          "leaf_id": "CHARACTER.MOTIVATION_NARRATIVE",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "CHARACTER.MOTIVATION",
-          "label": "서사·동기"
+          "code": "PERSONALITY_BEHAVIOR",
+          "label": "캐릭터 성격·행동",
+          "leaf_id": "CHARACTER.PERSONALITY_BEHAVIOR",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "CHARACTER.RELATIONSHIPS",
-          "label": "관계·상호작용"
+          "code": "RELATIONSHIP",
+          "label": "캐릭터 관계·상호작용",
+          "leaf_id": "CHARACTER.RELATIONSHIP",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "CHARACTER.UNSPECIFIED",
-          "label": "캐릭터 전반·세부 미명시",
-          "status": "implementation_proposal"
+          "code": "UNSPECIFIED",
+          "label": "세부 미상",
+          "leaf_id": "CHARACTER.UNSPECIFIED",
+          "boundary": "캐릭터 전반의 매력·귀여움. 외모·성격 중 무엇인지 불명확하면 그대로 보존."
         }
-      ]
+      ],
+      "subaspects_exhaustive": true
     },
     {
       "boundary": "할 거리의 양·종류·반복은 콘텐츠·분량. 조작 입력은 조작·편의성. 구체적 대상 없는 재미·추천은 내용 없음.",
       "code": "GAMEPLAY",
       "include": "전투·탐험·퍼즐·덱 구성·농사 등 핵심 플레이 방식과 규칙, 전략·선택·행동의 재미.",
       "label": "게임성",
-      "detail_status": "preview_proposal",
-      "targets": [
+      "subaspects": [
         {
-          "code": "GAMEPLAY.COMBAT",
-          "label": "전투·타격감"
+          "code": "ACTION",
+          "label": "액션 플레이",
+          "leaf_id": "GAMEPLAY.ACTION",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "GAMEPLAY.STRATEGY",
-          "label": "전략·선택"
+          "code": "AUTOMATION",
+          "label": "자동화 플레이",
+          "leaf_id": "GAMEPLAY.AUTOMATION",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "GAMEPLAY.EXPLORATION",
-          "label": "탐험"
+          "code": "BUILDING_MANAGEMENT",
+          "label": "건설·경영 플레이",
+          "leaf_id": "GAMEPLAY.BUILDING_MANAGEMENT",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "GAMEPLAY.PUZZLE",
-          "label": "퍼즐"
+          "code": "COMBAT",
+          "label": "전투 플레이",
+          "leaf_id": "GAMEPLAY.COMBAT",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "GAMEPLAY.CRAFT_MANAGEMENT",
-          "label": "제작·경영"
+          "code": "HIT_FEEL",
+          "label": "타격감",
+          "leaf_id": "GAMEPLAY.HIT_FEEL",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "GAMEPLAY.UNSPECIFIED",
-          "label": "게임성 전반·세부 미명시",
-          "status": "implementation_proposal"
+          "code": "PACING",
+          "label": "플레이 진행 속도",
+          "leaf_id": "GAMEPLAY.PACING",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
+        },
+        {
+          "code": "PLAYER_AGENCY",
+          "label": "플레이 자유도",
+          "leaf_id": "GAMEPLAY.PLAYER_AGENCY",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
+        },
+        {
+          "code": "PUZZLE",
+          "label": "퍼즐 플레이",
+          "leaf_id": "GAMEPLAY.PUZZLE",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
+        },
+        {
+          "code": "ROMANCE_ACTIVITY",
+          "label": "게임 내 연애 활동",
+          "leaf_id": "GAMEPLAY.ROMANCE_ACTIVITY",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
+        },
+        {
+          "code": "RULES_SYSTEM",
+          "label": "플레이 규칙·방식",
+          "leaf_id": "GAMEPLAY.RULES_SYSTEM",
+          "boundary": "명시된 규칙·방식 평가. 전투·전략 등 더 구체적인 대상이 확인되면 해당 항목 사용."
+        },
+        {
+          "code": "SELF_DIRECTED_DISCOVERY",
+          "label": "스스로 익히는 플레이",
+          "leaf_id": "GAMEPLAY.SELF_DIRECTED_DISCOVERY",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
+        },
+        {
+          "code": "SESSION_LENGTH",
+          "label": "한 판 소요 시간",
+          "leaf_id": "GAMEPLAY.SESSION_LENGTH",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
+        },
+        {
+          "code": "SESSION_TIME_FLEXIBILITY",
+          "label": "플레이 시작·중단의 자유",
+          "leaf_id": "GAMEPLAY.SESSION_TIME_FLEXIBILITY",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
+        },
+        {
+          "code": "STRATEGY_CHOICE",
+          "label": "전략·조합·해결 선택",
+          "leaf_id": "GAMEPLAY.STRATEGY_CHOICE",
+          "boundary": "전략과 조합, 퀘스트 해결 선택의 평가. 구체 대상은 target/detail로 유지한다."
+        },
+        {
+          "code": "UNSPECIFIED",
+          "label": "세부 미상",
+          "leaf_id": "GAMEPLAY.UNSPECIFIED",
+          "boundary": "평가 대상을 detail에 보존한다. 광산 활동을 전투·채광으로 추측하지 않는다."
         }
-      ]
+      ],
+      "subaspects_exhaustive": true
     },
     {
       "boundary": "특정 캐릭터의 외모·디자인 평가는 캐릭터. 화면 깨짐·프레임 저하는 성능·버그.",
       "code": "GRAPHICS",
       "include": "화면·색감·그림체·배경·애니메이션·카메라·시각 연출.",
       "label": "그래픽·연출",
-      "detail_status": "preview_proposal",
-      "targets": [
+      "subaspects": [
         {
-          "code": "GRAPHICS.ART",
-          "label": "그림체·미술"
+          "code": "CAMERA_VIEWPOINT",
+          "label": "카메라 시점",
+          "leaf_id": "GRAPHICS.CAMERA_VIEWPOINT",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "GRAPHICS.MODELING_ANIMATION",
-          "label": "모델링·애니메이션"
+          "code": "IMAGE_QUALITY",
+          "label": "화질",
+          "leaf_id": "GRAPHICS.IMAGE_QUALITY",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "GRAPHICS.DIRECTION",
-          "label": "시각적 연출"
+          "code": "LIGHTING_VISIBILITY",
+          "label": "화면 밝기",
+          "leaf_id": "GRAPHICS.LIGHTING_VISIBILITY",
+          "boundary": "관찰된 화면 밝기를 저장. 시인성 장애 원인을 추가로 단정하지 않는다."
         },
         {
-          "code": "GRAPHICS.UNSPECIFIED",
-          "label": "그래픽·연출 전반·세부 미명시",
-          "status": "implementation_proposal"
+          "code": "UNSPECIFIED",
+          "label": "세부 미상",
+          "leaf_id": "GRAPHICS.UNSPECIFIED",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
+        },
+        {
+          "code": "VISUAL_DIRECTION",
+          "label": "시각적 연출",
+          "leaf_id": "GRAPHICS.VISUAL_DIRECTION",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         }
-      ]
+      ],
+      "subaspects_exhaustive": true
     },
     {
-      "boundary": "음성 재생이 안 되는 오류는 성능·버그. 대사의 의미·내용은 스토리 또는 캐릭터.",
+      "boundary": "음성 재생이 안 되는 오류는 성능·버그. 대사의 의미·내용은 스토리 또는 캐릭터. 근거가 서로 다른 세부 유형은 의견별로 구분하고, 같은 리뷰의 상위 사운드 집계는 중복 계산하지 않음.",
       "code": "SOUND",
       "include": "배경음악·효과음·더빙·성우 연기·음향 표현.",
       "label": "사운드",
-      "detail_status": "preview_proposal",
-      "targets": [
+      "subaspects": [
         {
-          "code": "SOUND.MUSIC",
-          "label": "음악·BGM"
+          "code": "MUSIC_BGM",
+          "label": "음악·BGM",
+          "leaf_id": "SOUND.MUSIC_BGM",
+          "boundary": "음악이라고만 쓰면 BGM/주제가 등 형식을 추가로 추정하지 않는다."
         },
         {
-          "code": "SOUND.VOICE_ACTING",
-          "label": "더빙·음성 연기"
+          "code": "SFX",
+          "label": "효과음",
+          "leaf_id": "SOUND.SFX",
+          "boundary": "효과음·환경음·타격음이 명시된 경우. 일반 사운드·타격감에서 추정하지 않는다."
         },
         {
-          "code": "SOUND.EFFECTS",
-          "label": "효과음"
+          "code": "UNSPECIFIED",
+          "label": "세부 미상",
+          "leaf_id": "SOUND.UNSPECIFIED",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "SOUND.UNSPECIFIED",
-          "label": "사운드 전반·세부 미명시",
-          "status": "implementation_proposal"
+          "code": "VOICE_DUBBING",
+          "label": "더빙·음성 연기",
+          "leaf_id": "SOUND.VOICE_DUBBING",
+          "boundary": "더빙·목소리·성우 연기. 대사 번역 정확성이나 내레이터 서사 역할과 구별."
         }
-      ]
+      ],
+      "subaspects_exhaustive": true
     },
     {
-      "boundary": "버튼이 아예 작동하지 않는 결함은 성능·버그. 튜토리얼 적이 너무 강하다는 평가는 난이도·밸런스.",
+      "boundary": "버튼이 아예 작동하지 않는 결함은 성능·버그. 튜토리얼 적이 너무 강하다는 평가는 난이도·밸런스. 번역 품질·지원 언어 평가는 운영·지원 > 번역으로 분리. 글꼴·자막 크기 등 표시 편의와 번역 품질을 혼동하지 않음.",
       "code": "USABILITY",
-      "include": "조작감·키 배치·UI·메뉴·설명·튜토리얼의 이해도·접근성·번역 가독성·한국어 지원.",
+      "include": "조작감·키 배치·UI·메뉴·설명·튜토리얼의 이해도·접근성. 번역이 아닌 글자 크기·메뉴 배치 등의 사용 편의.",
       "label": "조작·편의성",
-      "detail_status": "preview_proposal",
-      "targets": [
+      "subaspects": [
         {
-          "code": "USABILITY.CONTROLS",
-          "label": "조작감"
+          "code": "CONTROLS",
+          "label": "조작감·입력",
+          "leaf_id": "USABILITY.CONTROLS",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "USABILITY.INTERFACE",
-          "label": "UI·메뉴"
+          "code": "LEARNING_GUIDANCE",
+          "label": "튜토리얼·설명·학습 안내",
+          "leaf_id": "USABILITY.LEARNING_GUIDANCE",
+          "boundary": "규칙·아이템·방어 방식의 이해와 설명. 어려운 적 자체는 난도."
         },
         {
-          "code": "USABILITY.NAVIGATION",
-          "label": "길찾기·정보 안내"
+          "code": "NAVIGATION",
+          "label": "길찾기",
+          "leaf_id": "USABILITY.NAVIGATION",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "USABILITY.TUTORIAL",
-          "label": "튜토리얼"
+          "code": "SETTINGS_ACCESSIBILITY",
+          "label": "설정 기능",
+          "leaf_id": "USABILITY.SETTINGS_ACCESSIBILITY",
+          "boundary": "이 파일럿은 설정 가능 여부를 평가한다. 접근성 품질을 별도로 추정하지 않는다."
         },
         {
-          "code": "USABILITY.SETTINGS",
-          "label": "설정 기능"
-        },
-        {
-          "code": "USABILITY.UNSPECIFIED",
-          "label": "조작·편의성 전반·세부 미명시",
-          "status": "implementation_proposal"
+          "code": "UNSPECIFIED",
+          "label": "세부 미상",
+          "leaf_id": "USABILITY.UNSPECIFIED",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         }
-      ]
+      ],
+      "subaspects_exhaustive": true
     },
     {
       "boundary": "핵심 규칙의 재미는 게임성. 분량 대비 가격 평가는 가격·과금. 모드 설치 오류는 성능·버그.",
       "code": "CONTENT",
       "include": "할 거리·플레이 분량·다양성·반복성·재플레이·엔드 콘텐츠·모드로 늘어난 콘텐츠.",
       "label": "콘텐츠·분량",
-      "detail_status": "preview_proposal",
-      "targets": [
+      "subaspects": [
         {
-          "code": "CONTENT.VOLUME",
-          "label": "분량"
+          "code": "AMOUNT",
+          "label": "콘텐츠 분량",
+          "leaf_id": "CONTENT.AMOUNT",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "CONTENT.VARIETY",
-          "label": "다양성"
+          "code": "LONGEVITY",
+          "label": "지속 플레이 매력",
+          "leaf_id": "CONTENT.LONGEVITY",
+          "boundary": "오랫동안 질리지 않는다는 평가. 다회차·다시 시작을 추정하지 않는다."
         },
         {
-          "code": "CONTENT.GRIND",
-          "label": "반복 작업"
+          "code": "MOD_EXPANSION",
+          "label": "모드 확장",
+          "leaf_id": "CONTENT.MOD_EXPANSION",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "CONTENT.REPLAY",
-          "label": "재플레이 매력"
+          "code": "REPETITIVE_GRIND",
+          "label": "반복 작업",
+          "leaf_id": "CONTENT.REPETITIVE_GRIND",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "CONTENT.UNSPECIFIED",
-          "label": "콘텐츠·분량 전반·세부 미명시",
-          "status": "implementation_proposal"
+          "code": "REPLAYABILITY",
+          "label": "재플레이 매력",
+          "leaf_id": "CONTENT.REPLAYABILITY",
+          "boundary": "다시 시작하거나 여러 번 플레이하는 경험. 단지 오래 한다는 말은 LONGEVITY."
+        },
+        {
+          "code": "UNSPECIFIED",
+          "label": "세부 미상",
+          "leaf_id": "CONTENT.UNSPECIFIED",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
+        },
+        {
+          "code": "VARIETY",
+          "label": "콘텐츠 다양성",
+          "leaf_id": "CONTENT.VARIETY",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         }
-      ]
+      ],
+      "subaspects_exhaustive": true
     },
     {
       "boundary": "과금 비용·상품 구성은 가격·과금. 이용자의 핵 사용 경험은 멀티·이용자, 핵 방치는 운영·지원.",
       "code": "BALANCE",
       "include": "쉬움·어려움·운 의존·성장 곡선·보상 균형·무기나 능력의 강약·경쟁 공정성.",
       "label": "난이도·밸런스",
-      "detail_status": "preview_proposal",
-      "targets": [
+      "subaspects": [
         {
-          "code": "BALANCE.DIFFICULTY",
-          "label": "체감 난도"
+          "code": "DIFFICULTY",
+          "label": "체감 난도",
+          "leaf_id": "BALANCE.DIFFICULTY",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "BALANCE.DIFFICULTY_CURVE",
-          "label": "난도 변화"
+          "code": "RANDOMNESS",
+          "label": "운 의존",
+          "leaf_id": "BALANCE.RANDOMNESS",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "BALANCE.RANDOMNESS",
-          "label": "운 의존"
+          "code": "RELATIVE_POWER",
+          "label": "상대적 강약",
+          "leaf_id": "BALANCE.RELATIVE_POWER",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "BALANCE.RELATIVE_POWER",
-          "label": "캐릭터·무기 간 강약"
-        },
-        {
-          "code": "BALANCE.UNSPECIFIED",
-          "label": "난이도·밸런스 전반·세부 미명시",
-          "status": "implementation_proposal"
+          "code": "UNSPECIFIED",
+          "label": "세부 미상",
+          "leaf_id": "BALANCE.UNSPECIFIED",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         }
-      ]
+      ],
+      "subaspects_exhaustive": true
     },
     {
       "boundary": "개발사의 문제 대응 평가는 운영·지원. 메뉴가 불편하지만 정상 작동하는 경우는 조작·편의성.",
       "code": "TECHNICAL",
       "include": "최적화·프레임·로딩·렉·접속 오류·충돌·튕김·저장 문제·진행 불가·호환성.",
       "label": "성능·버그",
-      "detail_status": "preview_proposal",
-      "targets": [
+      "subaspects": [
         {
-          "code": "TECHNICAL.FRAMERATE",
-          "label": "프레임·끊김"
+          "code": "CONNECTION",
+          "label": "접속",
+          "leaf_id": "TECHNICAL.CONNECTION",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "TECHNICAL.LOADING",
-          "label": "로딩"
+          "code": "CRASH_FREEZE",
+          "label": "충돌·강제 종료·멈춤",
+          "leaf_id": "TECHNICAL.CRASH_FREEZE",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "TECHNICAL.CRASH",
-          "label": "충돌·종료"
+          "code": "FUNCTIONAL_BLOCK",
+          "label": "기능·진행 장애",
+          "leaf_id": "TECHNICAL.FUNCTIONAL_BLOCK",
+          "boundary": "리뷰에 보고된 기능·진행 장애. 모드·버전 등 조건 유지, 원인 추정 금지."
         },
         {
-          "code": "TECHNICAL.CONNECTION",
-          "label": "접속"
+          "code": "GENERAL_BUGS",
+          "label": "버그 전반",
+          "leaf_id": "TECHNICAL.GENERAL_BUGS",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "TECHNICAL.SAVE_PROGRESS",
-          "label": "저장·진행 손실"
+          "code": "LOADING",
+          "label": "로딩",
+          "leaf_id": "TECHNICAL.LOADING",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "TECHNICAL.UNSPECIFIED",
-          "label": "성능·버그 전반·세부 미명시",
-          "status": "implementation_proposal"
+          "code": "SAVE_PROGRESS_LOSS",
+          "label": "저장·진행 손실",
+          "leaf_id": "TECHNICAL.SAVE_PROGRESS_LOSS",
+          "boundary": "실제 진행·아이템 소실 보고. 저장파일을 반복 로드했다는 말만으로 부여하지 않는다."
+        },
+        {
+          "code": "UNSPECIFIED",
+          "label": "세부 미상",
+          "leaf_id": "TECHNICAL.UNSPECIFIED",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         }
-      ]
+      ],
+      "subaspects_exhaustive": true
     },
     {
       "boundary": "돈을 쓴 만큼 오래 즐겼다는 가성비 평가는 여기에 기록. 경쟁에서 유료 능력이 압도한다는 별도 주장은 밸런스에도 기록 가능.",
       "code": "MONETIZATION",
       "include": "구매 가격·할인·가성비·DLC 가격·확률형 상품·유료 상품 구성·과금 부담.",
       "label": "가격·과금",
-      "detail_status": "preview_proposal",
-      "targets": [
+      "subaspects": [
         {
-          "code": "MONETIZATION.PRICE",
-          "label": "가격 수준"
+          "code": "PRICE_LEVEL",
+          "label": "가격 수준",
+          "leaf_id": "MONETIZATION.PRICE_LEVEL",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "MONETIZATION.VALUE",
-          "label": "가격 대비 가치"
+          "code": "PURCHASE_ACCESS",
+          "label": "구매·이용 구조",
+          "leaf_id": "MONETIZATION.PURCHASE_ACCESS",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "MONETIZATION.ACCESS_MODEL",
-          "label": "구매·이용 방식"
+          "code": "UNSPECIFIED",
+          "label": "세부 미상",
+          "leaf_id": "MONETIZATION.UNSPECIFIED",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "MONETIZATION.UNSPECIFIED",
-          "label": "가격·과금 전반·세부 미명시",
-          "status": "implementation_proposal"
+          "code": "VALUE_FOR_MONEY",
+          "label": "가격 대비 가치",
+          "leaf_id": "MONETIZATION.VALUE_FOR_MONEY",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         }
-      ]
+      ],
+      "subaspects_exhaustive": true
     },
     {
       "boundary": "결함의 현상 자체는 성능·버그. 콘텐츠가 많다는 평가는 콘텐츠·분량. 한 문장에 결함과 대응 비판이 모두 있으면 각각 기록.",
       "code": "OPERATIONS",
-      "include": "패치·업데이트 대응·공지·고객 지원·제재 정책·핵 대응·운영 신뢰·서비스 종료 정책.",
+      "include": "패치·업데이트 대응·공지·고객 지원·제재 정책·핵 대응·운영 신뢰·서비스 종료 정책. 번역 품질·현지화·지원 언어.",
       "label": "운영·지원",
-      "detail_status": "unconfirmed_not_trainable",
-      "targets": []
+      "subaspects": [
+        {
+          "code": "PATCH_RESPONSE",
+          "label": "패치·업데이트 대응",
+          "leaf_id": "OPERATIONS.PATCH_RESPONSE",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
+        },
+        {
+          "code": "SANCTIONS",
+          "label": "제재 정책",
+          "leaf_id": "OPERATIONS.SANCTIONS",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
+        },
+        {
+          "code": "TRANSLATION",
+          "label": "번역",
+          "leaf_id": "OPERATIONS.TRANSLATION",
+          "boundary": "번역 표현·정확성·언어 지원. 표현이 맥없다는 불만을 오역으로 확정하지 않는다."
+        },
+        {
+          "code": "UNSPECIFIED",
+          "label": "세부 미상",
+          "leaf_id": "OPERATIONS.UNSPECIFIED",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
+        }
+      ],
+      "subaspects_exhaustive": true
     },
     {
       "boundary": "친구와 했다는 사실만 있고 사회적 경험에 대한 평가·설명이 없으면 문맥에만 기록. 접속 끊김은 성능·버그.",
       "code": "SOCIAL",
       "include": "협동·경쟁의 사회적 경험·역할 분담·매칭 경험·친구와의 상호작용·이용자 분위기·비매너·핵 사용자 경험.",
       "label": "멀티·이용자",
-      "detail_status": "preview_proposal",
-      "targets": [
+      "subaspects": [
         {
-          "code": "SOCIAL.COOP_ENJOYMENT",
-          "label": "협동의 재미"
+          "code": "COOP_EXPERIENCE",
+          "label": "함께하는 플레이 경험",
+          "leaf_id": "SOCIAL.COOP_EXPERIENCE",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "SOCIAL.COOP_REQUIREMENT",
-          "label": "협동 강제"
+          "code": "MATCHMAKING",
+          "label": "매칭",
+          "leaf_id": "SOCIAL.MATCHMAKING",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "SOCIAL.MATCHMAKING",
-          "label": "매칭"
+          "code": "PARTICIPATION_ACCESS",
+          "label": "멀티플레이 참여 조건",
+          "leaf_id": "SOCIAL.PARTICIPATION_ACCESS",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "SOCIAL.PLAYER_BEHAVIOR",
-          "label": "다른 이용자의 행동"
+          "code": "PLAYER_BEHAVIOR",
+          "label": "다른 이용자의 행동",
+          "leaf_id": "SOCIAL.PLAYER_BEHAVIOR",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         },
         {
-          "code": "SOCIAL.UNSPECIFIED",
-          "label": "멀티·이용자 전반·세부 미명시",
-          "status": "implementation_proposal"
+          "code": "UNSPECIFIED",
+          "label": "세부 미상",
+          "leaf_id": "SOCIAL.UNSPECIFIED",
+          "boundary": "원문에 명시된 대상에 한정하며 detail·근거·조건을 함께 보존한다."
         }
-      ]
+      ],
+      "subaspects_exhaustive": true
     }
   ],
-  "status": "draft",
-  "version": "v0.4-preview-draft",
+  "status": "pilot",
+  "version": "v0.5",
   "removed_categories": [
     {
       "code": "OVERALL",
       "reason": "구체적 요소 평가에 집중. 포괄적 여론은 원문과 스팀 추천 메타데이터로 보존."
     }
   ],
-  "schema": "review-target-taxonomy-v2",
-  "source_ref": "User-supplied bounded conversation preview, 2026-11-25; full latest taxonomy not recovered",
-  "limitations": [
-    "Visible separation table is a proposal, not the full confirmed taxonomy.",
-    "Target codes and UNSPECIFIED leaves are implementation proposals.",
-    "OPERATIONS and remaining boundaries await the complete latest source."
+  "previous_version": "v0.4",
+  "change_reason": "평가자가 구체적으로 구별한 대상별 독립 라벨 및 감성 보존",
+  "aggregation_policy": {
+    "primary_unit": "distinct review key × leaf_id; positive and negative retained separately",
+    "within_leaf_mixed": "same review and same leaf with positive+negative; keep both evidence spans",
+    "parent_summary": "navigation only; never replace leaf results with parent mixed",
+    "denominator": "unique eligible reviews in fixed game/time/language snapshot; opinion count is not review count",
+    "overlap": "one review may support several leaves; never sum child review counts as unique parent reviews",
+    "unspecified": "retain generic aspect evaluation; not no-content, not absent, not HOLD",
+    "absence": "empty prediction alone does not establish NO_CONCRETE_EVALUATION",
+    "hold": "excluded from resolved gold and sentiment totals; retained in counts and audit"
+  },
+  "guideline_version": "v1.2.0",
+  "primary_label_unit": "leaf_id",
+  "schema_version": "youtopia_review_taxonomy_v2",
+  "active_polarities": [
+    "긍정",
+    "부정"
   ],
-  "held_categories": [
-    "OTHER"
-  ]
+  "mixed_is_derived": true,
+  "unregistered_targets": "Do not invent codes silently. Preserve description, use appropriate UNSPECIFIED or HOLD, propose next version."
 }

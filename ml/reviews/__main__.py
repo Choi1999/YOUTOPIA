@@ -16,6 +16,9 @@ def main():
     for name in ('source', 'approvals', 'out'):
         p.add_argument('--' + name, required=True)
     p.add_argument('--taxonomy', dest='taxonomy_path')
+    p = sub.add_parser('import-pilot-v05')
+    p.add_argument('--source', required=True); p.add_argument('--out', required=True)
+    p.add_argument('--taxonomy', dest='taxonomy_path')
     p = sub.add_parser('import-base')
     p.add_argument('--source', required=True); p.add_argument('--out', required=True)
     p = sub.add_parser('build')
@@ -59,6 +62,9 @@ def main():
             write(target / 'audit.json', result)
             if errors:
                 raise SystemExit('INVALID_SOURCE; private audit.json contains details')
+    elif command == 'import-pilot-v05':
+        from .pilot_v05 import import_pilot
+        result = import_pilot(**a, destination=out)
     elif command == 'migrate':
         from .migrate import migrate
         result = migrate(**a, destination=out)

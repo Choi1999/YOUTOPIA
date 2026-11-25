@@ -32,8 +32,8 @@ def train(dataset, base, destination, seeds=(13, 42, 73), epochs=5, batch_size=1
                        'seeds': len(scores), 'uncertainty_note': 'seed variation; not confidence interval'})
     best_kind = max(groups, key=lambda r: (r['macro_mean'], -KINDS.index(r['kind'])))['kind']
     chosen = max((r for r in experiments if r['kind'] == best_kind), key=lambda r: (r['macro'], r['micro'], -r['seed']))
-    selection = {'contract': 'review-experiment-v2', 'dataset_sha256': file_hash(Path(dataset) / 'READY.json'),
-                 'classification_unit': 'evaluation_target', 'label_count': len(metadata['labels']),
+    selection = {'contract': 'review-experiment-v05', 'dataset_sha256': file_hash(Path(dataset) / 'READY.json'),
+                 'classification_unit': 'leaf_id', 'label_count': len(metadata['labels']),
                  'experiments': experiments, 'comparison': groups, 'selected_path': chosen['path'],
                  'rule': 'best mean validation macro by kind; best validation macro/micro seed within kind; lower seed tie',
                  'synthetic': metadata['synthetic'], 'test_used_for_selection': False}
@@ -60,7 +60,7 @@ def final_test(dataset, experiment, destination, device='cpu'):
     """One local claim per sealed experiment. Crash leaves claim; no auto retry."""
     experiment = Path(experiment).resolve(); verify(experiment)
     selection = read(experiment / 'selection.json')
-    if selection.get('contract') != 'review-experiment-v2':
+    if selection.get('contract') != 'review-experiment-v05':
         raise ValueError('LEGACY_COARSE_EXPERIMENT_REQUIRES_RETRAINING')
     test_rows, metadata = load(dataset, 'test')
     if file_hash(Path(dataset) / 'READY.json') != selection['dataset_sha256']:
@@ -116,7 +116,7 @@ def batch_predict(source, model, destination, device='cpu'):
                        'taxonomy_sha256': report['dataset']['taxonomy_sha256'],
                        'policy_sha256': report['dataset']['policy_sha256'],
                        'synthetic_model': report['synthetic'], 'evidence_spans': None,
-                       'classification_unit': 'evaluation_target',
+                       'classification_unit': 'leaf_id',
                        'threshold': report['threshold'],
                        'taxonomy_version': report['dataset']['taxonomy']['version']})
         key = row.get('key')
@@ -144,7 +144,7 @@ def batch_predict(source, model, destination, device='cpu'):
     write_rows(target / 'predictions.jsonl', output)
     seal(target, {'model_sha256': file_hash(root / 'READY.json'), 'rows': len(output),
                   'database_writes': False, 'not_evidence_extraction': True,
-                  'classification_unit': 'evaluation_target', 'synthetic_model': report['synthetic'],
+                  'classification_unit': 'leaf_id', 'synthetic_model': report['synthetic'],
                   'threshold': report['threshold'],
                   'taxonomy_sha256': report['dataset']['taxonomy_sha256'],
                   'policy_sha256': report['dataset']['policy_sha256']})

@@ -26,8 +26,8 @@ def migrate(source, approvals, destination, taxonomy_path=None):
             'old_approval_history_preserved': True, 'new_scope_approved': False,
         }
         for annotation in revised['annotations']:
-            annotation['previous_target_code'] = annotation.get('target_code')
-            annotation['target_code'] = None
+            annotation['previous_leaf_id'] = annotation.get('leaf_id')
+            annotation['leaf_id'] = None
         revised['taxonomy_version'] = tax['version']
         revised['taxonomy_sha256'] = fingerprint(tax)
         revised['review_status'] = '재분류 필요'

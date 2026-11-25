@@ -25,18 +25,12 @@ def decode(scores, threshold, labels):
     values = checked(scores, len(scores), labels)
     if not math.isfinite(threshold) or not 0 < threshold < 1:
         raise ValueError('INVALID_THRESHOLD')
-    selected = np.zeros_like(values, dtype=np.int8)
     units = list(dict.fromkeys(label.split('::')[0] for label in labels))
     if any('.' not in unit for unit in units):
         raise ValueError('FINE_TARGET_LABEL_SCHEMA_REQUIRED')
-    for unit in units:
-        indices = [i for i, label in enumerate(labels) if label.startswith(unit + '::')]
-        best = values[:, indices].argmax(axis=1)
-        for row, local in enumerate(best):
-            index = indices[local]
-            if values[row, index] >= threshold:
-                selected[row, index] = 1
-    return selected
+    if any(label.split('::')[-1] not in ('긍정', '부정') for label in labels):
+        raise ValueError('V05_BINARY_POLARITY_SCHEMA_REQUIRED')
+    return (values >= threshold).astype(np.int8)
 
 
 def metrics(truth, predicted, labels):
@@ -44,7 +38,7 @@ def metrics(truth, predicted, labels):
     precision, recall, f1, support = precision_recall_fscore_support(truth, predicted, average=None, zero_division=0)
     return {
         'reviews': len(truth), 'macro_f1_all_labels_zero_division_0': float(np.mean(f1)),
-        'classification_unit': 'evaluation_target', 'label_count': len(labels),
+        'classification_unit': 'leaf_id', 'label_count': len(labels),
         'macro_f1_supported': float(np.mean(f1[support > 0])) if (support > 0).any() else None,
         'micro_f1': float(f1_score(truth, predicted, average='micro', zero_division=0)),
         'exact_match': float(np.all(truth == predicted, axis=1).mean()),
@@ -253,7 +247,7 @@ def fit(dataset, base, destination, kind, seed=42, epochs=5, batch_size=16, lr=N
               'seconds': time.perf_counter() - started, 'torch': torch.__version__,
               'synthetic': metadata['synthetic'], 'test_used_for_selection': False,
               'task_limit': 'review-level fine-target presence; not trained opinion/evidence extraction; no Steam recommendation input',
-              'classification_unit': 'evaluation_target'}
+              'classification_unit': 'leaf_id'}
     write(target / 'report.json', report)
     seal(target, {'kind': kind, 'dataset_sha256': report['dataset_sha256'], 'synthetic': metadata['synthetic']})
     return report
@@ -267,13 +261,14 @@ class Predictor:
         from .common import fingerprint
         self.root = Path(model_root); verify(self.root)
         self.report = read(self.root / 'report.json'); report = self.report
-        if report.get('classification_unit') != 'evaluation_target' or report['dataset'].get('contract') != 'review-training-v2':
+        if report.get('classification_unit') != 'leaf_id' or report['dataset'].get('contract') != 'review-training-v05':
             raise ValueError('LEGACY_COARSE_MODEL_REQUIRES_RETRAINING')
         tax = taxonomy(report['dataset']['taxonomy'])
-        from .taxonomy import require_confirmed
-        require_confirmed(tax, report['synthetic'])
+        from .taxonomy import require_frozen_taxonomy
+        require_frozen_taxonomy(tax, report['synthetic'])
         if (report['dataset']['labels'] != labels(tax)
                 or report['dataset']['label_schema_sha256'] != fingerprint(labels(tax))
+                or report['dataset'].get('label_to_id_sha256') != fingerprint({label: i for i, label in enumerate(labels(tax))})
                 or report['dataset']['policy_sha256'] != fingerprint(POLICY)
                 or report['dataset']['taxonomy_sha256'] != fingerprint(tax)):
             raise ValueError('MODEL_CONTRACT_CHANGED')

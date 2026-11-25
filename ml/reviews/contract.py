@@ -3,10 +3,10 @@ from datetime import datetime
 from .common import digest, fingerprint
 from .taxonomy import taxonomy, target_map
 
-POLARITIES = ('긍정', '부정', '혼합', '중립')
+POLARITIES = ('긍정', '부정')
 POLICY = {
-    'version': 'review-target-opinion-v2',
-    'aggregation': 'only within the SAME fine target: positive+negative or explicit mixed -> mixed; neutral alone -> neutral',
+    'version': 'review-leaf-opinion-v05',
+    'aggregation': 'preserve independent positive/negative labels within each leaf; mixed is derived, never a training class',
     'parent_rollup': 'preserve every target/polarity pair; never collapse different targets into parent mixed',
     'input': 'body_only; steam voted_up is auxiliary annotation context',
     'long_input': 'hold_whole_review; never broadcast review labels to chunks',
@@ -28,7 +28,8 @@ def scope_hash(record, scope):
         value = {key: record.get(key) for key in (
             'key', 'appid', 'review_id', 'clean_text', 'text_sha256', 'review_status',
             'active_opinion_ids', 'held_opinion_ids', 'excluded_spans', 'annotations',
-            'taxonomy_version', 'taxonomy_sha256', 'voted_up', 'votes_up', 'behaviors', 'migration')}
+            'taxonomy_version', 'taxonomy_sha256', 'voted_up', 'votes_up', 'behaviors', 'migration',
+            'learning_eligible', 'batch_role', 'source_review_acceptance', 'reclassification_review')}
     else:
         matches = [item for item in record['annotations'] if item['id'] == scope.removeprefix('opinion:')]
         if not scope.startswith('opinion:') or len(matches) != 1:
@@ -66,18 +67,9 @@ def approval_candidates(record):
 def aggregate(opinions):
     grouped = {}
     for opinion in opinions:
-        grouped.setdefault(opinion['target_code'], set()).add(opinion['polarity'])
-    result = {}
-    for aspect, polarities in grouped.items():
-        if '혼합' in polarities or {'긍정', '부정'} <= polarities:
-            result[aspect] = '혼합'
-        elif '긍정' in polarities:
-            result[aspect] = '긍정'
-        elif '부정' in polarities:
-            result[aspect] = '부정'
-        else:
-            result[aspect] = '중립'
-    return result
+        grouped.setdefault(opinion['leaf_id'], set()).add(opinion['polarity'])
+    return {leaf: [polarity for polarity in POLARITIES if polarity in polarities]
+            for leaf, polarities in grouped.items()}
 
 
 def rollup(target_labels, tax=None):
@@ -87,7 +79,7 @@ def rollup(target_labels, tax=None):
         code, polarity = label.split('::')
         if code not in mapping or polarity not in POLARITIES:
             raise ValueError('UNKNOWN_TARGET_LABEL')
-        result.setdefault(mapping[code]['aspect_code'], []).append({'target_code': code, 'polarity': polarity})
+        result.setdefault(mapping[code]['aspect_code'], []).append({'leaf_id': code, 'polarity': polarity})
     return result
 
 
@@ -122,24 +114,33 @@ def validate(record, ledger, tax=None):
     if len(active) != len(active_list) or len(held) != len(held_list) or active & held or not (active | held) <= set(ids):
         raise ValueError('OPINION_SELECTION_CONFLICT')
     confirmed, reasons = [], []
+    if record.get('learning_eligible') is False or str(record.get('batch_role', '')).startswith('guideline_pilot'):
+        reasons.append('SOURCE_TRAINING_EXCLUDED')
     for annotation in annotations:
         if annotation['id'] not in active:
+            if annotation['id'] in held:
+                for span in annotation.get('evidence_spans', []):
+                    start, end = span['start'], span['end']
+                    if type(start) is not int or type(end) is not int or not 0 <= start < end <= len(text) or text[start:end] != span['text']:
+                        raise ValueError('HELD_EVIDENCE_OFFSETS_MISMATCH')
             continue
-        polarity = {'복합': '혼합'}.get(annotation['polarity'], annotation['polarity'])
+        polarity = annotation['polarity']
         if annotation['aspect_code'] not in aspects(tax) or polarity not in POLARITIES:
             raise ValueError('UNKNOWN_OR_HELD_ASPECT')
-        code = annotation.get('target_code')
+        code = annotation.get('leaf_id')
         if code is None:
             reasons.append('TARGET_RECLASSIFICATION_REQUIRED')
         elif code not in mapping or mapping[code]['aspect_code'] != annotation['aspect_code']:
             raise ValueError('TARGET_PARENT_MISMATCH_OR_UNKNOWN_TARGET')
         human = annotation.get('human_review') or {}
+        if annotation.get('learning_eligible') is False:
+            reasons.append('SOURCE_OPINION_TRAINING_EXCLUDED')
         if any(human.get(k) for k in ('corrected_aspect', 'corrected_polarity', 'corrected_target', 'corrected_evidence')):
             reasons.append('UNAPPLIED_CORRECTION')
         spans = annotation.get('evidence_spans', [])
         if not spans:
             raise ValueError('MISSING_BODY_EVIDENCE')
-        for span in [*spans, *annotation.get('target_spans', [])]:
+        for span in [*spans, *annotation.get('target_spans', []), *annotation.get('supporting_context_spans', [])]:
             start, end = span['start'], span['end']
             if type(start) is not int or type(end) is not int or not 0 <= start < end <= len(text) or text[start:end] != span['text']:
                 raise ValueError('EVIDENCE_OFFSETS_MISMATCH')
@@ -163,12 +164,14 @@ def validate(record, ledger, tax=None):
     elif (status in ('내용 없음', '평가 없음')) != (not active):
         raise ValueError('STATUS_OPINION_CONFLICT')
     result = aggregate(confirmed)
+    target_labels = sorted(leaf + '::' + polarity for leaf, polarities in result.items() for polarity in polarities)
     return {
         'source': record, 'key': record['key'], 'appid': str(record['appid']),
         'text': text, 'text_sha256': record['text_sha256'], 'opinions': confirmed,
-        'aggregate': result, 'labels': sorted(a + '::' + p for a, p in result.items()),
-        'aspect_summary': rollup([a + '::' + p for a, p in result.items()], tax),
-        'classification_unit': 'evaluation_target',
+        'aggregate': result, 'labels': target_labels,
+        'derived_mixed_leaves': sorted(leaf for leaf, directions in result.items() if len(directions) > 1),
+        'aspect_summary': rollup(target_labels, tax),
+        'classification_unit': 'leaf_id',
         'eligible': not reasons, 'reasons': sorted(set(reasons)),
         'human_review_evidence_count': sum(approved(record, 'opinion:' + a['id'], ledger) for a in annotations),
         'human_review_flags_present': record.get('human_reviewed'),

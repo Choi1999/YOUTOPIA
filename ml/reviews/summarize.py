@@ -9,7 +9,7 @@ from .taxonomy import taxonomy, target_map
 
 def summarize(source, destination):
     root = Path(source); metadata = verify(root)
-    if metadata.get('classification_unit') != 'evaluation_target':
+    if metadata.get('classification_unit') != 'leaf_id':
         raise ValueError('FINE_TARGET_PREDICTIONS_REQUIRED')
     tax = taxonomy(read(root / 'taxonomy.json')); mapping = target_map(tax)
     if metadata.get('taxonomy_sha256') != fingerprint(tax) or metadata.get('policy_sha256') != fingerprint(POLICY):
@@ -39,8 +39,7 @@ def summarize(source, destination):
         if (not isinstance(selected, list) or len(set(selected)) != len(selected) or not set(selected) <= valid_labels
                 or (state == 'NO_TARGET_PREDICTED') != (not selected)):
             raise ValueError('INVALID_TARGET_PREDICTION')
-        units = [label.split('::')[0] for label in selected]
-        if len(units) != len(set(units)) or row.get('aspect_summary') != rollup(selected, tax):
+        if row.get('aspect_summary') != rollup(selected, tax):
             raise ValueError('TARGET_SENTIMENT_OR_PARENT_VIEW_CONFLICT')
         scores = row.get('scores')
         if (not isinstance(scores, dict) or set(scores) != valid_labels
@@ -53,23 +52,27 @@ def summarize(source, destination):
             raise ValueError('SCORES_DISAGREE_WITH_TARGET_LABELS')
         game = games.setdefault(str(row['appid']), {'successful_review_predictions': 0,
                                                     'no_target_predicted_reviews': 0,
-                                                    'target_counts': {}, 'parent_review_presence': {}})
+                                                    'leaf_counts': {}, 'derived_mixed_review_counts': {},
+                                                    'parent_review_presence': {}})
         game['successful_review_predictions'] += 1
         game['no_target_predicted_reviews'] += int(not selected)
         parents = set()
         for label in selected:
             code, polarity = label.split('::'); parent = mapping[code]['aspect_code']; parents.add(parent)
-            count = game['target_counts'].setdefault(code, {p: 0 for p in POLARITIES})
+            count = game['leaf_counts'].setdefault(code, {p: 0 for p in POLARITIES})
             count[polarity] += 1
         for parent in parents:
             game['parent_review_presence'][parent] = game['parent_review_presence'].get(parent, 0) + 1
+        for leaf in {label.split('::')[0] for label in selected}:
+            if {leaf + '::긍정', leaf + '::부정'} <= set(selected):
+                game['derived_mixed_review_counts'][leaf] = game['derived_mixed_review_counts'].get(leaf, 0) + 1
     if len(snapshots) > 1:
         raise ValueError('MIXED_SNAPSHOTS_REQUIRE_SEPARATE_SUMMARIES')
     for game in games.values():
         game['parent_details'] = {}
-        for code, count in game['target_counts'].items():
-            game['parent_details'].setdefault(mapping[code]['aspect_code'], []).append({'target_code': code, 'counts': count})
-    result = {'classification_unit': 'evaluation_target', 'taxonomy_version': tax['version'],
+        for code, count in game['leaf_counts'].items():
+            game['parent_details'].setdefault(mapping[code]['aspect_code'], []).append({'leaf_id': code, 'counts': count})
+    result = {'classification_unit': 'leaf_id', 'taxonomy_version': tax['version'],
               'taxonomy_status': tax['status'], 'taxonomy_sha256': fingerprint(tax),
               'model_sha256': metadata['model_sha256'], 'policy_sha256': metadata['policy_sha256'],
               'synthetic_model': metadata['synthetic_model'], 'snapshot_id': next(iter(snapshots), None),
@@ -80,6 +83,6 @@ def summarize(source, destination):
                          'no inferred evidence quotes, population market share, causal claim or RAG answer']}
     target = Path(destination); target.mkdir(parents=True, exist_ok=False)
     write(target / 'summary.json', result); write(target / 'taxonomy.json', tax)
-    seal(target, {'classification_unit': 'evaluation_target', 'database_writes': False,
+    seal(target, {'classification_unit': 'leaf_id', 'database_writes': False,
                   'synthetic_model': metadata['synthetic_model']})
     return {'input_rows': len(data), 'games': len(games), 'successful_reviews': len(seen)}

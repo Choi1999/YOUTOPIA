@@ -4,7 +4,7 @@ import unicodedata
 from pathlib import Path
 from .common import digest, fingerprint, read, rows, seal, verify, write, write_rows, file_hash
 from .contract import POLICY, labels, taxonomy, validate
-from .taxonomy import require_confirmed
+from .taxonomy import require_frozen_taxonomy
 
 
 def check_registry(registry):
@@ -24,6 +24,14 @@ def check_registry(registry):
                 or not isinstance(checksum, str) or len(checksum) != 64
                 or any(c not in '0123456789abcdef' for c in checksum)):
             raise ValueError('PILOT_SOURCE_INVENTORY_INVALID')
+    if not registry.get('synthetic', False):
+        from .pilot_v05 import PINNED_PILOT_SHA256, PINNED_KEYSET_SHA256
+        source = next((batch for batch in inventory if batch['id'] == 'guideline-pilot-v0.5'), None)
+        if source is None or source['expected_count'] != 70 or source['source_sha256'] != PINNED_PILOT_SHA256:
+            raise ValueError('PINNED_V05_PILOT_EXCLUSION_REQUIRED')
+        batch = next(batch for batch in batches if batch['id'] == 'guideline-pilot-v0.5')
+        if fingerprint(sorted(batch['keys'])) != PINNED_KEYSET_SHA256:
+            raise ValueError('PINNED_V05_PILOT_EXCLUSION_KEYS_CHANGED')
     all_keys = []
     for batch in batches:
         if not batch.get('id') or len(batch['keys']) != batch['expected_count']:
@@ -97,7 +105,7 @@ def build(source, approvals, registry_path, base, destination, max_tokens=256, s
     from transformers import AutoConfig, AutoTokenizer
     registry = read(registry_path)
     tax = taxonomy(taxonomy_path)
-    require_confirmed(tax, registry.get('synthetic', False))
+    require_frozen_taxonomy(tax, registry.get('synthetic', False))
     excluded = check_registry(registry)
     base_meta = verify(base)
     if base_meta.get('synthetic', False) != registry.get('synthetic', False):
@@ -139,11 +147,16 @@ def build(source, approvals, registry_path, base, destination, max_tokens=256, s
     }
     write(target / 'audit.json', summary)
     metadata = {
-        'contract': 'review-training-v2', 'taxonomy_sha256': fingerprint(tax), 'taxonomy': tax,
-        'classification_unit': 'evaluation_target',
+        'contract': 'review-training-v05', 'taxonomy_sha256': fingerprint(tax), 'taxonomy': tax,
+        'classification_unit': 'leaf_id',
         'policy_sha256': fingerprint(POLICY), 'labels': labels(tax), 'label_schema_sha256': fingerprint(labels(tax)), 'seed': seed,
+        'label_to_id_sha256': fingerprint({label: i for i, label in enumerate(labels(tax))}),
+        'preprocessing_version': 'preserved-review-body-v1',
+        'input_scope': {'body': 'clean_text', 'offset_unit': 'Unicode code points',
+                        'excluded_spans_retained': True, 'steam_metadata_in_input': False, 'truncate': False},
         'synthetic': registry.get('synthetic', False), 'base_sha256': file_hash(Path(base) / 'READY.json'),
         'base': base_meta, 'max_tokens': max_tokens, 'steam_in_model_input': False,
+        'taxonomy_source_file_sha256': file_hash(taxonomy_path or Path(__file__).parent / 'taxonomy.json'),
         'source_sha256': file_hash(source), 'approvals_sha256': file_hash(approvals),
         'pilot_registry_sha256': file_hash(registry_path),
         'split_counts': {key: len(value) for key, value in splits.items()},
@@ -156,12 +169,13 @@ def build(source, approvals, registry_path, base, destination, max_tokens=256, s
 
 def load(root, split):
     metadata = verify(root)
-    if metadata.get('contract') != 'review-training-v2' or metadata.get('classification_unit') != 'evaluation_target':
+    if metadata.get('contract') != 'review-training-v05' or metadata.get('classification_unit') != 'leaf_id':
         raise ValueError('LEGACY_COARSE_DATASET_REQUIRES_REBUILD')
     tax = taxonomy(read(Path(root) / 'taxonomy.json'))
-    require_confirmed(tax, metadata['synthetic'])
+    require_frozen_taxonomy(tax, metadata['synthetic'])
     if (metadata['taxonomy'] != tax or metadata['labels'] != labels(tax)
             or metadata['label_schema_sha256'] != fingerprint(labels(tax))
+            or metadata.get('label_to_id_sha256') != fingerprint({label: i for i, label in enumerate(labels(tax))})
             or metadata['policy_sha256'] != fingerprint(POLICY) or metadata['taxonomy_sha256'] != fingerprint(tax)):
         raise ValueError('DATASET_CONTRACT_CHANGED')
     records = rows(Path(root) / (split + '.jsonl'))
