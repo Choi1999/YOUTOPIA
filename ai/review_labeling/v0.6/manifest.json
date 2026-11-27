@@ -1,21 +1,24 @@
 {
   "taxonomy_version": "v0.6",
   "files": {
-    "AGENTS.md": "c833cf2448e0369bf9df1a10408f432cf3443ca5c227645a829f0cbe0a95ffb2",
-    "ai/review_labeling/CURRENT.json": "3bd3235e0e1c1de800796a170ec861d28c7f6b712d360fdbda1cbc7b73d8c2c4",
-    "ai/review_labeling/v0.6/CHANGELOG.md": "2e0dfc3bd7c3d4102e46772a66c324297fea39cd454ef3b88a10f81cfdca7066",
-    "ai/review_labeling/v0.6/CODEX_HANDOFF.md": "85f3de7ea102e85c499778594f7997fba590be7d73694def18677211d0e6d141",
-    "ai/review_labeling/v0.6/GUIDELINES_KO.md": "a5b564036cd4f81fcbf30ce367789484a08671cf941813f35862484d572a3c9d",
+    "AGENTS.md": "49856db0dd413db0a8e3aa64d19472e46d2595c308cd07e6d1a21f897d109d20",
+    "ai/review_labeling/CURRENT.json": "6c459d835c1d789c5588ba32f40c9f31ec7e72aa3fe6c44a438509e6fd98657d",
+    "ai/review_labeling/v0.6/CHANGELOG.md": "a4b57c3ddc0f39356e98a5ef6166d0de64af7d1f4deb6f37df0db3a70849f713",
+    "ai/review_labeling/v0.6/CODEX_HANDOFF.md": "b2c24425feecbccb97db24f8d02ad141591331f184dfb2a11616b95eae9c4324",
+    "ai/review_labeling/v0.6/GUIDELINES_KO.md": "fc5af74599940a38768080a5fdc234583103205e689556513c0a37eb492181e6",
     "ai/review_labeling/v0.6/adjudications.json": "99a10f6702eb5c1f5608bab79b5eba8143eea76ff44859b115f41aefc3798a3f",
+    "ai/review_labeling/v0.6/education_effect_exclusion_v1.json": "3e5fd1bc22ec900f4e1bf461917a5f2fa8a27cf2f8d3bbc843fcd5c063cb5696",
     "ai/review_labeling/v0.6/migration_v05_to_v06.json": "b8c63ae8795fb2128ec19839012251892aaf3a90f38972b585b10a60dea09d8e",
     "ai/review_labeling/v0.6/pilot100.json": "ec4492251e3fe0fa23f28a63e9f6383bdccc5734dd0f5b05a3fd59898204c032",
-    "ai/review_labeling/v0.6/pilot100_review.md": "d3a2c917ef3fb42236f4ac9b61337ef92aa5b7eb30abc98df3add7edd1ef8e7f",
+    "ai/review_labeling/v0.6/pilot100_review.md": "bc6c2ac1766ec977bb7f43a4765622ed388918bc01756a18b7f5efb26ac4e982",
     "ai/review_labeling/v0.6/source_excerpts_71_100.json": "0a52476889b92fbbaa032c1cf2389602548adfed06e32fe19d9a8a12288f6464",
-    "ai/review_labeling/v0.6/taxonomy.json": "0212a8b1ec6f403119521b79a321ec8335718c8c2417e734e820276c9c30ea93",
-    "ai/review_labeling/v0.6/validate.py": "7ea62a8358f7f7a54fcfff01dc52325517d3358746e10affdb8be5d99928b328"
+    "ai/review_labeling/v0.6/taxonomy.json": "0b5d8be8ff597b64b57d0f2b2fd009a4839f0cf9f7c497dc55f4878baa00563e",
+    "ai/review_labeling/v0.6/validate.py": "78c5721db66c129fd0fd32fd2d5c584eb79362517547ab4ea320d5f671cc196a"
   },
   "excluded_generated_files": [
     "ai/review_labeling/v0.6/validation.json"
   ],
-  "note": "manifest excludes itself; validation report is reproducible"
+  "note": "manifest excludes itself; validation report is reproducible",
+  "guideline_version": "v1.3.1",
+  "scope_policy_id": "EDUCATIONAL_EFFECT_OUT_OF_SCOPE_20261128"
 }

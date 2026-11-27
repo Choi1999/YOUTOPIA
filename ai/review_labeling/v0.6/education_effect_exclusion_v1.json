@@ -1,0 +1,33 @@
+{
+  "policy_id": "EDUCATIONAL_EFFECT_OUT_OF_SCOPE_20261128",
+  "version": "1.0.0",
+  "effective_date": "2026-11-28",
+  "excluded_concepts": [
+    {
+      "concept": "educational_effect",
+      "label": "교육 효과",
+      "action": "EXCLUDE_FROM_LABELING",
+      "create_label": false,
+      "create_hold": false,
+      "retain_original_text": true,
+      "automatic_remap_to_learning_guidance": false,
+      "scope": "게임을 통해 얻는 현실 지식·교육·학습 효과에 대한 평가",
+      "create_candidate": false,
+      "create_active_annotation": false,
+      "reason_code": "OUT_OF_SCOPE_EDUCATIONAL_EFFECT",
+      "exclusion_field": "excluded_spans",
+      "retain_in_model_input": true,
+      "span_negative_training_eligible": false,
+      "fallback_to_unspecified": false
+    }
+  ],
+  "retained_leaf": "USABILITY.LEARNING_GUIDANCE",
+  "retained_leaf_scope": "게임의 조작·규칙·목표·아이템 등을 이해하도록 돕는 튜토리얼·설명·안내의 품질",
+  "registered_taxonomy_codes_changed": false,
+  "historical_records_are_audit_only": true,
+  "mixed_review_handling": "KEEP_OTHER_IN_SCOPE_ANNOTATIONS",
+  "only_excluded_content_status": "NO_CONCRETE_EVALUATION",
+  "only_excluded_content_status_condition": "No other in-scope evaluation or unresolved in-scope opinion remains; this is not a failure fallback.",
+  "application_order": "Apply this explicit scope exclusion before the generic unregistered-target UNSPECIFIED/HOLD rule.",
+  "matching_rule": "Semantic target distinction; never discard every occurrence of 교육 or 학습 by keyword."
+}

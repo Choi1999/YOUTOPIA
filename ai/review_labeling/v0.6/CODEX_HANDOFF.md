@@ -1,6 +1,17 @@
-# Codex 적용 지침 — taxonomy v0.6 / guideline v1.3.0
+# Codex 적용 지침 — taxonomy v0.6 / guideline v1.3.1
 
-먼저 현재 checkout의 `AGENTS.md`와 `ai/review_labeling/CURRENT.json`을 읽는다. 이어서 이 디렉터리의 `GUIDELINES_KO.md`, `taxonomy.json`, `pilot100_review.md`, `pilot100.json`을 확인한다. 버전 포인터와 실제 파일이 일치해야 한다.
+먼저 현재 checkout의 `AGENTS.md`와 `ai/review_labeling/CURRENT.json`을 읽는다. 이어서 이 디렉터리의 `GUIDELINES_KO.md`, `taxonomy.json`, `CURRENT.json`의 `scope_policy`, `pilot100_review.md`, `pilot100.json`을 확인한다. 버전 포인터와 실제 파일이 일치해야 한다.
+
+## 교육 효과 제외 정책 연결 — v1.3.1
+
+`CURRENT.json.scope_policy` → `education_effect_exclusion_v1.json`을 라벨링 프롬프트·정답 변환기·예측 검증·집계에서 함께 읽는다. 정책 ID는 `EDUCATIONAL_EFFECT_OUT_OF_SCOPE_20261128`이다. 명시적 범위 제외는 일반적인 미등록 대상의 UNSPECIFIED/HOLD 처리보다 먼저 적용한다.
+
+- 교육 효과는 신규 태그·후보·활성 의견·HOLD를 만들지 않는다. 기존 다른 분류로 우회하지 않는다.
+- 해당 문자열은 `excluded_spans`와 원문 입력에 보존한다. 제외 사유, 정확한 오프셋, `retain_in_model_input=true`, `span_negative_training_eligible=false`를 유지한다.
+- 같은 리뷰의 다른 범위 내 평가는 유지한다. 교육 효과 외 범위 내 평가나 미해결 의견이 없을 때만 내용 없음으로 처리한다.
+- `USABILITY.LEARNING_GUIDANCE`는 튜토리얼·게임 설명·안내의 품질로 유지하며, 교육 효과의 대체 태그로 쓰지 않는다.
+- taxonomy v0.6과 73개 코드 매핑은 그대로다. 최신 가이드 v1.3.1과 기존 파일럿의 주석 버전 v1.3.0을 구분한다(`pilot_annotation_guideline_version`). 새 가이드 버전을 과거 파일럿에 덮어써 재검수 완료로 표현하지 않는다.
+- 체크포인트·분석 결과에는 taxonomy/가이드 버전뿐 아니라 적용한 scope 정책 ID·버전·해시도 남겨 같은 조건으로 비교한다. 이 커밋은 분류 계약 갱신이며 분석기 실행 코드가 자동 갱신·배포되었다는 뜻은 아니다.
 
 ## 전달된 자료의 범위와 상태
 

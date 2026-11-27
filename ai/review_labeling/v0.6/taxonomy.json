@@ -277,7 +277,7 @@
           "code": "LEARNING_GUIDANCE",
           "label": "튜토리얼·설명·학습 안내",
           "leaf_id": "USABILITY.LEARNING_GUIDANCE",
-          "boundary": "규칙·아이템·방어 방식의 이해와 설명. 어려운 적 자체는 난도."
+          "boundary": "게임의 조작·규칙·목표·아이템 등을 이해하도록 돕는 튜토리얼·설명·안내의 품질. 게임을 통해 현실 지식을 배우는 교육 효과는 범위 밖이며 이 분류로 대체하지 않는다."
         },
         {
           "code": "NAVIGATION",
@@ -568,7 +568,7 @@
     "hold": "excluded from resolved gold and sentiment totals; retained in counts and audit",
     "difficulty": "Subjective experience under different player populations; do not infer absolute cross-game difficulty from sentiment rates."
   },
-  "guideline_version": "v1.3.0",
+  "guideline_version": "v1.3.1",
   "primary_label_unit": "leaf_id",
   "schema_version": "youtopia_review_taxonomy_v2",
   "active_polarities": [
@@ -576,7 +576,7 @@
     "부정"
   ],
   "mixed_is_derived": true,
-  "unregistered_targets": "Do not invent codes silently. Preserve description, use appropriate UNSPECIFIED or HOLD, propose next version.",
+  "unregistered_targets": "First apply scope_policy exclusions. For remaining in-scope targets, do not invent codes silently; preserve description, use appropriate UNSPECIFIED or HOLD, and propose a versioned addition.",
   "annotation_input_policy": {
     "default": "review_text",
     "exception_review_numbers": [
@@ -585,5 +585,7 @@
     "exception_basis": "USER_APPROVED_STEAM_RECOMMENDATION_TIEBREAK",
     "exception_not_text_only_gold": true,
     "comparison": "Separate text-only and metadata-assisted tasks. Provide identical permitted metadata to every model."
-  }
+  },
+  "scope_policy": "ai/review_labeling/v0.6/education_effect_exclusion_v1.json",
+  "scope_policy_id": "EDUCATIONAL_EFFECT_OUT_OF_SCOPE_20261128"
 }

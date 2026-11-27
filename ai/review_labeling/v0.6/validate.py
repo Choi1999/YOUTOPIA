@@ -25,13 +25,28 @@ def validate():
     current=read(BASE.parent/'CURRENT.json'); migration=read(BASE/'migration_v05_to_v06.json')
     old=read(ROOT/migration['source_file'])
     require(data['taxonomy_version']==taxonomy['version']==current['taxonomy_version']=='v0.6','Taxonomy version mismatch')
-    require(data['guideline_version']==taxonomy['guideline_version']==current['guideline_version']=='v1.3.0','Guideline mismatch')
+    require(taxonomy['guideline_version']==current['guideline_version']=='v1.3.1','Current guideline mismatch')
+    require(data['guideline_version']==current['pilot_annotation_guideline_version']=='v1.3.0','Historical pilot guideline mismatch')
     require(data['schema']==current['pilot_schema']=='youtopia_pilot_consolidated_review_v2','Dataset schema mismatch')
     require(current['status']=='PILOT_TAXONOMY_NOT_TRAINING_READY','Trained-service claim invalid')
-    for pointer in ['taxonomy','guidelines','pilot','review_table','handoff','manifest','adjudications']:
+    for pointer in ['taxonomy','guidelines','pilot','review_table','handoff','manifest','adjudications','scope_policy']:
         require((ROOT/current[pointer]).is_file(),f'Broken CURRENT pointer: {pointer}')
     leaves={s['leaf_id']:(c['code'],s['code'],s['label']) for c in taxonomy['categories'] for s in c['subaspects']}
     require(len(leaves)==sum(len(c['subaspects']) for c in taxonomy['categories']),'Duplicate leaves')
+    policy=read(ROOT/current['scope_policy'])
+    require(current['scope_policy']==taxonomy['scope_policy'],'Scope policy pointer mismatch')
+    require(policy['policy_id']==current['scope_policy_id']==taxonomy['scope_policy_id']=='EDUCATIONAL_EFFECT_OUT_OF_SCOPE_20261128','Scope policy identity mismatch')
+    require(policy['version']=='1.0.0' and policy['registered_taxonomy_codes_changed'] is False,'Scope policy unexpectedly changes label codes')
+    require(len(policy['excluded_concepts'])==1,'Unexpected scope exclusions')
+    exclusion=policy['excluded_concepts'][0]
+    require(exclusion['concept']=='educational_effect' and exclusion['action']=='EXCLUDE_FROM_LABELING','Education effect not excluded')
+    for flag in ['create_label','create_candidate','create_active_annotation','create_hold','automatic_remap_to_learning_guidance','fallback_to_unspecified','span_negative_training_eligible']:
+        require(exclusion[flag] is False,'Excluded education effect incorrectly enabled: '+flag)
+    require(exclusion['retain_original_text'] is True and exclusion['retain_in_model_input'] is True,'Excluded text must remain in input')
+    require(exclusion['exclusion_field']=='excluded_spans' and exclusion['reason_code']=='OUT_OF_SCOPE_EDUCATIONAL_EFFECT','Exclusion audit contract missing')
+    require(policy['mixed_review_handling']=='KEEP_OTHER_IN_SCOPE_ANNOTATIONS' and policy['only_excluded_content_status']=='NO_CONCRETE_EVALUATION','Review scope handling mismatch')
+    require(policy['retained_leaf']=='USABILITY.LEARNING_GUIDANCE' and policy['retained_leaf'] in leaves,'Tutorial and guidance label removed')
+    require(len(leaves)==73 and not any('EDUCATIONAL_EFFECT' in leaf for leaf in leaves),'Unexpected educational-effect label or label count change')
     old_leaves={s['leaf_id'] for c in read(BASE.parent/'v0.5/taxonomy.json')['categories'] for s in c['subaspects']}
     require(set(leaves)-old_leaves=={'CONTENT.TRACK_CATALOG','GAMEPLAY.EXPLORATION'} and old_leaves <= set(leaves),'Unexpected taxonomy delta')
     records=data['records']; by_number={r['display_number']:r for r in records}
@@ -112,11 +127,12 @@ def validate():
     for k,v in expected_counts.items():require(counts[k]==v,'Incorrect count: '+k)
     for path,sha in read(BASE/'manifest.json')['files'].items():
         require(hashlib.sha256((ROOT/path).read_bytes()).hexdigest()==sha,'Manifest hash mismatch: '+path)
-    report={'status':'PASS','taxonomy_version':'v0.6','guideline_version':'v1.3.0',**expected_counts,
+    report={'status':'PASS','taxonomy_version':'v0.6','guideline_version':current['guideline_version'],'pilot_annotation_guideline_version':data['guideline_version'],**expected_counts,
         'registered_leaves':len(leaves),'observed_leaves':len(active_count),
         'review_text_hashes':'PASS','evidence_offsets':'PASS','source_excerpt_integrity':'PASS',
         'archived_version_preservation':'PASS','user_corrections':'PASS','hold_exclusion_preservation':'PASS',
         'metadata_input_separation':'PASS','leaf_aggregation':'PASS','manifest_hashes':'PASS',
+        'educational_effect_scope_policy':'PASS','scope_policy_id':policy['policy_id'],
         'training_performed':False,'deployment_performed':False,
         'support_by_leaf':{k:{'reviews':len(support[k]),'opinions':active_count[k]} for k in sorted(leaves)}}
     (BASE/'validation.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
