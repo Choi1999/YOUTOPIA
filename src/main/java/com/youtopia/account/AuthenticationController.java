@@ -1,5 +1,6 @@
 package com.youtopia.account;
 
+import com.youtopia.api.QueryParameters;
 import jakarta.servlet.http.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -24,31 +25,36 @@ public class AuthenticationController {
     public record Created(UUID userId,String nextRoute,boolean emailVerified) {}
     public record Identity(String kind,UUID id,boolean emailVerified,String authVersion,String adminGeneration) {}
     @PostMapping("/api/v1/auth/signup")
-    ResponseEntity<Created> signup(@Valid @RequestBody Signup input) {
+    ResponseEntity<Created> signup(@Valid @RequestBody Signup input,HttpServletRequest request) {
+        QueryParameters.only(request);
         UUID id=service.signup(input.email(),input.password());
         return ResponseEntity.status(201).cacheControl(CacheControl.noStore()).body(new Created(id,"/login",false));
     }
     @PostMapping("/api/v1/auth/login")
     Identity login(@Valid @RequestBody Login input,HttpServletRequest request,HttpServletResponse response) {
+        QueryParameters.only(request);
         response.setHeader("Cache-Control","no-store");return view(service.login(Account.Kind.USER,input.login(),input.password(),request,response));
     }
     @PostMapping("/api/v1/admin/auth/login")
     Identity adminLogin(@Valid @RequestBody Login input,HttpServletRequest request,HttpServletResponse response) {
+        QueryParameters.only(request);
         response.setHeader("Cache-Control","no-store");return view(service.login(Account.Kind.ADMIN,input.login(),input.password(),request,response));
     }
     @GetMapping({"/api/v1/auth/me","/api/v1/admin/auth/me"})
     Identity me(HttpServletRequest request,HttpServletResponse response) {
+        QueryParameters.only(request);
         response.setHeader("Cache-Control","no-store");return view(identity(request));
     }
     @PostMapping("/api/v1/auth/activity")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void activity(HttpServletRequest request) {
+        QueryParameters.only(request);
         var session=request.getSession(false);var identity=AccountContext.require(request);
         session.setAttribute(SessionIdentity.ATTRIBUTE,identity.activeAt(clock.instant()));
     }
     @PostMapping("/api/v1/auth/logout")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void logout(HttpServletRequest request) {service.logout(request);}
+    void logout(HttpServletRequest request) {QueryParameters.only(request);service.logout(request);}
     public static SessionIdentity identity(HttpServletRequest request) {
         var session=request.getSession(false);
         if(session==null || !(session.getAttribute(SessionIdentity.ATTRIBUTE) instanceof SessionIdentity identity))throw AccountProblem.invalid();

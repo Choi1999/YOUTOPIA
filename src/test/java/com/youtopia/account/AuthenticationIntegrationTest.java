@@ -114,6 +114,8 @@ class AuthenticationIntegrationTest {
         Files.deleteIfExists(CHAT_ROOT.resolve("receipt.json"));Files.deleteIfExists(CHAT_ROOT.resolve("receipt.json.lock"));
         var abuseKeys=redis.keys("youtopia:p0-auth-tests:auth-abuse:*");if(abuseKeys!=null&&!abuseKeys.isEmpty())redis.delete(abuseKeys);
         var keys=redis.keys("youtopia:p0-auth-tests:account-budget:*");if(keys!=null&&!keys.isEmpty())redis.delete(keys);
+        // Each synthetic HTTP case owns its query budget; retain the real limiter within the case.
+        redis.delete("youtopia:p0-auth-tests:limits:ccu");
         try(var c=DriverManager.getConnection(URL,"postgres","");var s=c.createStatement()) {
             assertThat(c.getMetaData().getDatabaseMajorVersion()).isEqualTo(16);
             s.execute("TRUNCATE auth.service_user,auth.admin_account,auth.security_operation,security.security_audit_event,telemetry.product_event,service.signup_daily_count CASCADE");
@@ -165,6 +167,25 @@ class AuthenticationIntegrationTest {
         assertThat(b.login().path("kind").asText()).isEqualTo("USER");assertThat(b.cookie).isNotEqualTo(anonymous);
         var other=new Browser();other.cookie=b.cookie;assertThat(other.get("/api/v1/auth/me",200).path("id")).isNotNull();
         b.get("/api/v1/admin/auth/me",403);b.post("/api/v1/auth/logout",Map.of(),204);other.get("/api/v1/auth/me",401);
+    }
+    @Test void queryFreeWritesRejectUnexpectedParametersBeforeAccountOrEventChanges()throws Exception {
+        var b=new Browser();
+        b.post("/api/v1/auth/signup?unexpected=1",Map.of("email",EMAIL,"password",PASSWORD),400);
+        try(var c=DriverManager.getConnection(URL,"postgres","");var q=c.createStatement();var rows=q.executeQuery("SELECT count(*) FROM auth.service_user")){
+            rows.next();assertThat(rows.getLong(1)).isZero();
+        }
+        b.signup();
+        b.post("/api/v1/auth/login?unexpected=1&unexpected=2",Map.of("login",EMAIL,"password",PASSWORD),400);
+        b.get("/api/v1/auth/me",401);b.login();var identity=b.get("/api/v1/auth/me",200);
+        b.post("/api/v1/auth/logout?unexpected=1",Map.of(),400);
+        assertThat(b.get("/api/v1/auth/me",200).path("id")).isEqualTo(identity.path("id"));
+        b.post("/api/v1/auth/password?unexpected=1",Map.of("requestKey",UUID.randomUUID(),"currentPassword",PASSWORD,"newPassword","another synthetic pass phrase 1234"),400);
+        assertThat(b.get("/api/v1/auth/me",200).path("authVersion")).isEqualTo(identity.path("authVersion"));
+        b.post("/api/v1/events?unexpected=1",Map.of("clientEventId",UUID.randomUUID(),"eventType","PAGE_VIEW","actionKey","route.view","properties",Map.of("routeKey","dashboard")),400);
+        try(var c=DriverManager.getConnection(URL,"postgres","");var q=c.createStatement();var rows=q.executeQuery("SELECT count(*) FROM telemetry.product_event")){
+            rows.next();assertThat(rows.getLong(1)).isZero();
+        }
+        b.post("/api/v1/auth/logout",Map.of(),204);b.get("/api/v1/auth/me",401);
     }
     @Test void unknownAndWrongPasswordHaveIdenticalGenericResponse() throws Exception {
         var b=new Browser();b.signup();
@@ -402,6 +423,11 @@ class AuthenticationIntegrationTest {
         var b=new Browser();b.signup();b.login();assertThat(b.get("/api/v1/me/settings",200).path("version").asLong()).isZero();
         b.token();var headers=new HttpHeaders();headers.setContentType(MediaType.APPLICATION_JSON);headers.set("Cookie",b.cookie);headers.set("X-CSRF-TOKEN",b.csrf);
         var request=new HttpEntity<>(Map.of("expectedVersion",0,"changes",Map.of("theme","dark")),headers);
+        for (String query : List.of("?unexpected=1", "?theme=dark&theme=light")) {
+            var rejected = http.exchange("/api/v1/me/settings" + query, HttpMethod.PATCH, request, String.class);
+            assertThat(rejected.getStatusCode().value()).isEqualTo(400);
+        }
+        assertThat(b.get("/api/v1/me/settings",200).path("version").asLong()).isZero();
         assertThat(http.exchange("/api/v1/me/settings",HttpMethod.PATCH,request,String.class).getStatusCode().value()).isEqualTo(200);
         assertThat(http.exchange("/api/v1/me/settings",HttpMethod.PATCH,request,String.class).getStatusCode().value()).isEqualTo(409);
         var invalid=new HttpEntity<>(Map.of("expectedVersion",1,"changes",Map.of("email",EMAIL)),headers);
@@ -859,6 +885,26 @@ class AuthenticationIntegrationTest {
         for(String query:List.of("sort=password_hash","platform=YOUTUBE","q=a&q=b","size=101","page=-1","direction=DESC%3BDROP"))b.get("/api/v1/games?"+query,400);
         assertThat(b.get("/api/v1/games?connectionStatus=CONNECTED",200).path("page").path("totalElements").asLong()).isEqualTo(2);
     }
+    @Test void gameListAndDetailUseTheSameCorrectedCcuSlotAsTheChart() throws Exception {
+        gameFixtures();
+        try (var c = DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"), "postgres", "");
+             var sql = c.createStatement()) {
+            // Two further receipts for app 570's current slot. The later ID breaks the timestamp tie.
+            sql.execute("""
+                INSERT INTO collector.ccu_fixture(observation_id,app_id,scheduled_at,observed_at,player_count)
+                SELECT n, app_id, scheduled_at, observed_at + interval '1 second', players
+                FROM collector.ccu_fixture CROSS JOIN (VALUES (10,999), (11,42)) r(n,players)
+                WHERE observation_id=1
+                """);
+        }
+        var guest = new Browser();
+        var listing = guest.get("/api/v1/games?sort=peak24h&direction=DESC", 200);
+        assertThat(listing.at("/content/0/steamAppId").asLong()).isEqualTo(730);
+        assertThat(listing.at("/content/1/peak24h/value").asLong()).isEqualTo(42);
+        var detail = guest.get("/api/v1/games/steam:570", 200);
+        assertThat(detail.at("/game/peak24h/value").asLong()).isEqualTo(42);
+        assertThat(detail.at("/steamPreview/peak24h")).isEqualTo(detail.at("/game/peak24h"));
+    }
     @Test void gameSearchProofIsIssuedByRealQueryAndNeverContainsKeywordOrStoresAnEventAutomatically() throws Exception {
         gameFixtures();var b=new Browser();b.signup();b.login();UUID id=UUID.randomUUID();
         var found=b.post("/api/v1/games/search",Map.of("q","Synthetic","clientEventId",id),200);
@@ -1108,7 +1154,7 @@ class AuthenticationIntegrationTest {
         clock.now=clock.now.truncatedTo(java.time.temporal.ChronoUnit.MICROS);
         gameFixtures();var guest=new Browser();
         String path="/api/v1/games/steam:570/youtube-publications?days=7";
-        var pending=guest.get(path,200);assertThat(pending.path("dataStatus").asText()).isEqualTo("PENDING_CONTRACT");assertThat(pending.path("videos").isNull()).isTrue();
+        var pending=guest.get(path,200);assertThat(pending.path("dataStatus").asText()).isEqualTo("PENDING_CONTRACT");assertThat(pending.path("videos").isNull()).isTrue();assertThat(pending.path("summary").isNull()).isTrue();
         try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var q=c.createStatement()){
             q.execute("CREATE TABLE service.publication_fixture(app_id bigint,video_id text,title text,published_at timestamptz,first_observed_at timestamptz,last_observed_at timestamptz)");
             q.execute("CREATE VIEW service.v_game_published_video AS SELECT * FROM service.publication_fixture");
@@ -1126,11 +1172,41 @@ class AuthenticationIntegrationTest {
             assertThat(result.at("/videos/page/totalElements").asLong()).isEqualTo(1);assertThat(result.path("missingPublishedAt").asLong()).isEqualTo(1);
             assertThat(result.at("/points/6/observedVideos").asLong()).isEqualTo(1);assertThat(result.at("/points/6/inProgress").asBoolean()).isTrue();
             assertThat(result.path("coverage").asText()).isEqualTo("UNASSESSED");
+            // A repeated search must not multiply the denominator; future discoveries never enter it.
+            assertThat(result.at("/summary/population").asText()).isEqualTo("QUERY_ASSOCIATED_DISTINCT_VIDEOS_DISCOVERED_BY_AS_OF");
+            assertThat(result.at("/summary/observedVideos").asLong()).isEqualTo(5);
+            assertThat(result.at("/summary/publishedVideos").asLong()).isEqualTo(3);
+            assertThat(result.at("/summary/periodVideos").asLong()).isEqualTo(2);
+            assertThat(result.at("/summary/missingPublishedAt").asLong()).isEqualTo(1);
+            assertThat(result.at("/summary/futurePublishedAt").asLong()).isEqualTo(1);
+            assertThat(Instant.parse(result.at("/summary/latestFirstObservedAt").asText())).isEqualTo(clock.now.minusSeconds(1));
+            assertThat(Instant.parse(result.path("asOf").asText())).isEqualTo(clock.now);
+            var period=guest.get(path+"&scope=period&size=1",200);
+            assertThat(period.path("videoScope").asText()).isEqualTo("period");assertThat(period.path("selectedDate").isNull()).isTrue();
+            assertThat(period.at("/videos/page/totalElements").asLong()).isEqualTo(2);
+            assertThat(period.at("/videos/content/0/videoId").asText()).isEqualTo("ddddddddddd");
+            assertThat(period.path("summary")).isEqualTo(result.path("summary"));
+            // Publication reads require catalog membership and the video view, independently of Steam CCU.
+            q.execute("REVOKE SELECT(player_count) ON collector.v_steam_ccu_canonical FROM ytp_test_data_ro");
+            try {
+                var videoOnly = guest.get(path + "&scope=period&size=1", 200);
+                assertThat(videoOnly.path("summary")).isEqualTo(period.path("summary"));
+                guest.get("/api/v1/games/steam:999/youtube-publications", 404);
+            } finally {
+                q.execute("GRANT SELECT(player_count) ON collector.v_steam_ccu_canonical TO ytp_test_data_ro");
+            }
+            var next=guest.get(path+"&scope=period&size=1&page=1",200);
+            assertThat(next.at("/videos/content/0/videoId").asText()).isEqualTo("abcdefghijk");
+            assertThat(next.path("summary")).isEqualTo(period.path("summary"));
+            assertThat(guest.get(path+"&scope=period&page=2&size=1",200).at("/videos/content")).isEmpty();
+            guest.get(path+"&scope=period&date="+today,400);guest.get(path+"&scope=invalid",400);
+            assertThat(guest.get(path,200).path("selectedDate").asText()).isEqualTo(today.toString());
             assertThat(guest.get("/api/v1/games/steam:570",200).path("youtubePreviewAvailability").asText()).isEqualTo("AVAILABLE");
             assertThat(guest.get(path+"&date="+today.minusDays(6)+"&page=1&size=1",200).at("/videos/content")).isEmpty();
             guest.get(path+"&date="+today.minusDays(7),400);guest.get(path+"&size=101",400);guest.get(path+"&date=not-a-date",400);
             q.execute("REVOKE SELECT ON service.v_game_published_video FROM ytp_test_data_ro");
-            assertThat(guest.get(path,200).path("dataStatus").asText()).isEqualTo("PERMISSION_UNCONFIRMED");
+            var denied=guest.get(path,200);assertThat(denied.path("dataStatus").asText()).isEqualTo("PERMISSION_UNCONFIRMED");
+            assertThat(denied.path("summary").isNull()).isTrue();
         }finally{try(var c=DriverManager.getConnection(IsolatedTestServices.url("youtopia_test"),"postgres","");var q=c.createStatement()){q.execute("DROP VIEW IF EXISTS service.v_game_published_video");q.execute("DROP TABLE IF EXISTS service.publication_fixture");}}
     }
     @Test void evidenceSortingIsGlobalStableAcrossPagesAndUsesZeroObservationAndInclusivePeriod()throws Exception {

@@ -1,0 +1,93 @@
+name: 프론트 DB 연동 격리 검증
+
+on:
+  push:
+    branches: [codex/youtopia-backend-db-link-20261127]
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-integration:
+    name: React + Spring + 합성 PostgreSQL·Redis
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: 백엔드 후보 체크아웃
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: 검토할 독립 프론트 커밋 체크아웃
+        uses: actions/checkout@v4
+        with:
+          ref: 42a6f74ba6058e936cf659e4177388a34982a14a
+          path: reviewed-frontend
+          persist-credentials: false
+
+      - name: 테스트 작업 폴더에 프론트 소스 구성
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C reviewed-frontend rev-parse HEAD)" = "42a6f74ba6058e936cf659e4177388a34982a14a"
+          test -f reviewed-frontend/frontend/package.json
+          # 두 Git 브랜치는 병합하지 않는다. 이 runner의 테스트 폴더에만 구성한다.
+          rsync -a --delete reviewed-frontend/frontend/ frontend/
+          diff -qr reviewed-frontend/frontend frontend
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.9.1
+
+      - name: 프론트 빌드·단위 테스트·브라우저 준비
+        working-directory: frontend
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm build
+          pnpm test
+          pnpm exec playwright install --with-deps chromium
+
+      - name: 실제 Spring·PostgreSQL·Redis 격리 통합 검증
+        run: |
+          set -euo pipefail
+          test -S /var/run/docker.sock
+          chmod +x ./gradlew
+          python3 tools/test_services.py verify --with-browser --with-db-link-browser
+
+      - name: 연결 화면 브라우저 회귀 검증 (합성 HTTP 응답)
+        working-directory: frontend
+        run: pnpm exec playwright test --config=playwright.db-link.config.ts
+
+      - name: 검증 결과 보관
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: youtopia-db-link-synthetic-validation
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            build/test-results/test/*.xml
+            build/test-results/integrationTest/*.xml
+            build/reports/packaged-sessions/result*.json
+            build/reports/packaged-sessions/browser-*.json
+            build/reports/packaged-sessions/process-*.log
+            frontend/test-results/db-link-results.json
+            frontend/test-results/db-link/**/*.png
+            frontend/test-results/service/**/*.png
+            frontend/test-results/service/**/trace.zip
+
+      - name: 남은 소유 테스트 컨테이너 정리
+        if: always()
+        run: python3 tools/test_services.py stop

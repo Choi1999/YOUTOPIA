@@ -19,6 +19,7 @@ from test_services import load_state
 
 arguments = argparse.ArgumentParser(description=__doc__)
 arguments.add_argument('--with-browser', action='store_true', help='Run saved React browser E2E against these isolated JAR processes')
+arguments.add_argument('--with-db-link-browser', action='store_true', help='Include the paired frontend publication flow')
 arguments.add_argument('--current-frontend', type=Path, help='Independent latest React checkout for opt-in Chromium and real packaged Spring USER-session E2E')
 arguments.add_argument('--deployment-redis-state', type=Path, help='Owned disposable deployment Redis descriptor; never a production endpoint')
 arguments = arguments.parse_args()
@@ -242,9 +243,23 @@ try:
             # must not consume each other's per-minute budget or require disabling it.
             projects = ['real-service', 'service-panels', 'collection-filters', 'visual-desktop-dark', 'visual-mobile-dark',
                         'visual-desktop-light', 'visual-mobile-light']
+            if arguments.with_db_link_browser:
+                projects.append('db-publications')
             for project in projects:
                 for process in list(processes):
                     stop(process)
+                if project == 'db-publications':
+                    # Earlier projects verify an absent view. This last project gets a populated one.
+                    isolated_sql('youtopia_test', """
+                        CREATE TABLE service.browser_publication_fixture AS
+                        SELECT 570::bigint AS app_id, 'abcdefghijk'::text AS video_id,
+                               'Browser Arena saved video'::text AS title,
+                               now() - interval '1 day' AS published_at,
+                               now() - interval '2 hours' AS first_observed_at,
+                               now() - interval '1 hour' AS last_observed_at;
+                        CREATE VIEW service.v_game_published_video AS SELECT * FROM service.browser_publication_fixture;
+                        GRANT SELECT ON service.v_game_published_video TO ytp_test_data_ro;
+                    """)
                 session_namespace = 'youtopia:p0-browser:' + project + ':' + uuid.uuid4().hex
                 start(FIRST_PORT)
                 completed = subprocess.run(['pnpm', 'exec', 'playwright', 'test',

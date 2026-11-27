@@ -24,5 +24,5 @@ public class ProductEventController {
         @Bean JdbcTransactionManager eventTx(@Qualifier("eventDataSource")HikariDataSource source){return new JdbcTransactionManager(source);}
     }
     @PostMapping("/api/v1/events") @ResponseStatus(HttpStatus.NO_CONTENT)
-    void record(@Valid @RequestBody ProductEvent event,HttpServletRequest request,HttpServletResponse response){response.setHeader("Cache-Control","no-store");if(request.getHeader(com.youtopia.account.AccountContext.HEADER)!=null)com.youtopia.account.AccountContext.require(request);service.record(event,request);}
+    void record(@Valid @RequestBody ProductEvent event,HttpServletRequest request,HttpServletResponse response){com.youtopia.api.QueryParameters.only(request);response.setHeader("Cache-Control","no-store");if(request.getHeader(com.youtopia.account.AccountContext.HEADER)!=null)com.youtopia.account.AccountContext.require(request);service.record(event,request);}
 }

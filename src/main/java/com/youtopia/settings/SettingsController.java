@@ -17,5 +17,9 @@ public class SettingsController {
     @GetMapping("/api/v1/me/settings")
     SettingsService.View get(HttpServletRequest request,HttpServletResponse response){QueryParameters.only(request);response.setHeader("Cache-Control","no-store");return service.get(com.youtopia.account.AccountContext.require(request));}
     @PatchMapping("/api/v1/me/settings")
-    SettingsService.View patch(@Valid @RequestBody Patch input,HttpServletRequest request,HttpServletResponse response){response.setHeader("Cache-Control","no-store");return service.patch(com.youtopia.account.AccountContext.require(request),input.expectedVersion(),input.changes());}
+    SettingsService.View patch(@Valid @RequestBody Patch input,HttpServletRequest request,HttpServletResponse response){
+        QueryParameters.only(request);
+        response.setHeader("Cache-Control","no-store");
+        return service.patch(com.youtopia.account.AccountContext.require(request),input.expectedVersion(),input.changes());
+    }
 }

@@ -47,8 +47,9 @@ public class JdbcGameRepository implements GameRepository {
         String sql="""
             WITH catalog AS MATERIALIZED (SELECT g.app_id,g.steam_name,g.developers,g.release_at,g.source_language,g.metadata_observed_at,g.steam_tracked FROM service.v_game_catalog g %s),
             observations AS MATERIALIZED (SELECT c.app_id,c.observation_id,c.player_count,c.scheduled_at,c.observed_at
-             FROM catalog g CROSS JOIN LATERAL (SELECT c.app_id,c.observation_id,c.player_count,c.scheduled_at,c.observed_at
-              FROM collector.v_steam_ccu_canonical c WHERE c.app_id=g.app_id AND c.scheduled_at<=? AND c.observed_at<=? OFFSET 0) c),
+             FROM catalog g CROSS JOIN LATERAL (SELECT DISTINCT ON (c.scheduled_at) c.app_id,c.observation_id,c.player_count,c.scheduled_at,c.observed_at
+              FROM collector.v_steam_ccu_canonical c WHERE c.app_id=g.app_id AND c.scheduled_at<=? AND c.observed_at<=?
+              ORDER BY c.scheduled_at,c.observed_at DESC,c.observation_id DESC) c),
             latest AS (SELECT DISTINCT ON(app_id) app_id,player_count current_ccu,observed_at current_at FROM observations ORDER BY app_id,observed_at DESC,observation_id DESC),
             recent AS MATERIALIZED (SELECT * FROM observations WHERE scheduled_at>=? OR observed_at>=?),
             steam AS (SELECT app_id,count(*) FILTER(WHERE scheduled_at>=?) period_count,max(observed_at) FILTER(WHERE scheduled_at>=?) period_last FROM recent GROUP BY app_id),
@@ -69,6 +70,10 @@ public class JdbcGameRepository implements GameRepository {
     }
     private List<Row> query(GameQuery q,Instant now,Long id){String status=videos.status();var sql=listingSql(q,now,id,status);return jdbc.query(sql.text(),(r,n)->row(r,status),sql.args().toArray());}
     public List<Row> find(GameQuery q,Instant now){return query(q,now,null);}
+    @Override
+    public boolean exists(long appId) {
+        return jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM service.v_game_catalog WHERE app_id=?)", Boolean.class, appId);
+    }
     public Row detail(long id,Instant now){var rows=query(new GameQuery("",0,1,"name","ASC","ALL","ALL"),now,id);return rows.isEmpty()?null:rows.getFirst();}
     private Row row(ResultSet r,String status)throws SQLException {
         long id=r.getLong(1);String name=r.getString(2);Long current=r.getObject(8,Long.class),peak=r.getObject(10,Long.class);

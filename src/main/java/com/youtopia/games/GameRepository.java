@@ -13,5 +13,6 @@ public interface GameRepository {
     long count(GameQuery query);
     default long count(GameQuery query,Instant asOf){return count(query);}
     List<Row> find(GameQuery query,Instant asOf);
+    boolean exists(long appId);
     Row detail(long appId,Instant asOf);
 }
