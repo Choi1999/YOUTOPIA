@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { ServiceSessionContext } from "../service/SessionProvider";
 
@@ -114,10 +114,10 @@ export function AppShell({service=false,admin=false}:{service?:boolean;admin?:bo
     <div className={"app-shell"+(service?" service-shell":"")}>
       <a className="skip-link" href="#main-content">본문으로 건너뛰기</a>
       <aside className="app-sidebar" aria-label="YUTOPIA 주 탐색">
-        <div className="sidebar-brand">
+        <Link className="sidebar-brand" to={admin ? "/admin" : service ? "/dashboard" : "/"} aria-label="YUTOPIA 홈">
           <NavigationIcon dark={brandDark} light={brandLight} />
           <strong className="sidebar-brand-copy">YUTOPIA</strong>
-        </div>
+        </Link>
 
         <label className="sidebar-search">
           <span className="sr-only">게임 검색</span>

@@ -1,6 +1,8 @@
 import { GamePublications } from "./GamePublications";
-import { useState, type FormEvent } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useState, type FormEvent } from "react";
+import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
+import { appIds, periodDays, periodSearch, videoId } from "./queryState";
+import { GameAnalysisLinks } from "./GameAnalysisPages";
 import { serviceApi, ApiError, type RankPair } from "./api";
 import { useInteractionEvents, usePageView } from "./Activity";
 import { useSession } from "./SessionProvider";
@@ -146,10 +148,17 @@ function Scatter({ values }: { values: RankPair[] }) {
 }
 function RankCharts() {
   const periods = useResource("ranking-periods", (s) => serviceApi.periods(s));
-  const [scope, setScope] = useState("");
-  const [range, setRange] = useState("");
-  const [country, setCountry] = useState("KR");
-  const [trend, setTrend] = useState("");
+  const [params, setParams] = useSearchParams();
+  const scope = params.get("rankScope") ?? "";
+  const range = params.get("rankFrom") ?? "";
+  const country = params.get("rankCountry") === "UNSPECIFIED" ? "UNSPECIFIED" : "KR";
+  const trend = params.get("rankAppId") ?? "";
+  function select(key: string, value: string, reset: string[] = []) {
+    const next = new URLSearchParams(params);
+    next.set(key, value);
+    reset.forEach(name => next.delete(name));
+    setParams(next);
+  }
   const content = periods.data?.content ?? [];
   const scopeKey = (p: {source: string; category: string | null}) =>
     JSON.stringify([p.source, p.category]);
@@ -159,8 +168,17 @@ function RankCharts() {
   const dates = content
     .filter((p) => scopeKey(p) === chosenKey)
     .sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
-  const to = dates.at(-1)?.start,
-    from = range || dates[Math.max(0, dates.length - 3)]?.start;
+  const to = dates.at(-1)?.start;
+  const weekMillis = 7 * 24 * 60 * 60 * 1000;
+  // Spring checks the full instant. JS Date keeps only the first three fractional digits.
+  const subMillisecondDigits = (value: string) => (value.match(/\.(\d{1,9})Z$/)?.[1] ?? "").slice(3).padEnd(6, "0");
+  const selectableDates = dates.filter(period => {
+    if (!to) return false;
+    const weeks = (Date.parse(to) - Date.parse(period.start)) / weekMillis;
+    return Number.isInteger(weeks) && weeks <= 12 && subMillisecondDigits(period.start) === subMillisecondDigits(to);
+  });
+  const from = selectableDates.find(period => period.start === range)?.start
+    ?? selectableDates[Math.max(0, selectableDates.length - 3)]?.start;
   const key = chosenKey + ":" + from + ":" + to;
   const report = useResource(key, (s) =>
     chosen && from && to
@@ -198,8 +216,7 @@ function RankCharts() {
           <select
             value={chosenKey}
             onChange={(e) => {
-              setScope(e.target.value);
-              setRange("");
+              select("rankScope", e.target.value, ["rankFrom", "rankAppId"]);
             }}
           >
             {choices.map(([key, period]) => (
@@ -211,13 +228,8 @@ function RankCharts() {
         </label>
         <label>
           시작 주차
-          <select value={from ?? ""} onChange={(e) => setRange(e.target.value)}>
-            {dates
-              .filter(
-                (v) =>
-                  to && Date.parse(to) - Date.parse(v.start) <= 84 * 86400000,
-              )
-              .map((v) => (
+          <select value={from ?? ""} onChange={(e) => select("rankFrom", e.target.value)}>
+            {selectableDates.map((v) => (
                 <option key={v.start + v.end} value={v.start}>
                   {time(v.start)}
                 </option>
@@ -226,7 +238,7 @@ function RankCharts() {
         </label>
         <label>
           지역
-          <select value={country} onChange={(e) => setCountry(e.target.value)}>
+          <select value={country} onChange={(e) => select("rankCountry", e.target.value, ["rankAppId"])}>
             <option value="KR">KR</option>
             <option value="UNSPECIFIED">기본 / 국가 미지정</option>
           </select>
@@ -252,7 +264,7 @@ function RankCharts() {
             3주 관측 게임
             <select
               value={selected ? String(selected.appId) : ""}
-              onChange={(e) => setTrend(e.target.value)}
+              onChange={(e) => select("rankAppId", e.target.value)}
             >
               {series.map((v) => (
                 <option key={v.appId} value={v.appId}>
@@ -333,6 +345,16 @@ function RankCharts() {
               }))}
               note="동일 app ID·주차의 순위 차이 절대값"
             />
+            <section className="trend-chart-panel" aria-label="지역별 원순위 비교">
+              <h2>지역별 원순위 비교</h2>
+              <p className="game-table-scroll-hint">표를 좌우로 움직여 지역별 원순위를 확인하세요.</p>
+              <div className="game-table-wrap" role="region" aria-label="지역별 원순위 비교 가로 스크롤" tabIndex={0}>
+                <table className="game-table"><thead><tr><th>게임</th><th>KR 순위</th><th>국가 미지정 순위</th><th>순위 차이</th></tr></thead>
+                  <tbody>{last.largestGaps.map(value => <tr key={value.appId}><th>{value.name ?? value.appId}</th><td>{value.krPosition}위</td><td>{value.unspecifiedPosition}위</td><td>{value.absoluteGap}</td></tr>)}</tbody>
+                </table>
+              </div>
+              {!last.largestGaps.length && <p>같은 주차에 비교 가능한 지역 관측쌍이 없습니다.</p>}
+            </section>
             <Bars
               title="08 · TOP20 진입 및 매주 유지"
               values={data.charts.top20Continuity.flatMap((v) => [
@@ -355,9 +377,12 @@ function RankCharts() {
   );
 }
 function CcuSummaryCharts() {
-  const [ids, setIds] = useState("");
-  const [applied, setApplied] = useState("");
-  const [days, setDays] = useState(7);
+  const [params, setParams] = useSearchParams();
+  const applied = appIds(params.get("appIds"));
+  const days = periodDays(params, 7);
+  const [ids, setIds] = useState(applied);
+  const [inputError, setInputError] = useState("");
+  useEffect(() => { setIds(applied); setInputError(""); }, [applied]);
   const charts = useResource(applied + ":" + days, (s) =>
     applied
       ? serviceApi.ccuCharts(applied.split(",").map(Number), days, s)
@@ -373,7 +398,9 @@ function CcuSummaryCharts() {
         className="game-filters"
         onSubmit={(e) => {
           e.preventDefault();
-          setApplied(ids);
+          const valid = appIds(ids);
+          if (!valid) { setInputError("중복 없이 올바른 Steam app ID를 100개 이하로 입력해 주세요."); return; }
+          const next = new URLSearchParams(params); next.set("appIds", valid); setParams(next);
         }}
       >
         <label>
@@ -391,7 +418,7 @@ function CcuSummaryCharts() {
           관측 기간
           <select
             value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
+            onChange={(e) => { const next = new URLSearchParams(params); next.set("days", e.target.value); setParams(next); }}
           >
             <option value="7">7일</option>
             <option value="30">30일</option>
@@ -399,6 +426,7 @@ function CcuSummaryCharts() {
         </label>
         <button className="primary-action">관측 비교</button>
       </form>
+      {(inputError || (params.has("appIds") && !applied)) && <p role="alert">{inputError || "URL의 Steam app ID를 확인해 주세요. 관측 조회를 실행하지 않았습니다."}</p>}
       <StatePanel
         loading={Boolean(applied && charts.loading)}
         error={charts.error}
@@ -466,176 +494,96 @@ export function SteamChartsPage() {
   );
 }
 export function YoutubePage() {
-  const {gameId} = useParams();
-  return gameId ? <GameYoutubePage gameId={gameId}/> : <NativeYoutubePage/>;
+  const { gameId } = useParams();
+  return gameId ? <GameYoutubePage gameId={gameId} /> : <NativeYoutubePage />;
 }
-function GameYoutubePage({gameId}:{gameId:string}) {
-  const context=useResource(gameId,s=>serviceApi.detail(gameId,s));
-  return <Frame title={context.data?context.data.game.name+" · YouTube":"YouTube 관측 분석"}><Link to={"/games/"+gameId}>← 게임 상세</Link><StatePanel loading={context.loading} error={context.error} retry={context.retry}/>{context.data&&<><p className="chart-caption">Steam 앱 ID {context.data.game.steamAppId} · 게임별 YouTube 연결 {context.data.game.youtubeConnection==="CONNECTED"?"연결됨":"미확인"}</p><GamePublications gameId={gameId}/></>}</Frame>;
+function QueryAssociations({ appId, days }: { appId: number; days: number }) {
+  const session = useSession();
+  const allowed = session.status === "authenticated" && session.identity?.kind === "USER";
+  const links = useResource(appId + ":" + days + ":" + allowed, signal =>
+    allowed ? serviceApi.associations([appId], days, signal) : Promise.resolve(null));
+  if (session.status === "checking") return <StatePanel loading />;
+  if (session.status === "unavailable") return <StatePanel error={new ApiError(503, "SESSION_UNAVAILABLE")} retry={() => { void session.refresh(); }} />;
+  if (!allowed) return <Unavailable title="11 · 게임별 연결 영상과 비교 가능한 영상" reason="일반 회원으로 로그인한 뒤 조회할 수 있습니다." />;
+  if (links.error instanceof ApiError && links.error.status === 404)
+    return <Unavailable title="11 · 게임별 연결 영상과 비교 가능한 영상" reason="이 조회 기능이 현재 제공되지 않습니다. 연결 영상 0개를 뜻하지 않습니다." />;
+  return <>
+    <StatePanel loading={links.loading} error={links.error} retry={links.retry} />
+    {links.data && (links.data.content.length > 0 ? <Bars
+      title="11 · 검색어 연결 영상과 비교 가능한 영상"
+      values={links.data.content.flatMap(value => [
+        { label: value.appId + " 연결", value: value.queryAssociatedVideos },
+        { label: value.appId + " 비교 가능", value: value.comparableVideos },
+      ])}
+      note="query 연결 근거 · 게임 관련성 미검증. 같은 영상의 서로 다른 유효 관측 슬롯이 2개 이상일 때만 비교 가능합니다."
+    /> : <section className="trend-chart-panel" role="status"><h2>11 · 게임별 연결 영상과 비교 가능한 영상</h2><p>선택 기간에 조회된 검색어 연결 영상이 없습니다. YouTube 전체 영상 수를 뜻하지 않습니다.</p></section>)}
+  </>;
+}
+function GameYoutubePage({ gameId }: { gameId: string }) {
+  const context = useResource(gameId, signal => serviceApi.detail(gameId, signal));
+  const location = useLocation();
+  const [params] = useSearchParams();
+  const days = periodDays(params);
+  const detailUnavailable = context.error instanceof ApiError && context.error.status === 503;
+  // The game page can load even when publication observations are unavailable.
+  // GamePublications records the separately gated observation-view event later.
+  usePageView("analysis.youtube", Boolean(context.data), context.data?.game.steamAppId, "YOUTUBE", false);
+  return <Frame title={context.data ? context.data.game.name + " · YouTube" : "YouTube 관측 분석"}>
+    <Link className="back-button" to={"/games/" + gameId + periodSearch(location.search, days)} state={location.state}>← 게임 상세</Link>
+    <StatePanel loading={context.loading} error={context.error} retry={context.retry} />
+    {context.data && <>
+      <GameAnalysisLinks gameId={gameId} days={days} />
+      <p className="chart-caption">Steam 앱 ID {context.data.game.steamAppId} · 게임별 YouTube 연결 {context.data.game.youtubeConnection === "CONNECTED" ? "검색어 연결" : "미확인"} · 게임 관련성 미검증</p>
+    </>}
+    {detailUnavailable && <p className="chart-caption">게임 상세 정보를 불러오지 못했습니다. 게시 영상은 별도로 조회합니다.</p>}
+    {(context.data || detailUnavailable) && <GamePublications gameId={gameId} trackView />}
+    {context.data && <>
+      <QueryAssociations appId={context.data.game.steamAppId} days={days} />
+      <Unavailable title="조회 증가량 · 댓글" reason="산정 기준과 댓글 원천이 준비되지 않았습니다. 0건을 뜻하지 않습니다." />
+    </>}
+  </Frame>;
 }
 function NativeYoutubePage() {
-  const session = useSession();
-  const { gameId } = useParams();
-  const context = useResource(gameId ?? "native-video", (s) =>
-    gameId ? serviceApi.detail(gameId, s) : Promise.resolve(null),
-  );
-  const appId = context.data?.game.steamAppId;
+  const location = useLocation();
+  const [params, setParams] = useSearchParams();
+  const applied = videoId(params.get("videoId"));
+  const days = periodDays(params, 7);
+  const [id, setId] = useState(applied);
+  useEffect(() => { setId(applied); }, [applied]);
   const interaction = useInteractionEvents();
-  const [id, setId] = useState(""),
-    [applied, setApplied] = useState(""),
-    [days, setDays] = useState(7);
-  const videos = useResource(applied + ":" + days, (s) =>
-    applied ? serviceApi.video(applied, days, s) : Promise.resolve(null),
-  );
-  const links = useResource(String(appId) + ":" + days, (s) =>
-    appId && session.identity?.kind === "USER"
-      ? serviceApi.associations([appId], days, s) : Promise.resolve(null),
-  );
-  usePageView(
-    "analysis.youtube",
-    Boolean(context.data || videos.data),
-    appId,
-    appId ? "YOUTUBE" : undefined,
-  );
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    setApplied(id);
+  const videos = useResource(applied + ":" + days, signal =>
+    applied ? serviceApi.video(applied, days, signal) : Promise.resolve(null));
+  usePageView("analysis.youtube", Boolean(videos.data));
+  const returnTo = typeof location.state?.publicationReturnTo === "string" &&
+    /^\/games\/steam:[1-9][0-9]{0,9}(?:\/youtube)?(?:\?|$)/.test(location.state.publicationReturnTo)
+    ? location.state.publicationReturnTo : "/games";
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!videoId(id)) return;
+    const next = new URLSearchParams(params); next.set("videoId", id);
+    setParams(next, { state: location.state });
   }
-  if (gameId && !context.data)
-    return (
-      <Frame title="YouTube 관측 분석">
-        <StatePanel
-          loading={context.loading}
-          error={context.error}
-          retry={context.retry}
-        />
-      </Frame>
-    );
-  return (
-    <Frame
-      title={
-        context.data
-          ? context.data.game.name + " · YouTube"
-          : "YouTube 관측 분석"
-      }
-    >
-      {gameId && (
-        <>
-          <Link className="back-button" to={"/games/" + gameId}>
-            ← 게임 상세
-          </Link>
-          <p className="chart-caption">
-            Steam 앱 ID {appId} · 게임별 YouTube 연결{" "}
-            {context.data?.game.youtubeConnection === "CONNECTED" ? "연결됨" : "미확인"}
-          </p>
-        </>
-      )}
-      <div className="service-chart-grid">
-        <Unavailable
-          title="일별 신규 영상 · 댓글 · 조회 증가량"
-          reason="게시 시각과 발견 시각의 신규 기준 및 연결 정책을 확정한 항목만 제공합니다."
-        />
-        <Unavailable
-          title="최근 관측 영상 목록"
-          reason="게임 관련성·영상 메타데이터 조회 연결이 준비되지 않았습니다."
-        />
-      </div>
-      <p className="chart-caption"><Link to="/games">게임 목록에서 게임을 선택해 일별 게시 영상 확인 →</Link></p>
-      <details><summary>보조 도구 · 영상별 통계 관측</summary>
+  return <Frame title="YouTube 관측 분석">
+    <Link className="back-button" to={returnTo} state={location.state?.publicationReturnState}>← 게시 영상 목록</Link>
+    <p className="chart-caption"><Link to="/games">게임 목록에서 게임을 선택해 일별 게시 영상 확인 →</Link></p>
+    <details open={Boolean(applied)}><summary>보조 도구 · 영상별 통계 관측</summary>
       <form className="game-filters" onSubmit={submit}>
-        <label>
-          영상 ID
-          <input
-            aria-label="YouTube 영상 ID"
-            value={id}
-            onChange={(e) => setId(e.target.value)}
-            pattern="[A-Za-z0-9_-]{11}"
-            minLength={11}
-            maxLength={11}
-            required
-          />
-        </label>
-        <label>
-          관측 기간
-          <select
-            value={days}
-            onChange={(e) => {
-              if (Number(e.target.value) === days) return;
-              interaction({
-                type: "PERIOD_CHANGED",
-                action: "analysis.period.change",
-                properties: {
-                  fromPeriod: days + "d",
-                  toPeriod: e.target.value + "d",
-                },
-              });
-              setDays(Number(e.target.value));
-            }}
-          >
-            <option value="7">7일</option>
-            <option value="30">30일</option>
-          </select>
-        </label>
+        <label>영상 ID<input aria-label="YouTube 영상 ID" value={id} onChange={event => setId(event.target.value)} pattern="[A-Za-z0-9_-]{11}" minLength={11} maxLength={11} required /></label>
+        <label>관측 기간<select value={days} onChange={event => {
+          if (Number(event.target.value) === days) return;
+          interaction({ type: "PERIOD_CHANGED", action: "analysis.period.change", properties: { fromPeriod: days + "d", toPeriod: event.target.value + "d" } });
+          const next = new URLSearchParams(params); next.set("days", event.target.value); setParams(next, { state: location.state });
+        }}><option value="7">7일</option><option value="30">30일</option></select></label>
         <button className="primary-action">실제 영상 관측 조회</button>
       </form>
-      <StatePanel
-        loading={Boolean(applied && videos.loading)}
-        error={videos.error}
-        retry={videos.retry}
-      />
-      {videos.data && (
-        <>
-          <p className="chart-caption">
-            마지막 영상 관측 {time(videos.data.observations.at(-1)?.slot)} · 조회 시각{" "}
-            {time(videos.data.to)} · 신선도{" "}
-            {videos.data.freshness === "UNASSESSED" ? "판정 전" : videos.data.freshness}
-          </p>
-          <ObservedChart
-            title="10 · 영상 최초·마지막 누적 조회수"
-            unit="회"
-            points={videos.data.observations.map((v) => ({
-              at: v.slot,
-              value: v.views,
-            }))}
-          />
-          <p className="chart-caption">
-            최초 {number(videos.data.comparison.first?.views)} → 마지막{" "}
-            {number(videos.data.comparison.last?.views)} · 차이{" "}
-            {number(videos.data.comparison.cumulativeDifference)} · 실제 간격{" "}
-            {number(videos.data.comparison.elapsedSeconds)}초 · 게임 관련성을
-            뜻하지 않습니다.
-          </p>
-        </>
-      )}
-      <StatePanel
-        loading={Boolean(appId && links.loading)}
-        error={
-          links.error instanceof ApiError && links.error.status === 404
-            ? undefined
-            : links.error
-        }
-        retry={links.retry}
-      />
-      {links.data ? (
-        <Bars
-          title="11 · 검색어 연결 영상과 비교 가능한 영상"
-          values={links.data.content.flatMap((v) => [
-            { label: v.appId + " 연결", value: v.queryAssociatedVideos },
-            { label: v.appId + " 비교 가능", value: v.comparableVideos },
-          ])}
-          note="query 연결 근거 · 게임 관련성 미검증. 같은 영상의 서로 다른 유효 관측 슬롯이 2개 이상일 때만 비교 가능합니다."
-        />
-      ) : (
-        <Unavailable
-          title="11 · 게임별 연결 영상과 비교 가능한 영상"
-          reason="승인된 게임-영상 연결이 없습니다."
-        />
-      )}
-      </details>
-      <Unavailable
-        title="12 · 조회 증가 가속도 계산 가능 비율"
-        reason="관측 간격·최소 표본 정책 확정 전입니다. 0%를 뜻하지 않습니다."
-      />
-    </Frame>
-  );
+      {params.has("videoId") && !applied && <p role="alert">URL의 영상 ID를 확인해 주세요. 관측 조회를 실행하지 않았습니다.</p>}
+      <StatePanel loading={Boolean(applied && videos.loading)} error={videos.error} retry={videos.retry} />
+      {videos.data && <>
+        <p className="chart-caption">마지막 영상 관측 {time(videos.data.observations.at(-1)?.slot)} · 조회 시각 {time(videos.data.to)} · 신선도 {videos.data.freshness === "UNASSESSED" ? "판정 전" : videos.data.freshness}</p>
+        <ObservedChart title="10 · 영상 최초·마지막 누적 조회수" unit="회" points={videos.data.observations.map(value => ({ at: value.slot, value: value.views }))} />
+        <p className="chart-caption">최초 {number(videos.data.comparison.first?.views)} → 마지막 {number(videos.data.comparison.last?.views)} · 차이 {number(videos.data.comparison.cumulativeDifference)} · 실제 간격 {number(videos.data.comparison.elapsedSeconds)}초 · 게임 관련성을 뜻하지 않습니다.</p>
+      </>}
+    </details>
+    <Unavailable title="12 · 조회 증가 가속도 계산 가능 비율" reason="관측 간격·최소 표본 정책 확정 전입니다. 0%를 뜻하지 않습니다." />
+  </Frame>;
 }

@@ -1,4 +1,6 @@
-export type Publications = {appId:number;days:number;asOf:string;timezone:string;dataStatus:string;coverage:string;missingPublishedAt:number|null;selectedDate:string;
+export type Publications = {appId:number;days:number;asOf:string;timezone:string;dataStatus:string;coverage:string;missingPublishedAt:number|null;selectedDate:string|null;
+ videoScope?:"date"|"period";
+ summary?:null|{population:"QUERY_ASSOCIATED_DISTINCT_VIDEOS_DISCOVERED_BY_AS_OF";observedVideos:number;publishedVideos:number;periodVideos:number;missingPublishedAt:number;futurePublishedAt:number;latestFirstObservedAt:string|null};
  points:{date:string;observedVideos:number;inProgress:boolean}[];videos:{content:{videoId:string;title:string|null;publishedAt:string|null;firstObservedAt:string}[];page:{number:number;size:number;totalElements:number;hasNext:boolean}}|null};
 export type Identity = {
   kind: "USER" | "ADMIN";
@@ -26,6 +28,9 @@ export type Game = {
   peak24h: Metric;
   newYoutubeVideos: Metric;
   freshness: string;
+  reviewAvailability?: string;
+  analysisAvailability?: string;
+  gameEventAvailability?: string;
   evidence?: {steam:string;youtube:string;completeness:string;days:number;group:number;latestDataAt:string|null};
 };
 export type Listing = {

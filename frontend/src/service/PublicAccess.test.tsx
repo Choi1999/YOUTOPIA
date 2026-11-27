@@ -101,7 +101,7 @@ it("keeps a missing release date unavailable instead of substituting the query d
 it("shows unverified game-video linkage and returns to the exact native game detail",async()=>{
   window.history.replaceState({},"","/games/steam:570/youtube");render(<ServiceApp />);
   expect(await screen.findByText(/Steam 앱 ID 570 · 게임별 YouTube 연결 미확인/)).toBeVisible();
-  const back=screen.getByRole("link",{name:"← 게임 상세"});expect(back).toHaveAttribute("href","/games/steam:570");
+  const back=screen.getByRole("link",{name:"← 게임 상세"});expect(back).toHaveAttribute("href","/games/steam:570?days=30");
   fireEvent.click(back);expect(await screen.findByRole("heading",{name:"Synthetic Game"})).toBeVisible();
   expect(window.location.pathname).toBe("/games/steam:570");
 });

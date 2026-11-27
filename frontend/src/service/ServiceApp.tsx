@@ -13,21 +13,35 @@ import { AppShell } from "../layouts/AppShell";
 import { LoginPage } from "../pages/auth/LoginPage";
 import { ThemeProvider } from "../theme/ThemeProvider";
 import { SessionProvider, useSession } from "./SessionProvider";
-import { ApiError } from "./api";
+import { ApiError, type Identity } from "./api";
 import { StatePanel } from "./components";
 import { GameListPage, GameDetailPage, SteamGamePage } from "./GamePages";
 import { SteamChartsPage, YoutubePage } from "./ChartPages";
 import { SettingsPage } from "./SettingsPage";
-import { AdminDashboard, AdminMembers, AdminMember } from "./AdminPages";
+import { AdminDashboard, AdminMemberDirectory, AdminMembers, AdminMember } from "./AdminPages";
 import { ChatPreparation } from "./ChatPreparation";
 import { ChatHistoryProvider } from "./ChatHistory";
 import { UserActivity } from "./Activity";
+import { GameAnalysisPage } from "./GameAnalysisPages";
 function RouteScrollReset() {
   const { pathname } = useLocation();
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
   return null;
+}
+function loginDestination(kind: Identity["kind"], from: unknown) {
+  const home = kind === "ADMIN" ? "/admin" : "/dashboard";
+  if (typeof from !== "string" || !from.startsWith("/") || from.startsWith("//") || /[\\\u0000-\u0020\u007f]/.test(from)) return home;
+  let path: string;
+  try { path = decodeURIComponent(from.split(/[?#]/, 1)[0]); }
+  catch { return home; }
+  // Only registered destinations are eligible. Decode the path before checking
+  // so encoded separators/dot segments cannot cross the account-realm boundary.
+  const publicPage = /^\/(?:dashboard|games(?:\/steam:[1-9][0-9]{0,9}(?:\/(?:steam|youtube|reactions|keywords|events))?)?|charts\/(?:steam|youtube))\/?$/.test(path);
+  const memberPage = kind === "USER" && /^\/settings\/?$/.test(path);
+  const adminPage = kind === "ADMIN" && /^\/admin(?:\/(?:analytics|(?:users|members)(?:\/[A-Za-z0-9_-]+)?))?\/?$/.test(path);
+  return publicPage || memberPage || adminPage ? from : home;
 }
 function Login({
   admin = false,
@@ -40,18 +54,12 @@ function Login({
     navigate = useNavigate(),
     location = useLocation();
   useEffect(() => {
-    if (session.status === "authenticated") {
-      const from = location.state?.from;
-      const next =
-        typeof from === "string" &&
-        (/^\/(games|charts|dashboard)(\/|\?|$)/.test(from)||session.identity?.kind==="USER"&&/^\/settings(\/|\?|$)/.test(from)||session.identity?.kind==="ADMIN"&&/^\/admin(\/(users|members|analytics)(\/|\?|$)|\?|$)/.test(from))
-          ? from
-          : "/games";
-      navigate(next, {
+    if (session.status === "authenticated" && session.identity) {
+      navigate(loginDestination(session.identity.kind, location.state?.from), {
         replace: true,
       });
     }
-  }, [session.status, session.identity?.id]);
+  }, [session.status, session.identity?.id, session.identity?.kind, location.state, navigate]);
   return (
     <>
       <LoginPage service admin={admin} signup={signup} />
@@ -144,6 +152,9 @@ export function ServiceApp() {
                   element={<YoutubePage />}
                 />
                 <Route path="/charts/steam" element={<SteamChartsPage />} />
+                <Route path="/games/:gameId/reactions" element={<GameAnalysisPage kind="reactions" />} />
+                <Route path="/games/:gameId/keywords" element={<GameAnalysisPage kind="keywords" />} />
+                <Route path="/games/:gameId/events" element={<GameAnalysisPage kind="events" />} />
                 <Route path="/charts/youtube" element={<YoutubePage />} />
                 <Route element={<Guard />}>
                   <Route path="/settings" element={<SettingsPage />} />
@@ -152,11 +163,13 @@ export function ServiceApp() {
             <Route element={<AdminGuard />}>
               <Route element={<AppShell service admin />}>
                 <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/members" element={<AdminMembers />} />
-                <Route path="/admin/users" element={<AdminMembers />} />
-                <Route path="/admin/users/:id" element={<AdminMember />} />
+                {["/admin/users", "/admin/members"].map((path) => (
+                  <Route key={path} path={path} element={<AdminMemberDirectory />}>
+                    <Route index element={<AdminMembers />} />
+                    <Route path=":id" element={<AdminMember />} />
+                  </Route>
+                ))}
                 <Route path="/admin/analytics" element={<AdminDashboard />} />
-                <Route path="/admin/members/:id" element={<AdminMember />} />
               </Route>
             </Route>
             <Route

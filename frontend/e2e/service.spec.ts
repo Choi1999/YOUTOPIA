@@ -136,9 +136,9 @@ test.describe("real isolated Spring/PostgreSQL/Redis browser flow", () => {
         new URL(r.url()).pathname === "/api/v1/events" &&
         r.request().postDataJSON()?.eventType === "PERIOD_CHANGED",
     );
-    await page
-      .getByRole("combobox", { name: "관측 기간", exact: true })
-      .selectOption("30");
+    const steamPeriod = page.getByRole("combobox", { name: "관측 기간", exact: true });
+    const previousPeriod = await steamPeriod.inputValue();
+    await steamPeriod.selectOption(previousPeriod === "30" ? "7" : "30");
     expect((await periodChanged).status()).toBe(204);
     await page.getByRole("link", { name: "Steam 차트", exact: true }).click();
     await expect(
@@ -311,6 +311,7 @@ test.describe("real isolated Spring/PostgreSQL/Redis browser flow", () => {
     await page
       .getByLabel("비밀번호", { exact: true })
       .fill("synthetic browser operator password 1234");
+    const usageResponse = page.waitForResponse(r => new URL(r.url()).pathname === "/api/v1/admin/usage");
     await page.getByRole("button", { name: "로그인", exact: true }).click();
     await expect(
       page.getByRole("heading", { name: "관리자 · 서비스 이용 현황" }),
@@ -318,6 +319,16 @@ test.describe("real isolated Spring/PostgreSQL/Redis browser flow", () => {
     await expect(
       page.getByText("최근 5분 활동 세션", { exact: true }),
     ).toBeVisible();
+    const usage = await usageResponse;
+    expect(usage.status()).toBe(200);
+    const { signups } = await usage.json();
+    expect(signups.length).toBeGreaterThan(0);
+    const signupTable = page.getByRole("table", { name: "선택 기간 일별 가입" });
+    for (const [index, day] of signups.entries()) {
+      await expect(signupTable.locator("tbody tr").nth(index).locator("td")).toHaveText([
+        day.dayKst, day.count.toLocaleString("ko-KR"),
+      ]);
+    }
     await page
       .getByRole("link", { name: "회원 조회", exact: true })
       .first()
@@ -428,12 +439,12 @@ test("preparation panel is modal, mobile safe and context resets without chatbot
  await page.setViewportSize({width:390,height:844});await page.goto("/games/steam:570");
  await expect(page.getByRole("heading",{name:"Browser Arena",exact:true})).toBeVisible();
  const trigger=page.getByRole("button",{name:"Youtopia 분석 도우미 열기"});await trigger.click();
- const dialog=page.getByRole("dialog",{name:"Youtopia 분석 도우미"});await expect(dialog).toContainText("Browser Arena");await expect(dialog.getByRole("textbox",{name:"질문"})).toHaveCount(0);await expect(dialog.getByRole("button",{name:"Youtopia는 어떤 프로젝트인가요?"})).toBeDisabled();
+ const dialog=page.getByRole("dialog",{name:"Youtopia 분석 도우미"});await expect(dialog).toContainText("Steam 앱 570 · 30일");await expect(dialog.getByRole("textbox",{name:"질문"})).toHaveCount(0);await expect(dialog.getByRole("button",{name:"Youtopia는 어떤 프로젝트인가요?"})).toBeDisabled();
  expect(await page.locator("#root").evaluate(el=>(el as HTMLElement).inert)).toBe(true);
  const box=await dialog.boundingBox();expect(box!.x).toBeGreaterThanOrEqual(0);expect(box!.x+box!.width).toBeLessThanOrEqual(390);
- await page.keyboard.press("Shift+Tab");await expect(dialog.getByRole("link",{name:"관리자 로그인"})).toBeFocused();await page.keyboard.press("Tab");await expect(dialog.getByRole("button",{name:"분석 도우미 닫기"})).toBeFocused();await page.keyboard.press("Escape");await expect(trigger).toBeFocused();expect(await page.locator("#root").evaluate(el=>(el as HTMLElement).inert)).toBe(false);
- await page.goto("/games/steam:730");await trigger.click();await expect(page.getByRole("dialog")).toContainText("Browser Counter");await page.keyboard.press("Escape");
- await page.goto("/games");await trigger.click();await expect(page.getByRole("dialog")).toContainText("게임을 선택하지 않았습니다");await expect(page.getByRole("dialog")).not.toContainText("Browser Counter");
+ await page.keyboard.press("Shift+Tab");await expect(dialog.getByRole("region",{name:"분석 도우미 대화 기록"})).toBeFocused();await page.keyboard.press("Tab");await expect(dialog.getByRole("button",{name:"분석 도우미 닫기"})).toBeFocused();await page.keyboard.press("Escape");await expect(trigger).toBeFocused();expect(await page.locator("#root").evaluate(el=>(el as HTMLElement).inert)).toBe(false);
+ await page.goto("/games/steam:730");await trigger.click();await expect(page.getByRole("dialog")).toContainText("Steam 앱 730 · 30일");await page.keyboard.press("Escape");
+ await page.goto("/games");await trigger.click();await expect(page.getByRole("dialog")).toContainText("게임을 선택하지 않았습니다");await expect(page.getByRole("dialog")).not.toContainText("Steam 앱 730");
  expect(requests.filter(url=>/chatbot|\/chat\/|openai|anthropic/i.test(url))).toEqual([]);
 });
 test("login failure preserves public navigation and admin has no assistant",async({page})=>{

@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { Link, Outlet, useOutletContext, useParams } from "react-router-dom";
 import { serviceApi } from "./api";
+import { useSession } from "./SessionProvider";
 import { Frame, StatePanel, useResource, number, time } from "./components";
 import { InsightMetricGrid } from "../features/project-insights/InsightMetricGrid";
 function Table({
@@ -16,7 +17,7 @@ function Table({
     <section className="source-cohort-ledger game-table-wrap">
       <h2>{title}</h2>
       {rows.length ? (
-        <table className="game-table">
+        <table className="game-table" aria-label={title}>
           <thead>
             <tr>
               {columns.map((c) => (
@@ -51,13 +52,15 @@ type Usage = {
   from: string;
   to: string;
   aggregationTimezone: string;
+  dataStatus: "AVAILABLE" | "PARTIAL" | "EMPTY";
   activeSessionLabel: string;
   activeSessions: number | null;
   activeSessionAsOf: string;
   signupHistoryCoverage: string;
   newReturningDefinition: string;
   activeUsers: { dau: number | null; wau: number | null; mau: number | null };
-  signupWindows: { today: number; last7KstDays: number; last30KstDays: number };
+  signupWindows: { today: number; last7KstDays: number; last30KstDays: number; asOfDayKst: string };
+  signups: { dayKst: string; count: number }[];
   daily: {
     dayKst: string;
     loginUsers: number;
@@ -146,6 +149,12 @@ export function AdminDashboard() {
             {data.from}~{data.to} · {data.aggregationTimezone} ·{" "}
             이전 기간은 보존 중인 회원의 가입 이력 범위입니다.
           </p>
+          {data.dataStatus === "PARTIAL" && (
+            <p role="status">선택 기간에는 가입 집계만 있습니다. 이용 활동 집계가 없습니다.</p>
+          )}
+          {data.dataStatus === "EMPTY" && (
+            <p role="status">선택 기간에 집계된 이용 활동과 가입 이력이 없습니다.</p>
+          )}
           <InsightMetricGrid
             metrics={[
               {
@@ -173,9 +182,14 @@ export function AdminDashboard() {
                 ]
                   .map(number)
                   .join(" / "),
-                note: "가입 집계 · 잔존 회원 수와 구분",
+                note: `${data.signupWindows.asOfDayKst} KST 기준 · 가입 건수`,
               },
             ]}
+          />
+          <Table
+            title="선택 기간 일별 가입"
+            columns={["일자 (KST)", "가입 건수"]}
+            rows={data.signups.map((day) => [day.dayKst, number(day.count)])}
           />
           <Table
             title="일별 사용량"
@@ -262,10 +276,21 @@ export function AdminDashboard() {
     </Frame>
   );
 }
+type MemberFilters = { page: number; status: string; q: string };
+type DirectoryContext = [MemberFilters, Dispatch<SetStateAction<MemberFilters>>];
+
+function MemberDirectoryFilters() {
+  const filters = useState<MemberFilters>({ page: 0, status: "ACTIVE", q: "" });
+  return <Outlet context={filters} />;
+}
+
+export function AdminMemberDirectory() {
+  const { identity, generation } = useSession();
+  return <MemberDirectoryFilters key={`${identity?.id}:${generation}`} />;
+}
+
 export function AdminMembers() {
-  const [page, setPage] = useState(0),
-    [status, setStatus] = useState("ACTIVE"),
-    [q, setQ] = useState("");
+  const [{ page, status, q }, setFilters] = useOutletContext<DirectoryContext>();
   const resource = useResource(page + ":" + status + ":" + q, (s) =>
     serviceApi.request<{
       content: Member[];
@@ -284,8 +309,7 @@ export function AdminMembers() {
           <select
             value={status}
             onChange={(e) => {
-              setStatus(e.target.value);
-              setPage(0);
+              setFilters({ page: 0, status: e.target.value, q });
             }}
           >
             <option value="ACTIVE">활성 회원</option>
@@ -297,8 +321,7 @@ export function AdminMembers() {
           <input
             value={q}
             onChange={(e) => {
-              setQ(e.target.value);
-              setPage(0);
+              setFilters({ page: 0, status, q: e.target.value });
             }}
             maxLength={100}
           />
@@ -319,7 +342,7 @@ export function AdminMembers() {
             title="마스킹된 회원 정보"
             columns={["내부 ID", "마스킹 이메일", "상태", "가입", "복구 만료"]}
             rows={resource.data.content.map((v) => [
-              <Link to={"/admin/users/" + v.userId}>{v.userId}</Link>,
+              <Link to={v.userId}>{v.userId}</Link>,
               v.maskedEmail,
               v.accountStatus,
               time(v.createdAt),
@@ -330,7 +353,7 @@ export function AdminMembers() {
             <button
               className="back-button"
               disabled={!page}
-              onClick={() => setPage((p) => p - 1)}
+              onClick={() => setFilters({ page: page - 1, status, q })}
             >
               이전
             </button>
@@ -338,7 +361,7 @@ export function AdminMembers() {
             <button
               className="back-button"
               disabled={!resource.data.page.hasNext}
-              onClick={() => setPage((p) => p + 1)}
+              onClick={() => setFilters({ page: page + 1, status, q })}
             >
               다음
             </button>
@@ -359,7 +382,7 @@ export function AdminMember() {
   const data = resource.data;
   return (
     <Frame title="관리자 · 회원 상세">
-      <Link className="back-button" to="/admin/users">
+      <Link className="back-button" to="..">
         ← 회원 목록
       </Link>
       <StatePanel

@@ -7,6 +7,9 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { GamePublications } from "./GamePublications";
+import { GameAnalysisLinks } from "./GameAnalysisPages";
+import { periodDays, periodSearch } from "./queryState";
+import { GameAvailabilityBadges, SteamObservationSummary } from "./ObservationSummary";
 import { InsightMetricGrid } from "../features/project-insights/InsightMetricGrid";
 import { serviceApi, errorText, type Listing } from "./api";
 import { usePageView, useInteractionEvents } from "./Activity";
@@ -26,6 +29,8 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
   const location = useLocation(),
     navigate = useNavigate();
   const [q, setQ] = useState(params.get("q") ?? "");
+  const searchTerm = q.trim();
+  const searchTooLong = Array.from(searchTerm).length > 100;
   const [busy, setBusy] = useState(false),
     [failure, setFailure] = useState<unknown>();
   const [override, setOverride] = useState<{
@@ -33,6 +38,14 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
     data: Listing;
   } | null>(null);
   const [revision, setRevision] = useState(0);
+  const pendingSearch = useRef<AbortController | null>(null);
+  const currentLocation = useRef(location.key);
+  currentLocation.current = location.key;
+  useEffect(() => {
+    setBusy(false);
+    setFailure(undefined);
+    return () => { pendingSearch.current?.abort(); pendingSearch.current = null; };
+  }, [location.key]);
   const session = useSession();
   const interaction = useInteractionEvents();
   const classifications=useResource("game-classifications",signal=>serviceApi.classifications(signal));
@@ -51,6 +64,14 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
   useEffect(() => {
     setQ(params.get("q") ?? "");
   }, [query]);
+  function loadList(next: URLSearchParams) {
+    pendingSearch.current?.abort();
+    pendingSearch.current = null;
+    setBusy(false);
+    setOverride(null);
+    setFailure(undefined);
+    setParams(next);
+  }
   function change(key: string, value: string) {
     if (
       (params.get(key) ??
@@ -70,9 +91,7 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
     next.set(key, value);
     if(key==="sort")next.set("direction",value==="currentCcu"||value==="peak24h"||value==="lastObservedAt"?"DESC":"ASC");
     if (key !== "page") next.set("page", "0");
-    setOverride(null);
-    setFailure(undefined);
-    setParams(next);
+    loadList(next);
     if (key === "sort" || key === "direction")
       interaction({
         type: "SORT_CHANGED",
@@ -91,15 +110,27 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
   }
   async function search(event: FormEvent) {
     event.preventDefault();
-    if (busy) return;
+    if (busy || searchTooLong) return;
+    const next = new URLSearchParams(params);
+    next.set("page", "0");
+    if (!searchTerm) {
+      if (params.has("q")) {
+        next.delete("q");
+        loadList(next);
+      }
+      return;
+    }
+    const controller = new AbortController();
+    pendingSearch.current?.abort();
+    pendingSearch.current = controller;
+    const requestLocation = location.key;
+    const current = () => pendingSearch.current === controller && !controller.signal.aborted && currentLocation.current === requestLocation;
     setBusy(true);
     setFailure(undefined);
-    const next = new URLSearchParams(params);
-    next.set("q", q);
-    next.set("page", "0");
+    next.set("q", searchTerm);
     try {
       const data = await serviceApi.search({
-        q,
+        q: searchTerm,
         page: 0,
         size: Number(params.get("size") ?? 20),
         sort: params.get("sort") ?? "dataAvailable",
@@ -109,7 +140,8 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
         days: Number(params.get("days") ?? 30),
         classification: params.get("classification") ?? "ALL",
         tagId: params.get("tagId") ?? "ALL",
-      });
+      }, controller.signal);
+      if (!current()) return;
       setOverride({ key: next.toString(), data });
       setRevision((n) => n + 1);
       setParams(next);
@@ -133,9 +165,9 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
           })
           .catch(() => {});
     } catch (error) {
-      setFailure(error);
+      if (current()) setFailure(error);
     } finally {
-      setBusy(false);
+      if (current()) { pendingSearch.current = null; setBusy(false); }
     }
   }
   usePageView(dashboard ? "dashboard" : "game.list", Boolean(resource.data));
@@ -148,6 +180,8 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
           게임명
           <input
             aria-label="게임명 검색"
+            aria-invalid={searchTooLong || undefined}
+            aria-describedby={searchTooLong ? "game-search-limit" : undefined}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             maxLength={200}
@@ -156,10 +190,10 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
         </label>
         <button
           className="primary-action"
-          disabled={busy || !q.trim()}
+          disabled={busy || searchTooLong || (!searchTerm && !params.has("q"))}
           type="submit"
         >
-          검색
+          {!searchTerm && params.has("q") ? "검색어 해제" : "검색"}
         </button>
         <label>
           플랫폼
@@ -225,7 +259,12 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
           </select>
         </label>
         <label>데이터 판정 기간<select value={params.get("days") ?? "30"} onChange={e=>change("days",e.target.value)}><option value="7">최근 7일</option><option value="30">최근 30일</option></select></label>
+        <button className="back-button" type="button" disabled={!query && !q && !busy} onClick={() => {
+          setQ("");
+          loadList(new URLSearchParams());
+        }}>전체 조건 초기화</button>
       </form>
+      {searchTooLong && <p role="alert" id="game-search-limit">게임명 검색어는 100자까지 입력할 수 있습니다.</p>}
       <p className="chart-caption" id="game-classification-note">{classifications.loading?"수집 분류 확인 중":classifications.error?"수집 분류를 불러오지 못했습니다. 장르가 없다는 뜻이 아닙니다.":classifications.data?.state==="AVAILABLE"?classifications.data.meaning:classifications.data?.state==="EMPTY"?"확인된 분류 수집 이력이 없습니다. 공식 장르가 없다는 뜻이 아닙니다.":"수집 분류 원천·권한을 확인할 수 없습니다. 전체 게임 목록은 계속 이용할 수 있습니다."}</p>
       <p className="chart-caption">데이터 우선은 인기·트렌드 순위가 아닙니다. 판정 기간 {params.get("days") ?? 30}일 · CCU는 관측 슬롯, YouTube는 한국 시간 게시일 기준입니다. 양쪽 → 한쪽 → 과거 데이터 → 확인된 데이터 없음 순이며, 일부 원천 미확인 게임은 부분 판정으로 표시합니다.</p>
       <p id="game-steam-tag-note" className="chart-caption" role={tags.error?"status":undefined}>{tags.error?"Steam 태그를 불러오지 못했습니다. 태그 없음으로 판정하지 않습니다.":tags.loading?"Steam 태그 확인 중…":tags.data?.state==="AVAILABLE"?tags.data.meaning:tags.data?.state==="EMPTY"?"조회 가능한 활성 Steam 태그 연결이 없습니다. 비활성·과거 태그 전체가 없다는 뜻은 아닙니다.":"Steam 태그 원천·권한을 확인할 수 없습니다. 태그를 해제한 목록은 계속 이용할 수 있습니다."}{tag&&<> 선택 태그 연결 마지막 확인 {time(tag.lastSeenAt)} · 태그 이름 마지막 확인 {time(tag.tagLastSeenAt)}</>}</p>
@@ -233,7 +272,7 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
       <StatePanel
         loading={resource.loading || busy}
         error={resource.error}
-        empty={Boolean(data && !data.content.length)}
+        empty={data?.page.totalElements === 0}
         retry={resource.retry}
       />
       {data && !resource.loading && !busy && (
@@ -246,6 +285,9 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
             <div className="data-state-warning" role="status">
               수집 지연 · 마지막 관측 시각을 확인해 주세요.
             </div>
+          )}
+          {!data.content.length && data.page.totalElements > 0 && (
+            <p role="status">조건에 맞는 게임 {data.page.totalElements}개가 있습니다. 요청한 페이지가 비어 있습니다. 처음 페이지에서 확인해 주세요.</p>
           )}
           {data.content.length > 0 && (
             <>
@@ -271,6 +313,7 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
                   </thead>
                   <tbody>
                     {data.content.map((game, index) => {
+                      const detailHref = "/games/" + game.gameId + "?days=" + periodDays(params);
                       const state = {
                         returnTo,
                         searchContextId: data.searchTracking?.searchContextId,
@@ -283,22 +326,25 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
                           tabIndex={0}
                           onClick={(e) => {
                             if (!(e.target as HTMLElement).closest("a,button"))
-                              navigate("/games/" + game.gameId, { state });
+                              navigate(detailHref, { state });
                           }}
                           onKeyDown={(e) => {
                             if (
-                              e.key === "Enter" &&
+                              (e.key === "Enter" || e.key === " ") &&
                               e.currentTarget === e.target
-                            )
-                              navigate("/games/" + game.gameId, { state });
+                            ) {
+                              e.preventDefault();
+                              navigate(detailHref, { state });
+                            }
                           }}
                           aria-label={game.name + " 상세 보기"}
                         >
                           <td>
-                            <Link to={"/games/" + game.gameId} state={state}>
+                            <Link to={detailHref} state={state}>
                               {game.name}
                             </Link>
                             <small>Steam {game.steamAppId}</small>
+                            {dashboard && <GameAvailabilityBadges game={game} />}
                           </td>
                           <td>
                             {trackingLabel(game.steamConnection)}
@@ -340,7 +386,9 @@ export function GameListPage({ dashboard = false }: { dashboard?: boolean }) {
               이전
             </button>
             <span>
-              {data.page.number + 1} / {Math.max(1, data.page.totalPages)}
+              {data.page.number >= Math.max(1, data.page.totalPages)
+                ? `요청 페이지 ${data.page.number + 1} · 총 ${data.page.totalPages}페이지`
+                : `${data.page.number + 1} / ${Math.max(1, data.page.totalPages)}`}
             </span>
             <button
               className="back-button"
@@ -471,22 +519,7 @@ export function GameDetailPage() {
               value: p.playerCount,
             }))}
           />
-          <nav className="game-pagination">
-            <Link
-              className="primary-action"
-              state={location.state}
-              to={"/games/" + gameId + "/steam"}
-            >
-              Steam 분석 →
-            </Link>
-            <Link
-              className="primary-action"
-              state={location.state}
-              to={"/games/" + gameId + "/youtube"}
-            >
-              YouTube 관측 →
-            </Link>
-          </nav>
+          <GameAnalysisLinks gameId={gameId} days={periodDays(new URLSearchParams(location.search))} />
           <GamePublications gameId={gameId} />
           <Unavailable
             title="리뷰 · 관련 이벤트"
@@ -501,7 +534,7 @@ export function SteamGamePage() {
   const { gameId = "" } = useParams();
   const location = useLocation();
   const [params, setParams] = useSearchParams();
-  const days = Number(params.get("days") ?? 7);
+  const days = periodDays(params, 7);
   const interaction = useInteractionEvents();
   const context = useResource(gameId, (s) => serviceApi.detail(gameId, s));
   const resource = useResource(
@@ -528,7 +561,7 @@ export function SteamGamePage() {
       <Link
         className="back-button"
         state={location.state}
-        to={"/games/" + gameId}
+        to={"/games/" + gameId + periodSearch(location.search, days)}
       >
         ← 게임 상세
       </Link>
@@ -546,7 +579,8 @@ export function SteamGamePage() {
                 toPeriod: e.target.value + "d",
               },
             });
-            setParams({ days: e.target.value });
+            const next = new URLSearchParams(params); next.set("days", e.target.value); next.delete("videoDate"); next.delete("videoPage");
+            setParams(next, { state: location.state });
           }}
         >
           <option value="7">7일</option>
@@ -566,6 +600,8 @@ export function SteamGamePage() {
       />
       {resource.data && (
         <>
+          <GameAnalysisLinks gameId={gameId} days={days} />
+          {context.data && <SteamObservationSummary game={context.data.game} />}
           <p className="chart-caption">
             마지막 관측 {time(resource.data.lastObservedAt)} · 신선도{" "}
             {resource.data.freshnessStatus === "UNASSESSED"

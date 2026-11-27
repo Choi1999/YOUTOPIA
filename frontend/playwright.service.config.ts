@@ -27,6 +27,11 @@ export default defineConfig({
   },
   projects: [
     {
+      name: "db-publications",
+      testMatch: "publications-db.spec.ts",
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
       name: "real-service",
       testMatch: "service.spec.ts",
       grep: /real isolated Spring\/PostgreSQL\/Redis browser flow/,

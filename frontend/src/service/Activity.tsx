@@ -28,6 +28,7 @@ export function UserActivity() {
   }, [session.generation, session.status]);
   return null;
 }
+type AnalysisType = "STEAM" | "YOUTUBE" | "REACTION" | "KEYWORD" | "EVENT";
 type Interaction =
   | {
       type: "SORT_CHANGED";
@@ -47,7 +48,7 @@ type Interaction =
   | {
       type: "ANALYSIS_VIEW";
       action: "analysis.view";
-      properties: { appId: number; analysisType: "STEAM" | "YOUTUBE" };
+      properties: { appId: number; analysisType: AnalysisType };
     };
 
 /** Explicit interactions only; no query text, timer, administrator or fallback collection. */
@@ -81,7 +82,8 @@ export function usePageView(
   routeKey: string,
   ready: boolean,
   appId?: number,
-  analysisType?: "STEAM" | "YOUTUBE",
+  analysisType?: AnalysisType,
+  analysisReady: boolean = ready,
 ) {
   const session = useSession();
   const interaction = useInteractionEvents();
@@ -100,16 +102,21 @@ export function usePageView(
     // Focus revalidation can remount a guarded page without a navigation.
     // That must not produce a new view or keep a visitor session active.
     const key = (session.identity?.id ?? "guest") + ":" + navigationVersion + ":" + routeKey;
-    if (pageViews.has(key)) return;
-    pageViews.add(key);
-    if (pageViews.size > 256)
-      pageViews.delete(pageViews.values().next().value!);
-    if (appId && analysisType)
+    // A loaded page and its later supported observation response can arrive
+    // separately. Record each once; neither event means an analysis job ran.
+    const pageKey = key + ":page", analysisKey = key + ":analysis";
+    if (analysisReady && appId && analysisType && !pageViews.has(analysisKey)) {
+      pageViews.add(analysisKey);
       interaction({
         type: "ANALYSIS_VIEW",
         action: "analysis.view",
         properties: { appId, analysisType },
       });
+    }
+    if (pageViews.has(pageKey)) return;
+    pageViews.add(pageKey);
+    while (pageViews.size > 512)
+      pageViews.delete(pageViews.values().next().value!);
     void serviceApi
       .request("/api/v1/events", {
         method: "POST",
@@ -128,6 +135,7 @@ export function usePageView(
     session.generation,
     appId,
     analysisType,
+    analysisReady,
     interaction,
     location.key,
   ]);
