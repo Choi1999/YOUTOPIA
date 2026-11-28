@@ -25,11 +25,11 @@ def validate():
     current=read(BASE.parent/'CURRENT.json'); migration=read(BASE/'migration_v05_to_v06.json')
     old=read(ROOT/migration['source_file'])
     require(data['taxonomy_version']==taxonomy['version']==current['taxonomy_version']=='v0.6','Taxonomy version mismatch')
-    require(taxonomy['guideline_version']==current['guideline_version']=='v1.3.1','Current guideline mismatch')
+    require(taxonomy['guideline_version']==current['guideline_version']=='v1.3.2','Current guideline mismatch')
     require(data['guideline_version']==current['pilot_annotation_guideline_version']=='v1.3.0','Historical pilot guideline mismatch')
     require(data['schema']==current['pilot_schema']=='youtopia_pilot_consolidated_review_v2','Dataset schema mismatch')
     require(current['status']=='PILOT_TAXONOMY_NOT_TRAINING_READY','Trained-service claim invalid')
-    for pointer in ['taxonomy','guidelines','pilot','review_table','handoff','manifest','adjudications','scope_policy']:
+    for pointer in ['taxonomy','guidelines','pilot','review_table','handoff','manifest','adjudications','scope_policy','training_role_policy']:
         require((ROOT/current[pointer]).is_file(),f'Broken CURRENT pointer: {pointer}')
     leaves={s['leaf_id']:(c['code'],s['code'],s['label']) for c in taxonomy['categories'] for s in c['subaspects']}
     require(len(leaves)==sum(len(c['subaspects']) for c in taxonomy['categories']),'Duplicate leaves')
@@ -47,13 +47,22 @@ def validate():
     require(policy['mixed_review_handling']=='KEEP_OTHER_IN_SCOPE_ANNOTATIONS' and policy['only_excluded_content_status']=='NO_CONCRETE_EVALUATION','Review scope handling mismatch')
     require(policy['retained_leaf']=='USABILITY.LEARNING_GUIDANCE' and policy['retained_leaf'] in leaves,'Tutorial and guidance label removed')
     require(len(leaves)==73 and not any('EDUCATIONAL_EFFECT' in leaf for leaf in leaves),'Unexpected educational-effect label or label count change')
+    role=read(ROOT/current['training_role_policy'])
+    require(current['training_role_policy']==taxonomy['training_role_policy'],'Training role policy pointer mismatch')
+    require(role['policy_id']==current['training_role_policy_id']==taxonomy['training_role_policy_id']=='PILOT_ROLE_AND_SPLIT_SEPARATION_20261126','Training role policy identity mismatch')
+    require(role['origin_alone_excludes_from_training'] is False and role['origin_alone_excludes_from_final_test'] is False,'Blanket pilot exclusion restored')
+    require(role['allowed_candidate_splits']==['TRAIN','VALIDATION','FINAL_TEST'],'Pilot origin split restriction')
+    require(role['preserve_historical_artifacts'] is True and role['training_or_export_executed'] is False,'Policy migration changed archive/export state')
+    require(role['metadata_assisted_case']['text_only_sentiment_export'] is False,'Metadata-only polarity leaked to text-only targets')
+    require(role['partial_opinion_export']['enabled_by_default'] is False,'Unresolved targets enabled without masks')
+    require(len(role['actual_exposure_gate']['rules'])==4 and role['complete_review_export_requirements'],'Exposure or review gates missing')
     old_leaves={s['leaf_id'] for c in read(BASE.parent/'v0.5/taxonomy.json')['categories'] for s in c['subaspects']}
     require(set(leaves)-old_leaves=={'CONTENT.TRACK_CATALOG','GAMEPLAY.EXPLORATION'} and old_leaves <= set(leaves),'Unexpected taxonomy delta')
     records=data['records']; by_number={r['display_number']:r for r in records}
     require(len(records)==100 and set(by_number)==set(range(1,101)),'Missing/duplicate review numbers')
     require(len({r['key'] for r in records})==100,'Duplicate review key')
     require(len({r['text_sha256'] for r in records})==100,'Duplicate review text')
-    require(set(data['pilot_exclusion_keys'])=={r['key'] for r in records},'Incomplete pilot leakage guard')
+    require(set(data['pilot_exclusion_keys'])=={r['key'] for r in records},'Historical pilot key inventory changed')
     for i,legacy in enumerate(old['records']):
         expected=copy.deepcopy(legacy); expected.update(taxonomy_version='v0.6',guideline_version='v1.3.0')
         require(records[i]==expected,f'Legacy record {i+1} or review status changed')
@@ -67,7 +76,7 @@ def validate():
         n=r['display_number']; text=r['clean_text']
         require(hashlib.sha256(text.encode()).hexdigest()==r['text_sha256'],'Text hash mismatch')
         require(r['key']==f"{r['appid']}:{r['review_id']}",'Wrong review key')
-        require(r['learning_eligible'] is False,'Pilot promoted to training data')
+        require(r['learning_eligible'] is False,'Historical artifact export flag changed')
         require(r['taxonomy_version']=='v0.6' and r['guideline_version']=='v1.3.0','Record version mismatch')
         require(r['active_opinion_ids']==[a['id'] for a in r['annotations']],'Active index mismatch')
         require(r['held_opinion_ids']==[a['id'] for a in r['held_annotations']],'Held index mismatch')
@@ -133,6 +142,7 @@ def validate():
         'archived_version_preservation':'PASS','user_corrections':'PASS','hold_exclusion_preservation':'PASS',
         'metadata_input_separation':'PASS','leaf_aggregation':'PASS','manifest_hashes':'PASS',
         'educational_effect_scope_policy':'PASS','scope_policy_id':policy['policy_id'],
+        'training_role_policy':'PASS','training_role_policy_id':role['policy_id'],
         'training_performed':False,'deployment_performed':False,
         'support_by_leaf':{k:{'reviews':len(support[k]),'opinions':active_count[k]} for k in sorted(leaves)}}
     (BASE/'validation.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')

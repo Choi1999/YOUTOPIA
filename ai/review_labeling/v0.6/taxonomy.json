@@ -568,7 +568,7 @@
     "hold": "excluded from resolved gold and sentiment totals; retained in counts and audit",
     "difficulty": "Subjective experience under different player populations; do not infer absolute cross-game difficulty from sentiment rates."
   },
-  "guideline_version": "v1.3.1",
+  "guideline_version": "v1.3.2",
   "primary_label_unit": "leaf_id",
   "schema_version": "youtopia_review_taxonomy_v2",
   "active_polarities": [
@@ -587,5 +587,7 @@
     "comparison": "Separate text-only and metadata-assisted tasks. Provide identical permitted metadata to every model."
   },
   "scope_policy": "ai/review_labeling/v0.6/education_effect_exclusion_v1.json",
-  "scope_policy_id": "EDUCATIONAL_EFFECT_OUT_OF_SCOPE_20261128"
+  "scope_policy_id": "EDUCATIONAL_EFFECT_OUT_OF_SCOPE_20261128",
+  "training_role_policy": "ai/review_labeling/v0.6/training_role_policy_v1.json",
+  "training_role_policy_id": "PILOT_ROLE_AND_SPLIT_SEPARATION_20261126"
 }

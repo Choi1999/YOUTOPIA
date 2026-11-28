@@ -1,0 +1,85 @@
+{
+  "schema": "youtopia_training_role_policy_v1",
+  "policy_id": "PILOT_ROLE_AND_SPLIT_SEPARATION_20261126",
+  "version": "1.0.0",
+  "authority": "User instruction: pilot is annotation-stage provenance; origin alone does not exclude a review from training, validation, or final test.",
+  "effective_user_instruction_date": "2026-11-26",
+  "allowed_candidate_splits": [
+    "TRAIN",
+    "VALIDATION",
+    "FINAL_TEST"
+  ],
+  "origin_alone_excludes_from_training": false,
+  "origin_alone_excludes_from_final_test": false,
+  "origin_role_is_not_model_feature": true,
+  "split_assignment": "PER_EXPERIMENT_NOT_ASSIGNED_BY_THIS_POLICY",
+  "actual_exposure_gate": {
+    "unit": "evaluated model + experiment + prompt/preprocessing/checkpoint version",
+    "rules": [
+      {
+        "if": "Used to fit model parameters or fit data-dependent preprocessing in this experiment",
+        "then": "Cannot serve as untouched validation/final-test evidence for the same fitted model."
+      },
+      {
+        "if": "Supplied as few-shot/demo examples, retrieval reference answers, or used to tune prompts, thresholds, hyperparameters, architecture/model choice or behavior based on inspected performance",
+        "then": "Do not report those records as untouched FINAL_TEST for that resulting experiment; assign development/train role as appropriate."
+      },
+      {
+        "if": "Only used to formulate annotation definitions or adjudicate labels; no fit, evaluated-prompt examples or performance-based model adaptation",
+        "then": "Origin is not evidence of target-model leakage. May enter TRAIN, VALIDATION or FINAL_TEST after ordinary split/quality checks."
+      },
+      {
+        "if": "Relevant actual exposure history is unknown",
+        "then": "NEEDS_EXPOSURE_AUDIT for the intended experiment; do not impose a permanent blanket exclusion."
+      }
+    ],
+    "new_model_or_separate_api_call": "Do not transfer exposure labels merely because the model provider/model family also assisted annotation. Inspect actual trained data, supplied context, prompts and adaptation histories.",
+    "annotation_bias_distinct_from_leakage": "AI-assisted labels and purposeful boundary-case sampling may affect reliability/representativeness even without target-model exposure. Report annotation method and sampling honestly.",
+    "fresh_holdout": "An independently sampled fresh holdout is recommended when feasible for stronger evidence, not required solely because some reviews originated in an annotation pilot."
+  },
+  "related_record_grouping": [
+    "same review key",
+    "edited revisions of same review",
+    "exact text duplicates",
+    "near-duplicate text after preprocessing"
+  ],
+  "related_record_grouping_rule": "Keep the same review, revisions, exact duplicates and near-duplicates in one split; these are leakage groups, not blanket exclusions.",
+  "complete_review_export_requirements": [
+    "Current taxonomy and leaf mapping are validated.",
+    "Current review and all active targets have the required human adjudication; preserved old flags are not automatically upgraded.",
+    "No unresolved HOLD targets remain; do not encode HOLD or missing labels as absence or negative.",
+    "Source text, evidence offsets and input requirements are validated.",
+    "The intended experiment has a validated exposure history and assigned, non-overlapping splits."
+  ],
+  "partial_opinion_export": {
+    "enabled_by_default": false,
+    "requires": "A separately validated partial-label exporter with unresolved-target masks and explicit evaluation coverage."
+  },
+  "metadata_assisted_case": {
+    "display_number": 92,
+    "key": "242760:218153669",
+    "required_input": [
+      "review text",
+      "steam_recommended"
+    ],
+    "text_only_sentiment_export": false,
+    "direction_rule": "This single adjudication is not a rule mapping recommendation to all aspect polarities.",
+    "comparison_rule": "All compared models get identical permitted metadata; keep separate from text-only experiments.",
+    "allowed_candidate_splits": [
+      "TRAIN",
+      "VALIDATION",
+      "FINAL_TEST"
+    ],
+    "split_requires_actual_exposure_gate": true
+  },
+  "no_concrete_evaluation": "Confirmed no-aspect reviews may be negative examples for aspect presence; excluded spans are not automatically token-level negative labels.",
+  "preserve_historical_artifacts": true,
+  "historical_fields_policy": {
+    "pilot_exclusion_keys": "Historical key inventory for audit/dedup grouping only; not an active origin-based split exclusion.",
+    "batch_role": "Historical provenance only; old guideline_pilot_not_train_or_final_test values do not override this policy.",
+    "learning_eligible": "Preserve the archived artifact value. Do not turn it on solely because reuse of pilot origin is allowed; a validated exporter creates experiment-specific eligibility.",
+    "review_flags": "Do not resolve HOLD, confirm pending reclassification, or change annotation_input by policy migration."
+  },
+  "annotation_bias_note": "AI-assisted labels and purposeful boundary-case sampling may affect reliability/representativeness even without target-model exposure. Report annotation method and sampling honestly.",
+  "training_or_export_executed": false
+}

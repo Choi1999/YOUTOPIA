@@ -1,6 +1,6 @@
 {
   "taxonomy_version": "v0.6",
-  "guideline_version": "v1.3.1",
+  "guideline_version": "v1.3.2",
   "pilot_schema": "youtopia_pilot_consolidated_review_v2",
   "taxonomy": "ai/review_labeling/v0.6/taxonomy.json",
   "guidelines": "ai/review_labeling/v0.6/GUIDELINES_KO.md",
@@ -12,5 +12,7 @@
   "status": "PILOT_TAXONOMY_NOT_TRAINING_READY",
   "scope_policy": "ai/review_labeling/v0.6/education_effect_exclusion_v1.json",
   "scope_policy_id": "EDUCATIONAL_EFFECT_OUT_OF_SCOPE_20261128",
-  "pilot_annotation_guideline_version": "v1.3.0"
+  "pilot_annotation_guideline_version": "v1.3.0",
+  "training_role_policy": "ai/review_labeling/v0.6/training_role_policy_v1.json",
+  "training_role_policy_id": "PILOT_ROLE_AND_SPLIT_SEPARATION_20261126"
 }
